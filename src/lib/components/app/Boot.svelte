@@ -41,20 +41,23 @@
 		const started = startDbWorker();
 		worker = started;
 		started.onFatal((err) => {
+			if (started !== worker) return;
 			app.boot = { kind: 'error', code: 'WORKER_FAILED', message: err.message };
 		});
 		try {
 			const result = await openLastBudget(started.api, localStorage);
-			if (result.kind === 'ready') ready(result.file, result.meta);
+			if (started !== worker) return;
+			if (result.kind === 'ready') ready(started, result.file, result.meta);
 			else app.boot = { kind: 'onboarding' };
 		} catch (err) {
+			if (started !== worker) return;
 			app.boot = { kind: 'error', ...startupError(err) };
 		}
 	}
 
-	function ready(file: string, meta: BudgetMeta) {
-		if (!worker) return;
-		app.session = new BudgetSession(worker, file, meta);
+	function ready(started: DbWorker, file: string, meta: BudgetMeta) {
+		if (started !== worker) return;
+		app.session = new BudgetSession(started, file, meta);
 		app.boot = { kind: 'ready' };
 	}
 
@@ -82,7 +85,8 @@
 	<Onboarding
 		api={worker.api}
 		onCreated={(file, meta) => {
-			ready(file, meta);
+			if (!worker) return;
+			ready(worker, file, meta);
 			void goto(resolve('/'));
 		}}
 	/>
