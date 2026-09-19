@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { registerSW } from 'virtual:pwa-register';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { AppState, setApp } from '$lib/client/app-state.svelte';
@@ -8,6 +10,7 @@
 	import { createTabLock, type TabLock } from '$lib/client/tab-lock';
 	import type { BudgetMeta } from '$lib/db/repos/meta';
 	import { currentMonth } from '$lib/domain/month';
+	import { m } from '$lib/paraglide/messages';
 	import AppShell from './AppShell.svelte';
 	import Onboarding from './Onboarding.svelte';
 	import StartupScreen from './StartupScreen.svelte';
@@ -79,7 +82,26 @@
 		await start();
 	}
 
+	/**
+	 * Installs a waiting app update (spec §8): let in-flight calls finish, close the database
+	 * cleanly, then activate the new service worker, which reloads the page.
+	 */
+	async function applyUpdate(update: (reload: boolean) => Promise<void>) {
+		app.boot = { kind: 'loading' };
+		await worker?.idle();
+		await stopWorker();
+		await update(true);
+	}
+
 	onMount(() => {
+		const update = registerSW({
+			onNeedRefresh() {
+				toast(m.update_available(), {
+					duration: Number.POSITIVE_INFINITY,
+					action: { label: m.startup_reload(), onClick: () => void applyUpdate(update) }
+				});
+			}
+		});
 		void (async () => {
 			if (!lock || (await lock.tryAcquire())) await start();
 			else app.boot = { kind: 'blocked' };

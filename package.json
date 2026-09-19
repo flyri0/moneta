@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"preview": "vite preview",
+		"preview": "sirv build --single --port 4173",
+		"icons": "pnpm --allow-build=sharp dlx @vite-pwa/assets-generator@1.0.2",
 		"prepare": "svelte-kit sync || echo ''",
 		"i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations --silent",
 		"check": "pnpm i18n && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -29,6 +30,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/node": "^24",
+		"@vite-pwa/sveltekit": "^1.1.0",
 		"bits-ui": "^2.19.2",
 		"cn": "^0.3.0",
 		"eslint": "^10.4.1",
@@ -41,6 +43,7 @@
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
 		"shadcn-svelte": "^1.7.0",
+		"sirv-cli": "^3.0.1",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"svelte-sonner": "^1.2.1",
@@ -50,7 +53,9 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
-		"vitest": "^4.1.8"
+		"vite-plugin-pwa": "^1.3.0",
+		"vitest": "^4.1.8",
+		"workbox-window": "^7.4.1"
 	},
 	"dependencies": {
 		"@sqlite.org/sqlite-wasm": "3.53.4-build1",

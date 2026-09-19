@@ -32,6 +32,8 @@ export interface RpcClient {
 	onChange(listener: ChangeListener): () => void;
 	/** Called once if the worker dies or a reply cannot be read. Every later call rejects. */
 	onFatal(listener: FatalListener): () => void;
+	/** Resolves once no call is waiting for its reply. */
+	idle(): Promise<void>;
 }
 
 export function createRpcClient(endpoint: Endpoint): RpcClient {
@@ -43,12 +45,18 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 	>();
 	const listeners = new Set<ChangeListener>();
 	const fatalListeners = new Set<FatalListener>();
+	const idleWaiters: (() => void)[] = [];
+
+	function settle(): void {
+		if (pending.size === 0) for (const resolve of idleWaiters.splice(0)) resolve();
+	}
 
 	function fail(message: string): void {
 		if (fatal) return;
 		fatal = new RpcError('WORKER_FAILED', message);
 		for (const entry of pending.values()) entry.reject(fatal);
 		pending.clear();
+		settle();
 		for (const l of fatalListeners) l(fatal);
 	}
 
@@ -63,6 +71,7 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		} else {
 			entry.reject(new RpcError(res.error.code, res.error.message, res.error.details));
 		}
+		settle();
 	});
 	endpoint.addEventListener('error', (event) => {
 		const message = (event as { message?: unknown }).message;
@@ -111,6 +120,11 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		onFatal(listener) {
 			fatalListeners.add(listener);
 			return () => fatalListeners.delete(listener);
+		},
+		idle() {
+			return pending.size === 0
+				? Promise.resolve()
+				: new Promise<void>((resolve) => idleWaiters.push(resolve));
 		}
 	};
 }

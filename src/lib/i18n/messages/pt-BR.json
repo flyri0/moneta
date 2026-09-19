@@ -19,6 +19,7 @@
 	"startup_blocked_body": "Seu orçamento só pode ficar aberto em uma aba por vez.",
 	"startup_blocked_take_over": "Usar o Moneta aqui",
 	"startup_reload": "Recarregar",
+	"update_available": "Uma nova versão do Moneta está disponível.",
 	"startup_storage_unavailable_title": "O armazenamento não está disponível",
 	"startup_storage_unavailable_body": "O Moneta guarda seu orçamento no armazenamento privado deste navegador, que não está disponível aqui. Janelas anônimas e alguns navegadores antigos o bloqueiam.",
 	"startup_quota_title": "O armazenamento está cheio",

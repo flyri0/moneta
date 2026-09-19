@@ -133,3 +133,24 @@ describe('createRpcClient failure paths', () => {
 		expect(fatal).toHaveLength(1);
 	});
 });
+
+describe('idle', () => {
+	it('resolves once every call in flight has its reply', async () => {
+		const client = connect(await createBudgetDb());
+		expect(await client.idle()).toBeUndefined();
+		const events: string[] = [];
+		void client.api.meta.get().then(() => events.push('reply'));
+		await client.idle();
+		events.push('idle');
+		expect(events).toEqual(['reply', 'idle']);
+	});
+
+	it('resolves when the worker fails', async () => {
+		const { endpoint, emit } = silentEndpoint();
+		const client = createRpcClient(endpoint);
+		void client.api.meta.get().catch(() => {});
+		const idle = client.idle();
+		emit('error');
+		await expect(idle).resolves.toBeUndefined();
+	});
+});

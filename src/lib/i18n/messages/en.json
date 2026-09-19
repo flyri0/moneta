@@ -19,6 +19,7 @@
 	"startup_blocked_body": "Your budget can only be open in one tab at a time.",
 	"startup_blocked_take_over": "Use Moneta here",
 	"startup_reload": "Reload",
+	"update_available": "A new version of Moneta is available.",
 	"startup_storage_unavailable_title": "Storage isn't available",
 	"startup_storage_unavailable_body": "Moneta keeps your budget in this browser's private storage, which isn't available here. Private windows and some older browsers block it.",
 	"startup_quota_title": "Storage is full",

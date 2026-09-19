@@ -2,7 +2,6 @@
 	import './layout.css';
 	import type { Snippet } from 'svelte';
 	import { ModeWatcher } from 'mode-watcher';
-	import favicon from '$lib/assets/favicon.svg';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import Boot from '$lib/components/app/Boot.svelte';
 	import { m } from '$lib/paraglide/messages';
@@ -15,7 +14,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>{m.app_name()}</title>
 </svelte:head>
 
