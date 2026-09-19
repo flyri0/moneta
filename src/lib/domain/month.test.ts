@@ -17,6 +17,14 @@ describe('month helpers', () => {
 		expect(isMonth('2026-9')).toBe(false);
 	});
 
+	it('only accepts months in the years 1900 to 2199', () => {
+		expect(isMonth('1899-12')).toBe(false);
+		expect(isMonth('1900-01')).toBe(true);
+		expect(isMonth('2199-12')).toBe(true);
+		expect(isMonth('2200-01')).toBe(false);
+		expect(isMonth('9999-01')).toBe(false);
+	});
+
 	it('validates real calendar dates', () => {
 		expect(isDate('2026-02-28')).toBe(true);
 		expect(isDate('2026-02-29')).toBe(false);

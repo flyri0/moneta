@@ -3,15 +3,23 @@ export type Month = string; // 'YYYY-MM'
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+// A typo year (e.g. 9999) would make the budget engine walk far too many months.
+const MIN_YEAR = 1900;
+const MAX_YEAR = 2199;
+
+function inYearRange(year: number): boolean {
+	return year >= MIN_YEAR && year <= MAX_YEAR;
+}
+
 export function isMonth(value: string): boolean {
-	return MONTH_RE.test(value);
+	return MONTH_RE.test(value) && inYearRange(Number(value.slice(0, 4)));
 }
 
 export function isDate(value: string): boolean {
 	const m = DATE_RE.exec(value);
 	if (!m) return false;
 	const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-	if (y < 1900 || y > 2199) return false; // a typo year would make the engine walk far too many months
+	if (!inYearRange(y)) return false;
 	const date = new Date(Date.UTC(y, mo - 1, d));
 	return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
 }

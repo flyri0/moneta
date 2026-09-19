@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { currencyDigits, formatMoney, parseAmount } from './money';
+import { currencyDigits, formatAmountInput, formatMoney, parseAmount } from './money';
 
 const BRL = { currency: 'BRL', locale: 'pt-BR' };
 const USD = { currency: 'USD', locale: 'en-US' };
@@ -36,11 +36,16 @@ describe('parseAmount', () => {
 		['12.5', USD, 1250],
 		['1,234', USD, 123400],
 		['R$ 10', BRL, 1000],
+		['R$1.234,56', BRL, 123456],
+		['BRL 10', BRL, 1000],
+		['$12.50', USD, 1250],
+		['1.234.567', BRL, 123456700],
 		['120+35', USD, 15500],
 		['100 - 20,5', BRL, 7950],
 		['3*1.10', USD, 330],
 		['(10+5)/2', USD, 750],
-		['-12.345', USD, -1235],
+		['-12.34', USD, -1234],
+		['−12,34', BRL, -1234],
 		['.5', USD, 50],
 		['1500', JPY, 1500],
 		['0', USD, 0]
@@ -50,5 +55,31 @@ describe('parseAmount', () => {
 
 	it.each(['', 'abc', '1+', '(1', '1/0', '1..2.3,4'])('rejects %s', (input) => {
 		expect(parseAmount(input, USD)).toBeNull();
+	});
+
+	it.each([
+		['1e5', USD],
+		['12a3', USD],
+		['US$ 5', BRL],
+		['1.234,567', USD],
+		['-12.345', USD],
+		['1,23,456', USD],
+		['1.234.56', BRL],
+		['1.2,34', BRL],
+		['12.5', JPY]
+	])('rejects ambiguous or mistyped %s', (input, fmt) => {
+		expect(parseAmount(input, fmt)).toBeNull();
+	});
+});
+
+describe('formatAmountInput', () => {
+	it.each([
+		[123456, BRL, '1234,56'],
+		[-1250, USD, '-12.50'],
+		[1500, JPY, '1500'],
+		[-1250, { currency: 'SEK', locale: 'sv-SE' }, '-12,50']
+	])('formats %i for editing and parses back', (minor, fmt, text) => {
+		expect(formatAmountInput(minor, fmt)).toBe(text);
+		expect(parseAmount(text, fmt)).toBe(minor);
 	});
 });
