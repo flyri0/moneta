@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import { useSession } from '$lib/client/app-state.svelte';
-	import { runAction } from '$lib/client/notify';
+	import { runActionToast } from '$lib/client/notify';
 	import { formatAmountInput } from '$lib/domain/money';
 	import type { Month } from '$lib/domain/month';
 	import { m } from '$lib/paraglide/messages';
@@ -33,8 +33,7 @@
 			return;
 		}
 		if (value === assigned) return;
-		const error = await runAction(() => session.api.budget.setAssigned(categoryId, month, value));
-		if (error) toast.error(error);
+		await runActionToast(() => session.api.budget.setAssigned(categoryId, month, value));
 	}
 
 	function keydown(event: KeyboardEvent) {

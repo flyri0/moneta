@@ -25,3 +25,16 @@ export async function runAction(fn: () => Promise<unknown>): Promise<string | nu
 		return errorMessage(err);
 	}
 }
+
+/**
+ * Runs a write with no inline error display of its own: every failure is reported with a
+ * single toast (unexpected errors get the "copy details" action, expected ones a plain message).
+ */
+export async function runActionToast(fn: () => Promise<unknown>): Promise<void> {
+	try {
+		await fn();
+	} catch (err) {
+		if (isUnexpected(err)) notifyError(err);
+		else toast.error(errorMessage(err));
+	}
+}

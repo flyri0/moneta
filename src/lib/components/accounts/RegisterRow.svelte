@@ -4,13 +4,12 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { payeeDisplay } from '$lib/accounts/register';
 	import { useSession } from '$lib/client/app-state.svelte';
-	import { runAction } from '$lib/client/notify';
+	import { runActionToast } from '$lib/client/notify';
 	import type { TransactionRow } from '$lib/db/repos/transactions';
 	import { formatDate } from '$lib/i18n/formats';
 	import { storedCategoryLabel } from '$lib/i18n/labels';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
-	import { toast } from 'svelte-sonner';
 
 	let { row, onEdit }: { row: TransactionRow; onEdit?: (row: TransactionRow) => void } = $props();
 
@@ -19,8 +18,7 @@
 	let expanded = $state(false);
 
 	async function toggleCleared() {
-		const error = await runAction(() => session.api.transactions.setCleared(row.id, !row.cleared));
-		if (error) toast.error(error);
+		await runActionToast(() => session.api.transactions.setCleared(row.id, !row.cleared));
 	}
 </script>
 
