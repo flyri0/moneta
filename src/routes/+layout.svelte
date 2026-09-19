@@ -4,6 +4,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import favicon from '$lib/assets/favicon.svg';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import Boot from '$lib/components/app/Boot.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
 
@@ -20,4 +21,4 @@
 
 <ModeWatcher />
 <Toaster richColors closeButton />
-{@render children()}
+<Boot>{@render children()}</Boot>

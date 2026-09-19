@@ -1,0 +1,59 @@
+import { createContext } from 'svelte';
+import type { ClientApi } from '$lib/db/api';
+import type { BudgetMeta } from '$lib/db/repos/meta';
+import { formatMoney, parseAmount, type MoneyFormat } from '$lib/domain/money';
+import type { RpcClient } from './rpc';
+import type { StartupErrorCode } from './session';
+
+export type BootState =
+	| { kind: 'loading' }
+	| { kind: 'blocked' }
+	| { kind: 'error'; code: StartupErrorCode; message: string }
+	| { kind: 'onboarding' }
+	| { kind: 'ready' };
+
+/** The open budget: the RPC client, its file, and its meta (kept current by `watchMeta`). */
+export class BudgetSession {
+	readonly client: RpcClient;
+	readonly file: string;
+	meta: BudgetMeta;
+
+	constructor(client: RpcClient, file: string, meta: BudgetMeta) {
+		this.client = client;
+		this.file = file;
+		this.meta = $state(meta);
+	}
+
+	get api(): ClientApi {
+		return this.client.api;
+	}
+
+	get money(): MoneyFormat {
+		return { currency: this.meta.currency, locale: this.meta.locale };
+	}
+
+	format = (minor: number): string => formatMoney(minor, this.money);
+
+	parse = (text: string): number | null => parseAmount(text, this.money);
+
+	/** Re-reads meta whenever a write changes it. Returns the unsubscribe function. */
+	watchMeta(): () => void {
+		return this.client.onChange((tables) => {
+			if (tables.includes('meta')) void this.api.meta.get().then((meta) => (this.meta = meta));
+		});
+	}
+}
+
+export class AppState {
+	boot: BootState = $state({ kind: 'loading' });
+	session: BudgetSession | null = $state(null);
+}
+
+export const [getApp, setApp] = createContext<AppState>();
+
+/** The open budget. Only call it from components that render while the app is ready. */
+export function useSession(): BudgetSession {
+	const session = getApp().session;
+	if (!session) throw new Error('No budget is open');
+	return session;
+}
