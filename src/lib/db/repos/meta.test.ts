@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb, createTestDb } from '../testing';
-import { run } from '../connection';
+import { all, run } from '../connection';
 import { getMeta, initBudget, isInitialized, updateMeta } from './meta';
-import { listCategoryTree } from './categories';
 
 describe('initBudget', () => {
 	it('creates meta, system groups and the starting categories', async () => {
@@ -21,16 +20,26 @@ describe('initBudget', () => {
 			locale: 'pt-BR',
 			lastBackupAt: null
 		});
-		const tree = listCategoryTree(db);
-		expect(tree.map((g) => [g.name, g.system])).toEqual([
+		const groups = all<{ name: string; system: string | null }>(
+			db,
+			'SELECT name, system FROM category_groups ORDER BY sort_order'
+		);
+		expect(groups.map((g) => [g.name, g.system])).toEqual([
 			['Income', 'income'],
 			['Credit Card Payments', 'credit_card_payments'],
 			['Everyday', null]
 		]);
-		expect(tree[0].categories.map((c) => [c.name, c.system])).toEqual([
-			['Ready to Assign', 'ready_to_assign']
+		const categories = all<{ groupName: string; name: string; system: string | null }>(
+			db,
+			`SELECT g.name AS groupName, c.name, c.system
+			 FROM categories c JOIN category_groups g ON g.id = c.group_id
+			 ORDER BY g.sort_order, c.sort_order`
+		);
+		expect(categories.map((c) => [c.groupName, c.name, c.system])).toEqual([
+			['Income', 'Ready to Assign', 'ready_to_assign'],
+			['Everyday', 'Food', null],
+			['Everyday', 'Fun', null]
 		]);
-		expect(tree[2].categories.map((c) => c.name)).toEqual(['Food', 'Fun']);
 	});
 
 	it('refuses to initialize twice', async () => {
