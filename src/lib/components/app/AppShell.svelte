@@ -3,6 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
@@ -38,6 +39,12 @@
 			label: m.nav_accounts(),
 			icon: LandmarkIcon,
 			active: path.startsWith('/accounts')
+		},
+		{
+			href: resolve('/reports'),
+			label: m.nav_reports(),
+			icon: ChartColumnIcon,
+			active: path.startsWith('/reports')
 		},
 		{
 			href: resolve('/settings'),
@@ -93,7 +100,7 @@
 	</Button>
 
 	<nav
-		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
 		aria-label={m.nav_label()}
 	>
 		{#each nav as item (item.label)}

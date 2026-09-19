@@ -20,6 +20,17 @@ export function formatMoney(minor: number, fmt: MoneyFormat): string {
 	);
 }
 
+/** A short form for chart axes, e.g. "$1.2M" or "R$ 1,5 mil". */
+export function formatMoneyCompact(minor: number, fmt: MoneyFormat): string {
+	const digits = currencyDigits(fmt.currency);
+	return new Intl.NumberFormat(fmt.locale, {
+		style: 'currency',
+		currency: fmt.currency,
+		notation: 'compact',
+		maximumFractionDigits: 1
+	}).format(minor / 10 ** digits);
+}
+
 /** The editable text for an amount: no currency symbol and no grouping, e.g. "1234,50" in pt-BR. */
 export function formatAmountInput(minor: number, fmt: MoneyFormat): string {
 	const digits = currencyDigits(fmt.currency);

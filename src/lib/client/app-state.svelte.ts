@@ -1,7 +1,7 @@
 import { createContext } from 'svelte';
 import type { ClientApi } from '$lib/db/api';
 import type { BudgetMeta } from '$lib/db/repos/meta';
-import { formatMoney, parseAmount, type MoneyFormat } from '$lib/domain/money';
+import { formatMoney, formatMoneyCompact, parseAmount, type MoneyFormat } from '$lib/domain/money';
 import type { RpcClient } from './rpc';
 import type { StartupErrorCode } from './session';
 
@@ -33,6 +33,9 @@ export class BudgetSession {
 	}
 
 	format = (minor: number): string => formatMoney(minor, this.money);
+
+	/** A short form for chart axes, e.g. "$1.2M". */
+	formatCompact = (minor: number): string => formatMoneyCompact(minor, this.money);
 
 	parse = (text: string): number | null => parseAmount(text, this.money);
 

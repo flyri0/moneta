@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { currencyDigits, formatAmountInput, formatMoney, parseAmount } from './money';
+import {
+	currencyDigits,
+	formatAmountInput,
+	formatMoney,
+	formatMoneyCompact,
+	parseAmount
+} from './money';
 
 const BRL = { currency: 'BRL', locale: 'pt-BR' };
 const USD = { currency: 'USD', locale: 'en-US' };
@@ -81,5 +87,14 @@ describe('formatAmountInput', () => {
 	])('formats %i for editing and parses back', (minor, fmt, text) => {
 		expect(formatAmountInput(minor, fmt)).toBe(text);
 		expect(parseAmount(text, fmt)).toBe(minor);
+	});
+});
+
+describe('formatMoneyCompact', () => {
+	it('abbreviates large amounts for chart axes', () => {
+		expect(formatMoneyCompact(123456789, USD)).toBe('$1.2M');
+		expect(norm(formatMoneyCompact(150000, BRL))).toBe('R$ 1,5 mil');
+		expect(formatMoneyCompact(-25000, USD)).toBe('-$250');
+		expect(norm(formatMoneyCompact(1500, JPY))).toBe('￥1500');
 	});
 });
