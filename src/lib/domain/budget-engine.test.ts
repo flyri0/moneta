@@ -306,6 +306,81 @@ describe('computeBudget', () => {
 		expect(firstNegativeMonthAfter(comp, '2026-03')).toBeNull();
 	});
 
+	it('funds the card when a later assignment covers carried credit overspending', () => {
+		const comp = computeBudget(
+			input({
+				entries: [entry('fun', '2026-01-05', -10000, 'visa')],
+				assignments: [
+					{ categoryId: 'fun', month: '2026-01', assigned: 5000 },
+					{ categoryId: 'fun', month: '2026-02', assigned: 5000 }
+				]
+			}),
+			'2026-02'
+		);
+		expect(categoryMonth(comp, '2026-01', 'fun')).toMatchObject({
+			available: -5000,
+			cashOverspent: 0,
+			creditOverspent: 5000
+		});
+		expect(categoryMonth(comp, '2026-02', 'fun')).toMatchObject({
+			carryover: -5000,
+			available: 0,
+			creditOverspent: 0
+		});
+		expect(categoryMonth(comp, '2026-02', 'cc-visa')).toMatchObject({
+			activity: 5000,
+			available: 10000
+		});
+		expect(comp.months.get('2026-02')?.readyToAssign).toBe(-10000);
+	});
+
+	it('keeps carried credit overspending tied to its card when a refund arrives', () => {
+		const comp = computeBudget(
+			input({
+				entries: [
+					entry('fun', '2026-01-05', -10000, 'visa'),
+					entry('fun', '2026-02-03', 2000, 'visa')
+				],
+				assignments: [{ categoryId: 'fun', month: '2026-01', assigned: 5000 }]
+			}),
+			'2026-02'
+		);
+		expect(categoryMonth(comp, '2026-02', 'fun')).toMatchObject({
+			available: -3000,
+			cashOverspent: 0,
+			creditOverspent: 3000
+		});
+		expect(categoryMonth(comp, '2026-02', 'cc-visa').available).toBe(5000);
+	});
+
+	it('conserves money: Ready to Assign plus all available equals cash on hand', () => {
+		// cash accounts: +100000 income, -20000 food (cash), -15000 card payment = 65000
+		const comp = computeBudget(
+			input({
+				entries: [
+					entry('rta', '2026-01-01', 100000),
+					entry('food', '2026-01-03', -20000),
+					entry('food', '2026-01-04', -30000, 'visa'),
+					entry('fun', '2026-01-05', -8000, 'visa'),
+					entry('fun', '2026-02-02', 1000, 'visa')
+				],
+				payments: [{ cardAccountId: 'visa', date: '2026-01-25', amount: -15000 }],
+				assignments: [
+					{ categoryId: 'food', month: '2026-01', assigned: 40000 },
+					{ categoryId: 'fun', month: '2026-01', assigned: 5000 },
+					{ categoryId: 'fun', month: '2026-02', assigned: 3000 }
+				]
+			}),
+			'2026-03'
+		);
+		for (const month of ['2026-02', '2026-03']) {
+			const r = comp.months.get(month)!;
+			let available = 0;
+			for (const cm of r.categories.values()) available += cm.available;
+			expect(r.readyToAssign + available).toBe(65000);
+		}
+	});
+
 	it('returns zeros for categories and months without data', () => {
 		const comp = computeBudget(input({}), '2026-05');
 		expect(comp.first).toBe('2026-05');

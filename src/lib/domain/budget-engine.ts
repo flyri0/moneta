@@ -88,32 +88,41 @@ function carryoverFrom(prev: CategoryMonth | undefined, category: EngineCategory
 	return 0;
 }
 
+/** Uncovered (overspent) amounts per source: CASH or a card account id. */
+type Debt = Map<string, number>;
+
 /**
  * Runs one regular category through a month in date order.
- * `debt` tracks uncovered (overspent) amounts per source: CASH or a card account id.
+ * Starts from the carryover and its per-source debt (only non-empty when a
+ * negative balance carries forward), then applies the month's assignment as
+ * cash, then each entry. Covering card-origin debt funds that card.
  * Invariant after every step: Σ debt === max(0, -running).
  */
 function runCategory(
-	start: number,
+	carryover: number,
+	carriedDebt: Debt,
+	assigned: number,
 	entries: EngineEntry[],
 	fund: (cardAccountId: string, amount: number) => void
-): { activity: number; available: number; cashOverspent: number; creditOverspent: number } {
-	let running = start;
-	let activity = 0;
-	const debt = new Map<string, number>();
-	if (start < 0) debt.set(CASH, -start);
+): {
+	activity: number;
+	available: number;
+	cashOverspent: number;
+	creditOverspent: number;
+	debt: Debt;
+} {
+	let running = carryover;
+	const debt: Debt = new Map(carriedDebt);
 
-	for (const e of entries) {
-		const source = e.cardAccountId ?? CASH;
-		activity += e.amount;
-		if (e.amount < 0) {
-			const out = -e.amount;
+	const apply = (amount: number, source: string) => {
+		if (amount < 0) {
+			const out = -amount;
 			const covered = Math.min(out, Math.max(0, running));
 			if (source !== CASH && covered > 0) fund(source, covered);
 			const uncovered = out - covered;
 			if (uncovered > 0) debt.set(source, (debt.get(source) ?? 0) + uncovered);
 		} else {
-			let remaining = e.amount;
+			let remaining = amount;
 			const order = [source, CASH, ...debt.keys()].filter((k, i, a) => a.indexOf(k) === i);
 			for (const key of order) {
 				if (remaining === 0) break;
@@ -126,16 +135,24 @@ function runCategory(
 			}
 			if (remaining > 0 && source !== CASH) fund(source, -remaining);
 		}
-		running += e.amount;
+		running += amount;
+	};
+
+	apply(assigned, CASH);
+	let activity = 0;
+	for (const e of entries) {
+		activity += e.amount;
+		apply(e.amount, e.cardAccountId ?? CASH);
 	}
 
 	let cashOverspent = 0;
 	let creditOverspent = 0;
 	for (const [key, amount] of debt) {
-		if (key === CASH) cashOverspent += amount;
+		if (amount === 0) debt.delete(key);
+		else if (key === CASH) cashOverspent += amount;
 		else creditOverspent += amount;
 	}
-	return { activity, available: running, cashOverspent, creditOverspent };
+	return { activity, available: running, cashOverspent, creditOverspent, debt };
 }
 
 export function computeBudget(input: EngineInput, through: Month): BudgetComputation {
@@ -162,6 +179,7 @@ export function computeBudget(input: EngineInput, through: Month): BudgetComputa
 
 	const months = new Map<Month, MonthResult>();
 	let prev: MonthResult | undefined;
+	let prevDebt = new Map<string, Debt>(); // per regular category, carried with negative balances
 
 	for (const month of monthRange(first, last)) {
 		const categories = new Map<string, CategoryMonth>();
@@ -177,12 +195,23 @@ export function computeBudget(input: EngineInput, through: Month): BudgetComputa
 			}
 		}
 
+		const debts = new Map<string, Debt>();
 		for (const c of regular) {
 			const carryover = carryoverFrom(prev?.categories.get(c.id), c);
+			const carriedDebt: Debt =
+				carryover < 0 ? (prevDebt.get(c.id) ?? new Map([[CASH, -carryover]])) : new Map();
 			const a = assigned.get(`${month}|${c.id}`) ?? 0;
-			const r = runCategory(carryover + a, entriesByKey.get(`${month}|${c.id}`) ?? [], fund);
+			const { debt, ...r } = runCategory(
+				carryover,
+				carriedDebt,
+				a,
+				entriesByKey.get(`${month}|${c.id}`) ?? [],
+				fund
+			);
+			debts.set(c.id, debt);
 			categories.set(c.id, { carryover, assigned: a, ...r });
 		}
+		prevDebt = debts;
 
 		for (const c of ccCategories) {
 			const carryover = carryoverFrom(prev?.categories.get(c.id), c);
