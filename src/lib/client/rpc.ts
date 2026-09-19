@@ -1,11 +1,15 @@
 import type { Table } from '$lib/db/connection';
 import type { ClientApi } from '$lib/db/api';
 import type { CallRequest, CallResponse } from '$lib/db/protocol';
+import { toTransferable } from './transferable.svelte';
 
 /** Anything that can exchange messages with the DB worker (a Worker or a MessagePort). */
 export interface Endpoint {
 	postMessage(message: unknown): void;
-	addEventListener(type: 'message', listener: (event: MessageEvent) => void): void;
+	addEventListener(
+		type: 'message' | 'messageerror' | 'error',
+		listener: (event: MessageEvent) => void
+	): void;
 	start?(): void;
 }
 
@@ -21,19 +25,32 @@ export class RpcError extends Error {
 }
 
 export type ChangeListener = (tables: Table[]) => void;
+export type FatalListener = (error: RpcError) => void;
 
 export interface RpcClient {
 	api: ClientApi;
 	onChange(listener: ChangeListener): () => void;
+	/** Called once if the worker dies or a reply cannot be read. Every later call rejects. */
+	onFatal(listener: FatalListener): () => void;
 }
 
 export function createRpcClient(endpoint: Endpoint): RpcClient {
 	let nextId = 1;
+	let fatal: RpcError | null = null;
 	const pending = new Map<
 		number,
 		{ resolve: (v: unknown) => void; reject: (e: unknown) => void }
 	>();
 	const listeners = new Set<ChangeListener>();
+	const fatalListeners = new Set<FatalListener>();
+
+	function fail(message: string): void {
+		if (fatal) return;
+		fatal = new RpcError('WORKER_FAILED', message);
+		for (const entry of pending.values()) entry.reject(fatal);
+		pending.clear();
+		for (const l of fatalListeners) l(fatal);
+	}
 
 	endpoint.addEventListener('message', (event: MessageEvent) => {
 		const res = event.data as CallResponse;
@@ -47,14 +64,26 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 			entry.reject(new RpcError(res.error.code, res.error.message, res.error.details));
 		}
 	});
+	endpoint.addEventListener('error', (event) => {
+		const message = (event as { message?: unknown }).message;
+		fail(typeof message === 'string' && message ? message : 'The database worker stopped');
+	});
+	endpoint.addEventListener('messageerror', () => fail('A database reply could not be read'));
 	endpoint.start?.();
 
 	function call(method: string, args: unknown[]): Promise<unknown> {
+		if (fatal) return Promise.reject(fatal);
 		const id = nextId++;
 		return new Promise((resolve, reject) => {
+			const req: CallRequest = { id, method, args: toTransferable(args) };
+			try {
+				endpoint.postMessage(req);
+			} catch (err) {
+				// e.g. a DataCloneError: the arguments hold something that cannot be sent.
+				reject(new RpcError('INTERNAL', err instanceof Error ? err.message : String(err)));
+				return;
+			}
 			pending.set(id, { resolve, reject });
-			const req: CallRequest = { id, method, args };
-			endpoint.postMessage(req);
 		});
 	}
 
@@ -78,6 +107,10 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		onChange(listener) {
 			listeners.add(listener);
 			return () => listeners.delete(listener);
+		},
+		onFatal(listener) {
+			fatalListeners.add(listener);
+			return () => fatalListeners.delete(listener);
 		}
 	};
 }

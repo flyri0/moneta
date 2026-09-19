@@ -1,7 +1,12 @@
 import { createRpcClient, type RpcClient } from './rpc';
 
-/** Starts the SQLite worker. Call once per page (the worker owns the OPFS pool). */
-export function startDbWorker(): RpcClient {
+export interface DbWorker extends RpcClient {
+	/** Stops the worker. Call `api.system.release()` first so OPFS handles are let go cleanly. */
+	terminate(): void;
+}
+
+/** Starts the SQLite worker. Only the tab that holds the tab lock may call this. */
+export function startDbWorker(): DbWorker {
 	const worker = new Worker(new URL('../db/worker.ts', import.meta.url), { type: 'module' });
-	return createRpcClient(worker);
+	return { ...createRpcClient(worker), terminate: () => worker.terminate() };
 }

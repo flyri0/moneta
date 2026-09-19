@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { createRpcClient, RpcError } from './rpc';
+import { createRpcClient, RpcError, type Endpoint } from './rpc';
 import { createDispatcher } from '$lib/db/dispatcher';
 import { createBudgetDb } from '$lib/db/testing';
 import type { Db } from '$lib/db/connection';
@@ -19,7 +19,13 @@ function connect(db: Db | null) {
 	channels.push(channel);
 	const dispatch = createDispatcher({
 		getDb: () => db,
-		system: { open: () => {}, close: () => {}, listFiles: () => [], deleteFile: () => {} }
+		system: {
+			open: () => {},
+			close: () => {},
+			listFiles: () => [],
+			deleteFile: () => {},
+			release: () => {}
+		}
 	});
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));
 	return createRpcClient(channel.port1);
@@ -67,5 +73,61 @@ describe('createRpcClient', () => {
 	it('is not mistaken for a thenable', async () => {
 		const client = connect(await createBudgetDb());
 		expect((client.api as unknown as { then?: unknown }).then).toBeUndefined();
+	});
+});
+
+/** An endpoint that clones messages like a real port but never answers. */
+function silentEndpoint() {
+	const listeners = new Map<string, ((event: MessageEvent) => void)[]>();
+	const sent: unknown[] = [];
+	const endpoint: Endpoint = {
+		postMessage: (message) => void sent.push(structuredClone(message)),
+		addEventListener: (type, listener) =>
+			void listeners.set(type, [...(listeners.get(type) ?? []), listener])
+	};
+	const emit = (type: string) => {
+		for (const listener of listeners.get(type) ?? []) listener(new MessageEvent(type));
+	};
+	return { endpoint, sent, emit };
+}
+
+describe('createRpcClient failure paths', () => {
+	it('sends reactive proxies by value', async () => {
+		const client = connect(await createBudgetDb());
+		const input = new Proxy(
+			{
+				name: 'Bank',
+				type: 'checking' as const,
+				onBudget: true,
+				startingBalance: 0,
+				startingDate: '2026-01-01'
+			},
+			{}
+		);
+		await client.api.accounts.create(input);
+		expect((await client.api.accounts.list()).map((a) => a.name)).toEqual(['Bank']);
+	});
+
+	it('rejects, instead of hanging, when a message cannot be sent', async () => {
+		const { endpoint, sent } = silentEndpoint();
+		const client = createRpcClient(endpoint);
+		const notCloneable = (() => 'x') as unknown as string;
+		const err = await client.api.accounts.rename('id', notCloneable).catch((e) => e);
+		expect(err).toBeInstanceOf(RpcError);
+		expect(err.code).toBe('INTERNAL');
+		expect(sent).toEqual([]);
+	});
+
+	it.each(['error', 'messageerror'])('fails every pending and later call on %s', async (type) => {
+		const { endpoint, emit } = silentEndpoint();
+		const client = createRpcClient(endpoint);
+		const fatal: RpcError[] = [];
+		client.onFatal((e) => fatal.push(e));
+		const pending = client.api.meta.get().catch((e) => e);
+		emit(type);
+		emit(type);
+		expect(await pending).toMatchObject({ code: 'WORKER_FAILED' });
+		expect(await client.api.meta.get().catch((e) => e)).toMatchObject({ code: 'WORKER_FAILED' });
+		expect(fatal).toHaveLength(1);
 	});
 });

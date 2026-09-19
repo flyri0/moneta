@@ -80,6 +80,8 @@ export interface SystemApi {
 	close(): void;
 	listFiles(): string[];
 	deleteFile(fileName: string): void;
+	/** Closes the database and lets go of the OPFS files so another tab can open them. */
+	release(): void;
 }
 
 type Promisify<T> = T extends (...args: infer A) => infer R

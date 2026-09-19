@@ -14,7 +14,8 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 			open: (name) => void opened.push(name),
 			close: () => {},
 			listFiles: () => ['a.sqlite3'],
-			deleteFile: () => {}
+			deleteFile: () => {},
+			release: () => {}
 		}
 	};
 }
@@ -119,6 +120,14 @@ describe('createDispatcher', () => {
 		expect(await dispatch({ id: 8, method: 'system.listFiles', args: [] })).toMatchObject({
 			ok: true,
 			data: ['a.sqlite3'],
+			changed: []
+		});
+	});
+
+	it('routes release, which changes no tables', async () => {
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => null });
+		expect(await dispatch({ id: 9, method: 'system.release', args: [] })).toMatchObject({
+			ok: true,
 			changed: []
 		});
 	});

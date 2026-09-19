@@ -15,16 +15,30 @@ function checkFileName(fileName: string): string {
 	return `/${fileName}`;
 }
 
+const POOL_ATTEMPTS = 5;
+
 async function initPool(): Promise<SAHPoolUtil> {
+	let lastError: unknown;
 	try {
 		const sqlite3 = await sqlite3InitModule();
-		return await sqlite3.installOpfsSAHPoolVfs({ name: 'moneta', initialCapacity: 12 });
+		// A tab that just handed over may still be letting go of its file handles, so retry briefly.
+		// `forceReinitIfPreviouslyFailed` is supported by sqlite-wasm but missing from its types.
+		const options = { name: 'moneta', initialCapacity: 12, forceReinitIfPreviouslyFailed: true };
+		for (let attempt = 1; attempt <= POOL_ATTEMPTS; attempt++) {
+			try {
+				return await sqlite3.installOpfsSAHPoolVfs(options);
+			} catch (err) {
+				lastError = err;
+				await new Promise((r) => setTimeout(r, 200 * attempt));
+			}
+		}
 	} catch (err) {
-		throw new DomainError(
-			'STORAGE_UNAVAILABLE',
-			err instanceof Error ? err.message : 'OPFS is not available'
-		);
+		lastError = err;
 	}
+	throw new DomainError(
+		'STORAGE_UNAVAILABLE',
+		lastError instanceof Error ? lastError.message : 'OPFS is not available'
+	);
 }
 
 const poolReady = initPool();
@@ -64,6 +78,10 @@ function makeSystem(pool: SAHPoolUtil): SystemApi {
 			const path = checkFileName(fileName);
 			if (openName === fileName) closeDb();
 			pool.unlink(path);
+		},
+		release() {
+			closeDb();
+			if (!pool.isPaused()) pool.pauseVfs();
 		}
 	};
 }

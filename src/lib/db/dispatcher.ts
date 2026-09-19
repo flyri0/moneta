@@ -19,7 +19,8 @@ const SYSTEM_CHANGES = {
 	open: ALL_TABLES,
 	close: ALL_TABLES,
 	listFiles: [],
-	deleteFile: []
+	deleteFile: [],
+	release: []
 } as const;
 
 /** Turns a CallRequest into a CallResponse. Never throws. */
