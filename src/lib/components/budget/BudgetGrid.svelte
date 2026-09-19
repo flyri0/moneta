@@ -4,11 +4,23 @@
 	import { useSession } from '$lib/client/app-state.svelte';
 	import type { GridModel } from '$lib/budget/view';
 	import type { BudgetCategoryView } from '$lib/db/repos/budget';
+	import type { Month } from '$lib/domain/month';
 	import { groupLabel } from '$lib/i18n/labels';
 	import { m } from '$lib/paraglide/messages';
+	import AssignedInput from './AssignedInput.svelte';
 	import AvailablePill from './AvailablePill.svelte';
 
-	let { model }: { model: GridModel } = $props();
+	let {
+		model,
+		month,
+		onSelectCategory,
+		onSelectGroup
+	}: {
+		model: GridModel;
+		month: Month;
+		onSelectCategory: (id: string) => void;
+		onSelectGroup: (id: string) => void;
+	} = $props();
 
 	const session = useSession();
 	const COLUMNS =
@@ -17,10 +29,19 @@
 
 {#snippet categoryRow(category: BudgetCategoryView)}
 	<div class="{COLUMNS} border-b px-3 py-1.5" data-testid="category-row">
-		<span class="truncate">{category.name}</span>
-		<span class="hidden text-right tabular-nums md:block" data-testid="assigned">
-			{session.format(category.assigned)}
-		</span>
+		<button
+			type="button"
+			class="truncate text-left hover:underline"
+			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+		>
+		<div class="hidden md:block">
+			<AssignedInput
+				categoryId={category.id}
+				{month}
+				assigned={category.assigned}
+				label={m.budget_assigned_for({ name: category.name })}
+			/>
+		</div>
 		<span class="text-right text-sm text-muted-foreground tabular-nums" data-testid="activity">
 			{session.format(category.activity)}
 		</span>
@@ -39,7 +60,11 @@
 	</div>
 	{#each model.groups as group (group.id)}
 		<div class="{COLUMNS} border-b bg-muted/60 px-3 py-2 font-medium" data-testid="group-row">
-			<span class="truncate">{groupLabel(group)}</span>
+			<button
+				type="button"
+				class="truncate text-left hover:underline"
+				onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+			>
 			<span class="hidden text-right tabular-nums md:block">{session.format(group.assigned)}</span>
 			<span class="text-right text-sm tabular-nums">{session.format(group.activity)}</span>
 			<span class="text-right tabular-nums">{session.format(group.available)}</span>
