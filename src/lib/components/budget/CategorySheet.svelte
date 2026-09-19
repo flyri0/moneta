@@ -8,24 +8,27 @@
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { runAction } from '$lib/client/notify';
 	import { moveTargets, type GridModel } from '$lib/budget/view';
-	import type { BudgetCategoryView } from '$lib/db/repos/budget';
+	import type { BudgetCategoryView, BudgetGroupView } from '$lib/db/repos/budget';
 	import { formatAmountInput } from '$lib/domain/money';
 	import type { Month } from '$lib/domain/month';
 	import { groupLabel } from '$lib/i18n/labels';
 	import { m } from '$lib/paraglide/messages';
 	import AvailablePill from './AvailablePill.svelte';
+	import CategorySettings from './CategorySettings.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
 
 	let {
 		open = $bindable(false),
 		category,
 		month,
-		model
+		model,
+		groups
 	}: {
 		open: boolean;
 		category: BudgetCategoryView;
 		month: Month;
 		model: GridModel;
+		groups: BudgetGroupView[];
 	} = $props();
 
 	const session = useSession();
@@ -139,5 +142,9 @@
 		<Separator />
 
 		<QuickAssignButtons categoryIds={[category.id]} {month} onDone={() => (open = false)} />
+
+		<Separator />
+
+		<CategorySettings {category} {groups} {model} onDone={() => (open = false)} />
 	</div>
 </ResponsiveDialog>

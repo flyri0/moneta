@@ -44,3 +44,23 @@ test.describe('on a phone', () => {
 		await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$55.00');
 	});
 });
+
+test('adds a group and a category, and reorders categories', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Add group' }).click();
+	await page.getByRole('dialog').getByLabel('Group name').fill('Pets');
+	await page.getByRole('dialog').getByRole('button', { name: 'Add' }).click();
+	await page.getByRole('button', { name: 'Pets' }).click();
+	await page.getByRole('dialog').getByLabel('New category').fill('Vet');
+	await page.getByRole('dialog').getByRole('button', { name: 'Add', exact: true }).click();
+	await page.keyboard.press('Escape');
+	await expect(categoryRow(page, 'Vet')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	await page.getByRole('button', { name: 'Move Household up' }).click();
+	await page.getByRole('button', { name: 'Save' }).click();
+	// Everyday was Groceries, Transportation, Dining Out, Household (rows 5-8 after Bills' four).
+	const names = page.getByTestId('category-row').locator(':scope > button');
+	await expect(names.nth(6)).toHaveText('Household');
+	await expect(names.nth(7)).toHaveText('Dining Out');
+});

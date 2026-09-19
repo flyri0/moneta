@@ -1,10 +1,15 @@
 <script lang="ts">
+	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$lib/components/ui/alert';
+	import { Button } from '$lib/components/ui/button';
+	import AddGroupDialog from '$lib/components/budget/AddGroupDialog.svelte';
 	import BudgetGrid from '$lib/components/budget/BudgetGrid.svelte';
 	import CategorySheet from '$lib/components/budget/CategorySheet.svelte';
 	import GroupSheet from '$lib/components/budget/GroupSheet.svelte';
 	import MonthPicker from '$lib/components/budget/MonthPicker.svelte';
+	import OrderEditor from '$lib/components/budget/OrderEditor.svelte';
 	import RtaCard from '$lib/components/budget/RtaCard.svelte';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { useLive } from '$lib/client/live.svelte';
@@ -24,6 +29,8 @@
 	let groupId = $state<string | null>(null);
 	let categoryOpen = $state(false);
 	let groupOpen = $state(false);
+	let addingGroup = $state(false);
+	let editingOrder = $state(false);
 
 	// Look selections up in the live view so sheets show fresh numbers after each write.
 	const category = $derived(
@@ -55,21 +62,41 @@
 	{/if}
 
 	{#if view.data && model}
-		<BudgetGrid
-			{model}
-			month={data.month}
-			onSelectCategory={(id) => {
-				categoryId = id;
-				categoryOpen = true;
-			}}
-			onSelectGroup={(id) => {
-				groupId = id;
-				groupOpen = true;
-			}}
-		/>
+		{#if editingOrder}
+			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
+		{:else}
+			<div class="flex justify-end gap-2">
+				<Button variant="outline" size="sm" onclick={() => (addingGroup = true)}>
+					<PlusIcon />
+					{m.budget_add_group()}
+				</Button>
+				<Button variant="outline" size="sm" onclick={() => (editingOrder = true)}>
+					<ArrowUpDownIcon />
+					{m.budget_edit_order()}
+				</Button>
+			</div>
+			<BudgetGrid
+				{model}
+				month={data.month}
+				onSelectCategory={(id) => {
+					categoryId = id;
+					categoryOpen = true;
+				}}
+				onSelectGroup={(id) => {
+					groupId = id;
+					groupOpen = true;
+				}}
+			/>
+		{/if}
 
 		{#if category}
-			<CategorySheet bind:open={categoryOpen} {category} month={data.month} {model} />
+			<CategorySheet
+				bind:open={categoryOpen}
+				{category}
+				month={data.month}
+				{model}
+				groups={view.data.groups}
+			/>
 		{/if}
 		{#if group}
 			<GroupSheet bind:open={groupOpen} {group} month={data.month} />
@@ -77,4 +104,5 @@
 	{/if}
 </div>
 
+<AddGroupDialog bind:open={addingGroup} />
 <svelte:head><title>{m.nav_budget()} · {m.app_name()}</title></svelte:head>
