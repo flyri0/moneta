@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import RegisterRow from '$lib/components/accounts/RegisterRow.svelte';
+	import TransactionDialog from '$lib/components/transactions/TransactionDialog.svelte';
 	import { PAGE_SIZE, registerBalances } from '$lib/accounts/register';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { useLive } from '$lib/client/live.svelte';
+	import type { TransactionRow } from '$lib/db/repos/transactions';
 	import { errorMessage } from '$lib/i18n/errors';
 	import { m } from '$lib/paraglide/messages';
 
@@ -64,6 +67,19 @@
 	);
 	const balances = $derived(account.data ? registerBalances(account.data) : null);
 	const hasMore = $derived((rows.data?.length ?? 0) >= pages * PAGE_SIZE);
+
+	let dialogOpen = $state(false);
+	let editing = $state<TransactionRow | null>(null);
+
+	function add() {
+		editing = null;
+		dialogOpen = true;
+	}
+
+	function edit(row: TransactionRow) {
+		editing = row;
+		dialogOpen = true;
+	}
 </script>
 
 <div class="mx-auto grid max-w-6xl gap-4 p-3 md:p-6">
@@ -90,6 +106,9 @@
 					</div>
 				</dl>
 			</div>
+			{#if !account.data.closed}
+				<Button onclick={add}><PlusIcon />{m.add_transaction()}</Button>
+			{/if}
 		</header>
 
 		<div class="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
@@ -114,7 +133,7 @@
 				<p class="p-6 text-center text-destructive" role="alert">{errorMessage(rows.error)}</p>
 			{:else}
 				{#each rows.data ?? [] as row (row.id)}
-					<RegisterRow {row} />
+					<RegisterRow {row} onEdit={edit} />
 				{:else}
 					{#if rows.data}
 						<p class="p-6 text-center text-muted-foreground">{m.register_empty()}</p>
@@ -128,4 +147,5 @@
 	{/if}
 </div>
 
+<TransactionDialog bind:open={dialogOpen} {accountId} transaction={editing} />
 <svelte:head><title>{account.data?.name ?? m.nav_accounts()} · {m.app_name()}</title></svelte:head>

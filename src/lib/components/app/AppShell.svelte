@@ -3,9 +3,12 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
+	import { Button } from '$lib/components/ui/button';
 	import AccountList from '$lib/components/accounts/AccountList.svelte';
+	import TransactionDialog from '$lib/components/transactions/TransactionDialog.svelte';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { useLive } from '$lib/client/live.svelte';
 	import { currentMonth } from '$lib/domain/month';
@@ -39,6 +42,8 @@
 			active: path.startsWith('/settings')
 		}
 	]);
+
+	let adding = $state(false);
 </script>
 
 <div class="flex min-h-dvh">
@@ -64,7 +69,16 @@
 		<AccountList accounts={accounts.data ?? []} />
 	</aside>
 
-	<main class="min-w-0 flex-1 pb-20 md:pb-0">{@render children()}</main>
+	<main class="min-w-0 flex-1 pb-32 md:pb-24">{@render children()}</main>
+
+	<Button
+		class="fixed right-4 bottom-20 z-40 rounded-full shadow-lg md:bottom-6"
+		size="lg"
+		onclick={() => (adding = true)}
+	>
+		<PlusIcon />
+		{m.add_transaction()}
+	</Button>
 
 	<nav
 		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
@@ -82,3 +96,5 @@
 		{/each}
 	</nav>
 </div>
+
+<TransactionDialog bind:open={adding} accountId={page.params.id} />
