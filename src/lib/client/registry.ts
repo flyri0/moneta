@@ -96,3 +96,10 @@ export function upsertBudget(registry: Registry, entry: BudgetEntry): Registry {
 export function markOpened(registry: Registry, file: string): Registry {
 	return { ...registry, lastOpened: file };
 }
+
+export function removeBudget(registry: Registry, file: string): Registry {
+	return {
+		budgets: registry.budgets.filter((b) => b.file !== file),
+		lastOpened: registry.lastOpened === file ? null : registry.lastOpened
+	};
+}

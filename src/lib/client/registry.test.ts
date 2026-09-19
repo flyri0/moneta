@@ -6,6 +6,7 @@ import {
 	newBudgetFile,
 	pickBudget,
 	reconcile,
+	removeBudget,
 	saveRegistry,
 	upsertBudget,
 	type KeyValueStore
@@ -91,5 +92,22 @@ describe('upsertBudget / markOpened', () => {
 			],
 			lastOpened: B
 		});
+	});
+});
+
+describe('removeBudget', () => {
+	it('drops the entry and forgets it as the last opened file', () => {
+		const registry = {
+			budgets: [
+				{ file: A, name: 'Home' },
+				{ file: B, name: 'Work' }
+			],
+			lastOpened: B
+		};
+		expect(removeBudget(registry, B)).toEqual({
+			budgets: [{ file: A, name: 'Home' }],
+			lastOpened: null
+		});
+		expect(removeBudget(registry, A).lastOpened).toBe(B);
 	});
 });

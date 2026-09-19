@@ -1,12 +1,13 @@
 import type { ClientApi } from '$lib/db/api';
 import type { CreateAccountInput } from '$lib/db/repos/accounts';
-import type { BudgetMeta, InitBudgetInput } from '$lib/db/repos/meta';
+import type { BudgetMeta, InitBudgetInput, MetaPatch } from '$lib/db/repos/meta';
 import {
 	loadRegistry,
 	markOpened,
 	newBudgetFile,
 	pickBudget,
 	reconcile,
+	removeBudget,
 	saveRegistry,
 	upsertBudget,
 	type KeyValueStore
@@ -69,6 +70,80 @@ export async function createBudget(
 		store,
 		markOpened(upsertBudget(loadRegistry(store), { file, name: meta.name }), file)
 	);
+	return { file, meta };
+}
+
+/** Opens another budget file and remembers it as the last one opened. */
+export async function switchBudget(
+	api: SessionApi,
+	store: KeyValueStore,
+	file: string
+): Promise<{ file: string; meta: BudgetMeta }> {
+	await api.system.open(file);
+	const meta = await api.meta.get();
+	saveRegistry(
+		store,
+		markOpened(upsertBudget(loadRegistry(store), { file, name: meta.name }), file)
+	);
+	return { file, meta };
+}
+
+/** Changes the open budget's name, currency or locale, keeping the registry's name in step. */
+export async function updateBudget(
+	api: SessionApi,
+	store: KeyValueStore,
+	file: string,
+	patch: MetaPatch
+): Promise<void> {
+	await api.meta.update(patch);
+	const { name } = await api.meta.get();
+	saveRegistry(store, upsertBudget(loadRegistry(store), { file, name }));
+}
+
+/**
+ * Deletes a budget file. Deleting the open budget (`openFile`) opens the next one, or returns
+ * onboarding when none is left; deleting another budget returns null.
+ */
+export async function deleteBudget(
+	api: SessionApi,
+	store: KeyValueStore,
+	file: string,
+	openFile: string
+): Promise<OpenResult | null> {
+	await api.system.deleteFile(file);
+	saveRegistry(store, removeBudget(loadRegistry(store), file));
+	return file === openFile ? openLastBudget(api, store) : null;
+}
+
+/**
+ * Restores a `.sqlite` backup as a new budget file and opens it. The worker checks the backup
+ * first, so an invalid one changes nothing. With `replace`, the open budget (`openFile`) is
+ * deleted once the restored one is open. If that fails, `openFile` is opened again.
+ */
+export async function restoreBudget(
+	api: SessionApi,
+	store: KeyValueStore,
+	bytes: Uint8Array,
+	openFile: string,
+	replace: boolean
+): Promise<{ file: string; meta: BudgetMeta }> {
+	const file = newBudgetFile();
+	await api.system.importFile(file, bytes);
+	let meta: BudgetMeta;
+	try {
+		await api.system.open(file);
+		meta = await api.meta.get();
+	} catch (err) {
+		await api.system.deleteFile(file).catch(() => {});
+		await api.system.open(openFile).catch(() => {});
+		throw err;
+	}
+	let registry = upsertBudget(loadRegistry(store), { file, name: meta.name });
+	if (replace) {
+		await api.system.deleteFile(openFile);
+		registry = removeBudget(registry, openFile);
+	}
+	saveRegistry(store, markOpened(registry, file));
 	return { file, meta };
 }
 
