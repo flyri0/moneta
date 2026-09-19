@@ -7,6 +7,7 @@
 	import { openLastBudget, startupError } from '$lib/client/session';
 	import { createTabLock, type TabLock } from '$lib/client/tab-lock';
 	import type { BudgetMeta } from '$lib/db/repos/meta';
+	import { currentMonth } from '$lib/domain/month';
 	import Onboarding from './Onboarding.svelte';
 	import StartupScreen from './StartupScreen.svelte';
 
@@ -87,7 +88,7 @@
 		onCreated={(file, meta) => {
 			if (!worker) return;
 			ready(worker, file, meta);
-			void goto(resolve('/'));
+			void goto(resolve('/budget/[month]', { month: currentMonth() }));
 		}}
 	/>
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
