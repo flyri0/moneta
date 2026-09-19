@@ -73,7 +73,7 @@ static/                    # manifest icons (incl. maskable)
 
 ### Key decisions
 
-- **One budget = one SQLite file** in OPFS (`budget-<uuid>.sqlite3`). A small registry (localStorage, mirrored to an OPFS JSON file) lists budgets and the last one opened. Switching budgets closes and reopens the DB in the worker.
+- **One budget = one SQLite file** in OPFS (`budget-<uuid>.sqlite3`). A small registry in localStorage lists budgets and the last one opened. It is a cache: if it is lost, it is rebuilt from the worker's file list and each file's `meta` name. Switching budgets closes and reopens the DB in the worker.
 - **The database lives only in the worker.** The main thread never runs SQL. All access goes through async typed RPC over `postMessage`. Multi-statement writes (e.g. a transaction plus its splits, or both legs of a transfer) run in one SQL transaction within a single RPC call.
 - **Single-tab ownership.** The SAH-pool VFS allows one connection. `navigator.locks` elects one owner tab. Other tabs show "Moneta is open in another tab", with a button to take over (the owner releases the lock and closes cleanly).
 - **Reactivity.** Every write RPC returns the set of tables it changed; the worker also broadcasts it. `liveQuery` stores subscribed to any of those tables re-query. Coarse, and fast enough at personal-finance scale.
@@ -126,7 +126,7 @@ Indexes: `transactions(account_id, date)`, `transactions(category_id, date)`, `t
 
 ### Invariants (enforced in repos; triggers where cheap)
 
-1. **Income** is a transaction categorized to the system `Ready to Assign` category.
+1. **Income** is a transaction categorized to the system `Ready to Assign` category. Ready to Assign can't be used on credit card accounts (`CATEGORY_NOT_ALLOWED`): income on a card would pay down debt without adding cash, so record it in a cash account and pay the card.
 2. **Starting balances** are transactions: for on-budget non-credit accounts, categorized to Ready to Assign; for credit cards, uncategorized (existing debt); for off-budget accounts, uncategorized.
 3. **Splits:** if `is_split = 1`, `category_id` is NULL and the split amounts sum exactly to `amount`. Checked in the same SQL transaction; otherwise `SPLIT_SUM_MISMATCH`.
 4. **Transfers** are always two linked transactions (`transfer_id` pointing at each other, opposite amounts, same date), created, edited, and deleted together.
@@ -134,7 +134,7 @@ Indexes: `transactions(account_id, date)`, `transactions(category_id, date)`, `t
    - on-budget → off-budget: the on-budget leg requires a category.
    - off-budget → on-budget: the on-budget leg is categorized (Ready to Assign or another category).
 5. **Off-budget account transactions** never carry categories (except as the counterpart of rule 4, where only the on-budget leg is categorized). They are excluded from budget math and count only toward net worth.
-6. **Credit card accounts:** creating one automatically creates `CC Payment: <name>` in the system `Credit Card Payments` group. Closing the card hides the category. An account (any type) can be deleted only when it has no transactions; otherwise it can be closed, and closing requires a zero balance.
+6. **Credit card accounts:** creating one automatically creates `CC Payment: <name>` in the system `Credit Card Payments` group. Closing the card hides the category, so closing also requires the category's available to be 0 (`CC_PAYMENT_NOT_EMPTY`). An account (any type) can be deleted only when it has no transactions; otherwise it can be closed, and closing requires a zero balance.
 7. **System categories and groups** cannot be deleted or renamed by the user (CC Payment categories follow their card's name).
 8. **Deletes are hard deletes.** Backups are the safety net.
 
@@ -187,7 +187,7 @@ Mobile-first. Below 768px: bottom nav (Budget · Accounts · Reports · Settings
 - Grid of groups and categories with columns **Assigned** (inline edit; accepts arithmetic like `120+35`), **Activity**, **Available**.
 - Available pill: green when positive, yellow when covered by credit (card underfunded), red when overspent.
 - Mobile: the Assigned column is hidden. Tapping a category opens a sheet to assign, move money to or from another category, or open quick-assign.
-- Group rows show subtotals. Reorder by drag on desktop and via an "edit order" mode on mobile. Hidden categories go in a collapsible section.
+- Group rows show subtotals. Reorder by drag on desktop and via an "edit order" mode on mobile. The Credit Card Payments group always comes first and can't be moved. Hidden categories go in a collapsible section.
 - Category settings (sheet): rename, move group, hide, overspending rollover toggle.
 
 ### Accounts — `/accounts` and register `/accounts/[id]`
@@ -195,7 +195,7 @@ Mobile-first. Below 768px: bottom nav (Budget · Accounts · Reports · Settings
 - Accounts listed in On-budget, Off-budget and Closed sections, each with its balance.
 - The register shows date, payee, category, memo, amount and a cleared toggle, plus cleared, uncleared and total balances.
 - Text search and date-range filter. Virtualized list.
-- Split rows expand to show their parts. A transfer row links to its counterpart.
+- Split rows expand to show their parts. Transfers store no payee: a transfer row shows "Transfer to/from ‹account›" and links to that account.
 
 ### Transaction form (sheet on mobile, dialog on desktop)
 
@@ -223,12 +223,12 @@ Mobile-first. Below 768px: bottom nav (Budget · Accounts · Reports · Settings
 
 ### Onboarding — first run
 
-Name the budget, pick the currency and locale, create the first account with its starting balance, and seed a default, translated category set that can be edited.
+Name the budget, pick the currency and locale, create the first account with its starting balance, and seed a default, translated category set that can be edited. Loan and investment accounts default to off-budget, here and when adding accounts later.
 
 ## 6. Error handling
 
 - RPC results are `{ ok: true, data, changed: string[] }` or `{ ok: false, error: { code, message, details? } }`.
-- **Domain errors** have typed codes (`SPLIT_SUM_MISMATCH`, `ACCOUNT_HAS_TRANSACTIONS`, `ACCOUNT_BALANCE_NOT_ZERO`, `CATEGORY_REQUIRED`, `SYSTEM_ENTITY_READONLY`, ...), are mapped to i18n messages, and appear inline on forms.
+- **Domain errors** have typed codes (`SPLIT_SUM_MISMATCH`, `ACCOUNT_HAS_TRANSACTIONS`, `ACCOUNT_BALANCE_NOT_ZERO`, `CC_PAYMENT_NOT_EMPTY`, `CATEGORY_REQUIRED`, `SYSTEM_ENTITY_READONLY`, ...), are mapped to i18n messages, and appear inline on forms.
 - **Unexpected errors:** a toast with "copy details". A worker-level global handler reports errors to the client, which offers "Reload".
 - **Startup failures** each get a clear full-screen message: OPFS unavailable (e.g. Firefox private mode, old Safari), storage quota exceeded, DB locked by another tab, DB schema newer than the app.
 - **Restore validation**, in order:

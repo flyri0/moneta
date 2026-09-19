@@ -4,7 +4,7 @@ Moneta is a zero-based envelope budgeting app, inspired by YNAB and Actual Budge
 
 You give every unit of income a job: money goes from **Ready to Assign** into category envelopes, and spending draws them down. Moneta supports on-budget and off-budget (tracking) accounts, credit cards with automatic payment categories, split transactions, transfers, per-category overspending rollover, and quick-assign helpers.
 
-> **Status:** the headless core (budget engine, database, typed RPC to the SQLite worker) is done. The app UI, reports, backup and the PWA shell come next. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
+> **Status:** the core (budget engine, database, typed RPC to the SQLite worker) and the app UI (budget, accounts, register, transactions, in English and Brazilian Portuguese) are done. Reports, backup/restore and the installable PWA come next. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
 
 ## Requirements
 
@@ -29,6 +29,10 @@ pnpm preview        # serve the build at http://localhost:4173
 
 The `build/` folder can go on any static host. No special headers (COOP/COEP) are needed.
 
+## Translations
+
+UI text lives in `src/lib/i18n/messages/en.json` and `pt-BR.json` and is compiled by [Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) into `src/lib/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check` compile it; `pnpm i18n` does it on its own. Compiling downloads Paraglide's message-format plugins from jsDelivr the first time, so the first build needs a network connection.
+
 ## Linting and formatting
 
 ```sh
@@ -46,7 +50,7 @@ pnpm test           # run all unit tests once
 pnpm test:unit      # watch mode
 ```
 
-End-to-end tests run the production build in Chromium with Playwright:
+End-to-end tests (in `e2e/`) run the production build in Chromium with Playwright:
 
 ```sh
 pnpm exec playwright install chromium   # first time only
@@ -62,9 +66,15 @@ sudo pnpm exec playwright install-deps chromium
 ## Project layout
 
 ```
-src/lib/domain/   pure TypeScript: money, months, budget engine, quick-assign
-src/lib/db/       SQLite side (runs in a Web Worker): schema, migrations, repositories, RPC dispatcher
-src/lib/client/   main-thread side: typed RPC client and live-query stores
-src/routes/       SvelteKit pages
-docs/superpowers/ design spec and implementation plans
+src/lib/domain/        pure TypeScript: money, months, budget engine, quick-assign
+src/lib/db/            SQLite side (runs in a Web Worker): schema, migrations, repositories, RPC dispatcher
+src/lib/client/        main-thread side: RPC client, live queries, tab lock, budget registry and session
+src/lib/budget/        budget screen logic (grid model, category order)
+src/lib/accounts/      account and register logic
+src/lib/transactions/  transaction form logic
+src/lib/i18n/          message catalogs (en, pt-BR), error messages, labels and formats
+src/lib/components/    Svelte components (ui/ holds the shadcn-svelte primitives)
+src/routes/            SvelteKit pages
+e2e/                   Playwright tests
+docs/superpowers/      design spec and implementation plans
 ```
