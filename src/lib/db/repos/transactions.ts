@@ -220,6 +220,16 @@ function getRaw(db: Db, id: string): RawRow {
 	return row;
 }
 
+/** Loads an existing transaction for a change, refusing if it or its transfer pair sits in a closed account. */
+function getEditable(db: Db, id: string): { existing: RawRow; pair: RawRow | null } {
+	const existing = getRaw(db, id);
+	const pair = existing.transferId ? getRaw(db, existing.transferId) : null;
+	for (const row of pair ? [existing, pair] : [existing]) {
+		if (getAccountInfo(db, row.accountId).closed) throw new DomainError('ACCOUNT_CLOSED');
+	}
+	return { existing, pair };
+}
+
 export function createTransaction(db: Db, input: TransactionInput): string {
 	return tx(db, () => {
 		const id = uuidv7();
@@ -231,8 +241,7 @@ export function createTransaction(db: Db, input: TransactionInput): string {
 /** Replaces a transaction (and its transfer pair / splits) while keeping its id. */
 export function updateTransaction(db: Db, id: string, input: TransactionInput): void {
 	tx(db, () => {
-		const existing = getRaw(db, id);
-		const pair = existing.transferId ? getRaw(db, existing.transferId) : null;
+		const { existing, pair } = getEditable(db, id);
 		run(db, 'DELETE FROM transactions WHERE id IN (?, ?)', [id, existing.transferId]);
 		write(
 			db,
@@ -245,13 +254,13 @@ export function updateTransaction(db: Db, id: string, input: TransactionInput): 
 
 export function deleteTransaction(db: Db, id: string): void {
 	tx(db, () => {
-		const existing = getRaw(db, id);
+		const { existing } = getEditable(db, id);
 		run(db, 'DELETE FROM transactions WHERE id IN (?, ?)', [id, existing.transferId]);
 	});
 }
 
 export function setCleared(db: Db, id: string, cleared: boolean): void {
-	getRaw(db, id);
+	getEditable(db, id);
 	run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [cleared ? 1 : 0, id]);
 }
 

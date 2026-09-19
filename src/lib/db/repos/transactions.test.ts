@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
-import { createAccount } from './accounts';
+import { closeAccount, createAccount, getAccount } from './accounts';
 import {
 	createTransaction,
 	deleteTransaction,
@@ -413,5 +413,67 @@ describe('listTransactions', () => {
 		expect(listTransactions(db, { limit: 2, offset: 1 }).map((t) => t.amount)).toEqual([
 			-400, -300
 		]);
+	});
+});
+
+describe('closed accounts stay frozen', () => {
+	// Two offsetting lines leave Bank at 0 so it can be closed.
+	function closeBankWithHistory(): string {
+		createTransaction(db, { accountId: bank, date: '2026-01-05', amount: 10000, categoryId: food });
+		const outflow = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-06',
+			amount: -10000,
+			categoryId: food
+		});
+		closeAccount(db, bank);
+		return outflow;
+	}
+
+	it('refuses to delete a transaction in a closed account', () => {
+		const outflow = closeBankWithHistory();
+		expect(() => deleteTransaction(db, outflow)).toThrow(code('ACCOUNT_CLOSED'));
+		expect(getAccount(db, bank).balance).toBe(0);
+	});
+
+	it('refuses to delete a transfer whose other leg is in a closed account', () => {
+		// Bank -> Savings 50.00, then Savings -> Bank 50.00: Savings nets to 0 and is closed.
+		const there = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -5000,
+			transferAccountId: savings
+		});
+		createTransaction(db, {
+			accountId: savings,
+			date: '2026-01-06',
+			amount: -5000,
+			transferAccountId: bank
+		});
+		closeAccount(db, savings);
+		expect(() => deleteTransaction(db, there)).toThrow(code('ACCOUNT_CLOSED'));
+		expect(getAccount(db, savings).balance).toBe(0);
+		expect(getAccount(db, bank).balance).toBe(0);
+	});
+
+	it('refuses to move a transaction out of a closed account', () => {
+		const outflow = closeBankWithHistory();
+		expect(() =>
+			updateTransaction(db, outflow, {
+				accountId: savings,
+				date: '2026-01-06',
+				amount: -10000,
+				categoryId: food
+			})
+		).toThrow(code('ACCOUNT_CLOSED'));
+		expect(getAccount(db, bank).balance).toBe(0);
+		expect(getAccount(db, savings).balance).toBe(0);
+	});
+
+	it('refuses to toggle cleared in a closed account', () => {
+		const outflow = closeBankWithHistory();
+		expect(() => setCleared(db, outflow, true)).toThrow(code('ACCOUNT_CLOSED'));
+		expect(getAccount(db, bank)).toMatchObject({ balance: 0, clearedBalance: 0 });
+		expect(getTransaction(db, outflow).cleared).toBe(false);
 	});
 });
