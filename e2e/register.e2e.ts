@@ -23,3 +23,41 @@ test('shows the register with balances, cleared toggles and search', async ({ pa
 	await page.getByRole('searchbox').fill('');
 	await expect(row).toHaveCount(1);
 });
+
+test.describe('on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('shows category, memo and the split toggle on the register row', async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).click();
+		await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByLabel('Payee').fill('Market');
+		await dialog.getByLabel('Amount', { exact: true }).fill('40');
+		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Groceries' });
+		await dialog.getByLabel('Memo').fill('Weekly run');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden();
+
+		const row = page.getByTestId('register-row').filter({ hasText: 'Market' });
+		await expect(row).toContainText('Groceries');
+		await expect(row).toContainText('Weekly run');
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+		await dialog.getByLabel('Payee').fill('Big Store');
+		await dialog.getByLabel('Amount', { exact: true }).fill('80');
+		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Groceries' });
+		await dialog.getByRole('button', { name: 'Split' }).click();
+		await dialog.getByLabel('Amount for line 1').fill('50');
+		await dialog.getByLabel('Category for line 2').selectOption({ label: 'Household' });
+		await dialog.getByLabel('Amount for line 2').fill('30');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden();
+
+		const splitRow = page.getByTestId('register-row').filter({ hasText: 'Big Store' });
+		await splitRow.getByRole('button', { name: 'Split (2)' }).click();
+		await expect(splitRow.getByText('Household')).toBeVisible();
+	});
+});

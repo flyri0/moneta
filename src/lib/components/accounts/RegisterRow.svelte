@@ -71,6 +71,29 @@
 		{/if}
 	</span>
 	<span class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">{row.memo}</span>
+	{#if row.isSplit || row.categoryName || row.memo}
+		<span
+			class="order-2 col-span-2 flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground md:hidden"
+		>
+			{#if row.isSplit}
+				<button
+					type="button"
+					class="inline-flex items-center gap-1 hover:underline"
+					aria-expanded={expanded}
+					onclick={() => (expanded = !expanded)}
+				>
+					<ChevronRightIcon class="size-3 transition-transform {expanded ? 'rotate-90' : ''}" />
+					{m.register_split({ count: row.splits.length })}
+				</button>
+			{:else if row.categoryName}
+				<span class="truncate">{storedCategoryLabel(row.categoryName)}</span>
+			{/if}
+			{#if row.memo}
+				{#if row.isSplit || row.categoryName}<span>·</span>{/if}
+				<span class="truncate">{row.memo}</span>
+			{/if}
+		</span>
+	{/if}
 	<span
 		class="text-right font-medium tabular-nums {row.amount < 0
 			? ''
