@@ -12,6 +12,8 @@ import {
 	type CreateAccountInput
 } from './accounts';
 import { createTransaction, listTransactions } from './transactions';
+import { setAssigned } from './budget';
+import { currentMonth } from '$lib/domain/month';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 const cardCategory = (db: Db, name: string) =>
@@ -104,6 +106,19 @@ describe('account lifecycle', () => {
 		reopenAccount(db, card);
 		expect(getAccount(db, card).closed).toBe(false);
 		expect(cardCategory(db, 'Visa')?.hidden).toBe(0);
+	});
+
+	it('closes a card only when its payment category is empty', async () => {
+		const db = await createBudgetDb();
+		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
+		const payment = one<{ id: string }>(db, 'SELECT id FROM categories WHERE cc_account_id = ?', [
+			card
+		])!.id;
+		setAssigned(db, payment, currentMonth(), 5000);
+		expect(() => closeAccount(db, card)).toThrow(code('CC_PAYMENT_NOT_EMPTY'));
+		setAssigned(db, payment, currentMonth(), 0);
+		closeAccount(db, card);
+		expect(getAccount(db, card).closed).toBe(true);
 	});
 
 	it('deletes only accounts without transactions, removing card categories', async () => {

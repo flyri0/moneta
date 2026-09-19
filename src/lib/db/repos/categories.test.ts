@@ -147,6 +147,24 @@ describe('categories', () => {
 		expect(after[2].categories.map((c) => c.name)).toEqual(['Fun', 'Rent', 'Food']);
 	});
 
+	it('keeps the system groups first whatever order is saved', async () => {
+		const db = await createBudgetDb();
+		const [income, cards, bills, everyday] = listCategoryTree(db);
+		saveCategoryOrder(
+			db,
+			[everyday, cards, bills, income].map((g) => ({
+				groupId: g.id,
+				categoryIds: g.categories.map((c) => c.id)
+			}))
+		);
+		expect(listCategoryTree(db).map((g) => g.name)).toEqual([
+			'Income',
+			'Credit Card Payments',
+			'Everyday',
+			'Bills'
+		]);
+	});
+
 	it('refuses to move categories into system groups', async () => {
 		const db = await createBudgetDb();
 		const tree = listCategoryTree(db);

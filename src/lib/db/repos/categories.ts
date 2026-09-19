@@ -197,15 +197,20 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 	});
 }
 
+/** System groups keep these positions; user groups follow in the order saved. */
+const SYSTEM_GROUP_ORDER = { income: 0, credit_card_payments: 1 } as const;
+
 /** Persists drag-and-drop order: group order, category order and group membership. */
 export function saveCategoryOrder(
 	db: Db,
 	layout: { groupId: string; categoryIds: string[] }[]
 ): void {
 	tx(db, () => {
-		layout.forEach((entry, gi) => {
+		let nextUserOrder = Object.keys(SYSTEM_GROUP_ORDER).length;
+		layout.forEach((entry) => {
 			const group = getGroup(db, entry.groupId);
-			run(db, 'UPDATE category_groups SET sort_order = ? WHERE id = ?', [gi, entry.groupId]);
+			const order = group.system ? SYSTEM_GROUP_ORDER[group.system] : nextUserOrder++;
+			run(db, 'UPDATE category_groups SET sort_order = ? WHERE id = ?', [order, entry.groupId]);
 			entry.categoryIds.forEach((categoryId, ci) => {
 				const category = getCategory(db, categoryId);
 				const moving = category.groupId !== entry.groupId;

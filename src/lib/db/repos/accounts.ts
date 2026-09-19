@@ -1,6 +1,9 @@
 import { uuidv7 } from 'uuidv7';
+import { categoryMonth, computeBudget } from '$lib/domain/budget-engine';
 import { DomainError } from '$lib/domain/errors';
+import { currentMonth } from '$lib/domain/month';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
+import { loadEngineInput } from './aggregates';
 import { readyToAssignCategoryId, systemGroupId } from './meta';
 import { createTransaction } from './transactions';
 
@@ -100,10 +103,23 @@ export function renameAccount(db: Db, id: string, name: string): void {
 	});
 }
 
+/** What a card's payment category holds at the end of the budget (this month or the last month with data). */
+function cardPaymentAvailable(db: Db, cardId: string): number {
+	const category = one<{ id: string }>(db, 'SELECT id FROM categories WHERE cc_account_id = ?', [
+		cardId
+	]);
+	if (!category) return 0;
+	const comp = computeBudget(loadEngineInput(db), currentMonth());
+	return categoryMonth(comp, comp.last, category.id).available;
+}
+
 export function closeAccount(db: Db, id: string): void {
 	tx(db, () => {
 		const account = getAccount(db, id);
 		if (account.balance !== 0) throw new DomainError('ACCOUNT_BALANCE_NOT_ZERO');
+		// Closing hides the payment category, so money left there would silently disappear from view.
+		if (account.type === 'credit_card' && cardPaymentAvailable(db, id) !== 0)
+			throw new DomainError('CC_PAYMENT_NOT_EMPTY');
 		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [id]);
 		run(db, 'UPDATE categories SET hidden = 1 WHERE cc_account_id = ?', [id]);
 	});

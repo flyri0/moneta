@@ -11,6 +11,7 @@ import {
 	updateTransaction
 } from './transactions';
 import { listPayees } from './payees';
+import { readyToAssignCategoryId } from './meta';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 
@@ -109,6 +110,36 @@ describe('simple transactions', () => {
 				categoryId: categoryId(db, 'Visa')
 			})
 		).toThrow(code('CATEGORY_NOT_ALLOWED'));
+	});
+
+	it('refuses Ready to Assign on credit cards, even in splits and transfer legs', () => {
+		const rta = readyToAssignCategoryId(db);
+		const on = { date: '2026-01-05', amount: 1000 };
+		expect(() => createTransaction(db, { ...on, accountId: visa, categoryId: rta })).toThrow(
+			code('CATEGORY_NOT_ALLOWED')
+		);
+		expect(() =>
+			createTransaction(db, {
+				...on,
+				accountId: visa,
+				splits: [
+					{ categoryId: rta, amount: 500 },
+					{ categoryId: food, amount: 500 }
+				]
+			})
+		).toThrow(code('CATEGORY_NOT_ALLOWED'));
+		expect(() =>
+			createTransaction(db, {
+				...on,
+				accountId: broker,
+				amount: -1000,
+				transferAccountId: visa,
+				categoryId: rta
+			})
+		).toThrow(code('CATEGORY_NOT_ALLOWED'));
+		// A refund to a spending category is still fine, and so is income on a cash account.
+		expect(() => createTransaction(db, { ...on, accountId: visa, categoryId: food })).not.toThrow();
+		expect(() => createTransaction(db, { ...on, accountId: bank, categoryId: rta })).not.toThrow();
 	});
 
 	it('validates amount and date', () => {
