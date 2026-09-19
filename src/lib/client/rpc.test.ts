@@ -20,7 +20,7 @@ function connect(db: Db | null) {
 	const dispatch = createDispatcher({
 		getDb: () => db,
 		system: {
-			open: () => {},
+			open: async () => {},
 			close: () => {},
 			listFiles: () => [],
 			deleteFile: () => {},

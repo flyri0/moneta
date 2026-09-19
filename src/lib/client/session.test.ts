@@ -11,8 +11,8 @@ afterEach(() => {
 	for (const c of clients.splice(0)) c.close();
 });
 
-function setup() {
-	const test = createTestClient();
+async function setup() {
+	const test = await createTestClient();
 	clients.push(test);
 	return { ...test, api: test.client.api, store: memoryStore() };
 }
@@ -33,12 +33,12 @@ const HOME: NewBudget = {
 
 describe('openLastBudget', () => {
 	it('starts onboarding when there is no budget yet', async () => {
-		const { api, store } = setup();
+		const { api, store } = await setup();
 		expect(await openLastBudget(api, store)).toEqual({ kind: 'onboarding' });
 	});
 
 	it('reopens the budget created last', async () => {
-		const { api, store } = setup();
+		const { api, store } = await setup();
 		const { file } = await createBudget(api, store, HOME);
 		await api.system.close();
 		const result = await openLastBudget(api, store);
@@ -47,7 +47,7 @@ describe('openLastBudget', () => {
 	});
 
 	it('rebuilds a lost registry from the budget files', async () => {
-		const { api, store } = setup();
+		const { api, store } = await setup();
 		const { file } = await createBudget(api, store, HOME);
 		const fresh = memoryStore();
 		expect(await openLastBudget(api, fresh)).toMatchObject({ kind: 'ready', file });
@@ -55,7 +55,7 @@ describe('openLastBudget', () => {
 	});
 
 	it('deletes files left behind by an interrupted onboarding', async () => {
-		const { api, store, files } = setup();
+		const { api, store, files } = await setup();
 		files.set(newBudgetFile(), await createTestDb());
 		expect(await openLastBudget(api, store)).toEqual({ kind: 'onboarding' });
 		expect(files.size).toBe(0);
@@ -64,7 +64,7 @@ describe('openLastBudget', () => {
 
 describe('createBudget', () => {
 	it('creates the budget, its categories and its first account', async () => {
-		const { api, store } = setup();
+		const { api, store } = await setup();
 		const { file, meta } = await createBudget(api, store, HOME);
 		expect(meta.name).toBe('Home');
 		expect(loadRegistry(store).lastOpened).toBe(file);
@@ -75,7 +75,7 @@ describe('createBudget', () => {
 	});
 
 	it('removes the new file when setup fails', async () => {
-		const { api, store, files } = setup();
+		const { api, store, files } = await setup();
 		const err = await createBudget(api, store, { ...HOME, currency: 'XYZ' }).catch((e) => e);
 		expect(err).toMatchObject({ code: 'INVALID_INPUT' });
 		expect(files.size).toBe(0);

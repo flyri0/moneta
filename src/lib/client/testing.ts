@@ -1,6 +1,7 @@
 import type { Db } from '$lib/db/connection';
 import { createDispatcher } from '$lib/db/dispatcher';
-import { createTestDb } from '$lib/db/testing';
+import { createSystem } from '$lib/db/system';
+import { loadSqlite, memoryFileStore } from '$lib/db/testing';
 import { REGISTRY_KEY, type KeyValueStore } from './registry';
 import { createRpcClient, type RpcClient } from './rpc';
 
@@ -16,42 +17,27 @@ export function memoryStore(registry?: string): KeyValueStore & { data: Map<stri
 }
 
 /**
- * An RPC client talking to a real dispatcher over a MessageChannel, like the app talks to the
- * worker. Budget "files" are in-memory databases kept in `files`. Test-only.
+ * An RPC client talking to the worker's real dispatcher and system calls over a MessageChannel,
+ * like the app talks to the worker. Budget "files" are in-memory databases kept in `files`.
+ * Test-only.
  */
-export function createTestClient(): { client: RpcClient; files: Map<string, Db>; close(): void } {
-	const files = new Map<string, Db>();
-	let openName: string | null = null;
+export async function createTestClient(): Promise<{
+	client: RpcClient;
+	files: Map<string, Db>;
+	close(): void;
+}> {
+	const sqlite3 = await loadSqlite();
+	const store = memoryFileStore(sqlite3);
+	const dispatch = createDispatcher(createSystem({ sqlite3, store }));
 	const channel = new MessageChannel();
-	const dispatch = createDispatcher({
-		getDb: () => (openName ? (files.get(openName) ?? null) : null),
-		system: {
-			async open(name) {
-				if (!files.has(name)) files.set(name, await createTestDb());
-				openName = name;
-			},
-			close() {
-				openName = null;
-			},
-			listFiles: () => [...files.keys()],
-			deleteFile(name) {
-				if (openName === name) openName = null;
-				files.get(name)?.close();
-				files.delete(name);
-			},
-			release() {
-				openName = null;
-			}
-		}
-	});
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));
 	return {
 		client: createRpcClient(channel.port1),
-		files,
+		files: store.files,
 		close() {
 			channel.port1.close();
 			channel.port2.close();
-			for (const db of files.values()) db.close();
+			for (const db of store.files.values()) db.close();
 		}
 	};
 }

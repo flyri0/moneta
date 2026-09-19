@@ -76,9 +76,11 @@ export type Api = typeof api;
 
 /** Worker-level operations that manage budget files rather than query one. */
 export interface SystemApi {
-	open(fileName: string): void;
+	/** Opens a budget file (creating it if needed) and migrates it, saving a copy first. */
+	open(fileName: string): Promise<void>;
 	close(): void;
 	listFiles(): string[];
+	/** Deletes a budget file and its pre-migration copies. */
 	deleteFile(fileName: string): void;
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;

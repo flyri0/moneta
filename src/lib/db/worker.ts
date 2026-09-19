@@ -1,23 +1,13 @@
 /// <reference lib="webworker" />
-import sqlite3InitModule, { type SAHPoolUtil } from '@sqlite.org/sqlite-wasm';
+import sqlite3InitModule, { type SAHPoolUtil, type Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$lib/domain/errors';
-import { configure, type Db } from './connection';
-import { migrate } from './migrate';
 import { createDispatcher } from './dispatcher';
-import type { SystemApi } from './api';
+import { createSystem, type FileStore } from './system';
 import type { CallRequest } from './protocol';
-
-const FILE_NAME = /^[A-Za-z0-9_-]+\.sqlite3$/;
-
-function checkFileName(fileName: string): string {
-	if (!FILE_NAME.test(fileName))
-		throw new DomainError('INVALID_INPUT', `Bad file name ${fileName}`);
-	return `/${fileName}`;
-}
 
 const POOL_ATTEMPTS = 5;
 
-async function initPool(): Promise<SAHPoolUtil> {
+async function initPool(): Promise<{ sqlite3: Sqlite3Static; pool: SAHPoolUtil }> {
 	let lastError: unknown;
 	try {
 		const sqlite3 = await sqlite3InitModule();
@@ -26,7 +16,7 @@ async function initPool(): Promise<SAHPoolUtil> {
 		const options = { name: 'moneta', initialCapacity: 12, forceReinitIfPreviouslyFailed: true };
 		for (let attempt = 1; attempt <= POOL_ATTEMPTS; attempt++) {
 			try {
-				return await sqlite3.installOpfsSAHPoolVfs(options);
+				return { sqlite3, pool: await sqlite3.installOpfsSAHPoolVfs(options) };
 			} catch (err) {
 				lastError = err;
 				await new Promise((r) => setTimeout(r, 200 * attempt));
@@ -41,53 +31,30 @@ async function initPool(): Promise<SAHPoolUtil> {
 	);
 }
 
-const poolReady = initPool();
-let db: Db | null = null;
-let openName: string | null = null;
-
-function closeDb(): void {
-	db?.close();
-	db = null;
-	openName = null;
-}
-
-function makeSystem(pool: SAHPoolUtil): SystemApi {
+/** Budget files in the OPFS SAH pool. Pool paths start with a slash; file names don't. */
+function opfsStore(pool: SAHPoolUtil): FileStore {
 	return {
-		open(fileName) {
-			const path = checkFileName(fileName);
-			closeDb();
-			const next = new pool.OpfsSAHPoolDb(path);
-			try {
-				configure(next);
-				migrate(next);
-			} catch (err) {
-				next.close();
-				throw err;
-			}
-			db = next;
-			openName = fileName;
+		list: () => pool.getFileNames().map((n) => n.replace(/^\//, '')),
+		open: (name) => new pool.OpfsSAHPoolDb(`/${name}`),
+		close: (db) => db.close(),
+		async write(name, bytes) {
+			await pool.importDb(`/${name}`, bytes);
 		},
-		close: closeDb,
-		listFiles() {
-			return pool
-				.getFileNames()
-				.map((n) => n.replace(/^\//, ''))
-				.filter((n) => FILE_NAME.test(n));
+		remove(name) {
+			pool.unlink(`/${name}`);
 		},
-		deleteFile(fileName) {
-			const path = checkFileName(fileName);
-			if (openName === fileName) closeDb();
-			pool.unlink(path);
+		async reserve(count) {
+			// The pool only grows on request, and it starts with room for 12 files.
+			await pool.reserveMinimumCapacity(pool.getFileCount() + count);
 		},
 		release() {
-			closeDb();
 			if (!pool.isPaused()) pool.pauseVfs();
 		}
 	};
 }
 
-const dispatchReady = poolReady.then((pool) =>
-	createDispatcher({ system: makeSystem(pool), getDb: () => db })
+const dispatchReady = initPool().then(({ sqlite3, pool }) =>
+	createDispatcher(createSystem({ sqlite3, store: opfsStore(pool) }))
 );
 
 self.onmessage = async (event: MessageEvent<CallRequest>) => {

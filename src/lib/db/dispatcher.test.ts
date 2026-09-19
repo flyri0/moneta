@@ -11,7 +11,7 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 	return {
 		opened,
 		system: {
-			open: (name) => void opened.push(name),
+			open: async (name) => void opened.push(name),
 			close: () => {},
 			listFiles: () => ['a.sqlite3'],
 			deleteFile: () => {},
