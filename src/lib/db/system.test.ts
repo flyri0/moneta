@@ -122,3 +122,37 @@ describe('createSystem', () => {
 		expect(release).toHaveBeenCalledOnce();
 	});
 });
+
+describe('exportFile / importFile', () => {
+	it('exports the open budget and imports it as a new file', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const { system, getDb } = createSystem(deps);
+		await system.open(FILE);
+		const bytes = system.exportFile();
+		await system.importFile(OTHER, bytes);
+		expect(getDb()).not.toBeNull();
+		await system.open(OTHER);
+		expect(getMeta(getDb()!).name).toBe('Home');
+	});
+
+	it('needs an open budget to export', async () => {
+		const { system } = createSystem(await setup());
+		expect(() => system.exportFile()).toThrow(
+			expect.objectContaining({ code: 'NO_DATABASE_OPEN' })
+		);
+	});
+
+	it('never overwrites a file, and keeps nothing from an invalid backup', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const { system } = createSystem(deps);
+		await system.open(FILE);
+		const bytes = system.exportFile();
+		await expect(system.importFile(FILE, bytes)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+		await expect(system.importFile(OTHER, new Uint8Array(4096))).rejects.toMatchObject({
+			code: 'BACKUP_NOT_SQLITE'
+		});
+		expect(system.listFiles()).toEqual([FILE]);
+	});
+});

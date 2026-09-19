@@ -24,7 +24,9 @@ function connect(db: Db | null) {
 			close: () => {},
 			listFiles: () => [],
 			deleteFile: () => {},
-			release: () => {}
+			release: () => {},
+			exportFile: () => new Uint8Array(),
+			importFile: async () => {}
 		}
 	});
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));

@@ -20,7 +20,9 @@ const SYSTEM_CHANGES = {
 	close: ALL_TABLES,
 	listFiles: [],
 	deleteFile: [],
-	release: []
+	release: [],
+	exportFile: [],
+	importFile: []
 } as const;
 
 /** Turns a CallRequest into a CallResponse. Never throws. */

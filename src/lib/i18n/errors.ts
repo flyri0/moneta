@@ -22,6 +22,9 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	SPLIT_TOO_FEW_LINES: m.error_split_too_few_lines,
 	SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch,
 	TRANSFER_INVALID: m.error_transfer_invalid,
+	BACKUP_NOT_SQLITE: m.error_backup_not_sqlite,
+	BACKUP_DAMAGED: m.error_backup_damaged,
+	BACKUP_NOT_MONETA: m.error_backup_not_moneta,
 	WORKER_FAILED: m.error_worker_failed,
 	INTERNAL: m.error_internal
 };

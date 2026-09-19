@@ -2,7 +2,7 @@ import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import type { Db } from './connection';
 
 /** The bytes of a `.sqlite` file holding a copy of `db`. */
-export function toImage(sqlite3: Sqlite3Static, db: Db): Uint8Array {
+export function toImage(sqlite3: Sqlite3Static, db: Db): Uint8Array<ArrayBuffer> {
 	return sqlite3.capi.sqlite3_js_db_export(db);
 }
 

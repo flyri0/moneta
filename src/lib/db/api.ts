@@ -84,6 +84,10 @@ export interface SystemApi {
 	deleteFile(fileName: string): void;
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;
+	/** The open budget as the bytes of a `.sqlite` file. */
+	exportFile(): Uint8Array<ArrayBuffer>;
+	/** Checks a `.sqlite` backup, migrates it and saves it as a new file, left closed. */
+	importFile(fileName: string, bytes: Uint8Array): Promise<void>;
 }
 
 type Promisify<T> = T extends (...args: infer A) => infer R

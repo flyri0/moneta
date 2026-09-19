@@ -1,5 +1,6 @@
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$lib/domain/errors';
+import { checkBackup } from './backup';
 import { configure, type Db } from './connection';
 import { toImage } from './image';
 import { MIGRATIONS, migrate, schemaVersion } from './migrate';
@@ -103,6 +104,18 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 		release() {
 			closeDb();
 			store.release();
+		},
+		exportFile() {
+			if (!db) throw new DomainError('NO_DATABASE_OPEN');
+			return toImage(sqlite3, db);
+		},
+		async importFile(fileName, bytes) {
+			checkFileName(fileName);
+			if (store.list().includes(fileName))
+				throw new DomainError('INVALID_INPUT', `${fileName} already exists`);
+			const image = checkBackup(sqlite3, bytes, migrations);
+			await store.reserve(SPARE_FILES);
+			await store.write(fileName, image);
 		}
 	};
 	return { system, getDb: () => db };
