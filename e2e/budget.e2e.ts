@@ -25,6 +25,28 @@ test('assigns inline with arithmetic on desktop', async ({ page }) => {
 	await expect(groceries.getByTestId('available')).toHaveText('$300.00');
 });
 
+test('quick-assign in a group leaves hidden categories untouched', async ({ page }) => {
+	await onboard(page);
+	const groceries = categoryRow(page, 'Groceries');
+	await groceries.getByTestId('assigned').fill('100');
+	await groceries.getByTestId('assigned').press('Enter');
+	await expect(groceries.getByTestId('available')).toHaveText('$100.00');
+
+	await groceries.getByRole('button', { name: 'Groceries' }).click();
+	const categorySheet = page.getByRole('dialog');
+	await categorySheet.getByLabel('Hidden').click();
+	await categorySheet.getByRole('button', { name: 'Save' }).last().click();
+	await expect(categorySheet).toBeHidden();
+
+	await page.getByRole('button', { name: /Hidden categories/ }).click();
+	const hiddenGroceries = categoryRow(page, 'Groceries');
+	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
+
+	await page.getByRole('button', { name: 'Everyday' }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Clear' }).click();
+	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
+});
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 

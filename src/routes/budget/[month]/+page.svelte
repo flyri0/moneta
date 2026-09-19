@@ -36,7 +36,8 @@
 	const category = $derived(
 		view.data?.groups.flatMap((g) => g.categories).find((c) => c.id === categoryId) ?? null
 	);
-	const group = $derived(view.data?.groups.find((g) => g.id === groupId) ?? null);
+	// Only the grid's visible groups/categories: quick-assign must not touch hidden categories.
+	const group = $derived(model?.groups.find((g) => g.id === groupId) ?? null);
 </script>
 
 <div class="mx-auto grid max-w-5xl gap-4 p-3 md:p-6">
