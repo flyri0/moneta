@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
 	currencyChoices,
+	formatBytes,
 	formatDate,
+	formatDateTime,
 	formatMonth,
 	formatMonthLong,
 	localeChoices,
@@ -47,5 +49,22 @@ describe('dates', () => {
 		expect(formatMonthLong('2026-09', 'pt-BR')).toBe('setembro de 2026');
 		expect(formatDate('2026-09-05', 'en')).toBe('Sep 5, 2026');
 		expect(formatDate('2026-01-01', 'pt-BR')).toBe('1 de jan. de 2026');
+	});
+});
+
+describe('formatDateTime', () => {
+	it('shows a timestamp with date and time', () => {
+		expect(formatDateTime('2026-09-19T15:04:00Z', 'pt-BR', 'UTC')).toBe(
+			'19 de set. de 2026, 15:04'
+		);
+	});
+});
+
+describe('formatBytes', () => {
+	it('picks a readable unit, from kilobytes up', () => {
+		expect(formatBytes(500, 'en-US')).toBe('0.5 kB');
+		expect(formatBytes(1_234_567, 'en-US')).toBe('1.2 MB');
+		expect(formatBytes(1_500_000, 'pt-BR')).toBe('1,5 MB');
+		expect(formatBytes(5e9, 'pt-BR')).toBe('5 GB');
 	});
 });

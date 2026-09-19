@@ -113,3 +113,29 @@ export function formatDate(date: string, locale: string): string {
 		timeZone: 'UTC'
 	}).format(utc(date));
 }
+
+/** "19 de set. de 2026, 15:04" for an ISO timestamp, in the device's time zone by default. */
+export function formatDateTime(iso: string, locale: string, timeZone?: string): string {
+	return new Intl.DateTimeFormat(locale, {
+		dateStyle: 'medium',
+		timeStyle: 'short',
+		timeZone
+	}).format(new Date(iso));
+}
+
+const BYTE_UNITS = ['kilobyte', 'megabyte', 'gigabyte', 'terabyte'] as const;
+
+/** "1.2 MB": decimal units (1 kB = 1000 bytes), as browsers report storage. */
+export function formatBytes(bytes: number, locale: string): string {
+	let value = bytes / 1000;
+	let unit = 0;
+	while (value >= 1000 && unit < BYTE_UNITS.length - 1) {
+		value /= 1000;
+		unit++;
+	}
+	return new Intl.NumberFormat(locale, {
+		style: 'unit',
+		unit: BYTE_UNITS[unit],
+		maximumFractionDigits: 1
+	}).format(value);
+}

@@ -3,8 +3,10 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Label } from '$lib/components/ui/label';
 	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import BackupCard from '$lib/components/settings/BackupCard.svelte';
 	import BudgetDetails from '$lib/components/settings/BudgetDetails.svelte';
 	import BudgetFiles from '$lib/components/settings/BudgetFiles.svelte';
+	import StorageCard from '$lib/components/settings/StorageCard.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
 
@@ -21,6 +23,8 @@
 	<h1 class="text-xl font-semibold">{m.nav_settings()}</h1>
 	<BudgetDetails />
 	<BudgetFiles />
+	<BackupCard />
+	<StorageCard />
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>{m.settings_app()}</Card.Title>

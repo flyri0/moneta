@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
@@ -9,8 +10,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import AccountList from '$lib/components/accounts/AccountList.svelte';
 	import TransactionDialog from '$lib/components/transactions/TransactionDialog.svelte';
+	import { backUp } from '$lib/backup/actions';
+	import { backupDue } from '$lib/backup/reminder';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { useLive } from '$lib/client/live.svelte';
+	import { runActionToast } from '$lib/client/notify';
 	import { currentMonth } from '$lib/domain/month';
 	import { m } from '$lib/paraglide/messages';
 
@@ -44,6 +48,14 @@
 	]);
 
 	let adding = $state(false);
+
+	onMount(() => {
+		if (!backupDue(session.meta)) return;
+		toast(m.backup_reminder(), {
+			duration: 15_000,
+			action: { label: m.backup_now(), onClick: () => void runActionToast(() => backUp(session)) }
+		});
+	});
 </script>
 
 <div class="flex min-h-dvh">
