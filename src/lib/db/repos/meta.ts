@@ -85,7 +85,7 @@ export function updateMeta(db: Db, patch: MetaPatch): void {
 				one(db, 'SELECT 1 AS x FROM budget_assignments LIMIT 1') !== undefined;
 			if (hasData && currencyDigits(patch.currency) !== currencyDigits(current.currency)) {
 				throw new DomainError(
-					'INVALID_INPUT',
+					'CURRENCY_LOCKED',
 					'Cannot switch to a currency with different minor units once data exists'
 				);
 			}

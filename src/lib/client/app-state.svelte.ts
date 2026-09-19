@@ -47,6 +47,12 @@ export class BudgetSession {
 export class AppState {
 	boot: BootState = $state({ kind: 'loading' });
 	session: BudgetSession | null = $state(null);
+
+	/** Shows `file` as the open budget. The app shell remounts, since it is keyed on the file. */
+	show(client: RpcClient, file: string, meta: BudgetMeta): void {
+		this.session = new BudgetSession(client, file, meta);
+		this.boot = { kind: 'ready' };
+	}
 }
 
 export const [getApp, setApp] = createContext<AppState>();

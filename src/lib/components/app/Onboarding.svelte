@@ -17,8 +17,16 @@
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
 
-	let { api, onCreated }: { api: SessionApi; onCreated: (file: string, meta: BudgetMeta) => void } =
-		$props();
+	/** First-run setup, also used from Settings to add a budget (then `onCancel` goes back). */
+	let {
+		api,
+		onCreated,
+		onCancel
+	}: {
+		api: SessionApi;
+		onCreated: (file: string, meta: BudgetMeta) => void;
+		onCancel?: () => void;
+	} = $props();
 
 	const uiLocale = getLocale();
 	const locales = localeChoices(uiLocale, navigator.language);
@@ -69,7 +77,9 @@
 <main class="flex min-h-dvh items-start justify-center p-4 sm:items-center">
 	<Card.Root class="w-full max-w-lg">
 		<Card.Header>
-			<Card.Title class="text-xl">{m.onboarding_title()}</Card.Title>
+			<Card.Title class="text-xl">
+				{onCancel ? m.onboarding_new_title() : m.onboarding_title()}
+			</Card.Title>
 			<Card.Description>{m.onboarding_intro()}</Card.Description>
 		</Card.Header>
 		<Card.Content>
@@ -115,7 +125,14 @@
 				{#if error}
 					<p class="text-sm text-destructive" role="alert">{error}</p>
 				{/if}
-				<Button type="submit" disabled={busy}>{m.onboarding_create()}</Button>
+				<div class="flex flex-col gap-2 sm:flex-row-reverse">
+					<Button type="submit" disabled={busy}>{m.onboarding_create()}</Button>
+					{#if onCancel}
+						<Button type="button" variant="outline" disabled={busy} onclick={onCancel}>
+							{m.cancel()}
+						</Button>
+					{/if}
+				</div>
 			</form>
 		</Card.Content>
 	</Card.Root>

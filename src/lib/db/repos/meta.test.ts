@@ -91,7 +91,7 @@ describe('updateMeta', () => {
 		updateMeta(db, { currency: 'USD' });
 		expect(getMeta(db).currency).toBe('USD');
 		expect(() => updateMeta(db, { currency: 'JPY' })).toThrow(
-			expect.objectContaining({ code: 'INVALID_INPUT' })
+			expect.objectContaining({ code: 'CURRENCY_LOCKED' })
 		);
 	});
 });

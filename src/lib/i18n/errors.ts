@@ -25,6 +25,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	BACKUP_NOT_SQLITE: m.error_backup_not_sqlite,
 	BACKUP_DAMAGED: m.error_backup_damaged,
 	BACKUP_NOT_MONETA: m.error_backup_not_moneta,
+	CURRENCY_LOCKED: m.error_currency_locked,
 	WORKER_FAILED: m.error_worker_failed,
 	INTERNAL: m.error_internal
 };

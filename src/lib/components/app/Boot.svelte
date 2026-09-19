@@ -2,7 +2,7 @@
 	import { onMount, type Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { AppState, BudgetSession, setApp } from '$lib/client/app-state.svelte';
+	import { AppState, setApp } from '$lib/client/app-state.svelte';
 	import { startDbWorker, type DbWorker } from '$lib/client/db';
 	import { openLastBudget, startupError } from '$lib/client/session';
 	import { createTabLock, type TabLock } from '$lib/client/tab-lock';
@@ -58,9 +58,19 @@
 	}
 
 	function ready(started: DbWorker, file: string, meta: BudgetMeta) {
-		if (started !== worker) return;
-		app.session = new BudgetSession(started, file, meta);
-		app.boot = { kind: 'ready' };
+		if (started === worker) app.show(started, file, meta);
+	}
+
+	/** Back from creating another budget (Settings): reopen the budget that was open. */
+	async function cancelOnboarding() {
+		const session = app.session;
+		if (!worker || !session) return;
+		try {
+			await worker.api.system.open(session.file);
+			app.boot = { kind: 'ready' };
+		} catch (err) {
+			app.boot = { kind: 'error', ...startupError(err) };
+		}
 	}
 
 	async function takeOver() {
@@ -91,6 +101,7 @@
 			ready(worker, file, meta);
 			void goto(resolve('/budget/[month]', { month: currentMonth() }));
 		}}
+		onCancel={app.session ? cancelOnboarding : undefined}
 	/>
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
 	<StartupScreen boot={app.boot} onTakeOver={takeOver} />
