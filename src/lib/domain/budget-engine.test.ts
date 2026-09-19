@@ -381,6 +381,127 @@ describe('computeBudget', () => {
 		}
 	});
 
+	it('repays debt from its own source, then cash, then other cards in debt order', () => {
+		const AMEX: EngineCategory = {
+			id: 'cc-amex',
+			kind: 'cc_payment',
+			cardAccountId: 'amex',
+			carryoverOverspending: false
+		};
+		// food starts at 1000 (assigned).
+		// 01-03 visa -3000: 1000 covered -> fund visa 1000; debt {visa 2000}; running -2000
+		// 01-04 amex -4000: nothing covered; debt {visa 2000, amex 4000}; running -6000
+		// 01-05 cash +1500: order [cash, visa, amex]; visa went into debt first, so it takes
+		//   all 1500 -> fund visa 1500; debt {visa 500, amex 4000}; running -4500
+		// 01-06 amex +1000 refund: order [amex, cash, visa]; amex repays itself: fund amex +1000
+		//   for the repaid debt and -1000 for the refund, net 0; debt {visa 500, amex 3000}
+		// => food -3500, all credit; cc-visa 1000 + 1500 = 2500; cc-amex 0
+		const comp = computeBudget(
+			input({
+				categories: [RTA, FOOD, FUN, CC, AMEX],
+				entries: [
+					entry('food', '2026-01-03', -3000, 'visa'),
+					entry('food', '2026-01-04', -4000, 'amex'),
+					entry('food', '2026-01-05', 1500),
+					entry('food', '2026-01-06', 1000, 'amex')
+				],
+				assignments: [{ categoryId: 'food', month: '2026-01', assigned: 1000 }]
+			}),
+			'2026-01'
+		);
+		expect(categoryMonth(comp, '2026-01', 'food')).toMatchObject({
+			available: -3500,
+			cashOverspent: 0,
+			creditOverspent: 3500
+		});
+		expect(categoryMonth(comp, '2026-01', 'cc-visa')).toMatchObject({
+			activity: 2500,
+			available: 2500
+		});
+		expect(categoryMonth(comp, '2026-01', 'cc-amex')).toMatchObject({
+			activity: 0,
+			available: 0
+		});
+	});
+
+	it('lets a card refund repay cash overspending, de-funding that card', () => {
+		// food starts at 1000 (assigned).
+		// 01-03 cash -3000: 1000 covered; debt {cash 2000}; running -2000
+		// 01-04 visa +2000 refund: order [visa, cash]; visa has no debt; cash debt repaid 2000,
+		//   and the refund's source is visa, so fund visa -2000; running 0
+		// => food 0, no overspending; cc-visa activity -2000; nothing deducted in February
+		const comp = computeBudget(
+			input({
+				entries: [
+					entry('rta', '2026-01-01', 10000),
+					entry('food', '2026-01-03', -3000),
+					entry('food', '2026-01-04', 2000, 'visa')
+				],
+				assignments: [{ categoryId: 'food', month: '2026-01', assigned: 1000 }]
+			}),
+			'2026-02'
+		);
+		expect(categoryMonth(comp, '2026-01', 'food')).toMatchObject({
+			available: 0,
+			cashOverspent: 0,
+			creditOverspent: 0
+		});
+		expect(categoryMonth(comp, '2026-01', 'cc-visa')).toMatchObject({
+			activity: -2000,
+			available: -2000
+		});
+		// RTA: Jan 10000 - 1000 assigned = 9000; Feb 9000 - 0 food overspending - 2000 cc-visa
+		// (its negative available is cash overspending) = 7000
+		expect(comp.months.get('2026-02')).toMatchObject({
+			overspentLastMonth: 2000,
+			readyToAssign: 7000
+		});
+	});
+
+	it('adds a cash advance to the card payment category', () => {
+		// A cash advance is a positive payment: cash arrives from the card, so it is money
+		// already set aside for that card. cc-visa activity = 0 funding + 5000 = 5000.
+		const comp = computeBudget(
+			input({ payments: [{ cardAccountId: 'visa', date: '2026-01-10', amount: 5000 }] }),
+			'2026-01'
+		);
+		expect(categoryMonth(comp, '2026-01', 'cc-visa')).toMatchObject({
+			activity: 5000,
+			available: 5000,
+			cashOverspent: 0
+		});
+		expect(comp.months.get('2026-01')?.readyToAssign).toBe(0);
+	});
+
+	it('treats a negative assignment below zero as cash overspending', () => {
+		// Jan: income 10000, food assigned 1000 -> RTA 9000, food 1000.
+		// Feb: food assigned -3000 applied as a cash outflow from 1000: 1000 covered, 2000 is
+		//   cash debt -> food -2000, cashOverspent 2000. RTA 9000 + 3000 = 12000.
+		// Mar: toggle off, so food resets to 0 and RTA = 12000 - 2000 = 10000 (= the cash).
+		const comp = computeBudget(
+			input({
+				entries: [entry('rta', '2026-01-01', 10000)],
+				assignments: [
+					{ categoryId: 'food', month: '2026-01', assigned: 1000 },
+					{ categoryId: 'food', month: '2026-02', assigned: -3000 }
+				]
+			}),
+			'2026-03'
+		);
+		expect(categoryMonth(comp, '2026-02', 'food')).toMatchObject({
+			carryover: 1000,
+			available: -2000,
+			cashOverspent: 2000,
+			creditOverspent: 0
+		});
+		expect(comp.months.get('2026-02')?.readyToAssign).toBe(12000);
+		expect(categoryMonth(comp, '2026-03', 'food')).toMatchObject({ carryover: 0, available: 0 });
+		expect(comp.months.get('2026-03')).toMatchObject({
+			overspentLastMonth: 2000,
+			readyToAssign: 10000
+		});
+	});
+
 	it('returns zeros for categories and months without data', () => {
 		const comp = computeBudget(input({}), '2026-05');
 		expect(comp.first).toBe('2026-05');
