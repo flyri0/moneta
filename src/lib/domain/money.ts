@@ -3,7 +3,10 @@ export interface MoneyFormat {
 	locale: string; // BCP 47, e.g. 'pt-BR'
 }
 
+const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'));
+
 export function currencyDigits(currency: string): number {
+	if (!SUPPORTED_CURRENCIES.has(currency)) throw new RangeError(`Unknown currency ${currency}`);
 	return (
 		new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
 			.maximumFractionDigits ?? 2

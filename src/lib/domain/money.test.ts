@@ -11,6 +11,11 @@ describe('currencyDigits', () => {
 		expect(currencyDigits('BRL')).toBe(2);
 		expect(currencyDigits('JPY')).toBe(0);
 	});
+
+	it('rejects unknown and malformed currencies', () => {
+		expect(() => currencyDigits('XYZ')).toThrow(RangeError);
+		expect(() => currencyDigits('AB')).toThrow(RangeError);
+	});
 });
 
 describe('formatMoney', () => {
