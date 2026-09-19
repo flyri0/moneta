@@ -24,6 +24,13 @@ describe('month helpers', () => {
 		expect(isDate('2026-9-01')).toBe(false);
 	});
 
+	it('only accepts dates in the years 1900 to 2199', () => {
+		expect(isDate('1899-12-31')).toBe(false);
+		expect(isDate('1900-01-01')).toBe(true);
+		expect(isDate('2199-12-31')).toBe(true);
+		expect(isDate('2200-01-01')).toBe(false);
+	});
+
 	it('extracts the month of a date', () => {
 		expect(monthOf('2026-09-18')).toBe('2026-09');
 	});

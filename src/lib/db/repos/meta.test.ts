@@ -49,6 +49,19 @@ describe('initBudget', () => {
 		).toThrow(expect.objectContaining({ code: 'ALREADY_INITIALIZED' }));
 	});
 
+	it('rejects invalid locale tags on init and update', async () => {
+		const db = await createTestDb();
+		expect(() =>
+			initBudget(db, { name: 'x', currency: 'BRL', locale: 'not a locale', groups: [] })
+		).toThrow(expect.objectContaining({ code: 'INVALID_INPUT' }));
+		expect(isInitialized(db)).toBe(false);
+		const budget = await createBudgetDb();
+		expect(() => updateMeta(budget, { locale: 'en_US!' })).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+		expect(getMeta(budget).locale).toBe('pt-BR');
+	});
+
 	it('rejects unknown currencies', async () => {
 		const db = await createTestDb();
 		expect(() =>

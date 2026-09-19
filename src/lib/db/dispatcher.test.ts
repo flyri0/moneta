@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { DomainError } from '$lib/domain/errors';
 import { createDispatcher } from './dispatcher';
 import { createBudgetDb } from './testing';
-import type { SystemApi } from './api';
+import { run } from './connection';
+import { api, type SystemApi } from './api';
+import { getMeta } from './repos/meta';
 
 function fakeSystem(): { system: SystemApi; opened: string[] } {
 	const opened: string[] = [];
@@ -69,10 +72,35 @@ describe('createDispatcher', () => {
 	it('rejects unknown methods, including prototype keys', async () => {
 		const db = await createBudgetDb();
 		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
-		for (const method of ['nope.x', 'meta.nope', 'meta.toString', 'system.nope']) {
+		for (const method of [
+			'nope.x',
+			'meta.nope',
+			'meta.toString',
+			'system.nope',
+			'constructor.name',
+			'__proto__.x',
+			'__proto__.hasOwnProperty'
+		]) {
 			const res = await dispatch({ id: 5, method, args: [] });
 			expect(res).toMatchObject({ ok: false, error: { code: 'UNKNOWN_METHOD' } });
 		}
+	});
+
+	it('runs each write call as one SQL transaction', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		// A write handler that changes a row and then fails must leave nothing behind.
+		const spy = vi.spyOn(api.meta.update, 'fn').mockImplementation((d) => {
+			run(d, "UPDATE meta SET value = 'Half-written' WHERE key = 'name'");
+			throw new DomainError('INVALID_INPUT');
+		});
+		try {
+			const res = await dispatch({ id: 7, method: 'meta.update', args: [{}] });
+			expect(res).toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+		} finally {
+			spy.mockRestore();
+		}
+		expect(getMeta(db).name).toBe('Test Budget');
 	});
 
 	it('requires an open database for data methods', async () => {

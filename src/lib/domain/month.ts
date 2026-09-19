@@ -11,6 +11,7 @@ export function isDate(value: string): boolean {
 	const m = DATE_RE.exec(value);
 	if (!m) return false;
 	const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+	if (y < 1900 || y > 2199) return false; // a typo year would make the engine walk far too many months
 	const date = new Date(Date.UTC(y, mo - 1, d));
 	return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
 }

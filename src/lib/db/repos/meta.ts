@@ -63,6 +63,14 @@ function validateCurrency(currency: string): void {
 	}
 }
 
+function validateLocale(locale: string): void {
+	try {
+		Intl.getCanonicalLocales(locale);
+	} catch {
+		throw new DomainError('INVALID_INPUT', `Invalid locale ${locale}`);
+	}
+}
+
 export function updateMeta(db: Db, patch: MetaPatch): void {
 	tx(db, () => {
 		const current = getMeta(db);
@@ -83,7 +91,10 @@ export function updateMeta(db: Db, patch: MetaPatch): void {
 			}
 			setKey(db, KEYS.currency, patch.currency);
 		}
-		if (patch.locale !== undefined) setKey(db, KEYS.locale, patch.locale);
+		if (patch.locale !== undefined) {
+			validateLocale(patch.locale);
+			setKey(db, KEYS.locale, patch.locale);
+		}
 		if (patch.lastBackupAt !== undefined) setKey(db, KEYS.lastBackupAt, patch.lastBackupAt);
 	});
 }
@@ -94,6 +105,7 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 		if (isInitialized(db)) throw new DomainError('ALREADY_INITIALIZED');
 		if (!input.name.trim()) throw new DomainError('INVALID_INPUT', 'Name is required');
 		validateCurrency(input.currency);
+		validateLocale(input.locale);
 		setKey(db, KEYS.name, input.name.trim());
 		setKey(db, KEYS.currency, input.currency);
 		setKey(db, KEYS.locale, input.locale);

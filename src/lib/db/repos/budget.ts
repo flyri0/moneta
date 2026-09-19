@@ -130,7 +130,7 @@ function getAssigned(db: Db, categoryId: string, month: Month): number {
 
 export function setAssigned(db: Db, categoryId: string, month: Month, amount: number): void {
 	requireMonth(month);
-	if (!Number.isInteger(amount))
+	if (!Number.isSafeInteger(amount))
 		throw new DomainError('INVALID_INPUT', 'Amount must be an integer');
 	tx(db, () => {
 		requireAssignable(db, categoryId);
@@ -147,7 +147,7 @@ export interface MoveMoneyInput {
 
 export function moveMoney(db: Db, input: MoveMoneyInput): void {
 	requireMonth(input.month);
-	if (!Number.isInteger(input.amount) || input.amount <= 0)
+	if (!Number.isSafeInteger(input.amount) || input.amount <= 0)
 		throw new DomainError('INVALID_INPUT', 'Amount must be a positive integer');
 	if (input.fromCategoryId === input.toCategoryId)
 		throw new DomainError('INVALID_INPUT', 'Choose two different categories');

@@ -98,5 +98,5 @@ export type ClientApi = {
 export function findHandler(method: string): Handler<unknown[], unknown> | undefined {
 	const [ns, name] = method.split('.');
 	const group = (api as Record<string, Record<string, Handler<unknown[], unknown>>>)[ns];
-	return group && Object.hasOwn(group, name) ? group[name] : undefined;
+	return Object.hasOwn(api, ns) && Object.hasOwn(group, name) ? group[name] : undefined;
 }

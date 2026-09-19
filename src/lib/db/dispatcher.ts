@@ -1,5 +1,5 @@
 import { DomainError } from '$lib/domain/errors';
-import { ALL_TABLES, type Db } from './connection';
+import { ALL_TABLES, tx, type Db } from './connection';
 import { findHandler, type SystemApi } from './api';
 import type { CallRequest, CallResponse, RpcErrorPayload } from './protocol';
 
@@ -39,7 +39,10 @@ export function createDispatcher(deps: DispatcherDeps) {
 			if (!handler) throw new DomainError('UNKNOWN_METHOD', req.method);
 			const db = deps.getDb();
 			if (!db) throw new DomainError('NO_DATABASE_OPEN');
-			const data = handler.fn(db, ...req.args);
+			const data =
+				handler.kind === 'write'
+					? tx(db, () => handler.fn(db, ...req.args))
+					: handler.fn(db, ...req.args);
 			return { id: req.id, ok: true, data: data ?? null, changed: [...handler.tables] };
 		} catch (err) {
 			return { id: req.id, ok: false, error: toPayload(err) };

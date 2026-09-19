@@ -99,7 +99,7 @@ interface Plan {
 function validate(db: Db, input: TransactionInput): Plan {
 	const account = getAccountInfo(db, input.accountId);
 	if (account.closed) throw new DomainError('ACCOUNT_CLOSED');
-	if (!Number.isInteger(input.amount))
+	if (!Number.isSafeInteger(input.amount))
 		throw new DomainError('INVALID_INPUT', 'Amount must be an integer');
 	if (!isDate(input.date)) throw new DomainError('INVALID_INPUT', `Invalid date ${input.date}`);
 	const splits = input.splits ?? [];
@@ -134,7 +134,7 @@ function validate(db: Db, input: TransactionInput): Plan {
 		if (splits.length < 2) throw new DomainError('SPLIT_TOO_FEW_LINES');
 		let sum = 0;
 		for (const s of splits) {
-			if (!Number.isInteger(s.amount))
+			if (!Number.isSafeInteger(s.amount))
 				throw new DomainError('INVALID_INPUT', 'Amount must be an integer');
 			checkUsableCategory(db, s.categoryId);
 			sum += s.amount;

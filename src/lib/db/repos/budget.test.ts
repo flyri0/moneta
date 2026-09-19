@@ -38,6 +38,36 @@ beforeEach(async () => {
 	rent = categoryId(db, 'Rent');
 });
 
+describe('amount validation', () => {
+	it('rejects amounts beyond the safe integer range', () => {
+		const unsafe = 2 ** 53;
+		expect(() => setAssigned(db, food, '2026-01', unsafe)).toThrow(code('INVALID_INPUT'));
+		expect(() =>
+			moveMoney(db, { fromCategoryId: food, toCategoryId: rent, month: '2026-01', amount: unsafe })
+		).toThrow(code('INVALID_INPUT'));
+		expect(() =>
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-01-05',
+				amount: -unsafe,
+				categoryId: food
+			})
+		).toThrow(code('INVALID_INPUT'));
+		expect(() =>
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-01-05',
+				amount: -1,
+				splits: [
+					{ categoryId: food, amount: unsafe },
+					{ categoryId: rent, amount: -unsafe - 1 }
+				]
+			})
+		).toThrow(code('INVALID_INPUT'));
+		expect(all(db, 'SELECT 1 FROM budget_assignments')).toEqual([]);
+	});
+});
+
 describe('getBudgetMonth', () => {
 	it('shows income as Ready to Assign and excludes off-budget money', () => {
 		const view = getBudgetMonth(db, '2026-01');
