@@ -22,8 +22,29 @@
 	// Search as the user types, but not on every keystroke.
 	$effect(() => {
 		const text = searchInput;
-		const timer = setTimeout(() => (search = text), 250);
+		const timer = setTimeout(() => {
+			search = text;
+			pages = 1;
+		}, 250);
 		return () => clearTimeout(timer);
+	});
+
+	// The date filter applies immediately (it isn't debounced): restart paging with it.
+	$effect(() => {
+		void from;
+		void to;
+		pages = 1;
+	});
+
+	// The component is reused across /accounts/[id] navigations (e.g. the transfer link in
+	// RegisterRow), so switching accounts must also clear the filters and paging.
+	$effect(() => {
+		void accountId;
+		searchInput = '';
+		search = '';
+		from = '';
+		to = '';
+		pages = 1;
 	});
 
 	const account = useLive(session.client, ['accounts', 'transactions'], () =>
@@ -89,13 +110,17 @@
 		</div>
 
 		<section class="rounded-lg border" aria-label={m.register_transactions()}>
-			{#each rows.data ?? [] as row (row.id)}
-				<RegisterRow {row} />
+			{#if rows.error && !rows.data}
+				<p class="p-6 text-center text-destructive" role="alert">{errorMessage(rows.error)}</p>
 			{:else}
-				{#if rows.data}
-					<p class="p-6 text-center text-muted-foreground">{m.register_empty()}</p>
-				{/if}
-			{/each}
+				{#each rows.data ?? [] as row (row.id)}
+					<RegisterRow {row} />
+				{:else}
+					{#if rows.data}
+						<p class="p-6 text-center text-muted-foreground">{m.register_empty()}</p>
+					{/if}
+				{/each}
+			{/if}
 		</section>
 		{#if hasMore}
 			<Button variant="outline" onclick={() => pages++}>{m.register_load_more()}</Button>
