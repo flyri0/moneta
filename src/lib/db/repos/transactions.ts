@@ -51,6 +51,7 @@ export interface TransactionRow {
 
 export interface TransactionQuery {
 	accountId?: string;
+	categoryId?: string; // the transaction's category or one of its split lines'
 	search?: string;
 	from?: string;
 	to?: string;
@@ -332,6 +333,9 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		db,
 		`${SELECT_SQL}
 		 WHERE (:accountId IS NULL OR t.account_id = :accountId)
+		   AND (:categoryId IS NULL OR t.category_id = :categoryId
+		     OR EXISTS (SELECT 1 FROM transaction_splits s
+		                WHERE s.transaction_id = t.id AND s.category_id = :categoryId))
 		   AND (:from IS NULL OR t.date >= :from)
 		   AND (:to IS NULL OR t.date <= :to)
 		   AND (:search IS NULL
@@ -344,6 +348,7 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		 LIMIT :limit OFFSET :offset`,
 		{
 			':accountId': query.accountId ?? null,
+			':categoryId': query.categoryId ?? null,
 			':from': query.from ?? null,
 			':to': query.to ?? null,
 			':search': search,

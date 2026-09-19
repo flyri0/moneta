@@ -7,6 +7,7 @@ import * as payees from './repos/payees';
 import * as transactions from './repos/transactions';
 import * as budget from './repos/budget';
 import * as dump from './repos/dump';
+import * as reports from './repos/reports';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -70,6 +71,10 @@ export const api = {
 		setAssigned: write(['budget_assignments'], budget.setAssigned),
 		moveMoney: write(['budget_assignments'], budget.moveMoney),
 		quickAssign: write(['budget_assignments'], budget.applyQuickAssign)
+	},
+	reports: {
+		spending: read(reports.spendingByCategory),
+		netWorth: read(reports.netWorth)
 	},
 	backup: {
 		dump: read((db) => dump.dumpBudget(db))

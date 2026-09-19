@@ -440,6 +440,13 @@ describe('listTransactions', () => {
 		expect(listTransactions(db, { search: 'Fun' }).map((t) => t.amount)).toEqual([-300, -200]);
 	});
 
+	it('filters by category, including split lines', () => {
+		expect(listTransactions(db, { categoryId: food }).map((t) => t.amount)).toEqual([-300, -100]);
+		expect(
+			listTransactions(db, { categoryId: fun, from: '2026-03-01' }).map((t) => t.amount)
+		).toEqual([-300]);
+	});
+
 	it('pages with limit and offset', () => {
 		expect(listTransactions(db, { limit: 2, offset: 1 }).map((t) => t.amount)).toEqual([
 			-400, -300
