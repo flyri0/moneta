@@ -3,7 +3,7 @@
 Zero-based envelope budgeting app (YNAB/Actual-style). Local-only static SPA: SvelteKit + Svelte 5 + TypeScript, SQLite WASM on OPFS in a Web Worker. No server, no accounts.
 
 - Design spec: `docs/superpowers/specs/2026-09-19-moneta-v1-design.md` (source of truth)
-- Plans: `docs/superpowers/plans/`. Plan 1 (core) and Plan 2 (app UI) are done; Plan 3 (reports, backup, PWA) is to come. Open follow-ups: `docs/superpowers/plans/2026-09-19-moneta-plan-1-followups.md`.
+- Plans: `docs/superpowers/plans/`. Plans 1 (core), 2 (app UI) and 3 (reports, backup, PWA) are done. Follow-ups and measurements: `docs/superpowers/plans/2026-09-19-moneta-plan-1-followups.md`.
 
 ## Commands
 
@@ -13,7 +13,10 @@ pnpm dev              # dev server, http://localhost:5173
 pnpm build            # static build into ./build
 pnpm test             # all unit tests once (Vitest, Node)
 pnpm test src/lib/db  # a subset, by path
-pnpm test:e2e         # builds, then runs Playwright in Chromium
+pnpm test:e2e         # builds, then runs Playwright in Chromium against `pnpm preview`
+pnpm preview          # serves ./build with a static server (sirv), like a host would
+pnpm bench            # times the budget recompute on a large budget
+pnpm icons            # regenerates the PWA icons in static/ from static/icon.svg
 pnpm lint             # Prettier check + ESLint
 pnpm check            # svelte-check / TypeScript
 pnpm format           # Prettier write
@@ -25,12 +28,13 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 ## Layout
 
 - `src/lib/domain/`: pure TS (money, months, budget engine, quick-assign). No DB, no DOM.
-- `src/lib/db/`: runs only in the worker. Schema and migrations, repos, RPC surface (`api.ts`), dispatcher.
+- `src/lib/db/`: runs only in the worker. Schema and migrations, repos, RPC surface (`api.ts`), dispatcher. `system.ts` holds the budget-file calls (`api.system.*`) over a `FileStore`: the OPFS pool in `worker.ts`, in-memory databases in tests (`memoryFileStore`). `backup.ts` checks restores.
 - `src/lib/client/`: main thread. Typed RPC client (`rpc.ts`), worker start (`db.ts`), `liveQuery` (`live.ts`) and `useLive` (`live.svelte.ts`), tab lock, budget registry and session, app state (`app-state.svelte.ts`: `useSession()`), `runAction`/`notifyError` (`notify.ts`).
-- `src/lib/budget/`, `src/lib/accounts/`, `src/lib/transactions/`: pure, unit-tested screen logic (grid model, category order, account defaults, register display, transaction form rules).
+- `src/lib/budget/`, `src/lib/accounts/`, `src/lib/transactions/`, `src/lib/reports/`: pure, unit-tested screen logic (grid model, category order, account defaults, register display, transaction form rules, report ranges).
+- `src/lib/backup/`: backups (`.sqlite`), CSV and JSON exports, the backup reminder. Files go out through a `BackupTarget` (downloads in v1).
 - `src/lib/i18n/`: message catalogs (`messages/en.json`, `messages/pt-BR.json`), error messages, labels for system rows, formats. Paraglide compiles them into `src/lib/paraglide/` (generated, not committed).
-- `src/lib/components/`: Svelte components by area (`app/`, `budget/`, `accounts/`, `transactions/`); `ui/` holds the generated shadcn-svelte primitives.
-- `src/routes/`: SvelteKit pages (`ssr = false`, `adapter-static` with an `index.html` fallback). The root layout's `Boot` claims the tab lock, starts the worker and renders onboarding, a startup screen or the app.
+- `src/lib/components/`: Svelte components by area (`app/`, `budget/`, `accounts/`, `transactions/`, `reports/`, `settings/`); `ui/` holds the generated shadcn-svelte primitives (`chart/` wraps LayerChart).
+- `src/routes/`: SvelteKit pages (`ssr = false`, `adapter-static` with an `index.html` fallback). The root layout's `Boot` claims the tab lock, starts the worker, registers the service worker (`@vite-pwa/sveltekit`, prompt to update) and renders onboarding, a startup screen or the app.
 - `e2e/`: Playwright tests against the production build.
 
 ## Rules
@@ -42,7 +46,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Multi-statement writes use `tx(db, fn)` (a nestable SAVEPOINT).
 - Domain failures throw `DomainError` with a typed code from `src/lib/domain/errors.ts`; nothing else is thrown on purpose.
 - IDs are UUIDv7 (`uuidv7`). Dates are `'YYYY-MM-DD'` and months `'YYYY-MM'`. Booleans are 0/1 in SQL and `boolean` in repo results.
-- Schema changes are new numbered files in `src/lib/db/migrations/`, tracked by `PRAGMA user_version`. Never edit an applied migration.
+- Schema changes are new numbered files in `src/lib/db/migrations/`, added to `MIGRATIONS` and tracked by `PRAGMA user_version`. Never edit an applied migration. Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean; opening an older budget saves a copy first.
 - No COOP/COEP headers or server code: the OPFS SAH-pool VFS doesn't need them, and the build must work on any static host.
 - Svelte 5 runes only (`$props`, `$state`, `$derived`, `$effect`).
 - UI text is in English and Brazilian Portuguese: every user-facing string comes from Paraglide (`m.<key>()` from `$lib/paraglide/messages`), and both catalogs keep identical keys and placeholders (a test checks). System rows stored in English are shown through `$lib/i18n/labels`.

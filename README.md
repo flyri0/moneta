@@ -4,7 +4,7 @@ Moneta is a zero-based envelope budgeting app, inspired by YNAB and Actual Budge
 
 You give every unit of income a job: money goes from **Ready to Assign** into category envelopes, and spending draws them down. Moneta supports on-budget and off-budget (tracking) accounts, credit cards with automatic payment categories, split transactions, transfers, per-category overspending rollover, and quick-assign helpers.
 
-> **Status:** the core (budget engine, database, typed RPC to the SQLite worker) and the app UI (budget, accounts, register, transactions, in English and Brazilian Portuguese) are done. Reports, backup/restore and the installable PWA come next. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
+> **Status:** v1 is feature-complete: the budget, accounts and transactions, reports (spending by category, net worth), multiple budget files, backup and restore (`.sqlite`), CSV and JSON exports, and an installable PWA that works offline, in English and Brazilian Portuguese. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
 
 ## Requirements
 
@@ -27,7 +27,13 @@ pnpm build          # production build into ./build
 pnpm preview        # serve the build at http://localhost:4173
 ```
 
-The `build/` folder can go on any static host. No special headers (COOP/COEP) are needed.
+The `build/` folder can go on any static host that serves `index.html` for unknown paths. No special headers (COOP/COEP) are needed. Serve it from the root of a domain: the service worker, which makes the app work offline, is registered at `/`.
+
+## Your data
+
+Each budget is one SQLite file in the browser's private storage (OPFS). Settings → Backup saves it as a `.sqlite` file and restores one, and Moneta reminds you when your last backup is more than two weeks old. Before an app update changes a budget's schema, Moneta keeps a copy of the old file in the same storage (the last three).
+
+The app icons in `static/` are generated from `static/icon.svg` with `pnpm icons`.
 
 ## Translations
 
@@ -48,6 +54,7 @@ Unit and integration tests run in Node with Vitest. The database tests use a rea
 ```sh
 pnpm test           # run all unit tests once
 pnpm test:unit      # watch mode
+pnpm bench          # time the budget recompute on a large budget
 ```
 
 End-to-end tests (in `e2e/`) run the production build in Chromium with Playwright:
@@ -72,6 +79,8 @@ src/lib/client/        main-thread side: RPC client, live queries, tab lock, bud
 src/lib/budget/        budget screen logic (grid model, category order)
 src/lib/accounts/      account and register logic
 src/lib/transactions/  transaction form logic
+src/lib/reports/       report logic (date ranges, spending shares)
+src/lib/backup/        backups, CSV and JSON exports, the backup reminder
 src/lib/i18n/          message catalogs (en, pt-BR), error messages, labels and formats
 src/lib/components/    Svelte components (ui/ holds the shadcn-svelte primitives)
 src/routes/            SvelteKit pages

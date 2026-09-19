@@ -16,13 +16,15 @@ Plan 2 (`2026-09-19-moneta-plan-2-app-ui.md`) resolved every item:
   - Transfers show as "Transfer to/from ‹account›" in the register, and as "Transfer: ‹account›" in the payee field.
   - The system groups keep their place (Income, then Credit Card Payments) whatever order is saved.
 
-## Plan 3 (reports, backup, PWA)
+## Plan 3 (reports, backup, PWA): done
 
-- **Pre-migration backup (spec §7), and SAH pool capacity:** call `reserveMinimumCapacity` before creating backup copies, since the initial capacity is 12. This must land before any `0002_*.sql` migration.
-- **Migrations that rebuild tables** need `PRAGMA foreign_keys = OFF` outside the transaction. The current `migrate` loop can't do that.
-- **Performance:** measure the budget recompute. Every read reloads all history; that's fine at MVP scale.
+Plan 3 (`2026-09-19-moneta-plan-3-reports-backup-pwa.md`) resolved every item:
+
+- **Pre-migration backup (spec §7), and SAH pool capacity:** opening a budget whose schema is older saves a `premigration-…` copy first and keeps the last 3. The pool reserves room (`reserveMinimumCapacity`) before any file is created.
+- **Migrations that rebuild tables:** `migrate` turns foreign keys off around the loop and checks `PRAGMA foreign_key_check` before each commit.
+- **Performance:** `pnpm bench` measures the recompute on a heavy budget (5 years, 40 categories, about 9,000 transactions): about 105 ms per `budget.month` read, of which about 85 ms is loading the rows from SQL and about 10 ms is the engine. That's acceptable for v1. If it becomes a problem, trim what `loadEngineInput` reads before touching the engine.
 - ~~**Dev smoke route**~~: done in Plan 2. The route and its test were removed; the app's own e2e tests cover the worker, OPFS persistence and RPC.
-- **Budget files UI:** the registry (`src/lib/client/registry.ts`) and `createBudget` (`src/lib/client/session.ts`) are ready for Settings → Budget files. Switching budgets means closing the worker's database, opening the other file, and replacing `AppState.session` (the shell is keyed on the file).
+- **Budget files UI:** Settings → Budget files creates, switches and deletes budgets; Budget details renames the open one. `AppState.show` replaces the session, and the shell remounts.
 
 ## Accepted as-is
 

@@ -41,8 +41,10 @@ src/
   lib/
     db/                    # runs only inside the Worker
       worker.ts            # opens SQLite (OPFS SAH-pool), dispatches RPC
+      system.ts            # budget files: open + migrate, pre-migration copies, export/import
+      backup.ts            # restore validation (§6)
       migrations/          # 0001_init.sql, ... ; tracked via PRAGMA user_version
-      repos/               # accounts.ts, categories.ts, transactions.ts, budget.ts, reports.ts, payees.ts
+      repos/               # accounts.ts, categories.ts, transactions.ts, budget.ts, reports.ts, payees.ts, dump.ts
       aggregates.sql.ts    # SQL aggregation queries feeding the budget engine
     client/                # main thread
       rpc.ts               # typed proxy: await api.transactions.create({...})
@@ -54,10 +56,12 @@ src/
       budget-engine.ts     # rollover, overspending, credit card funding, Ready to Assign
       quick-assign.ts
     backup/
-      target.ts            # BackupTarget { save(blob), list(), load(id) }
-      file-target.ts       # v1: download / upload .sqlite
+      target.ts            # BackupTarget { save(fileName, blob) }; cloud targets would add listing and loading
+      file-target.ts       # v1: downloads (a restore reads a file the user picks)
       export-csv.ts
-      export-json.ts
+      actions.ts           # back up (.sqlite), export CSV and JSON (the JSON is dumped by repos/dump.ts)
+      reminder.ts
+    reports/               # date-range presets, spending shares
     i18n/                  # messages/en.json, messages/pt-BR.json
     components/ui/         # shadcn-svelte
   routes/
@@ -206,19 +210,21 @@ Mobile-first. Below 768px: bottom nav (Budget · Accounts · Reports · Settings
 
 ### Reports — `/reports`
 
-- **Spending by category** for a date range: bar chart plus table, drilling down into the transactions.
-- **Net worth over time:** month-end totals across all accounts (on- and off-budget), split into assets and debts.
+- **Spending by category** for a date range: bar chart plus table, drilling down into the transactions. Spending is net outflow per category on on-budget accounts (refunds count against it); Ready to Assign is left out, and so are categories whose refunds outweigh their spending. The range picker offers this month, last month, the last 3 or 12 months, this year, or custom dates.
+- **Net worth over time:** month-end totals across all accounts (on- and off-budget, closed included), split into assets and debts: each account counts as an asset or a debt by the sign of its balance. The last 12 months or all time.
 
 ### Settings — `/settings`
 
-- **Budget files:** create, rename, switch, delete (with a confirm step).
-- **Budget details:** currency and locale for the current budget.
+- **Budget files:** create, switch, delete (with a confirm step). Deleting the open budget opens the next one, or onboarding when none is left.
+- **Budget details:** name, currency and locale for the open budget (renaming happens here). Once the budget has transactions or assignments, the currency can only change to one with the same number of decimal places (`CURRENCY_LOCKED`).
 - **App:** UI language (en / pt-BR), theme.
 - **Backup:**
   - Export `.sqlite`.
-  - Restore `.sqlite`: replace the current budget (with a confirm step) or import it as a new budget.
-  - Export transactions as CSV and the full budget as JSON.
-  - Shows the last backup date. A reminder toast appears after 14 days without a backup.
+  - Restore `.sqlite`: replace the current budget (with a confirm step) or import it as a new budget. Either way the backup becomes a new budget file; replacing deletes the old file only once the restored budget is open.
+  - Export transactions as CSV and the full budget as JSON. These are exports, not backups: they can't be restored, and they don't count as a backup.
+    - CSV: English headers `Date,Account,Payee,Transfer,Category,Memo,Amount,Cleared`, ISO dates, plain decimal amounts with a dot, one row per split line, UTF-8 with a byte-order mark, and text cells that start like a formula prefixed with `'`.
+    - JSON: `{ format: 'moneta-budget', schemaVersion, exportedAt, meta, tables }`, with every table's rows under their SQL column names.
+  - Shows the last backup date. When the app opens 14 days or more after the last `.sqlite` backup (or after the budget was created, if there was none), a reminder toast offers to back up.
 - **Storage:** whether persistence was granted, and space used.
 
 ### Onboarding — first run
@@ -236,18 +242,19 @@ Name the budget, pick the currency and locale, create the first account with its
   2. `PRAGMA integrity_check` passes.
   3. The `meta` table exists.
   4. `user_version` ≤ app schema version; older files are migrated.
-  Only after all checks pass is the current file replaced.
+  Only after all checks pass is the current file replaced. The checks run on an in-memory copy, and fail with `BACKUP_NOT_SQLITE`, `BACKUP_DAMAGED`, `BACKUP_NOT_MONETA` or `SCHEMA_TOO_NEW`.
 
 ## 7. Migrations
 
-- Ordered SQL files, applied when a DB is opened, inside a transaction, with `PRAGMA user_version` tracking the version.
-- Before migrating, a timestamped `.sqlite` copy is saved in OPFS; the last 3 are kept.
+- Ordered SQL files, applied when a DB is opened, inside a transaction, with `PRAGMA user_version` tracking the version. Foreign keys are off while migrating, so a migration can rebuild a table without cascading deletes; each migration must leave `PRAGMA foreign_key_check` clean.
+- Before migrating, a timestamped `.sqlite` copy is saved in OPFS (`premigration-<budget file>-<timestamp>.sqlite3`); the last 3 per budget are kept, and they are deleted with their budget. The OPFS pool grows as needed before any file is created.
 
 ## 8. PWA lifecycle
 
 - Everything is precached; the app works fully offline after the first load.
 - Prompt-to-update: a "New version available · Reload" toast. Reloading waits for in-flight RPCs, closes the DB cleanly, then activates the new service worker.
-- Manifest with standard and maskable icons. Install works on Android, desktop Chrome/Edge, and iOS (Add to Home Screen).
+- Manifest with standard and maskable icons (generated from `static/icon.svg`). Install works on Android, desktop Chrome/Edge, and iOS (Add to Home Screen).
+- The service worker lives at the site root, so the app must be served from a domain root. `pnpm preview` and the e2e tests serve `build/` with a plain static server, as a host would.
 
 ## 9. Testing
 
