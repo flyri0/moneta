@@ -8,6 +8,7 @@
 	import { createTabLock, type TabLock } from '$lib/client/tab-lock';
 	import type { BudgetMeta } from '$lib/db/repos/meta';
 	import { currentMonth } from '$lib/domain/month';
+	import AppShell from './AppShell.svelte';
 	import Onboarding from './Onboarding.svelte';
 	import StartupScreen from './StartupScreen.svelte';
 
@@ -80,7 +81,7 @@
 
 {#if app.boot.kind === 'ready' && app.session}
 	{#key app.session.file}
-		{@render children()}
+		<AppShell>{@render children()}</AppShell>
 	{/key}
 {:else if app.boot.kind === 'onboarding' && worker}
 	<Onboarding
