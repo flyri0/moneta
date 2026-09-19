@@ -1,42 +1,70 @@
-# sv
+# Moneta
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Moneta is a zero-based envelope budgeting app, inspired by YNAB and Actual Budget. It is **local-only**: no server, no account, no tracking. Your budget lives in a SQLite database inside your browser (SQLite WASM on the Origin Private File System). Moneta is built to install as a PWA and work offline.
 
-## Creating a project
+You give every unit of income a job: money goes from **Ready to Assign** into category envelopes, and spending draws them down. Moneta supports on-budget and off-budget (tracking) accounts, credit cards with automatic payment categories, split transactions, transfers, per-category overspending rollover, and quick-assign helpers.
 
-If you're seeing this, you've probably already done this step. Congrats!
+> **Status:** the headless core (budget engine, database, typed RPC to the SQLite worker) is done. The app UI, reports, backup and the PWA shell come next. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## Requirements
 
-To recreate this project with the same configuration:
+- Node.js 24+
+- pnpm 12+
+- For browser (e2e) tests: Chromium from Playwright (see [Testing](#testing))
 
-```sh
-# recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit" sveltekit-adapter="adapter:static" --no-download-check --install pnpm .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Getting started
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install
+pnpm dev            # start the dev server at http://localhost:5173
+pnpm dev --open     # …and open it in the browser
 ```
 
-## Building
-
-To create a production version of your app:
+Moneta builds to a static site with no server code:
 
 ```sh
-npm run build
+pnpm build          # production build into ./build
+pnpm preview        # serve the build at http://localhost:4173
 ```
 
-You can preview the production build with `npm run preview`.
+The `build/` folder can go on any static host. No special headers (COOP/COEP) are needed.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Linting and formatting
+
+```sh
+pnpm lint           # Prettier check + ESLint
+pnpm format         # fix formatting with Prettier
+pnpm check          # type-check with svelte-check / TypeScript
+```
+
+## Testing
+
+Unit and integration tests run in Node with Vitest. The database tests use a real in-memory SQLite (the same WASM build the app uses):
+
+```sh
+pnpm test           # run all unit tests once
+pnpm test:unit      # watch mode
+```
+
+End-to-end tests run the production build in Chromium with Playwright:
+
+```sh
+pnpm exec playwright install chromium   # first time only
+pnpm test:e2e
+```
+
+On a fresh Linux/WSL machine, Chromium may fail to start because system libraries are missing (e.g. `libnspr4.so`). Install them once from a regular terminal:
+
+```sh
+sudo pnpm exec playwright install-deps chromium
+```
+
+## Project layout
+
+```
+src/lib/domain/   pure TypeScript: money, months, budget engine, quick-assign
+src/lib/db/       SQLite side (runs in a Web Worker): schema, migrations, repositories, RPC dispatcher
+src/lib/client/   main-thread side: typed RPC client and live-query stores
+src/routes/       SvelteKit pages
+docs/superpowers/ design spec and implementation plans
+```
