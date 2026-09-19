@@ -62,8 +62,8 @@ src/
     components/ui/         # shadcn-svelte
   routes/
     +layout.svelte         # nav (bottom on mobile, sidebar on desktop), budget switcher
-    onboarding/
-    budget/[month]/
+    budget/[month]/        # onboarding has no route: the root Boot component renders it
+                            # in place of the app shell when no budget exists yet
     accounts/
     accounts/[id]/
     reports/
@@ -75,8 +75,8 @@ static/                    # manifest icons (incl. maskable)
 
 - **One budget = one SQLite file** in OPFS (`budget-<uuid>.sqlite3`). A small registry in localStorage lists budgets and the last one opened. It is a cache: if it is lost, it is rebuilt from the worker's file list and each file's `meta` name. Switching budgets closes and reopens the DB in the worker.
 - **The database lives only in the worker.** The main thread never runs SQL. All access goes through async typed RPC over `postMessage`. Multi-statement writes (e.g. a transaction plus its splits, or both legs of a transfer) run in one SQL transaction within a single RPC call.
-- **Single-tab ownership.** The SAH-pool VFS allows one connection. `navigator.locks` elects one owner tab. Other tabs show "Moneta is open in another tab", with a button to take over (the owner releases the lock and closes cleanly).
-- **Reactivity.** Every write RPC returns the set of tables it changed; the worker also broadcasts it. `liveQuery` stores subscribed to any of those tables re-query. Coarse, and fast enough at personal-finance scale.
+- **Single-tab ownership.** The SAH-pool VFS allows one connection. `navigator.locks` elects one owner tab. Other tabs show "Moneta is open in another tab", with a button to take over: the waiting tab queues for the Web Lock, then asks over a `BroadcastChannel`; the owner closes the DB, pauses the SAH pool, terminates its worker, and releases the lock, letting the waiting tab's request resolve.
+- **Reactivity.** Every write RPC returns the set of tables it changed. Change notifications go to the owning tab's RPC client only (one tab owns the DB); `liveQuery` stores subscribed to any of those tables re-query. Coarse, and fast enough at personal-finance scale.
 - **Only facts are stored.** Balances, activity, available, and Ready to Assign are always derived: SQL computes per-category per-month aggregates and card-spending lists, and the pure TS `budget-engine` does the month-to-month rollover. No cached balances means nothing can drift.
 - **Persistence.** On first run, call `navigator.storage.persist()`. Settings shows whether it was granted.
 
@@ -100,7 +100,7 @@ category_groups(
 categories(
   id, group_id REFERENCES category_groups, name, sort_order, hidden INTEGER,
   carryover_overspending INTEGER DEFAULT 0,
-  cc_account_id TEXT NULL REFERENCES accounts,   -- set for 'CC Payment: <card>' categories
+  cc_account_id TEXT NULL REFERENCES accounts,   -- set for a card's payment category, named after the card
   system TEXT NULL)                              -- 'ready_to_assign' | NULL
 
 payees(id, name UNIQUE)
@@ -134,7 +134,7 @@ Indexes: `transactions(account_id, date)`, `transactions(category_id, date)`, `t
    - on-budget → off-budget: the on-budget leg requires a category.
    - off-budget → on-budget: the on-budget leg is categorized (Ready to Assign or another category).
 5. **Off-budget account transactions** never carry categories (except as the counterpart of rule 4, where only the on-budget leg is categorized). They are excluded from budget math and count only toward net worth.
-6. **Credit card accounts:** creating one automatically creates `CC Payment: <name>` in the system `Credit Card Payments` group. Closing the card hides the category, so closing also requires the category's available to be 0 (`CC_PAYMENT_NOT_EMPTY`). An account (any type) can be deleted only when it has no transactions; otherwise it can be closed, and closing requires a zero balance.
+6. **Credit card accounts:** creating one automatically creates a payment category, named after the card, in the system `Credit Card Payments` group (shown in the UI as "Credit Card Payments"). Closing the card hides the category, so closing also requires the category's available to be 0 (`CC_PAYMENT_NOT_EMPTY`). An account (any type) can be deleted only when it has no transactions; otherwise it can be closed, and closing requires a zero balance.
 7. **System categories and groups** cannot be deleted or renamed by the user (CC Payment categories follow their card's name).
 8. **Deletes are hard deletes.** Backups are the safety net.
 
@@ -194,13 +194,13 @@ Mobile-first. Below 768px: bottom nav (Budget · Accounts · Reports · Settings
 
 - Accounts listed in On-budget, Off-budget and Closed sections, each with its balance.
 - The register shows date, payee, category, memo, amount and a cleared toggle, plus cleared, uncleared and total balances.
-- Text search and date-range filter. Virtualized list.
+- Text search and date-range filter. The register loads 100 rows at a time ("Load more"), and rows use CSS `content-visibility: auto` instead of a virtualization library.
 - Split rows expand to show their parts. Transfers store no payee: a transfer row shows "Transfer to/from ‹account›" and links to that account.
 
 ### Transaction form (sheet on mobile, dialog on desktop)
 
 - Fields: account, date (defaults to today), payee, category, amount with an outflow/inflow toggle (numeric keypad on mobile), memo, cleared.
-- Payee combobox with create-on-type. Selecting an existing payee suggests the category from that payee's most recent transaction.
+- Payee field: a native `<input list>` with a `<datalist>` of existing payees and transfer targets (create-on-type). Selecting an existing payee suggests the category from that payee's most recent transaction.
 - Payee can be set to "Transfer to/from ‹account›", which makes the transaction a transfer. The category field is shown only when rule 4 requires one.
 - "Split" button adds split lines and shows a live "remaining" amount. Save is disabled until the splits balance.
 
