@@ -38,7 +38,10 @@ All three must pass. CI runs the same three plus a production build on every pus
 runs the Playwright suite (`pnpm test:e2e`) on pull requests.
 
 Keep a pull request to one topic, link the issue it closes, and use conventional commit
-prefixes: `feat:`, `fix:`, `test:`, `docs:`, `chore:`.
+prefixes: `feat:`, `fix:`, `test:`, `docs:`, `chore:`. A `commit-msg` hook (husky and
+[commitlint](https://commitlint.js.org), installed by `pnpm install`) rejects commit
+messages that don't follow the [Conventional Commits](https://www.conventionalcommits.org)
+format.
 
 ## How the code is organised
 

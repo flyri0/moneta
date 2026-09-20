@@ -67,5 +67,5 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 
 - Prettier: tabs, single quotes, width 100. Don't reformat `docs/`: it is in `.prettierignore` on purpose.
 - Match the surrounding code: short doc comments on exports, and comments only where the code isn't self-evident.
-- Conventional commit prefixes (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
+- Conventional commit prefixes (`feat:`, `fix:`, `test:`, `docs:`, `chore:`), enforced by a commitlint `commit-msg` hook (husky, `commitlint.config.js`).
 - Commit or push only when asked.

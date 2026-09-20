@@ -9,7 +9,7 @@
 		"build": "vite build",
 		"preview": "sirv build --single --port 4173",
 		"icons": "pnpm --allow-build=sharp dlx @vite-pwa/assets-generator@1.0.2",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "husky && svelte-kit sync || echo ''",
 		"i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations --silent",
 		"check": "pnpm i18n && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "pnpm i18n && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -21,6 +21,8 @@
 		"bench": "vitest bench --run"
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^21.2.2",
+		"@commitlint/config-conventional": "^21.2.2",
 		"@eslint/js": "^10.0.1",
 		"@fontsource-variable/inter": "^5.3.0",
 		"@inlang/paraglide-js": "^2.18.2",
@@ -39,6 +41,7 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
+		"husky": "^9.1.7",
 		"layerchart": "^2.5.0",
 		"mode-watcher": "^1.1.0",
 		"prettier": "^3.8.3",
