@@ -7,6 +7,10 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2199;
 
+/** The lowest and highest dates the year clamp allows, for "all time" ranges. */
+export const MIN_DATE = `${MIN_YEAR}-01-01`;
+export const MAX_DATE = `${MAX_YEAR}-12-31`;
+
 function inYearRange(year: number): boolean {
 	return year >= MIN_YEAR && year <= MAX_YEAR;
 }

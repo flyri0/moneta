@@ -1,11 +1,12 @@
-import { addMonths, monthOf, type Month } from '$lib/domain/month';
+import { addMonths, MAX_DATE, MIN_DATE, monthOf, type Month } from '$lib/domain/month';
 
 export const RANGE_PRESETS = [
 	'this_month',
 	'last_month',
 	'last_3_months',
 	'last_12_months',
-	'this_year'
+	'this_year',
+	'all'
 ] as const;
 
 export type RangePreset = (typeof RANGE_PRESETS)[number];
@@ -36,5 +37,9 @@ export function presetRange(preset: RangePreset, today: string): DateRange {
 			return span(addMonths(month, -11), month);
 		case 'this_year':
 			return span(`${today.slice(0, 4)}-01`, `${today.slice(0, 4)}-12`);
+		// Every date the schema allows, so a transaction dated next month still counts. The
+		// net-worth report clamps the future away for itself.
+		case 'all':
+			return { from: MIN_DATE, to: MAX_DATE };
 	}
 }

@@ -19,6 +19,9 @@ test('shows spending by category with its transactions, and net worth', async ({
 
 	await page.getByRole('link', { name: 'Reports' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Reports' })).toBeVisible();
+	// One control scopes the whole page; two would be ambiguous to read and to drive.
+	await expect(page.getByLabel('Period')).toHaveCount(1);
+
 	const table = page.getByTestId('spending-table');
 	await expect(table.locator('tbody tr')).toHaveText([
 		/Groceries.*\$75\.00.*65\.2%/,
@@ -30,12 +33,39 @@ test('shows spending by category with its transactions, and net worth', async ({
 	const drill = page.getByRole('region', { name: 'Transactions in Groceries' });
 	await expect(drill.getByRole('listitem')).toHaveText([/Bakery.*-\$15\.00/, /Market.*-\$60\.00/]);
 
-	await page.getByLabel('Period').first().selectOption('last_month');
+	await page.getByLabel('Period').selectOption('last_month');
 	await expect(page.getByText('No spending in this period.')).toBeVisible();
 
+	// All time reaches back over the empty month to the spending again.
+	await page.getByLabel('Period').selectOption('all');
+	await expect(table.locator('tfoot')).toContainText('$115.00');
+
+	await expect(page.getByTestId('net-worth-current')).toHaveText('$885.00');
 	await expect(page.getByTestId('net-worth-table').locator('tbody tr').first()).toContainText(
 		'$885.00'
 	);
+});
+
+test('scopes both reports with a custom range', async ({ page }) => {
+	await onboard(page);
+	await spend(page, 'Market', '60', 'Groceries');
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+
+	// A single month has no trend to draw, so the chart gives way to a hint.
+	await expect(page.getByText('Pick a longer period to see the trend.')).toBeVisible();
+	await expect(page.getByTestId('net-worth-chart')).toBeHidden();
+
+	await page.getByLabel('Period').selectOption('custom');
+	const dialog = page.getByRole('dialog');
+	const today = new Date();
+	const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+	await dialog.getByLabel('From').fill(`${month}-01`);
+	await dialog.getByLabel('To').fill(`${month}-28`);
+	await dialog.getByRole('button', { name: 'Apply' }).click();
+	await expect(dialog).toBeHidden();
+
+	await expect(page.getByTestId('spending-table').locator('tfoot')).toContainText('$60.00');
 });
 
 test.describe('on a phone', () => {
@@ -46,6 +76,8 @@ test.describe('on a phone', () => {
 		await spend(page, 'Market', '60', 'Groceries');
 		await spend(page, 'Electric company', '90', 'Utilities');
 		await page.getByRole('link', { name: 'Reports' }).click();
+		// The period control is one row, so the report is on screen without scrolling past a filter.
+		await expect(page.getByLabel('Period')).toBeVisible();
 		await expect(page.getByTestId('spending-table')).toContainText('Groceries');
 	});
 });

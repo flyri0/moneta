@@ -7,7 +7,9 @@ import {
 	compareMonths,
 	monthRange,
 	todayIso,
-	currentMonth
+	currentMonth,
+	MIN_DATE,
+	MAX_DATE
 } from './month';
 
 describe('month helpers', () => {
@@ -23,6 +25,13 @@ describe('month helpers', () => {
 		expect(isMonth('2199-12')).toBe(true);
 		expect(isMonth('2200-01')).toBe(false);
 		expect(isMonth('9999-01')).toBe(false);
+	});
+
+	it('spans the whole allowed range with MIN_DATE and MAX_DATE', () => {
+		expect(isDate(MIN_DATE)).toBe(true);
+		expect(isDate(MAX_DATE)).toBe(true);
+		expect(isDate('1899-12-31')).toBe(false);
+		expect(isDate('2200-01-01')).toBe(false);
 	});
 
 	it('validates real calendar dates', () => {
