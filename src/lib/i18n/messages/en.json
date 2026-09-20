@@ -29,7 +29,7 @@
 	"welcome_source": "Source code",
 	"welcome_license": "MIT license",
 	"welcome_installed_title": "Moneta is installed",
-	"welcome_installed_body": "Open it from your home screen or app list. Leaving it open here too would lock the installed app out.",
+	"welcome_installed_body": "Open it from your home screen or app list. Moneta can only be open in one place at a time, so if you stay in this tab the installed app won't open.",
 	"welcome_installed_continue": "Use it here anyway",
 	"welcome_help_title": "Install Moneta",
 	"welcome_help_ios": "Tap the Share button, then “Add to Home Screen”.",

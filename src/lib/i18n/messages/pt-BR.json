@@ -29,7 +29,7 @@
 	"welcome_source": "Código-fonte",
 	"welcome_license": "Licença MIT",
 	"welcome_installed_title": "O Moneta foi instalado",
-	"welcome_installed_body": "Abra pela tela de início ou pela lista de apps. Deixá-lo aberto aqui também trancaria o app instalado do lado de fora.",
+	"welcome_installed_body": "Abra pela tela de início ou pela lista de apps. O Moneta só pode ficar aberto em um lugar por vez: se você continuar nesta aba, o app instalado não vai abrir.",
 	"welcome_installed_continue": "Usar aqui mesmo assim",
 	"welcome_help_title": "Instalar o Moneta",
 	"welcome_help_ios": "Toque no botão Compartilhar e escolha “Adicionar à Tela de Início”.",
