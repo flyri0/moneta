@@ -17,7 +17,9 @@ test('fills a throwaway budget with data and says so', async ({ page }) => {
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 	await expect(categoryRow(page, 'Groceries')).toBeVisible();
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	// The sidebar lists the accounts too, so scope to the page or the row matches twice.
 	await page
+		.getByRole('main')
 		.getByTestId('account-row')
 		.filter({ hasText: 'Credit Card' })
 		.getByRole('link')
