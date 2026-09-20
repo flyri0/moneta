@@ -65,13 +65,30 @@
 	});
 </script>
 
+{#snippet bottomLink(item: (typeof nav)[number])}
+	<a
+		href={item.href}
+		aria-current={item.active ? 'page' : undefined}
+		class="flex flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground aria-[current=page]:text-foreground"
+	>
+		<item.icon class="size-5" />
+		{item.label}
+	</a>
+{/snippet}
+
 <div class="flex min-h-dvh">
 	<aside
 		class="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r bg-sidebar p-3 text-sidebar-foreground md:flex"
 	>
-		<div class="px-2 pt-2">
-			<p class="text-lg font-semibold">{m.app_name()}</p>
-			<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
+		<div class="grid gap-3 px-2 pt-2">
+			<div>
+				<p class="text-lg font-semibold">{m.app_name()}</p>
+				<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
+			</div>
+			<Button size="lg" onclick={() => (adding = true)}>
+				<PlusIcon />
+				{m.add_transaction()}
+			</Button>
 		</div>
 		<nav class="grid gap-1" aria-label={m.nav_label()}>
 			{#each nav as item (item.label)}
@@ -88,30 +105,30 @@
 		<AccountList accounts={accounts.data ?? []} />
 	</aside>
 
-	<main class="min-w-0 flex-1 pb-32 md:pb-24">{@render children()}</main>
-
-	<Button
-		class="fixed right-4 bottom-20 z-40 rounded-full shadow-lg md:bottom-6"
-		size="lg"
-		onclick={() => (adding = true)}
-	>
-		<PlusIcon />
-		{m.add_transaction()}
-	</Button>
+	<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>
 
 	<nav
-		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
 		aria-label={m.nav_label()}
 	>
-		{#each nav as item (item.label)}
-			<a
-				href={item.href}
-				aria-current={item.active ? 'page' : undefined}
-				class="flex flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground aria-[current=page]:text-foreground"
+		{#each nav.slice(0, 2) as item (item.label)}
+			{@render bottomLink(item)}
+		{/each}
+		<button
+			type="button"
+			onclick={() => (adding = true)}
+			class="relative flex flex-col items-center justify-end py-2 text-xs text-muted-foreground"
+		>
+			<!-- Lifted out of the bar without moving the label off the other labels' baseline. -->
+			<span
+				class="absolute -top-7 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background"
 			>
-				<item.icon class="size-5" />
-				{item.label}
-			</a>
+				<PlusIcon class="size-6" />
+			</span>
+			{m.add_transaction()}
+		</button>
+		{#each nav.slice(2) as item (item.label)}
+			{@render bottomLink(item)}
 		{/each}
 	</nav>
 </div>
