@@ -104,6 +104,19 @@ export function formatMonthLong(month: Month, locale: string): string {
 	}).format(utc(month));
 }
 
+/** "Sep" / "set." or "September" / "setembro" for a 1-based month number. */
+export function formatMonthName(
+	monthNumber: number,
+	locale: string,
+	length: 'short' | 'long' = 'short'
+): string {
+	const date = new Date(Date.UTC(2026, monthNumber - 1, 1));
+	return new Intl.DateTimeFormat(locale, {
+		month: length,
+		timeZone: 'UTC'
+	}).format(date);
+}
+
 /** "Sep 5, 2026" / "5 de set. de 2026". */
 export function formatDate(date: string, locale: string): string {
 	return new Intl.DateTimeFormat(locale, {

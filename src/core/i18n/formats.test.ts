@@ -6,6 +6,7 @@ import {
 	formatDateTime,
 	formatMonth,
 	formatMonthLong,
+	formatMonthName,
 	localeChoices,
 	suggestCurrency
 } from './formats';
@@ -47,6 +48,10 @@ describe('dates', () => {
 		expect(formatMonth('2026-09', 'en')).toBe('Sep 2026');
 		expect(formatMonth('2026-09', 'pt-BR')).toBe('set. de 2026');
 		expect(formatMonthLong('2026-09', 'pt-BR')).toBe('setembro de 2026');
+		expect(formatMonthName(9, 'en')).toBe('Sep');
+		expect(formatMonthName(9, 'pt-BR')).toBe('set.');
+		expect(formatMonthName(9, 'en', 'long')).toBe('September');
+		expect(formatMonthName(9, 'pt-BR', 'long')).toBe('setembro');
 		expect(formatDate('2026-09-05', 'en')).toBe('Sep 5, 2026');
 		expect(formatDate('2026-01-01', 'pt-BR')).toBe('1 de jan. de 2026');
 	});
