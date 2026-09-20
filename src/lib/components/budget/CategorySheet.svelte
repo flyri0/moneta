@@ -7,6 +7,7 @@
 	import ResponsiveDialog from '$lib/components/ResponsiveDialog.svelte';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { runAction } from '$lib/client/notify';
+	import { categoryProgress } from '$lib/budget/progress';
 	import { moveTargets, type GridModel } from '$lib/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$lib/db/repos/budget';
 	import { formatAmountInput } from '$lib/domain/money';
@@ -40,6 +41,7 @@
 	let error = $state<string | null>(null);
 
 	const targets = $derived(moveTargets(model, category.id));
+	const progress = $derived(categoryProgress(category));
 
 	// Reset the form each time the sheet opens for a category.
 	$effect(() => {
@@ -83,9 +85,17 @@
 
 <ResponsiveDialog bind:open title={category.name}>
 	<div class="grid gap-5">
-		<div class="flex items-center justify-between text-sm">
-			<span class="text-muted-foreground">{m.budget_available()}</span>
-			<AvailablePill {category} />
+		<div class="grid gap-1">
+			<div class="flex items-center justify-between text-sm">
+				<span class="text-muted-foreground">{m.budget_available()}</span>
+				<AvailablePill {category} />
+			</div>
+			<p class="text-xs text-muted-foreground tabular-nums">
+				{m.budget_progress_spent({
+					spent: session.format(progress.spent),
+					funded: session.format(progress.funded)
+				})}
+			</p>
 		</div>
 
 		<form class="grid gap-2" onsubmit={saveAssigned}>
@@ -117,8 +127,12 @@
 					onclick={() => (moveDirection = 'from')}>{m.budget_move_from()}</Button
 				>
 			</div>
-			<div class="grid grid-cols-[1fr_8rem] gap-2">
-				<NativeSelect class="w-full" bind:value={otherId} aria-label={m.budget_move_other()}>
+			<div class="grid min-w-0 grid-cols-[1fr_7rem] gap-2">
+				<NativeSelect
+					class="w-full min-w-0"
+					bind:value={otherId}
+					aria-label={m.budget_move_other()}
+				>
 					<NativeSelectOption value="">{m.budget_move_other()}</NativeSelectOption>
 					{#each targets as target (target.id)}
 						<NativeSelectOption value={target.id}

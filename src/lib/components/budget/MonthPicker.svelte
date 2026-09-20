@@ -12,7 +12,7 @@
 	const today = currentMonth();
 </script>
 
-<div class="flex items-center gap-1">
+<div class="flex min-w-0 items-center gap-1">
 	<Button
 		variant="ghost"
 		size="icon"
@@ -21,7 +21,10 @@
 	>
 		<ChevronLeftIcon />
 	</Button>
-	<h1 class="min-w-40 text-center text-lg font-semibold capitalize" data-testid="month-label">
+	<h1
+		class="min-w-0 flex-1 truncate text-center text-lg font-semibold capitalize md:min-w-40 md:flex-none"
+		data-testid="month-label"
+	>
 		{formatMonthLong(month, getLocale())}
 	</h1>
 	<Button
@@ -33,7 +36,12 @@
 		<ChevronRightIcon />
 	</Button>
 	{#if month !== today}
-		<Button variant="outline" size="sm" href={resolve('/budget/[month]', { month: today })}>
+		<Button
+			variant="outline"
+			size="sm"
+			class="shrink-0"
+			href={resolve('/budget/[month]', { month: today })}
+		>
 			{m.budget_this_month()}
 		</Button>
 	{/if}

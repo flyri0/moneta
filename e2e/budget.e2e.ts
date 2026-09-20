@@ -42,9 +42,28 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 	const hiddenGroceries = categoryRow(page, 'Groceries');
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
 
-	await page.getByRole('button', { name: 'Everyday' }).click();
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
 	await page.getByRole('dialog').getByRole('button', { name: 'Clear' }).click();
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
+});
+
+test('collapses a group and remembers it across reloads', async ({ page }) => {
+	await onboard(page);
+	const everyday = page.getByTestId('group-row').filter({ hasText: 'Everyday' });
+	await expect(categoryRow(page, 'Groceries')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Collapse Everyday' }).click();
+	await expect(categoryRow(page, 'Groceries')).toBeHidden();
+	await expect(everyday).toBeVisible();
+
+	await page.reload();
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(categoryRow(page, 'Groceries')).toBeHidden();
+
+	await page.getByRole('button', { name: 'Collapse all' }).click();
+	await expect(categoryRow(page, 'Rent or Mortgage')).toBeHidden();
+	await page.getByRole('button', { name: 'Expand all' }).click();
+	await expect(categoryRow(page, 'Groceries')).toBeVisible();
 });
 
 test.describe('on a phone', () => {
@@ -65,6 +84,54 @@ test.describe('on a phone', () => {
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
 		await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$55.00');
 	});
+
+	test('shows how much of a category is spent', async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('300');
+		await sheet.getByRole('button', { name: 'Save' }).first().click();
+		await expect(sheet).toBeHidden();
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByLabel('Account', { exact: true }).selectOption({ label: 'Checking' });
+		await dialog.getByLabel('Payee').fill('Market');
+		await dialog.getByLabel('Amount', { exact: true }).fill('240');
+		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Groceries' });
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden();
+
+		const groceries = categoryRow(page, 'Groceries');
+		await expect(groceries.getByTestId('available')).toHaveText('$60.00');
+		await expect(groceries.getByTestId('progress')).toHaveText('$240.00 of $300.00 spent');
+	});
+
+	test('collapses a group from the card list', async ({ page }) => {
+		await onboard(page);
+		await expect(categoryRow(page, 'Groceries')).toBeVisible();
+
+		await page.getByRole('button', { name: 'Collapse Everyday' }).click();
+		await expect(categoryRow(page, 'Groceries')).toBeHidden();
+
+		await page.getByRole('button', { name: 'Collapse all' }).click();
+		await expect(categoryRow(page, 'Rent or Mortgage')).toBeHidden();
+		await page.getByRole('button', { name: 'Expand all' }).click();
+		await expect(categoryRow(page, 'Groceries')).toBeVisible();
+	});
+
+	test('never scrolls sideways', async ({ page }) => {
+		await onboard(page);
+		const overflow = () =>
+			page.evaluate(
+				() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+			);
+		expect(await overflow()).toBeLessThanOrEqual(0);
+
+		await page.setViewportSize({ width: 360, height: 640 });
+		await expect(page.getByTestId('month-label')).toBeVisible();
+		expect(await overflow()).toBeLessThanOrEqual(0);
+	});
 });
 
 test('adds a group and a category, and reorders categories', async ({ page }) => {
@@ -72,7 +139,7 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 	await page.getByRole('button', { name: 'Add group' }).click();
 	await page.getByRole('dialog').getByLabel('Group name').fill('Pets');
 	await page.getByRole('dialog').getByRole('button', { name: 'Add' }).click();
-	await page.getByRole('button', { name: 'Pets' }).click();
+	await page.getByRole('button', { name: 'Pets', exact: true }).click();
 	await page.getByRole('dialog').getByLabel('New category').fill('Vet');
 	await page.getByRole('dialog').getByRole('button', { name: 'Add', exact: true }).click();
 	await page.keyboard.press('Escape');
