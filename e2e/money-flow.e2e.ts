@@ -8,7 +8,7 @@ async function addTransaction(
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Account', t.account, t.account);
-	await dialog.getByLabel('Payee').fill(t.payee);
+	await chooseCombobox(dialog, 'Payee', t.payee, t.payee);
 	if (t.inflow) await dialog.getByRole('button', { name: 'Inflow' }).click();
 	await dialog.getByLabel('Amount', { exact: true }).fill(t.amount);
 	if (t.category) await chooseCombobox(dialog, 'Category', t.category, t.category);
@@ -80,7 +80,7 @@ test('records a split and shows it in the register', async ({ page }) => {
 
 	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 	const dialog = page.getByRole('dialog');
-	await dialog.getByLabel('Payee').fill('Big Store');
+	await chooseCombobox(dialog, 'Payee', 'Big Store', 'Big Store');
 	await dialog.getByLabel('Amount', { exact: true }).fill('80');
 	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 	await dialog.getByRole('button', { name: 'Split' }).click();

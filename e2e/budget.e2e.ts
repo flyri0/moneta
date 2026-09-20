@@ -96,7 +96,7 @@ test.describe('on a phone', () => {
 		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 		const dialog = page.getByRole('dialog');
 		await chooseCombobox(dialog, 'Account', 'Checking', 'Checking');
-		await dialog.getByLabel('Payee').fill('Market');
+		await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('240');
 		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 		await dialog.getByRole('button', { name: 'Save' }).click();

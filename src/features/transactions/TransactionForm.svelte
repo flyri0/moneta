@@ -5,7 +5,7 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import { Combobox } from '$ui/combobox';
+	import { Combobox, type ComboboxGroup } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
@@ -47,6 +47,34 @@
 
 	const openAccounts = $derived(ctx.accounts.filter((a) => !a.closed || a.id === draft.accountId));
 	const accountItems = $derived(openAccounts.map((a) => ({ value: a.id, label: a.name })));
+	const payeeGroups = $derived.by(() => {
+		const groups: ComboboxGroup[] = [];
+		const targets = transferTargets(draft, ctx);
+		if (targets.length > 0) {
+			groups.push({
+				heading: m.transaction_transfers_group(),
+				items: targets.map((a) => {
+					const label = ctx.transferLabel(a.name);
+					return { value: label, label };
+				})
+			});
+		}
+		const payees = [...ctx.payees];
+		if (
+			draft.payee &&
+			!payees.some((p) => p.name === draft.payee) &&
+			!targets.some((a) => ctx.transferLabel(a.name) === draft.payee)
+		) {
+			payees.unshift({ id: 'current', name: draft.payee, lastCategoryId: null });
+		}
+		if (payees.length > 0) {
+			groups.push({
+				heading: m.transaction_payees_group(),
+				items: payees.map((p) => ({ value: p.name, label: p.name }))
+			});
+		}
+		return groups;
+	});
 	const mode = $derived(categoryMode(draft, ctx));
 	const options = $derived(categoryOptions(draft, ctx));
 	const categoryGroups = $derived(
@@ -161,21 +189,16 @@
 
 	<div class="grid gap-2">
 		<Label for="txn-payee">{m.transaction_payee()}</Label>
-		<Input
+		<Combobox
 			id="txn-payee"
-			list="txn-payees"
-			autocomplete="off"
+			ariaLabel={m.transaction_payee()}
+			groups={payeeGroups}
 			bind:value={draft.payee}
-			onchange={payeeChanged}
+			allowCustom
+			onSelect={payeeChanged}
+			placeholder={m.transaction_payee()}
+			emptyOption={{ value: '', label: m.transaction_no_payee() }}
 		/>
-		<datalist id="txn-payees">
-			{#each transferTargets(draft, ctx) as account (account.id)}
-				<option value={ctx.transferLabel(account.name)}></option>
-			{/each}
-			{#each ctx.payees as payee (payee.id)}
-				<option value={payee.name}></option>
-			{/each}
-		</datalist>
 	</div>
 
 	<div class="grid gap-2">

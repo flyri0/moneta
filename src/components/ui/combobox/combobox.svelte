@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
 	import * as Popover from '$ui/popover';
 	import { cn } from '$utils';
@@ -31,7 +32,9 @@
 		class: className,
 		contentClass,
 		ariaLabel,
-		onSelect
+		onSelect,
+		allowCustom = false,
+		createLabel
 	}: {
 		value?: string;
 		items?: ComboboxItem[];
@@ -47,9 +50,18 @@
 		contentClass?: string;
 		ariaLabel?: string;
 		onSelect?: (val: string) => void;
+		allowCustom?: boolean;
+		createLabel?: (query: string) => string;
 	} = $props();
 
 	let open = $state(false);
+	let search = $state('');
+
+	$effect(() => {
+		if (!open) {
+			search = '';
+		}
+	});
 
 	const allItems = $derived.by(() => {
 		const list: ComboboxItem[] = [];
@@ -61,12 +73,25 @@
 
 	const selectedLabel = $derived.by(() => {
 		const match = allItems.find((i) => i.value === value);
-		return match ? match.label : placeholder;
+		if (match) return match.label;
+		if (allowCustom && value) return value;
+		return placeholder;
 	});
+
+	const trimmedSearch = $derived(search.trim());
+	const hasExactMatch = $derived(
+		allItems.some(
+			(i) =>
+				i.label.toLowerCase() === trimmedSearch.toLowerCase() ||
+				i.value.toLowerCase() === trimmedSearch.toLowerCase()
+		)
+	);
+	const showCreateOption = $derived(allowCustom && trimmedSearch.length > 0 && !hasExactMatch);
 
 	function handleSelect(newVal: string) {
 		value = newVal;
 		open = false;
+		search = '';
 		onSelect?.(newVal);
 	}
 </script>
@@ -98,8 +123,10 @@
 		align="start"
 	>
 		<Command.Root>
-			<Command.Input placeholder={searchPlaceholder} />
-			<Command.List class="max-h-60 overflow-y-auto">
+			<Command.Input placeholder={searchPlaceholder} bind:value={search} />
+			<Command.List
+				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
+			>
 				<Command.Empty>{emptyText}</Command.Empty>
 				{#if emptyOption}
 					<Command.Group>
@@ -146,6 +173,28 @@
 								<span>{item.label}</span>
 							</Command.Item>
 						{/each}
+					</Command.Group>
+				{/if}
+				{#if showCreateOption}
+					<Command.Separator />
+					<Command.Group>
+						<Command.Item
+							value={trimmedSearch}
+							keywords={[trimmedSearch]}
+							onSelect={() => handleSelect(trimmedSearch)}
+							class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
+						>
+							<div
+								class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+							>
+								<PlusIcon class="size-3.5 stroke-[2.5]" />
+							</div>
+							<span class="truncate">
+								{createLabel
+									? createLabel(trimmedSearch)
+									: m.combobox_create({ name: trimmedSearch })}
+							</span>
+						</Command.Item>
 					</Command.Group>
 				{/if}
 			</Command.List>
