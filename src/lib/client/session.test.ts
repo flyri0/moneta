@@ -190,6 +190,48 @@ describe('restoreBudget', () => {
 		expect([...files.keys()]).toEqual([file]);
 		expect((await api.meta.get()).name).toBe('Home');
 	});
+
+	it('restores a backup when no budget is open (onboarding)', async () => {
+		const { api, store, files } = await setup();
+		await createBudget(api, store, HOME);
+		const backup = await api.system.exportFile();
+		await api.system.close();
+		for (const f of files.keys()) {
+			await api.system.deleteFile(f);
+		}
+		store.setItem('moneta.registry', JSON.stringify({ budgets: [], lastOpened: null }));
+
+		const restored = await restoreBudget(api, store, backup);
+		expect(restored.meta.name).toBe('Home');
+		expect(loadRegistry(store)).toEqual({
+			budgets: [{ file: restored.file, name: 'Home' }],
+			lastOpened: restored.file
+		});
+		const [account] = await api.accounts.list();
+		expect(account).toMatchObject({ name: 'Checking', balance: 150000 });
+	});
+
+	it('cleans up if opening the restored backup fails when no budget is open', async () => {
+		const { api, store, files } = await setup();
+		await createBudget(api, store, HOME);
+		const backup = await api.system.exportFile();
+		await api.system.close();
+		for (const f of files.keys()) {
+			await api.system.deleteFile(f);
+		}
+		store.setItem('moneta.registry', JSON.stringify({ budgets: [], lastOpened: null }));
+
+		const failing: SessionApi = {
+			meta: api.meta,
+			accounts: api.accounts,
+			system: {
+				...pick(api.system),
+				open: () => Promise.reject(new Error('disk error'))
+			}
+		};
+		await expect(restoreBudget(failing, store, backup)).rejects.toThrow('disk error');
+		expect(files.size).toBe(0);
+	});
 });
 
 /** Copies the system calls off the RPC proxy (a proxy has no own keys to spread). */

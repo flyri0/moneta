@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { signedStartingBalance } from '$lib/accounts/account-form';
+	import { toast } from 'svelte-sonner';
 	import { runAction } from '$lib/client/notify';
-	import { createBudget, type SessionApi } from '$lib/client/session';
+	import { createBudget, restoreBudget, type SessionApi } from '$lib/client/session';
 	import type { AccountType } from '$lib/db/repos/accounts';
 	import type { BudgetMeta } from '$lib/db/repos/meta';
 	import { parseAmount } from '$lib/domain/money';
@@ -107,12 +108,33 @@
 		if (stepAfter(steps, step)) next();
 		else finish();
 	}
+
+	async function restore(file: File) {
+		busy = true;
+		error = null;
+		const bytes = new Uint8Array(await file.arrayBuffer());
+		error = await runAction(async () => {
+			const restored = await restoreBudget(api, localStorage, bytes);
+			void navigator.storage?.persist?.();
+			toast.success(m.backup_restored());
+			onCreated(restored.file, restored.meta);
+		});
+		busy = false;
+	}
 </script>
 
 {#if step === 'welcome'}
 	<WelcomeStep current={stepNumber(steps, step)} {total} onNext={next} />
 {:else if step === 'backups'}
-	<BackupsStep current={stepNumber(steps, step)} {total} onNext={next} onBack={back} />
+	<BackupsStep
+		current={stepNumber(steps, step)}
+		{total}
+		{busy}
+		{error}
+		onNext={next}
+		onBack={back}
+		onRestore={restore}
+	/>
 {:else if step === 'budget'}
 	<BudgetStep
 		title={onCancel ? m.onboarding_new_title() : m.onboarding_budget_section()}

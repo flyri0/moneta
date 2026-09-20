@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, nextStep, onboard, skipIntro } from './helpers';
+import { categoryRow, nextStep, onboard, openSettings, skipIntro } from './helpers';
 
 test('onboarding creates a budget that survives a reload', async ({ page }) => {
 	await onboard(page);
@@ -82,4 +82,42 @@ test.describe('onboarding on a phone', () => {
 		await expect(page.locator('html')).toHaveAttribute('data-theme', 'amber');
 		await expect(page.getByRole('button', { name: 'Accent color' })).toContainText('Amber');
 	});
+});
+
+test('restores a backup directly from the onboarding backups step', async ({
+	context
+}, testInfo) => {
+	const page1 = await context.newPage();
+	await onboard(page1);
+	await openSettings(page1);
+	const backup = testInfo.outputPath('backups-step-backup.sqlite');
+	const downloading = page1.waitForEvent('download');
+	await page1.getByRole('button', { name: 'Back up now' }).click();
+	const file = await downloading;
+	await file.saveAs(backup);
+	await page1.close();
+
+	const cleanContext = await context.browser()!.newContext();
+	const page2 = await cleanContext.newPage();
+	await page2.goto('/');
+	await expect(page2.getByText('Welcome to Moneta')).toBeVisible();
+
+	// Advance to Step 2 (Backups warning)
+	await nextStep(page2).click();
+	await expect(page2.getByText('One thing to know')).toBeVisible();
+	await expect(page2.getByText('Already have a backup?')).toBeVisible();
+
+	// Pick invalid file first to test inline error display on Step 2
+	await page2.getByLabel('Restore from a backup').setInputFiles({
+		name: 'invalid.sqlite',
+		mimeType: 'application/vnd.sqlite3',
+		buffer: Buffer.from('not a sqlite database')
+	});
+	await expect(page2.getByRole('alert')).toHaveText("That file isn't a Moneta backup (.sqlite).");
+
+	// Pick valid backup to restore
+	await page2.getByLabel('Restore from a backup').setInputFiles(backup);
+	await expect(page2.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(categoryRow(page2, 'Groceries')).toBeVisible();
+	await cleanContext.close();
 });

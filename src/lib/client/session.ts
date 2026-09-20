@@ -124,8 +124,8 @@ export async function restoreBudget(
 	api: SessionApi,
 	store: KeyValueStore,
 	bytes: Uint8Array,
-	openFile: string,
-	replace: boolean
+	openFile?: string,
+	replace: boolean = false
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	const file = newBudgetFile();
 	await api.system.importFile(file, bytes);
@@ -135,11 +135,11 @@ export async function restoreBudget(
 		meta = await api.meta.get();
 	} catch (err) {
 		await api.system.deleteFile(file).catch(() => {});
-		await api.system.open(openFile).catch(() => {});
+		if (openFile) await api.system.open(openFile).catch(() => {});
 		throw err;
 	}
 	let registry = upsertBudget(loadRegistry(store), { file, name: meta.name });
-	if (replace) {
+	if (replace && openFile) {
 		await api.system.deleteFile(openFile);
 		registry = removeBudget(registry, openFile);
 	}

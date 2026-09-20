@@ -74,6 +74,8 @@
 	"onboarding_backups_point_only_here": "O orçamento existe só neste navegador. Limpar os dados do site, ou perder o dispositivo, também o perde.",
 	"onboarding_backups_point_file": "Um backup é o orçamento inteiro em um arquivo .sqlite. Salve um a cada duas semanas e guarde-o em outro lugar.",
 	"onboarding_backups_point_planned": "Backups automáticos na sua própria nuvem estão planejados. Até lá o passo é manual, e o Moneta vai lembrar você.",
+	"onboarding_restore_title": "Já tem um backup?",
+	"onboarding_restore_hint": "Se você já usou o Moneta antes, restaure seu arquivo .sqlite agora para continuar de onde parou e pular a configuração.",
 	"onboarding_budget_section": "Seu orçamento",
 	"onboarding_budget_name": "Nome do orçamento",
 	"onboarding_default_budget_name": "Meu orçamento",

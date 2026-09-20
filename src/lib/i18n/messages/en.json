@@ -74,6 +74,8 @@
 	"onboarding_backups_point_only_here": "The budget lives only in this browser. Clearing the site's data, or losing the device, loses it.",
 	"onboarding_backups_point_file": "A backup is the whole budget in one .sqlite file. Save one every couple of weeks and keep it somewhere else.",
 	"onboarding_backups_point_planned": "Automatic backups to your own cloud storage are planned. Until then it's a manual step, and Moneta will remind you.",
+	"onboarding_restore_title": "Already have a backup?",
+	"onboarding_restore_hint": "If you used Moneta before, restore your .sqlite file now to keep your data and skip the rest of the setup.",
 	"onboarding_budget_section": "Your budget",
 	"onboarding_budget_name": "Budget name",
 	"onboarding_default_budget_name": "My Budget",
