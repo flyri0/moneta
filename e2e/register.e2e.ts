@@ -34,16 +34,6 @@ test.describe('on a phone', () => {
 
 		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 		const dialog = page.getByRole('dialog');
-		const outflowBtn = dialog.getByRole('button', { name: 'Outflow' });
-		const inflowBtn = dialog.getByRole('button', { name: 'Inflow' });
-		await expect(outflowBtn).toHaveClass(/bg-red-100/);
-		await expect(inflowBtn).not.toHaveClass(/bg-emerald-100/);
-		await inflowBtn.click();
-		await expect(inflowBtn).toHaveClass(/bg-emerald-100/);
-		await expect(outflowBtn).not.toHaveClass(/bg-red-100/);
-		await outflowBtn.click();
-		await expect(outflowBtn).toHaveClass(/bg-red-100/);
-		await expect(inflowBtn).not.toHaveClass(/bg-emerald-100/);
 
 		await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('40');
@@ -70,5 +60,22 @@ test.describe('on a phone', () => {
 		const splitRow = page.getByTestId('register-row').filter({ hasText: 'Big Store' });
 		await splitRow.getByRole('button', { name: 'Split (2)' }).click();
 		await expect(splitRow.getByText('Household')).toBeVisible();
+	});
+
+	test('marks which direction the transaction form is set to', async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).click();
+		await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+		const dialog = page.getByRole('dialog');
+		const outflow = dialog.getByRole('button', { name: 'Outflow' });
+		const inflow = dialog.getByRole('button', { name: 'Inflow' });
+		await expect(outflow).toHaveAttribute('aria-pressed', 'true');
+		await expect(inflow).toHaveAttribute('aria-pressed', 'false');
+
+		await inflow.click();
+		await expect(inflow).toHaveAttribute('aria-pressed', 'true');
+		await expect(outflow).toHaveAttribute('aria-pressed', 'false');
 	});
 });

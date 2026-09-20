@@ -209,18 +209,14 @@
 					size="sm"
 					variant="ghost"
 					aria-pressed={draft.direction === 'outflow'}
-					class={draft.direction === 'outflow'
-						? 'bg-red-100 text-red-900 hover:bg-red-200 hover:text-red-900 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900 dark:hover:text-red-200'
-						: ''}
+					class="aria-pressed:bg-red-100 aria-pressed:text-red-900 aria-pressed:hover:bg-red-200 aria-pressed:hover:text-red-900 dark:aria-pressed:bg-red-950 dark:aria-pressed:text-red-200 dark:aria-pressed:hover:bg-red-900 dark:aria-pressed:hover:text-red-200"
 					onclick={() => (draft.direction = 'outflow')}>{m.transaction_outflow()}</Button
 				>
 				<Button
 					size="sm"
 					variant="ghost"
 					aria-pressed={draft.direction === 'inflow'}
-					class={draft.direction === 'inflow'
-						? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200 hover:text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900 dark:hover:text-emerald-200'
-						: ''}
+					class="aria-pressed:bg-emerald-100 aria-pressed:text-emerald-900 aria-pressed:hover:bg-emerald-200 aria-pressed:hover:text-emerald-900 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200 dark:aria-pressed:hover:bg-emerald-900 dark:aria-pressed:hover:text-emerald-200"
 					onclick={() => (draft.direction = 'inflow')}>{m.transaction_inflow()}</Button
 				>
 			</div>
