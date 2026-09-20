@@ -60,6 +60,25 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - PWA instalável, que funciona offline
 - Inglês e português do Brasil
 
+## Futuro e roadmap
+
+O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de base zero por envelopes. As direções planejadas para as próximas versões incluem:
+
+- **Segurança e soberania de dados**:
+  - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys), além de backups protegidos por criptografia.
+  - **Destinos de backup em nuvem**: Exportação de backups criptografados no próprio dispositivo diretamente para armazenamento do usuário (WebDAV/Nextcloud, Google Drive, Dropbox) e sincronização com pasta local via File System Access API.
+- **Gestão de favorecidos e transações**:
+  - **Tela de gerenciamento de favorecidos**: Interface dedicada para listar favorecidos, renomear em todas as transações passadas de uma só vez, mesclar duplicatas, definir categorias padrão e remover registros não utilizados.
+  - **Transações recorrentes e agendadas**: Agendamento de despesas fixas e receitas com previsão visual de lançamentos futuros no extrato.
+- **Importação e conciliação**:
+  - **Importação de extratos bancários**: Suporte a arquivos OFX, QFX, QIF e CSV com mapeamento inteligente de colunas e detecção de duplicatas.
+  - **Conciliação de contas**: Fluxo assistido de conciliação com o extrato do banco e travamento de transações já conferidas.
+- **Metas e planejamento**:
+  - **Metas por categoria**: Metas de saldo, saldo alvo por data, metas de gastos mensais, barras visuais de progresso e atribuição rápida com um clique ("Metas não cobertas").
+- **Relatórios e produtividade**:
+  - **Novos relatórios**: Demonstrativo mensal de receitas vs. despesas, gastos por favorecido e evolução do fluxo de caixa.
+  - **Navegação rápida e paleta de comandos**: Paleta de comandos rápida (`Ctrl/Cmd + K`) e atalhos de teclado para entrada ágil de transações.
+
 ## Como começar
 
 Você precisa do [Node.js](https://nodejs.org) 24 ou mais novo e do [pnpm](https://pnpm.io)

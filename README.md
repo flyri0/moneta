@@ -61,6 +61,25 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - Installable, offline-capable PWA
 - English and Brazilian Portuguese
 
+## Roadmap (future)
+
+Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelope budgeting. Planned directions for future releases include:
+
+- **Security & Data Sovereignty**:
+  - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys), plus password-protected backup exports.
+  - **Cloud backup targets**: Direct, client-side encrypted backup export to user-owned storage (WebDAV/Nextcloud, Google Drive, Dropbox) and local directory sync via the File System Access API.
+- **Payee & Transaction Management**:
+  - **Payee management screen**: Dedicated interface to view all payees, rename payees across past transactions in one step, merge duplicate payees, assign default categories, and delete unused entries.
+  - **Scheduled & recurring transactions**: Automated recurring bills and income with upcoming cash-flow forecasts in account registers.
+- **Import & Reconciliation**:
+  - **Bank file import**: Drag-and-drop import for OFX, QFX, QIF, and CSV with smart column mapping and duplicate detection.
+  - **Account reconciliation**: Guided register reconciliation against bank statements, with locking for reconciled transactions.
+- **Budgeting & Goals**:
+  - **Category targets & goals**: Target balances, target balances by date, monthly spending goals, visual progress indicators, and one-click "Underfunded" quick-assign.
+- **Analytics & Power Tools**:
+  - **Expanded reports**: Monthly Income vs. Expense matrix, payee spending breakdowns, and cash-flow trends.
+  - **Keyboard-first navigation & command palette**: Quick command palette (`Ctrl/Cmd + K`) and fast transaction entry shortcuts.
+
 ## Getting started
 
 You need [Node.js](https://nodejs.org) 24 or newer and [pnpm](https://pnpm.io) 12 or newer.
