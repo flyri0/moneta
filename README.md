@@ -8,7 +8,7 @@
 
 <p align="center">
 	<strong>English</strong> · <a href="README.pt-BR.md">Português (BR)</a>
-	<br />
+	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
 </p>
 
@@ -25,6 +25,17 @@ It is **local-only**. There is no server, no account and no tracking. Your budge
 SQLite database that lives inside your browser (SQLite WASM on the Origin Private File
 System), and it stays there. Install Moneta as a PWA and it works offline, on your phone
 or your laptop.
+
+## About the name
+
+[Moneta](https://en.wikipedia.org/wiki/Moneta) was a Roman goddess, an epithet of Juno as
+protector of the city's funds. Her name comes from the Latin verb _monere_, "to remind, to
+warn, to advise", and Romans honored her as the advisor who would see they never lacked
+money as long as they stayed just. Money was coined in her temple, which is how her name
+became the word for coinage itself: _money_ and _mint_ in English, _moeda_ in Portuguese and
+_moneda_ in Spanish all trace back to her.
+
+A budgeting app that reminds you where your money is meant to go seemed a fitting namesake.
 
 ## Why you might like it
 

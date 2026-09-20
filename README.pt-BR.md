@@ -8,7 +8,7 @@
 
 <p align="center">
 	<a href="README.md">English</a> · <strong>Português (BR)</strong>
-	<br />
+	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="Status do CI" /></a>
 </p>
 
@@ -24,6 +24,17 @@ de onde tirar o dinheiro — em vez de descobrir isso no fim do mês.
 Ele é **local**. Não há servidor, conta nem rastreamento. Seu orçamento é um banco de dados
 SQLite que vive dentro do seu navegador (SQLite WASM no Origin Private File System) e fica
 por lá. Instale o Moneta como PWA e ele funciona offline, no celular ou no computador.
+
+## Sobre o nome
+
+[Moneta](https://pt.wikipedia.org/wiki/Moneta) era uma deusa romana, um epíteto de Juno como
+protetora dos fundos da cidade. O nome vem do verbo latino _monere_, "lembrar, avisar,
+aconselhar", e os romanos a honravam como a conselheira que garantiria que nunca faltasse
+dinheiro enquanto fossem justos. O dinheiro era cunhado no templo dela, e foi assim que o
+nome dela virou a palavra para a própria moeda: _moeda_ em português, _money_ e _mint_ em
+inglês e _moneda_ em espanhol vêm todas dela.
+
+Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um xará à altura.
 
 ## Por que você pode gostar
 
