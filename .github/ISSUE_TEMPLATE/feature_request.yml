@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement or something new for Moneta.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you run into, not the solution yet.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should Moneta do?
+      description: How would it behave? Where in the app would it live?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What else did you consider?
+      description: Workarounds you use today, or other ways this could work.
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Before you submit
+      options:
+        - label: >-
+            This fits Moneta's design: it works with no server, no account and no network,
+            with the budget stored only on the device.
+          required: true

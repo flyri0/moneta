@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Questions and contributing
+    url: https://github.com/flyri0/moneta/blob/main/CONTRIBUTING.md
+    about: How to set the project up, run the tests and open a pull request.

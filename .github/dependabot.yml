@@ -1,0 +1,31 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm # also covers pnpm lockfiles
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore:'
+    groups:
+      production:
+        # The two runtime dependencies. @sqlite.org/sqlite-wasm is pinned to an exact
+        # build, so its bumps get their own review rather than riding along with tooling.
+        dependency-type: production
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'chore:'
+    groups:
+      actions:
+        patterns:
+          - '*'

@@ -2,8 +2,9 @@
 
 Zero-based envelope budgeting app (YNAB/Actual-style). Local-only static SPA: SvelteKit + Svelte 5 + TypeScript, SQLite WASM on OPFS in a Web Worker. No server, no accounts.
 
-- Design spec: `docs/superpowers/specs/2026-09-19-moneta-v1-design.md` (source of truth)
-- Plans: `docs/superpowers/plans/`. Plans 1 (core), 2 (app UI) and 3 (reports, backup, PWA) are done. Follow-ups and measurements: `docs/superpowers/plans/2026-09-19-moneta-plan-1-followups.md`.
+v1 is feature-complete: budget, accounts and transactions, reports, multiple budget files, backup and restore, and an installable offline PWA. The v1 design spec and implementation plans under `docs/` were removed once they were done; the code and its tests are the source of truth now.
+
+- Contributor-facing docs: `README.md` (and `README.pt-BR.md`), `CONTRIBUTING.md`.
 
 ## Commands
 

@@ -1,18 +1,58 @@
-# Moneta
+<p align="center">
+	<img src="static/icon.svg" width="96" height="96" alt="" />
+</p>
 
-Moneta is a zero-based envelope budgeting app, inspired by YNAB and Actual Budget. It is **local-only**: no server, no account, no tracking. Your budget lives in a SQLite database inside your browser (SQLite WASM on the Origin Private File System). Moneta is built to install as a PWA and work offline.
+<h1 align="center">Moneta</h1>
 
-You give every unit of income a job: money goes from **Ready to Assign** into category envelopes, and spending draws them down. Moneta supports on-budget and off-budget (tracking) accounts, credit cards with automatic payment categories, split transactions, transfers, per-category overspending rollover, and quick-assign helpers.
+<p align="center">Zero-based envelope budgeting that never leaves your device.</p>
 
-> **Status:** v1 is feature-complete: the budget, accounts and transactions, reports (spending by category, net worth), multiple budget files, backup and restore (`.sqlite`), CSV and JSON exports, and an installable PWA that works offline, in English and Brazilian Portuguese. See `docs/superpowers/specs/` for the design and `docs/superpowers/plans/` for the implementation plans.
+<p align="center">
+	<strong>English</strong> · <a href="README.pt-BR.md">Português (BR)</a>
+	<br />
+	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+</p>
 
-## Requirements
+---
 
-- Node.js 24+
-- pnpm 12+
-- For browser (e2e) tests: Chromium from Playwright (see [Testing](#testing))
+## What Moneta is
+
+Moneta is a budgeting app in the spirit of YNAB and Actual Budget. You give every unit of
+income a job: money moves from **Ready to Assign** into category envelopes, and spending
+draws those envelopes down. When an envelope runs dry, you decide where the money comes
+from instead of finding out at the end of the month.
+
+It is **local-only**. There is no server, no account and no tracking. Your budget is a
+SQLite database that lives inside your browser (SQLite WASM on the Origin Private File
+System), and it stays there. Install Moneta as a PWA and it works offline, on your phone
+or your laptop.
+
+## Why you might like it
+
+- **Your money is nobody else's business.** Nothing is uploaded, because there is nowhere
+  to upload it to.
+- **Nothing to sign up for.** Open it and start budgeting.
+- **You own the file.** One budget is one `.sqlite` file. Back it up whenever you want,
+  restore it on another machine, or export to CSV and JSON.
+- **It works on a plane.** The whole app, database and all, runs in the browser.
+
+## What it does
+
+- Zero-based envelope budgeting with Ready to Assign, category groups and per-category
+  overspending rollover
+- Quick-assign helpers: same as last month, spent average, cover overspending, clear
+- On-budget and off-budget (tracking) accounts
+- Credit cards with automatic payment categories
+- Split transactions and transfers between accounts
+- Reports: spending by category and net worth over time
+- Several budget files side by side
+- Backup and restore as `.sqlite`, plus CSV and JSON exports, with a reminder when your
+  last backup is more than two weeks old
+- Installable, offline-capable PWA
+- English and Brazilian Portuguese
 
 ## Getting started
+
+You need [Node.js](https://nodejs.org) 24 or newer and [pnpm](https://pnpm.io) 12 or newer.
 
 ```sh
 pnpm install
@@ -20,57 +60,64 @@ pnpm dev            # start the dev server at http://localhost:5173
 pnpm dev --open     # …and open it in the browser
 ```
 
-Moneta builds to a static site with no server code:
+To build the real thing:
 
 ```sh
-pnpm build          # production build into ./build
-pnpm preview        # serve the build at http://localhost:4173
+pnpm build          # static build into ./build
+pnpm preview        # serve that build at http://localhost:4173
 ```
 
-The `build/` folder can go on any static host that serves `index.html` for unknown paths. No special headers (COOP/COEP) are needed. Serve it from the root of a domain: the service worker, which makes the app work offline, is registered at `/`.
+`build/` is a plain static site. Put it on any host that serves `index.html` for unknown
+paths — no server code, and no COOP/COEP headers needed. Serve it from the root of a
+domain: the service worker that makes the app work offline is registered at `/`.
 
-## Your data
+## Where your data lives
 
-Each budget is one SQLite file in the browser's private storage (OPFS). Settings → Backup saves it as a `.sqlite` file and restores one, and Moneta reminds you when your last backup is more than two weeks old. Before an app update changes a budget's schema, Moneta keeps a copy of the old file in the same storage (the last three).
+Each budget is a single SQLite file in your browser's private storage (OPFS). Nothing
+leaves the device on its own.
 
-The app icons in `static/` are generated from `static/icon.svg` with `pnpm icons`.
+**Settings → Backup** saves that file to your downloads and restores one back, and Moneta
+nudges you when your last backup is more than two weeks old. Before an app update changes
+a budget's schema, Moneta keeps a copy of the old file in the same storage (the last
+three), so an upgrade is never a one-way door.
 
-## Translations
+Because the budget lives in the browser's storage for that site, clearing site data for
+Moneta deletes it. Keep a backup somewhere you control.
 
-UI text lives in `src/lib/i18n/messages/en.json` and `pt-BR.json` and is compiled by [Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) into `src/lib/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check` compile it; `pnpm i18n` does it on its own. Compiling downloads Paraglide's message-format plugins from jsDelivr the first time, so the first build needs a network connection.
+## Development
 
-## Linting and formatting
+| Command          | What it does                                    |
+| ---------------- | ----------------------------------------------- |
+| `pnpm dev`       | Dev server at http://localhost:5173             |
+| `pnpm build`     | Static production build into `./build`          |
+| `pnpm preview`   | Serve `./build` like a static host would        |
+| `pnpm test`      | All unit tests once (Vitest, Node)              |
+| `pnpm test:unit` | The same tests in watch mode                    |
+| `pnpm test:e2e`  | Build, then run Playwright in Chromium          |
+| `pnpm lint`      | Prettier check + ESLint                         |
+| `pnpm check`     | Type-check with svelte-check                    |
+| `pnpm format`    | Fix formatting with Prettier                    |
+| `pnpm i18n`      | Compile the Paraglide messages                  |
+| `pnpm bench`     | Time the budget recompute on a large budget     |
+| `pnpm icons`     | Regenerate the PWA icons from `static/icon.svg` |
 
-```sh
-pnpm lint           # Prettier check + ESLint
-pnpm format         # fix formatting with Prettier
-pnpm check          # type-check with svelte-check / TypeScript
-```
-
-## Testing
-
-Unit and integration tests run in Node with Vitest. The database tests use a real in-memory SQLite (the same WASM build the app uses):
-
-```sh
-pnpm test           # run all unit tests once
-pnpm test:unit      # watch mode
-pnpm bench          # time the budget recompute on a large budget
-```
-
-End-to-end tests (in `e2e/`) run the production build in Chromium with Playwright:
+Unit and integration tests run in Node with Vitest; the database tests use a real
+in-memory SQLite — the same WASM build the app ships. End-to-end tests in `e2e/` run the
+production build in Chromium:
 
 ```sh
 pnpm exec playwright install chromium   # first time only
 pnpm test:e2e
 ```
 
-On a fresh Linux/WSL machine, Chromium may fail to start because system libraries are missing (e.g. `libnspr4.so`). Install them once from a regular terminal:
+On a fresh Linux or WSL machine Chromium may fail to start because system libraries are
+missing (for example `libnspr4.so`). Install them once from a regular terminal:
 
 ```sh
 sudo pnpm exec playwright install-deps chromium
 ```
 
-## Project layout
+### Project layout
 
 ```
 src/lib/domain/        pure TypeScript: money, months, budget engine, quick-assign
@@ -85,5 +132,22 @@ src/lib/i18n/          message catalogs (en, pt-BR), error messages, labels and 
 src/lib/components/    Svelte components (ui/ holds the shadcn-svelte primitives)
 src/routes/            SvelteKit pages
 e2e/                   Playwright tests
-docs/superpowers/      design spec and implementation plans
 ```
+
+### Translations
+
+UI text lives in `src/lib/i18n/messages/en.json` and `pt-BR.json`, and
+[Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) compiles it into
+`src/lib/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check`
+compile it for you; `pnpm i18n` does it on its own. The first compile downloads Paraglide's
+message-format plugins from jsDelivr, so it needs a network connection once.
+
+## Contributing
+
+Bug reports, translations and pull requests are welcome. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md) — it covers the setup, the handful of rules that keep
+the money math honest, and what CI expects before a PR can land.
+
+## License
+
+[MIT](LICENSE).
