@@ -4,7 +4,7 @@ import { chooseCombobox, chooseSelect, onboard, pickDate } from './helpers';
 async function spend(page: Page, payee: string, amount: string, category: string) {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const dialog = page.getByRole('dialog');
-	await dialog.getByLabel('Payee').fill(payee);
+	await chooseCombobox(dialog, 'Payee', payee, payee);
 	await dialog.getByLabel('Amount', { exact: true }).fill(amount);
 	await chooseCombobox(dialog, 'Category', category, category);
 	await dialog.getByRole('button', { name: 'Save' }).click();

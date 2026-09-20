@@ -34,7 +34,7 @@ test.describe('on a phone', () => {
 
 		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 		const dialog = page.getByRole('dialog');
-		await dialog.getByLabel('Payee').fill('Market');
+		await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('40');
 		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 		await dialog.getByLabel('Memo').fill('Weekly run');
@@ -46,7 +46,7 @@ test.describe('on a phone', () => {
 		await expect(row).toContainText('Weekly run');
 
 		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
-		await dialog.getByLabel('Payee').fill('Big Store');
+		await chooseCombobox(dialog, 'Payee', 'Big Store', 'Big Store');
 		await dialog.getByLabel('Amount', { exact: true }).fill('80');
 		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 		await dialog.getByRole('button', { name: 'Split' }).click();
