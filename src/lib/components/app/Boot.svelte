@@ -11,8 +11,8 @@
 	import type { BudgetMeta } from '$lib/db/repos/meta';
 	import { currentMonth } from '$lib/domain/month';
 	import { m } from '$lib/paraglide/messages';
+	import Onboarding from '$lib/components/onboarding/Onboarding.svelte';
 	import AppShell from './AppShell.svelte';
-	import Onboarding from './Onboarding.svelte';
 	import StartupScreen from './StartupScreen.svelte';
 
 	let { children }: { children: Snippet } = $props();
