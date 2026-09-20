@@ -57,10 +57,11 @@
 	backLabel={m.onboarding_back()}
 	{onBack}
 	{onNext}
+	cardClass="max-w-lg md:max-w-3xl"
 >
-	<div class="grid gap-2">
+	<div class="grid items-start gap-4 md:grid-cols-2">
 		{#each selection as group, gi (group.name)}
-			<Collapsible.Root open class="rounded-lg border">
+			<Collapsible.Root open class="flex flex-col rounded-lg border">
 				<div class="flex items-center gap-3 px-3 py-2">
 					<Checkbox
 						id="starter-group-{gi}"
@@ -81,7 +82,7 @@
 						<span class="sr-only">{group.name}</span>
 					</Collapsible.Trigger>
 				</div>
-				<Collapsible.Content class="grid gap-3 border-t px-3 py-3">
+				<Collapsible.Content class="grid flex-1 gap-3 border-t px-3 py-3">
 					{#each group.categories as category, ci (category.name)}
 						<div class="flex items-center gap-3">
 							<Checkbox
@@ -95,7 +96,7 @@
 							</Label>
 						</div>
 					{/each}
-					<div class="flex gap-2">
+					<div class="mt-auto flex gap-2 pt-1">
 						<Input
 							bind:value={drafts[gi]}
 							placeholder={m.onboarding_categories_add_placeholder()}

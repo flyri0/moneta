@@ -16,6 +16,7 @@
 		onNext,
 		busy = false,
 		error = null,
+		cardClass = 'max-w-lg',
 		children
 	}: {
 		title: string;
@@ -28,6 +29,7 @@
 		onNext: () => void;
 		busy?: boolean;
 		error?: string | null;
+		cardClass?: string;
 		children?: Snippet;
 	} = $props();
 
@@ -37,8 +39,8 @@
 	}
 </script>
 
-<main class="flex min-h-dvh items-start justify-center p-4 sm:items-center">
-	<Card.Root class="w-full max-w-lg">
+<main class="flex min-h-dvh items-start justify-center p-4 sm:items-center sm:py-8">
+	<Card.Root class="w-full {cardClass}">
 		<Card.Header>
 			<p class="text-xs font-medium text-muted-foreground">
 				{m.onboarding_step_of({ current, total })}
