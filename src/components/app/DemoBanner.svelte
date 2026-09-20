@@ -24,11 +24,11 @@
 </script>
 
 <div
-	class="sticky top-0 z-40 shrink-0 border-b bg-primary/10 pt-[env(safe-area-inset-top)] text-primary"
+	class="sticky top-0 z-40 shrink-0 border-b bg-red-600/80 pt-[env(safe-area-inset-top)] text-white dark:bg-red-500/60"
 >
-	<div class="flex h-10 items-center gap-2 px-3">
+	<div class="flex h-16 items-center gap-2 px-3">
 		<TriangleAlertIcon class="size-4 shrink-0" aria-hidden="true" />
-		<p class="min-w-0 flex-1 truncate text-sm">{m.demo_banner_body()}</p>
+		<p class="min-w-0 flex-1 text-sm">{m.demo_banner_body()}</p>
 		<Button size="sm" variant="secondary" class="h-7 shrink-0" onclick={startForReal}>
 			{m.demo_banner_action()}
 		</Button>

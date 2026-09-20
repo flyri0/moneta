@@ -23,7 +23,7 @@
 	let { children }: { children: Snippet } = $props();
 
 	/** The banner's own height, so the sidebar and the sticky table headers can sit below it. */
-	const APP_TOP = '--app-top: calc(2.5rem + 1px + env(safe-area-inset-top))';
+	const APP_TOP = '--app-top: calc(4rem + 1px + env(safe-area-inset-top))';
 
 	const session = useSession();
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
