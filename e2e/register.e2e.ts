@@ -32,7 +32,7 @@ test.describe('on a phone', () => {
 		await page.getByRole('link', { name: 'Accounts' }).click();
 		await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
 
-		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 		const dialog = page.getByRole('dialog');
 		await dialog.getByLabel('Payee').fill('Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('40');

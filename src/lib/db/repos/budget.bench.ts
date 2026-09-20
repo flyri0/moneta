@@ -1,4 +1,4 @@
-import { bench, describe } from 'vitest';
+import { expect, test } from 'vitest';
 import { computeBudget } from '$lib/domain/budget-engine';
 import { addMonths, monthRange } from '$lib/domain/month';
 import { createBudgetDb } from '../testing';
@@ -55,16 +55,19 @@ async function bigBudget(): Promise<Db> {
 const db = await bigBudget();
 const input = loadEngineInput(db);
 
-describe('budget recompute', () => {
-	bench('getBudgetMonth, 5 years of history', () => {
-		getBudgetMonth(db, LAST);
-	});
-
-	bench('loadEngineInput (SQL only)', () => {
-		loadEngineInput(db);
-	});
-
-	bench('computeBudget (engine only)', () => {
-		computeBudget(input, LAST);
-	});
+test('budget recompute', async ({ bench }) => {
+	const result = await bench.compare(
+		bench('getBudgetMonth, 5 years of history', () => {
+			getBudgetMonth(db, LAST);
+		}),
+		bench('loadEngineInput (SQL only)', () => {
+			loadEngineInput(db);
+		}),
+		bench('computeBudget (engine only)', () => {
+			computeBudget(input, LAST);
+		})
+	);
+	expect(result.get('computeBudget (engine only)')).toBeFasterThan(
+		result.get('getBudgetMonth, 5 years of history')
+	);
 });
