@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createTestDb } from '$lib/db/testing';
 import { DomainError } from '$lib/domain/errors';
+import { DEMO_FILE, isDemoOpen, openDemo, requestDemo } from './demo';
 import { loadRegistry, newBudgetFile } from './registry';
 import { RpcError } from './rpc';
 import {
@@ -69,6 +70,44 @@ describe('openLastBudget', () => {
 		files.set(newBudgetFile(), await createTestDb());
 		expect(await openLastBudget(api, store)).toEqual({ kind: 'onboarding' });
 		expect(files.size).toBe(0);
+	});
+
+	it('opens the demo while one is running, without registering it', async () => {
+		const { api, store } = await setup();
+		requestDemo(store);
+		const result = await openLastBudget(api, store);
+		expect(result).toMatchObject({ kind: 'ready', file: DEMO_FILE });
+		expect(loadRegistry(store).budgets).toEqual([]);
+	});
+
+	it('deletes the demo file once the demo has ended', async () => {
+		const { api, store, files } = await setup();
+		requestDemo(store);
+		await openLastBudget(api, store);
+		// Leaving for the welcome page only clears the flag; the file goes on the next start.
+		store.removeItem('moneta.demo');
+
+		expect(await openLastBudget(api, store)).toEqual({ kind: 'onboarding' });
+		expect([...files.keys()]).not.toContain(DEMO_FILE);
+	});
+});
+
+describe('leaving the demo', () => {
+	it('is what creating a real budget does', async () => {
+		const { api, store } = await setup();
+		await openDemo(api, store);
+		await createBudget(api, store, HOME);
+		expect(isDemoOpen(store)).toBe(false);
+	});
+
+	it('is what switching to a real budget does', async () => {
+		const { api, store } = await setup();
+		const { file } = await createBudget(api, store, HOME);
+		requestDemo(store);
+		await openLastBudget(api, store);
+
+		await switchBudget(api, store, file);
+		expect(isDemoOpen(store)).toBe(false);
 	});
 });
 
@@ -180,6 +219,7 @@ describe('restoreBudget', () => {
 		const failing: SessionApi = {
 			meta: api.meta,
 			accounts: api.accounts,
+			demo: api.demo,
 			system: {
 				...pick(api.system),
 				open: (name: string) =>
@@ -224,6 +264,7 @@ describe('restoreBudget', () => {
 		const failing: SessionApi = {
 			meta: api.meta,
 			accounts: api.accounts,
+			demo: api.demo,
 			system: {
 				...pick(api.system),
 				open: () => Promise.reject(new Error('disk error'))

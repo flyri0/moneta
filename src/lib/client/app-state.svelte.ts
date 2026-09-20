@@ -2,6 +2,7 @@ import { createContext } from 'svelte';
 import type { ClientApi } from '$lib/db/api';
 import type { BudgetMeta } from '$lib/db/repos/meta';
 import { formatMoney, formatMoneyCompact, parseAmount, type MoneyFormat } from '$lib/domain/money';
+import { isDemoFile } from './demo';
 import type { RpcClient } from './rpc';
 import type { StartupErrorCode } from './session';
 
@@ -26,6 +27,11 @@ export class BudgetSession {
 
 	get api(): ClientApi {
 		return this.client.api;
+	}
+
+	/** Whether this is the throwaway demo budget rather than one of the user's own. */
+	get isDemo(): boolean {
+		return isDemoFile(this.file);
 	}
 
 	get money(): MoneyFormat {

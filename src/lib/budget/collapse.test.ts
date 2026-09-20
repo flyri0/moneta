@@ -45,7 +45,8 @@ describe('stored collapsed groups', () => {
 			},
 			setItem: () => {
 				throw new Error('blocked');
-			}
+			},
+			removeItem: () => {}
 		};
 		expect(() => saveCollapsed(blocked, A, new Set(['bills']))).not.toThrow();
 		expect(loadCollapsed(blocked, A).size).toBe(0);

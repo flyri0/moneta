@@ -51,7 +51,8 @@ describe('dismissWelcome', () => {
 			getItem: () => null,
 			setItem: () => {
 				throw new Error('QuotaExceededError');
-			}
+			},
+			removeItem: () => {}
 		};
 		expect(() => dismissWelcome(store)).not.toThrow();
 	});

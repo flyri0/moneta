@@ -8,6 +8,7 @@ import * as transactions from './repos/transactions';
 import * as budget from './repos/budget';
 import * as dump from './repos/dump';
 import * as reports from './repos/reports';
+import * as demo from './repos/demo';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -78,6 +79,9 @@ export const api = {
 	},
 	backup: {
 		dump: read((db) => dump.dumpBudget(db))
+	},
+	demo: {
+		create: write(ALL_TABLES, demo.createDemo)
 	}
 };
 

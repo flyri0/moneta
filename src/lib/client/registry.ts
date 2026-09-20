@@ -18,6 +18,7 @@ export interface Registry {
 export interface KeyValueStore {
 	getItem(key: string): string | null;
 	setItem(key: string, value: string): void;
+	removeItem(key: string): void;
 }
 
 export const REGISTRY_KEY = 'moneta.registry';

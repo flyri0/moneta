@@ -12,7 +12,8 @@ export function memoryStore(registry?: string): KeyValueStore & { data: Map<stri
 	return {
 		data,
 		getItem: (k) => data.get(k) ?? null,
-		setItem: (k, v) => void data.set(k, v)
+		setItem: (k, v) => void data.set(k, v),
+		removeItem: (k) => void data.delete(k)
 	};
 }
 

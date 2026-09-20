@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { DEMO_FILE } from './demo';
 import {
 	isBudgetFile,
 	loadRegistry,
@@ -24,6 +25,12 @@ describe('budget files', () => {
 		expect(isBudgetFile(file)).toBe(true);
 		expect(isBudgetFile('smoke.sqlite3')).toBe(false);
 	});
+
+	// The whole demo design rests on this: the demo file is a budget the registry cannot see.
+	it('never counts the demo as a budget', () => {
+		expect(isBudgetFile(DEMO_FILE)).toBe(false);
+		expect(reconcile({ budgets: [], lastOpened: null }, [DEMO_FILE, A]).unnamed).toEqual([A]);
+	});
 });
 
 describe('loadRegistry / saveRegistry', () => {
@@ -46,7 +53,8 @@ describe('loadRegistry / saveRegistry', () => {
 			getItem: () => null,
 			setItem: () => {
 				throw new Error('QuotaExceededError');
-			}
+			},
+			removeItem: () => {}
 		};
 		expect(() => saveRegistry(store, { budgets: [], lastOpened: null })).not.toThrow();
 	});

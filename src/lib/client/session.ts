@@ -1,6 +1,7 @@
 import type { ClientApi } from '$lib/db/api';
 import type { CreateAccountInput } from '$lib/db/repos/accounts';
 import type { BudgetMeta, InitBudgetInput, MetaPatch } from '$lib/db/repos/meta';
+import { endDemo, isDemoOpen, openDemo, sweepDemo } from './demo';
 import {
 	loadRegistry,
 	markOpened,
@@ -13,17 +14,21 @@ import {
 	type KeyValueStore
 } from './registry';
 
-export type SessionApi = Pick<ClientApi, 'system' | 'meta' | 'accounts'>;
+export type SessionApi = Pick<ClientApi, 'system' | 'meta' | 'accounts' | 'demo'>;
 
 export type OpenResult = { kind: 'onboarding' } | { kind: 'ready'; file: string; meta: BudgetMeta };
 
 /**
- * Opens the budget used last. The registry is repaired from the files that really exist:
- * unknown files get their name from their meta, and files left behind by an interrupted
- * onboarding (never initialized) are deleted.
+ * Opens the budget used last, or the demo when one is running. The registry is repaired from the
+ * files that really exist: unknown files get their name from their meta, and files left behind by
+ * an interrupted onboarding (never initialized) are deleted.
  */
 export async function openLastBudget(api: SessionApi, store: KeyValueStore): Promise<OpenResult> {
-	const reconciled = reconcile(loadRegistry(store), await api.system.listFiles());
+	const files = await api.system.listFiles();
+	if (isDemoOpen(store)) return { kind: 'ready', ...(await openDemo(api, store)) };
+	// The demo ended on the welcome page, which has no worker of its own to clean up with.
+	await sweepDemo(api, files);
+	const reconciled = reconcile(loadRegistry(store), files);
 	let registry = reconciled.registry;
 	for (const file of reconciled.unnamed) {
 		await api.system.open(file);
@@ -66,6 +71,7 @@ export async function createBudget(
 		throw err;
 	}
 	const meta = await api.meta.get();
+	endDemo(store);
 	saveRegistry(
 		store,
 		markOpened(upsertBudget(loadRegistry(store), { file, name: meta.name }), file)
@@ -81,6 +87,7 @@ export async function switchBudget(
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	await api.system.open(file);
 	const meta = await api.meta.get();
+	endDemo(store);
 	saveRegistry(
 		store,
 		markOpened(upsertBudget(loadRegistry(store), { file, name: meta.name }), file)
@@ -138,6 +145,7 @@ export async function restoreBudget(
 		if (openFile) await api.system.open(openFile).catch(() => {});
 		throw err;
 	}
+	endDemo(store);
 	let registry = upsertBudget(loadRegistry(store), { file, name: meta.name });
 	if (replace && openFile) {
 		await api.system.deleteFile(openFile);

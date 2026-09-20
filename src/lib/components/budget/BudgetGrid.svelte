@@ -86,7 +86,7 @@
 {#if desktop.current}
 	<section aria-label={m.budget_categories()}>
 		<div
-			class="{COLUMNS} sticky top-0 z-10 border-b bg-background px-3 py-2 text-xs font-medium text-muted-foreground uppercase"
+			class="{COLUMNS} sticky top-[var(--app-top,0px)] z-10 border-b bg-background px-3 py-2 text-xs font-medium text-muted-foreground uppercase"
 		>
 			<span>{m.budget_category()}</span>
 			<span class="text-right">{m.budget_assigned()}</span>
@@ -121,7 +121,7 @@
 			{@const open = !collapsed.has(group.id)}
 			<div class="grid gap-2">
 				<div
-					class="sticky top-0 z-10 -mx-3 flex items-center gap-1 bg-background px-3 py-1.5"
+					class="sticky top-[var(--app-top,0px)] z-10 -mx-3 flex items-center gap-1 bg-background px-3 py-1.5"
 					data-testid="group-row"
 				>
 					{@render chevron(group, open)}

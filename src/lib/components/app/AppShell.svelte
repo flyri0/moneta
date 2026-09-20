@@ -18,8 +18,12 @@
 	import { runActionToast } from '$lib/client/notify';
 	import { currentMonth } from '$lib/domain/month';
 	import { m } from '$lib/paraglide/messages';
+	import DemoBanner from './DemoBanner.svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	/** The banner's own height, so the sidebar and the sticky table headers can sit below it. */
+	const APP_TOP = '--app-top: calc(2.5rem + 1px + env(safe-area-inset-top))';
 
 	const session = useSession();
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
@@ -57,7 +61,7 @@
 	let adding = $state(false);
 
 	onMount(() => {
-		if (!backupDue(session.meta)) return;
+		if (session.isDemo || !backupDue(session.meta)) return;
 		toast(m.backup_reminder(), {
 			duration: 15_000,
 			action: { label: m.backup_now(), onClick: () => void runActionToast(() => backUp(session)) }
@@ -76,36 +80,42 @@
 	</a>
 {/snippet}
 
-<div class="flex min-h-dvh">
-	<aside
-		class="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r bg-sidebar p-3 text-sidebar-foreground md:flex"
-	>
-		<div class="grid gap-3 px-2 pt-2">
-			<div>
-				<p class="text-lg font-semibold">{m.app_name()}</p>
-				<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
-			</div>
-			<Button size="lg" onclick={() => (adding = true)}>
-				<PlusIcon />
-				{m.add_transaction()}
-			</Button>
-		</div>
-		<nav class="grid gap-1" aria-label={m.nav_label()}>
-			{#each nav as item (item.label)}
-				<a
-					href={item.href}
-					aria-current={item.active ? 'page' : undefined}
-					class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-primary"
-				>
-					<item.icon class="size-4" />
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-		<AccountList accounts={accounts.data ?? []} />
-	</aside>
+<div class="flex min-h-dvh flex-col" style={session.isDemo ? APP_TOP : undefined}>
+	{#if session.isDemo}
+		<DemoBanner />
+	{/if}
 
-	<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>
+	<div class="flex min-h-0 flex-1">
+		<aside
+			class="sticky top-[var(--app-top,0px)] hidden h-[calc(100dvh-var(--app-top,0px))] w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r bg-sidebar p-3 text-sidebar-foreground md:flex"
+		>
+			<div class="grid gap-3 px-2 pt-2">
+				<div>
+					<p class="text-lg font-semibold">{m.app_name()}</p>
+					<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
+				</div>
+				<Button size="lg" onclick={() => (adding = true)}>
+					<PlusIcon />
+					{m.add_transaction()}
+				</Button>
+			</div>
+			<nav class="grid gap-1" aria-label={m.nav_label()}>
+				{#each nav as item (item.label)}
+					<a
+						href={item.href}
+						aria-current={item.active ? 'page' : undefined}
+						class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-primary"
+					>
+						<item.icon class="size-4" />
+						{item.label}
+					</a>
+				{/each}
+			</nav>
+			<AccountList accounts={accounts.data ?? []} />
+		</aside>
+
+		<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>
+	</div>
 
 	<nav
 		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"

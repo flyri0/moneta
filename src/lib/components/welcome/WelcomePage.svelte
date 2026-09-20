@@ -6,6 +6,7 @@
 	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
 	import { goto } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
+	import { requestDemo } from '$lib/client/demo';
 	import { installHow } from '$lib/client/install';
 	import { install } from '$lib/client/install.svelte';
 	import { ensureServiceWorker } from '$lib/client/sw';
@@ -38,6 +39,12 @@
 
 	function useInBrowser() {
 		dismissWelcome(localStorage);
+		void goto(resolve('/budget/[month]', { month: currentMonth() }));
+	}
+
+	// The demo is not a budget, so the welcome page stays answerable: it is never dismissed here.
+	function tryDemo() {
+		requestDemo(localStorage);
 		void goto(resolve('/budget/[month]', { month: currentMonth() }));
 	}
 
@@ -75,6 +82,7 @@
 			<div class="flex w-full max-w-xs flex-col gap-2 sm:max-w-sm">
 				<Button size="lg" onclick={requestInstall}>{m.welcome_install()}</Button>
 				<Button variant="outline" onclick={useInBrowser}>{m.welcome_browser()}</Button>
+				<Button variant="ghost" size="sm" onclick={tryDemo}>{m.welcome_demo()}</Button>
 			</div>
 		{/if}
 	</main>
