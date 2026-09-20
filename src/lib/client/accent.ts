@@ -19,7 +19,7 @@ export const ACCENTS = [
 
 export type Accent = (typeof ACCENTS)[number];
 
-/** Matches the PWA theme colour and the reports' first chart series. */
+/** Matches the PWA theme colour. The reports' charts follow whichever accent is picked. */
 export const DEFAULT_ACCENT: Accent = 'teal';
 
 export function isAccent(value: string | null | undefined): value is Accent {
