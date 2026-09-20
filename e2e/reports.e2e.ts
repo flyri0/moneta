@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { onboard } from './helpers';
+import { chooseCombobox, chooseSelect, onboard, pickDate } from './helpers';
 
 async function spend(page: Page, payee: string, amount: string, category: string) {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel('Payee').fill(payee);
 	await dialog.getByLabel('Amount', { exact: true }).fill(amount);
-	await dialog.getByLabel('Category', { exact: true }).selectOption({ label: category });
+	await chooseCombobox(dialog, 'Category', category, category);
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();
 }
@@ -33,11 +33,11 @@ test('shows spending by category with its transactions, and net worth', async ({
 	const drill = page.getByRole('region', { name: 'Transactions in Groceries' });
 	await expect(drill.getByRole('listitem')).toHaveText([/Bakery.*-\$15\.00/, /Market.*-\$60\.00/]);
 
-	await page.getByLabel('Period').selectOption('last_month');
+	await chooseSelect(page, 'Period', 'Last month');
 	await expect(page.getByText('No spending in this period.')).toBeVisible();
 
 	// All time reaches back over the empty month to the spending again.
-	await page.getByLabel('Period').selectOption('all');
+	await chooseSelect(page, 'Period', 'All time');
 	await expect(table.locator('tfoot')).toContainText('$115.00');
 
 	await expect(page.getByTestId('net-worth-current')).toHaveText('$885.00');
@@ -58,18 +58,18 @@ test('scopes both reports with a custom range', async ({ page }) => {
 
 	// Widening the period can't conjure history a new budget doesn't have, so the hint stops
 	// asking for a longer one and says what is actually missing.
-	await page.getByLabel('Period').selectOption('last_12_months');
+	await chooseSelect(page, 'Period', 'Last 12 months');
 	await expect(page.getByTestId('net-worth-chart')).toBeHidden();
 	await expect(page.getByText('Pick a longer period to see the trend.')).toBeHidden();
 	await expect(page.getByText(/only covers one month so far/)).toBeVisible();
-	await page.getByLabel('Period').selectOption('this_month');
+	await chooseSelect(page, 'Period', 'This month');
 
-	await page.getByLabel('Period').selectOption('custom');
+	await chooseSelect(page, 'Period', 'Custom');
 	const dialog = page.getByRole('dialog');
 	const today = new Date();
 	const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-	await dialog.getByLabel('From').fill(`${month}-01`);
-	await dialog.getByLabel('To').fill(`${month}-28`);
+	await pickDate(dialog, 'From', `${month}-01`);
+	await pickDate(dialog, 'To', `${month}-28`);
 	await dialog.getByRole('button', { name: 'Apply' }).click();
 	await expect(dialog).toBeHidden();
 

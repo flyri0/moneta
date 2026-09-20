@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { onboard } from './helpers';
+import { chooseSelect, onboard } from './helpers';
 
 test('navigates between screens and switches the language', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Accounts' })).toBeVisible();
 	await page.getByRole('link', { name: 'Settings' }).first().click();
-	await page.getByLabel('Language').selectOption('pt-BR');
+	await chooseSelect(page, 'Language', 'Português (Brasil)');
 	await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible();
 	await page.getByRole('link', { name: 'Orçamento' }).first().click();
 	await expect(page.getByText('Pronto para atribuir').first()).toBeVisible();
@@ -18,7 +18,7 @@ test('adds, closes and protects accounts', async ({ page }) => {
 	await page.getByRole('button', { name: 'Add account' }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel('Account name').fill('Old savings');
-	await dialog.getByLabel('Type').selectOption('savings');
+	await chooseSelect(dialog, 'Type', 'Savings');
 	await dialog.getByRole('button', { name: 'Add account' }).click();
 	await expect(dialog).toBeHidden();
 

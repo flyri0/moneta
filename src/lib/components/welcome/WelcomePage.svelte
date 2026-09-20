@@ -12,7 +12,7 @@
 	import { ensureServiceWorker } from '$lib/client/sw';
 	import { dismissWelcome } from '$lib/client/welcome';
 	import { Button } from '$lib/components/ui/button';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import * as Select from '$lib/components/ui/select';
 	import { currentMonth } from '$lib/domain/month';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
@@ -96,16 +96,24 @@
 		<a class="underline underline-offset-2 hover:text-foreground" href="{REPO}/blob/main/LICENSE">
 			{m.welcome_license()}
 		</a>
-		<NativeSelect
-			size="sm"
-			aria-label={m.settings_language()}
+		<Select.Root
+			type="single"
 			value={getLocale()}
-			onchange={(e) => setLocale(e.currentTarget.value as Locale)}
+			onValueChange={(v) => {
+				if (v) setLocale(v as Locale);
+			}}
 		>
-			{#each locales as locale (locale)}
-				<NativeSelectOption value={locale}>{LANGUAGE_NAMES[locale]}</NativeSelectOption>
-			{/each}
-		</NativeSelect>
+			<Select.Trigger size="sm" aria-label={m.settings_language()} class="h-8 w-auto">
+				{LANGUAGE_NAMES[getLocale()]}
+			</Select.Trigger>
+			<Select.Content>
+				{#each locales as locale (locale)}
+					<Select.Item value={locale} label={LANGUAGE_NAMES[locale]}>
+						{LANGUAGE_NAMES[locale]}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 	</footer>
 </div>
 

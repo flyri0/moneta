@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, onboard } from './helpers';
+import { categoryRow, chooseCombobox, onboard } from './helpers';
 
 test('shows the month with Ready to Assign and the starter categories', async ({ page }) => {
 	await onboard(page);
@@ -78,7 +78,7 @@ test.describe('on a phone', () => {
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$155.00');
 
 		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
-		await sheet.getByLabel('Other category').selectOption({ label: 'Everyday · Household' });
+		await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
 		await sheet.getByLabel('Amount to move').fill('55');
 		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
@@ -95,10 +95,10 @@ test.describe('on a phone', () => {
 
 		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 		const dialog = page.getByRole('dialog');
-		await dialog.getByLabel('Account', { exact: true }).selectOption({ label: 'Checking' });
+		await chooseCombobox(dialog, 'Account', 'Checking', 'Checking');
 		await dialog.getByLabel('Payee').fill('Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('240');
-		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Groceries' });
+		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 		await dialog.getByRole('button', { name: 'Save' }).click();
 		await expect(dialog).toBeHidden();
 

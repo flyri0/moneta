@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import { Combobox } from '$lib/components/ui/combobox';
 	import { currencyChoices, localeChoices, suggestCurrency } from '$lib/i18n/formats';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -42,24 +42,22 @@
 		</div>
 		<div class="grid gap-2">
 			<Label for="budget-locale">{m.onboarding_locale()}</Label>
-			<NativeSelect
+			<Combobox
 				id="budget-locale"
-				class="w-full"
+				items={locales}
 				bind:value={locale}
-				onchange={() => (currency = suggestCurrency(locale))}
-			>
-				{#each locales as choice (choice.value)}
-					<NativeSelectOption value={choice.value}>{choice.label}</NativeSelectOption>
-				{/each}
-			</NativeSelect>
+				onSelect={() => (currency = suggestCurrency(locale))}
+				placeholder={m.onboarding_locale()}
+			/>
 		</div>
 		<div class="grid gap-2">
 			<Label for="budget-currency">{m.onboarding_currency()}</Label>
-			<NativeSelect id="budget-currency" class="w-full" bind:value={currency}>
-				{#each currencies as choice (choice.value)}
-					<NativeSelectOption value={choice.value}>{choice.label}</NativeSelectOption>
-				{/each}
-			</NativeSelect>
+			<Combobox
+				id="budget-currency"
+				items={currencies}
+				bind:value={currency}
+				placeholder={m.onboarding_currency()}
+			/>
 		</div>
 	</div>
 </StepLayout>

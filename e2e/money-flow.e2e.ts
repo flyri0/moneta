@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { categoryRow, onboard } from './helpers';
+import { categoryRow, chooseCombobox, chooseSelect, onboard } from './helpers';
 
 async function addTransaction(
 	page: Page,
@@ -7,12 +7,11 @@ async function addTransaction(
 ) {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const dialog = page.getByRole('dialog');
-	await dialog.getByLabel('Account', { exact: true }).selectOption({ label: t.account });
+	await chooseCombobox(dialog, 'Account', t.account, t.account);
 	await dialog.getByLabel('Payee').fill(t.payee);
 	if (t.inflow) await dialog.getByRole('button', { name: 'Inflow' }).click();
 	await dialog.getByLabel('Amount', { exact: true }).fill(t.amount);
-	if (t.category)
-		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: t.category });
+	if (t.category) await chooseCombobox(dialog, 'Category', t.category, t.category);
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();
 }
@@ -38,7 +37,7 @@ test('income, assigning, spending, a card purchase and a card payment add up', a
 	await page.getByRole('button', { name: 'Add account' }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel('Account name').fill('Visa');
-	await dialog.getByLabel('Type').selectOption('credit_card');
+	await chooseSelect(dialog, 'Type', 'Credit card');
 	await dialog.getByRole('button', { name: 'Add account' }).click();
 	await expect(dialog).toBeHidden();
 	await page.getByRole('link', { name: 'Budget' }).first().click();
@@ -83,12 +82,12 @@ test('records a split and shows it in the register', async ({ page }) => {
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel('Payee').fill('Big Store');
 	await dialog.getByLabel('Amount', { exact: true }).fill('80');
-	await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Groceries' });
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
 	await dialog.getByRole('button', { name: 'Split' }).click();
 	await dialog.getByLabel('Amount for line 1').fill('50');
 	await expect(dialog.getByTestId('split-remaining')).toHaveText('Remaining: $30.00');
 	await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
-	await dialog.getByLabel('Category for line 2').selectOption({ label: 'Household' });
+	await chooseCombobox(dialog, 'Category for line 2', 'Household', 'Household');
 	await dialog.getByLabel('Amount for line 2').fill('30');
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();

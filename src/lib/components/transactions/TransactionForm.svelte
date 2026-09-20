@@ -5,11 +5,8 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import {
-		NativeSelect,
-		NativeSelectOptGroup,
-		NativeSelectOption
-	} from '$lib/components/ui/native-select';
+	import { Combobox } from '$lib/components/ui/combobox';
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { runAction } from '$lib/client/notify';
 	import { groupLabel, categoryLabel } from '$lib/i18n/labels';
@@ -49,8 +46,15 @@
 	let confirmDelete = $state(false);
 
 	const openAccounts = $derived(ctx.accounts.filter((a) => !a.closed || a.id === draft.accountId));
+	const accountItems = $derived(openAccounts.map((a) => ({ value: a.id, label: a.name })));
 	const mode = $derived(categoryMode(draft, ctx));
 	const options = $derived(categoryOptions(draft, ctx));
+	const categoryGroups = $derived(
+		options.map((g) => ({
+			heading: groupLabel(g),
+			items: g.categories.map((c) => ({ value: c.id, label: categoryLabel(c) }))
+		}))
+	);
 	const splittable = $derived(canSplit(draft, ctx));
 	const remaining = $derived(draft.splits ? splitRemaining(draft, ctx.money) : 0);
 	const isTransfer = $derived(transferTarget(draft, ctx) !== null);
@@ -113,40 +117,45 @@
 	}
 </script>
 
-{#snippet categorySelect(value: string, onChange: (id: string) => void, id: string, label: string)}
-	<NativeSelect
+{#snippet categorySelect(
+	value: string,
+	onChange: (id: string) => void,
+	id: string,
+	label: string,
+	className?: string
+)}
+	<Combobox
 		{id}
-		class="w-full"
+		ariaLabel={label}
+		groups={categoryGroups}
+		emptyOption={{
+			value: '',
+			label: mode === 'optional' ? m.transaction_no_category() : m.transaction_choose_category()
+		}}
 		{value}
-		aria-label={label}
-		onchange={(e) => onChange(e.currentTarget.value)}
-	>
-		<NativeSelectOption value="">
-			{mode === 'optional' ? m.transaction_no_category() : m.transaction_choose_category()}
-		</NativeSelectOption>
-		{#each options as group (group.id)}
-			<NativeSelectOptGroup label={groupLabel(group)}>
-				{#each group.categories as category (category.id)}
-					<NativeSelectOption value={category.id}>{categoryLabel(category)}</NativeSelectOption>
-				{/each}
-			</NativeSelectOptGroup>
-		{/each}
-	</NativeSelect>
+		onSelect={onChange}
+		placeholder={mode === 'optional'
+			? m.transaction_no_category()
+			: m.transaction_choose_category()}
+		class={className}
+	/>
 {/snippet}
 
 <form class="grid gap-4" onsubmit={save}>
 	<div class="grid grid-cols-2 gap-3">
 		<div class="grid gap-2">
 			<Label for="txn-account">{m.transaction_account()}</Label>
-			<NativeSelect id="txn-account" class="w-full" bind:value={draft.accountId}>
-				{#each openAccounts as account (account.id)}
-					<NativeSelectOption value={account.id}>{account.name}</NativeSelectOption>
-				{/each}
-			</NativeSelect>
+			<Combobox
+				id="txn-account"
+				ariaLabel={m.transaction_account()}
+				items={accountItems}
+				bind:value={draft.accountId}
+				placeholder={m.transaction_account()}
+			/>
 		</div>
 		<div class="grid gap-2">
 			<Label for="txn-date">{m.transaction_date()}</Label>
-			<Input id="txn-date" type="date" bind:value={draft.date} required />
+			<DatePicker id="txn-date" bind:value={draft.date} required ariaLabel={m.transaction_date()} />
 		</div>
 	</div>
 
@@ -201,15 +210,18 @@
 	{#if mode !== 'hidden'}
 		<div class="grid gap-2">
 			<Label for="txn-category">{m.transaction_category()}</Label>
-			<div class="flex gap-2">
+			<div class="flex items-center gap-2">
 				{@render categorySelect(
 					draft.categoryId,
 					(id) => (draft.categoryId = id),
 					'txn-category',
-					m.transaction_category()
+					m.transaction_category(),
+					'flex-1 min-w-0'
 				)}
 				{#if splittable && !isTransfer}
-					<Button variant="outline" onclick={startSplit}>{m.transaction_split()}</Button>
+					<Button variant="outline" class="shrink-0" onclick={startSplit}
+						>{m.transaction_split()}</Button
+					>
 				{/if}
 			</div>
 		</div>
@@ -219,12 +231,13 @@
 		<fieldset class="grid gap-2 rounded-md border p-3">
 			<legend class="px-1 text-sm font-medium">{m.transaction_split_lines()}</legend>
 			{#each draft.splits as line, i (i)}
-				<div class="grid grid-cols-[1fr_7rem_auto] gap-2">
+				<div class="grid grid-cols-[1fr_7rem_auto] items-center gap-2">
 					{@render categorySelect(
 						line.categoryId,
 						(id) => (line.categoryId = id),
 						`txn-split-${i}`,
-						m.transaction_split_category({ line: i + 1 })
+						m.transaction_split_category({ line: i + 1 }),
+						'w-full min-w-0'
 					)}
 					<Input
 						bind:value={line.amount}

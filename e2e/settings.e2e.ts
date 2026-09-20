@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillNewBudget, onboard, openSettings } from './helpers';
+import { chooseCombobox, fillNewBudget, onboard, openSettings } from './helpers';
 
 test('creates, switches, renames and deletes budgets', async ({ page }) => {
 	await onboard(page);
@@ -36,10 +36,10 @@ test('creates, switches, renames and deletes budgets', async ({ page }) => {
 test('keeps the currency once the budget has amounts', async ({ page }) => {
 	await onboard(page);
 	await openSettings(page);
-	await page.getByLabel('Currency').selectOption('JPY');
+	await chooseCombobox(page, 'Currency', 'Japanese Yen (JPY)', 'JPY');
 	await page.getByRole('button', { name: 'Save' }).click();
 	await expect(page.getByRole('alert')).toContainText('same number of decimal places');
-	await page.getByLabel('Currency').selectOption('EUR');
+	await chooseCombobox(page, 'Currency', 'Euro (EUR)', 'EUR');
 	await page.getByRole('button', { name: 'Save' }).click();
 	await page.getByRole('link', { name: 'Budget' }).first().click();
 	await expect(page.getByTestId('rta-amount')).toHaveText('€1,000.00');

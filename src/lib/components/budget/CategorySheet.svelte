@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import { Combobox } from '$lib/components/ui/combobox';
 	import { Separator } from '$lib/components/ui/separator';
 	import ResponsiveDialog from '$lib/components/ResponsiveDialog.svelte';
 	import { useSession } from '$lib/client/app-state.svelte';
@@ -41,6 +41,9 @@
 	let error = $state<string | null>(null);
 
 	const targets = $derived(moveTargets(model, category.id));
+	const targetItems = $derived(
+		targets.map((t) => ({ value: t.id, label: `${groupLabel(t.group)} · ${t.name}` }))
+	);
 	const progress = $derived(categoryProgress(category));
 
 	// Reset the form each time the sheet opens for a category.
@@ -128,18 +131,14 @@
 				>
 			</div>
 			<div class="grid min-w-0 grid-cols-[1fr_7rem] gap-2">
-				<NativeSelect
+				<Combobox
 					class="w-full min-w-0"
+					items={targetItems}
+					emptyOption={{ value: '', label: m.budget_move_other() }}
 					bind:value={otherId}
-					aria-label={m.budget_move_other()}
-				>
-					<NativeSelectOption value="">{m.budget_move_other()}</NativeSelectOption>
-					{#each targets as target (target.id)}
-						<NativeSelectOption value={target.id}
-							>{groupLabel(target.group)} · {target.name}</NativeSelectOption
-						>
-					{/each}
-				</NativeSelect>
+					placeholder={m.budget_move_other()}
+					ariaLabel={m.budget_move_other()}
+				/>
 				<Input
 					bind:value={moveAmount}
 					inputmode="decimal"

@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, nextStep, onboard, openSettings, skipIntro, startApp } from './helpers';
+import {
+	categoryRow,
+	chooseCombobox,
+	chooseSelect,
+	nextStep,
+	onboard,
+	openSettings,
+	skipIntro,
+	startApp
+} from './helpers';
 
 test('onboarding creates a budget that survives a reload', async ({ page }) => {
 	await onboard(page);
@@ -12,8 +21,8 @@ test('onboarding seeds only the categories that were picked', async ({ page }) =
 	await startApp(page);
 	await skipIntro(page);
 	await page.getByLabel('Budget name').fill('Home');
-	await page.getByLabel('Number and date format').selectOption('en-US');
-	await page.getByLabel('Currency').selectOption('USD');
+	await chooseCombobox(page, 'Number and date format', 'en-US', 'en-US');
+	await chooseCombobox(page, 'Currency', 'USD', 'USD');
 	await nextStep(page).click();
 
 	await page.getByRole('checkbox', { name: 'Fun', exact: true }).click();
@@ -58,7 +67,7 @@ test('onboarding allows choosing theme, accent, and language on the welcome step
 	await expect(html).toHaveAttribute('data-theme', 'violet');
 	await expect(html).toHaveClass(/dark/);
 
-	await page.getByLabel('Language').selectOption('pt-BR');
+	await chooseSelect(page, 'Language', 'Português (Brasil)');
 	await expect(page.getByText('Boas-vindas ao Moneta')).toBeVisible();
 	await expect(html).toHaveAttribute('data-theme', 'violet');
 	await expect(html).toHaveClass(/dark/);

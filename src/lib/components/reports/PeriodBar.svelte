@@ -1,9 +1,9 @@
 <script lang="ts">
 	import ResponsiveDialog from '$lib/components/ResponsiveDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import { Label } from '$lib/components/ui/label';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import * as Select from '$lib/components/ui/select';
 	import { MAX_DATE, MIN_DATE } from '$lib/domain/month';
 	import { formatDate } from '$lib/i18n/formats';
 	import { type DateRange, RANGE_PRESETS, type RangePreset } from '$lib/reports/range';
@@ -72,18 +72,28 @@
 	>
 		{m.reports_period()}
 	</Label>
-	<NativeSelect
-		id="report-period"
-		size="sm"
-		class="min-w-0 flex-1 sm:flex-none"
+	<Select.Root
+		type="single"
 		bind:value={choice}
-		onchange={choose}
+		onValueChange={(v) => {
+			if (v) {
+				choice = v as RangePreset | 'custom';
+				choose();
+			}
+		}}
 	>
-		{#each RANGE_PRESETS as value (value)}
-			<NativeSelectOption {value}>{PRESETS[value]()}</NativeSelectOption>
-		{/each}
-		<NativeSelectOption value="custom">{m.reports_range_custom()}</NativeSelectOption>
-	</NativeSelect>
+		<Select.Trigger id="report-period" size="sm" class="min-w-0 flex-1 sm:flex-none">
+			{choice === 'custom' ? m.reports_range_custom() : PRESETS[choice as RangePreset]()}
+		</Select.Trigger>
+		<Select.Content>
+			{#each RANGE_PRESETS as value (value)}
+				<Select.Item {value} label={PRESETS[value]()}>{PRESETS[value]()}</Select.Item>
+			{/each}
+			<Select.Item value="custom" label={m.reports_range_custom()}>
+				{m.reports_range_custom()}
+			</Select.Item>
+		</Select.Content>
+	</Select.Root>
 	<button
 		type="button"
 		aria-label={m.reports_custom_range()}
@@ -104,11 +114,25 @@
 	<div class="grid gap-3 py-2">
 		<div class="grid gap-2">
 			<Label for="report-from">{m.register_from()}</Label>
-			<Input id="report-from" type="date" min={MIN_DATE} max={MAX_DATE} bind:value={draft.from} />
+			<DatePicker
+				id="report-from"
+				ariaLabel={m.register_from()}
+				min={MIN_DATE}
+				max={MAX_DATE}
+				bind:value={draft.from}
+				required
+			/>
 		</div>
 		<div class="grid gap-2">
 			<Label for="report-to">{m.register_to()}</Label>
-			<Input id="report-to" type="date" min={MIN_DATE} max={MAX_DATE} bind:value={draft.to} />
+			<DatePicker
+				id="report-to"
+				ariaLabel={m.register_to()}
+				min={MIN_DATE}
+				max={MAX_DATE}
+				bind:value={draft.to}
+				required
+			/>
 		</div>
 		<Button onclick={apply} disabled={draft.from > draft.to}>{m.reports_apply()}</Button>
 	</div>

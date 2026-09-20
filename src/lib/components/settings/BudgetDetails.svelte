@@ -2,7 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import { Combobox } from '$lib/components/ui/combobox';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import { useSession } from '$lib/client/app-state.svelte';
@@ -43,21 +43,23 @@
 
 		<SettingsRow stacked label={m.onboarding_locale()} labelFor="details-locale">
 			{#snippet control()}
-				<NativeSelect id="details-locale" class="w-full" bind:value={locale}>
-					{#each locales as choice (choice.value)}
-						<NativeSelectOption value={choice.value}>{choice.label}</NativeSelectOption>
-					{/each}
-				</NativeSelect>
+				<Combobox
+					id="details-locale"
+					items={locales}
+					bind:value={locale}
+					placeholder={m.onboarding_locale()}
+				/>
 			{/snippet}
 		</SettingsRow>
 
 		<SettingsRow stacked label={m.onboarding_currency()} labelFor="details-currency">
 			{#snippet control()}
-				<NativeSelect id="details-currency" class="w-full" bind:value={currency}>
-					{#each currencies as choice (choice.value)}
-						<NativeSelectOption value={choice.value}>{choice.label}</NativeSelectOption>
-					{/each}
-				</NativeSelect>
+				<Combobox
+					id="details-currency"
+					items={currencies}
+					bind:value={currency}
+					placeholder={m.onboarding_currency()}
+				/>
 			{/snippet}
 		</SettingsRow>
 

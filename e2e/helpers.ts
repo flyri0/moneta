@@ -1,7 +1,84 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export function nextStep(page: Page) {
 	return page.getByRole('button', { name: 'Next' });
+}
+
+/** Selects an option from a shadcn Select dropdown. */
+export async function chooseSelect(
+	container: Page | Locator,
+	label: string | RegExp,
+	optionText: string | RegExp
+): Promise<void> {
+	const page = 'page' in container ? (container as Locator).page() : (container as Page);
+	const trigger = container.getByLabel(label, { exact: false });
+	await trigger.click();
+	const content = page.locator('[data-slot="select-content"][data-state="open"]');
+	await content
+		.locator('[data-slot="select-item"]')
+		.filter({ hasText: optionText })
+		.first()
+		.click();
+	await expect(content).toBeHidden();
+}
+
+/** Selects an option from a shadcn Combobox. */
+export async function chooseCombobox(
+	container: Page | Locator,
+	label: string | RegExp,
+	itemText: string | RegExp,
+	search?: string
+): Promise<void> {
+	const page = 'page' in container ? (container as Locator).page() : (container as Page);
+	const trigger = container.getByLabel(label, { exact: false });
+	await trigger.click();
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	if (search) {
+		await popover.locator('[data-slot="command-input"]').fill(search);
+	}
+	await popover.locator('[data-slot="command-item"]').filter({ hasText: itemText }).first().click();
+	await expect(popover).toBeHidden();
+}
+
+/** Picks a date using the custom DatePicker. */
+export async function pickDate(
+	container: Page | Locator,
+	label: string | RegExp,
+	dateStr: string // 'YYYY-MM-DD'
+): Promise<void> {
+	const page = 'page' in container ? (container as Locator).page() : (container as Page);
+	const trigger = container.getByLabel(label, { exact: false });
+	await trigger.click();
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const [y, m, d] = dateStr.split('-').map(Number);
+	// Click Year select if needed
+	const yearSelect = popover.getByLabel('Year');
+	if (await yearSelect.isVisible()) {
+		await yearSelect.click();
+		await page
+			.locator('[data-slot="select-content"][data-state="open"]')
+			.locator('[data-slot="select-item"]')
+			.filter({ hasText: String(y) })
+			.first()
+			.click();
+	}
+	// Click Month select if needed
+	const monthSelect = popover.getByLabel('Month');
+	if (await monthSelect.isVisible()) {
+		await monthSelect.click();
+		await page
+			.locator('[data-slot="select-content"][data-state="open"]')
+			.locator('[data-slot="select-item"]')
+			.nth(m - 1)
+			.click();
+	}
+	// Click day in calendar
+	await popover
+		.locator('[data-slot="calendar-day"]')
+		.filter({ hasText: new RegExp(`^${d}$`) })
+		.first()
+		.click();
+	await expect(popover).toBeHidden();
 }
 
 /**
@@ -10,8 +87,8 @@ export function nextStep(page: Page) {
  */
 export async function fillNewBudget(page: Page, name: string, balance: string): Promise<void> {
 	await page.getByLabel('Budget name').fill(name);
-	await page.getByLabel('Number and date format').selectOption('en-US');
-	await page.getByLabel('Currency').selectOption('USD');
+	await chooseCombobox(page, 'Number and date format', 'en-US', 'en-US');
+	await chooseCombobox(page, 'Currency', 'USD', 'USD');
 	await nextStep(page).click();
 	await nextStep(page).click();
 	await page.getByLabel('Account name').fill('Checking');

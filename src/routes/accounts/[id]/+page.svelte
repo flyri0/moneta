@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$lib/components/ui/button';
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import RegisterRow from '$lib/components/accounts/RegisterRow.svelte';
@@ -120,11 +121,23 @@
 			/>
 			<div class="flex items-center gap-2">
 				<Label for="register-from" class="text-sm text-muted-foreground">{m.register_from()}</Label>
-				<Input id="register-from" type="date" bind:value={from} />
+				<DatePicker
+					id="register-from"
+					bind:value={from}
+					clearable
+					placeholder={m.register_from()}
+					class="w-36"
+				/>
 			</div>
 			<div class="flex items-center gap-2">
 				<Label for="register-to" class="text-sm text-muted-foreground">{m.register_to()}</Label>
-				<Input id="register-to" type="date" bind:value={to} />
+				<DatePicker
+					id="register-to"
+					bind:value={to}
+					clearable
+					placeholder={m.register_to()}
+					class="w-36"
+				/>
 			</div>
 		</div>
 

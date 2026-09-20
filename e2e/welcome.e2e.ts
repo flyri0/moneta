@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { chooseSelect } from './helpers';
 import { onboard } from './helpers';
 
 /**
@@ -68,7 +69,7 @@ test('keeps the welcome page in one screen on a phone', async ({ page }) => {
 
 test('offers the welcome page in Portuguese', async ({ page }) => {
 	await page.goto('/');
-	await page.getByLabel('Language').selectOption('pt-BR');
+	await chooseSelect(page, 'Language', 'Português (Brasil)');
 	await expect(page.getByRole('button', { name: 'Instalar o Moneta' })).toBeVisible();
 	await page.getByRole('button', { name: 'Usar no navegador' }).click();
 	await expect(page.getByText('Boas-vindas ao Moneta')).toBeVisible();

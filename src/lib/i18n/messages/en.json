@@ -341,5 +341,11 @@
 	"color_amber": "Amber",
 	"color_orange": "Orange",
 	"color_rose": "Rose",
-	"color_pink": "Magenta"
+	"color_pink": "Magenta",
+	"combobox_search": "Search...",
+	"combobox_empty": "No results found.",
+	"date_picker_placeholder": "Select a date",
+	"date_picker_clear": "Clear date",
+	"date_picker_month": "Month",
+	"date_picker_year": "Year"
 }

@@ -2,7 +2,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { theme } from 'mode-watcher';
 	import ResponsiveDialog from '$lib/components/ResponsiveDialog.svelte';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import * as Select from '$lib/components/ui/select';
 	import AccentPicker from './AccentPicker.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
@@ -47,16 +47,24 @@
 
 	<SettingsRow label={m.settings_language()} labelFor="settings-language">
 		{#snippet control()}
-			<NativeSelect
-				id="settings-language"
-				size="sm"
+			<Select.Root
+				type="single"
 				value={getLocale()}
-				onchange={(e) => setLocale(e.currentTarget.value as Locale)}
+				onValueChange={(v) => {
+					if (v) setLocale(v as Locale);
+				}}
 			>
-				{#each locales as locale (locale)}
-					<NativeSelectOption value={locale}>{LANGUAGE_NAMES[locale]}</NativeSelectOption>
-				{/each}
-			</NativeSelect>
+				<Select.Trigger id="settings-language" size="sm" class="h-8 w-auto">
+					{LANGUAGE_NAMES[getLocale()]}
+				</Select.Trigger>
+				<Select.Content>
+					{#each locales as locale (locale)}
+						<Select.Item value={locale} label={LANGUAGE_NAMES[locale]}>
+							{LANGUAGE_NAMES[locale]}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		{/snippet}
 	</SettingsRow>
 </SettingsGroup>

@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { DatePicker } from '$lib/components/ui/date-picker';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { NativeSelect, NativeSelectOption } from '$lib/components/ui/native-select';
+	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import {
 		ACCOUNT_TYPES,
@@ -40,11 +41,27 @@
 </div>
 <div class="grid gap-2">
 	<Label for="{idPrefix}-type">{m.account_type()}</Label>
-	<NativeSelect id="{idPrefix}-type" class="w-full" bind:value={type} onchange={typeChanged}>
-		{#each ACCOUNT_TYPES as t (t)}
-			<NativeSelectOption value={t}>{accountTypeLabel(t)}</NativeSelectOption>
-		{/each}
-	</NativeSelect>
+	<Select.Root
+		type="single"
+		bind:value={type}
+		onValueChange={(v) => {
+			if (v) {
+				type = v as AccountType;
+				typeChanged();
+			}
+		}}
+	>
+		<Select.Trigger id="{idPrefix}-type" class="w-full">
+			{accountTypeLabel(type)}
+		</Select.Trigger>
+		<Select.Content>
+			{#each ACCOUNT_TYPES as t (t)}
+				<Select.Item value={t} label={accountTypeLabel(t)}>
+					{accountTypeLabel(t)}
+				</Select.Item>
+			{/each}
+		</Select.Content>
+	</Select.Root>
 </div>
 <div class="flex items-center justify-between gap-4">
 	<div class="grid gap-1">
@@ -70,6 +87,6 @@
 	</div>
 	<div class="grid gap-2">
 		<Label for="{idPrefix}-date">{m.account_balance_date()}</Label>
-		<Input id="{idPrefix}-date" type="date" bind:value={date} required />
+		<DatePicker id="{idPrefix}-date" bind:value={date} required />
 	</div>
 </div>
