@@ -34,6 +34,17 @@ test.describe('on a phone', () => {
 
 		await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 		const dialog = page.getByRole('dialog');
+		const outflowBtn = dialog.getByRole('button', { name: 'Outflow' });
+		const inflowBtn = dialog.getByRole('button', { name: 'Inflow' });
+		await expect(outflowBtn).toHaveClass(/bg-red-100/);
+		await expect(inflowBtn).not.toHaveClass(/bg-emerald-100/);
+		await inflowBtn.click();
+		await expect(inflowBtn).toHaveClass(/bg-emerald-100/);
+		await expect(outflowBtn).not.toHaveClass(/bg-red-100/);
+		await outflowBtn.click();
+		await expect(outflowBtn).toHaveClass(/bg-red-100/);
+		await expect(inflowBtn).not.toHaveClass(/bg-emerald-100/);
+
 		await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
 		await dialog.getByLabel('Amount', { exact: true }).fill('40');
 		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
