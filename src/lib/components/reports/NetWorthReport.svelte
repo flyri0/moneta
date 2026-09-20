@@ -9,7 +9,12 @@
 	import { todayIso } from '$lib/domain/month';
 	import { errorMessage } from '$lib/i18n/errors';
 	import { formatMonth, formatMonthLong } from '$lib/i18n/formats';
-	import { netWorthChange, netWorthThrough, pointsInRange } from '$lib/reports/net-worth';
+	import {
+		isSingleMonth,
+		netWorthChange,
+		netWorthThrough,
+		pointsInRange
+	} from '$lib/reports/net-worth';
 	import type { DateRange } from '$lib/reports/range';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -102,7 +107,14 @@
 				</AreaChart>
 			</Chart.Container>
 		{:else}
-			<p class="text-sm text-muted-foreground">{m.reports_net_worth_single_month()}</p>
+			<!-- One point means either the period is a single month, or the budget has only one
+			month of history -- and telling someone to widen a period that is already wide is
+			advice they cannot act on. -->
+			<p class="text-sm text-muted-foreground">
+				{isSingleMonth(range, todayIso())
+					? m.reports_net_worth_single_month()
+					: m.reports_net_worth_one_month()}
+			</p>
 		{/if}
 
 		<table class="w-full text-sm" data-testid="net-worth-table">

@@ -288,6 +288,7 @@
 	"reports_apply": "Apply",
 	"reports_change_since": "{amount} since {month}",
 	"reports_net_worth_single_month": "Pick a longer period to see the trend.",
+	"reports_net_worth_one_month": "This budget only covers one month so far. The chart appears once there is a second.",
 	"reports_net_worth": "Net worth",
 	"reports_month": "Month",
 	"reports_assets": "Assets",

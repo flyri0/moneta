@@ -20,6 +20,15 @@ export function pointsInRange(
 	return points.filter((p) => p.month >= first && p.month <= last);
 }
 
+/**
+ * Whether the range leaves a single month to plot once the future is clamped away. A lone point
+ * can also mean the budget simply has one month of history, which picking a longer period never
+ * fixes -- this is what tells the two apart.
+ */
+export function isSingleMonth(range: DateRange, today: string): boolean {
+	return compareMonths(monthOf(range.from), netWorthThrough(range, today)) >= 0;
+}
+
 export interface NetWorthChange {
 	current: number;
 	/** The last month's net worth minus the first's. Money, never a percentage: net worth

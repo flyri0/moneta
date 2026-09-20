@@ -288,6 +288,7 @@
 	"reports_apply": "Aplicar",
 	"reports_change_since": "{amount} desde {month}",
 	"reports_net_worth_single_month": "Escolha um período maior para ver a tendência.",
+	"reports_net_worth_one_month": "Este orçamento cobre apenas um mês até agora. O gráfico aparece quando houver um segundo.",
 	"reports_net_worth": "Patrimônio líquido",
 	"reports_month": "Mês",
 	"reports_assets": "Ativos",

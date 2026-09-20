@@ -56,6 +56,14 @@ test('scopes both reports with a custom range', async ({ page }) => {
 	await expect(page.getByText('Pick a longer period to see the trend.')).toBeVisible();
 	await expect(page.getByTestId('net-worth-chart')).toBeHidden();
 
+	// Widening the period can't conjure history a new budget doesn't have, so the hint stops
+	// asking for a longer one and says what is actually missing.
+	await page.getByLabel('Period').selectOption('last_12_months');
+	await expect(page.getByTestId('net-worth-chart')).toBeHidden();
+	await expect(page.getByText('Pick a longer period to see the trend.')).toBeHidden();
+	await expect(page.getByText(/only covers one month so far/)).toBeVisible();
+	await page.getByLabel('Period').selectOption('this_month');
+
 	await page.getByLabel('Period').selectOption('custom');
 	const dialog = page.getByRole('dialog');
 	const today = new Date();

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { NetWorthPoint } from '$lib/domain/net-worth';
 import { presetRange } from './range';
-import { netWorthChange, netWorthThrough, pointsInRange } from './net-worth';
+import { isSingleMonth, netWorthChange, netWorthThrough, pointsInRange } from './net-worth';
 
 const TODAY = '2026-09-19';
 
@@ -54,6 +54,20 @@ describe('pointsInRange', () => {
 	it('is empty when the range holds no month with data', () => {
 		expect(pointsInRange(SERIES, { from: '2025-01-01', to: '2025-03-31' }, TODAY)).toEqual([]);
 		expect(pointsInRange([], presetRange('all', TODAY), TODAY)).toEqual([]);
+	});
+});
+
+describe('isSingleMonth', () => {
+	it('is true only when the range leaves one month to plot', () => {
+		expect(isSingleMonth(presetRange('this_month', TODAY), TODAY)).toBe(true);
+		expect(isSingleMonth(presetRange('last_month', TODAY), TODAY)).toBe(true);
+		expect(isSingleMonth(presetRange('last_3_months', TODAY), TODAY)).toBe(false);
+		expect(isSingleMonth(presetRange('all', TODAY), TODAY)).toBe(false);
+	});
+
+	it('counts only the months up to today, so a range running on is still one month', () => {
+		// September onwards: everything after this month is clamped away.
+		expect(isSingleMonth({ from: '2026-09-01', to: '2026-12-31' }, TODAY)).toBe(true);
 	});
 });
 
