@@ -58,7 +58,7 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - Several budget files side by side
 - Backup and restore as `.sqlite`, plus CSV and JSON exports, with a reminder when your
   last backup is more than two weeks old
-- Installable, offline-capable PWA
+- Installable, offline-capable PWA, with a welcome page that offers to install it
 - English and Brazilian Portuguese
 
 ## Roadmap (future)

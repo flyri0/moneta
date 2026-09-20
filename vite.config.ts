@@ -33,7 +33,8 @@ export default defineConfig({
 				theme_color: '#0f766e',
 				background_color: '#ffffff',
 				display: 'standalone',
-				start_url: '/',
+				// Not '/': the installed app skips the welcome page and goes to the budget.
+				start_url: '/budget',
 				scope: '/',
 				icons: [
 					{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },

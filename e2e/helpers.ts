@@ -19,6 +19,12 @@ export async function fillNewBudget(page: Page, name: string, balance: string): 
 	await page.getByRole('button', { name: 'Create budget' }).click();
 }
 
+/** Opens Moneta and leaves the welcome page for the app itself. */
+export async function startApp(page: Page): Promise<void> {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+}
+
 /** Skips the two steps that explain the app, leaving onboarding on the budget step. */
 export async function skipIntro(page: Page): Promise<void> {
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
@@ -28,7 +34,7 @@ export async function skipIntro(page: Page): Promise<void> {
 
 /** Creates a USD budget with a checking account holding $1,000 and lands on the budget screen. */
 export async function onboard(page: Page, name = 'Home'): Promise<void> {
-	await page.goto('/');
+	await startApp(page);
 	await skipIntro(page);
 	await fillNewBudget(page, name, '1000');
 	await page.getByRole('button', { name: 'Start budgeting' }).click();

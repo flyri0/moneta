@@ -57,7 +57,7 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Vários orçamentos lado a lado
 - Backup e restauração em `.sqlite`, além de exportações CSV e JSON, com lembrete quando o
   último backup tem mais de duas semanas
-- PWA instalável, que funciona offline
+- PWA instalável, que funciona offline, com uma página de boas-vindas que oferece a instalação
 - Inglês e português do Brasil
 
 ## Futuro e roadmap

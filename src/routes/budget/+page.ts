@@ -1,10 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
-import { isStandalone } from '$lib/client/install';
-import { shouldShowWelcome } from '$lib/client/welcome';
 import { currentMonth } from '$lib/domain/month';
 
 export function load() {
-	if (shouldShowWelcome(localStorage, isStandalone())) return;
 	redirect(307, resolve('/budget/[month]', { month: currentMonth() }));
 }

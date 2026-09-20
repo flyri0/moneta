@@ -34,8 +34,8 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - `src/lib/budget/`, `src/lib/accounts/`, `src/lib/transactions/`, `src/lib/reports/`: pure, unit-tested screen logic (grid model, category order, account defaults, register display, transaction form rules, report ranges).
 - `src/lib/backup/`: backups (`.sqlite`), CSV and JSON exports, the backup reminder. Files go out through a `BackupTarget` (downloads in v1).
 - `src/lib/i18n/`: message catalogs (`messages/en.json`, `messages/pt-BR.json`), error messages, labels for system rows, formats. Paraglide compiles them into `src/lib/paraglide/` (generated, not committed).
-- `src/lib/components/`: Svelte components by area (`app/`, `budget/`, `accounts/`, `transactions/`, `reports/`, `settings/`); `ui/` holds the generated shadcn-svelte primitives (`chart/` wraps LayerChart).
-- `src/routes/`: SvelteKit pages (`ssr = false`, `adapter-static` with an `index.html` fallback). The root layout's `Boot` claims the tab lock, starts the worker, registers the service worker (`@vite-pwa/sveltekit`, prompt to update) and renders onboarding, a startup screen or the app.
+- `src/lib/components/`: Svelte components by area (`app/`, `welcome/`, `budget/`, `accounts/`, `transactions/`, `reports/`, `settings/`); `ui/` holds the generated shadcn-svelte primitives (`chart/` wraps LayerChart).
+- `src/routes/`: SvelteKit pages (`ssr = false`, `adapter-static` with an `index.html` fallback). `/` is the welcome page: it presents the project and offers to install the PWA, and it renders outside `Boot`, so it opens no database. It redirects to `/budget/[month]` once this browser has a budget (`$lib/client/welcome.ts`), and the manifest's `start_url` is `/budget` so an installed window never sees it. Every other route goes through the root layout's `Boot`, which claims the tab lock, starts the worker, registers the service worker (`$lib/client/sw.ts`, `@vite-pwa/sveltekit`, prompt to update) and renders onboarding, a startup screen or the app.
 - `e2e/`: Playwright tests against the production build.
 
 ## Rules

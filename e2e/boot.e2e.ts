@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, nextStep, onboard, openSettings, skipIntro } from './helpers';
+import { categoryRow, nextStep, onboard, openSettings, skipIntro, startApp } from './helpers';
 
 test('onboarding creates a budget that survives a reload', async ({ page }) => {
 	await onboard(page);
@@ -9,7 +9,7 @@ test('onboarding creates a budget that survives a reload', async ({ page }) => {
 });
 
 test('onboarding seeds only the categories that were picked', async ({ page }) => {
-	await page.goto('/');
+	await startApp(page);
 	await skipIntro(page);
 	await page.getByLabel('Budget name').fill('Home');
 	await page.getByLabel('Number and date format').selectOption('en-US');
@@ -47,7 +47,7 @@ test('a second tab waits until it takes over', async ({ context }) => {
 test('onboarding allows choosing theme, accent, and language on the welcome step', async ({
 	page
 }) => {
-	await page.goto('/');
+	await startApp(page);
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 
 	const html = page.locator('html');
@@ -73,7 +73,7 @@ test.describe('onboarding on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
 	test('picks an accent colour from a sheet during onboarding', async ({ page }) => {
-		await page.goto('/');
+		await startApp(page);
 		await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Amber' })).toBeHidden();
 
@@ -99,7 +99,7 @@ test('restores a backup directly from the onboarding backups step', async ({
 
 	const cleanContext = await context.browser()!.newContext();
 	const page2 = await cleanContext.newPage();
-	await page2.goto('/');
+	await startApp(page2);
 	await expect(page2.getByText('Welcome to Moneta')).toBeVisible();
 
 	// Advance to Step 2 (Backups warning)

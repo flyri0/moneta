@@ -22,10 +22,18 @@ test('can be installed', async ({ page }) => {
 	await page.goto('/');
 	const href = await page.locator('link[rel="manifest"]').getAttribute('href');
 	const manifest = await (await page.request.get(href!)).json();
-	expect(manifest).toMatchObject({ name: 'Moneta', display: 'standalone', start_url: '/' });
+	expect(manifest).toMatchObject({ name: 'Moneta', display: 'standalone', start_url: '/budget' });
 	const purposes = manifest.icons.map((i: { purpose?: string }) => i.purpose ?? 'any');
 	expect(purposes).toContain('maskable');
 	for (const icon of manifest.icons) {
 		expect((await page.request.get(icon.src)).ok(), icon.src).toBe(true);
 	}
+});
+
+test('starts the installed app at the current month', async ({ page }) => {
+	await onboard(page);
+	// start_url: the installed window goes here, never to the welcome page.
+	await page.goto('/budget');
+	await expect(page).toHaveURL(/\/budget\/\d{4}-\d{2}$/);
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 });
