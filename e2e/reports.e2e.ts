@@ -88,4 +88,62 @@ test.describe('on a phone', () => {
 		await expect(page.getByLabel('Period')).toBeVisible();
 		await expect(page.getByTestId('spending-table')).toContainText('Groceries');
 	});
+
+	for (const [locale, width] of [
+		['en', 393],
+		['pt-BR', 393],
+		['pt-BR', 320]
+	] as const) {
+		test(`keeps the net worth card inside its bounds in ${locale} at ${width}px`, async ({
+			page
+		}) => {
+			await page.setViewportSize({ width, height: 851 });
+			await page.addInitScript((l) => localStorage.setItem('PARAGLIDE_LOCALE', l), locale);
+			await page.goto('/');
+			await page.getByRole('button', { name: /demo|demonstra/i }).click();
+			await page.waitForURL(/\/budget\//);
+			await page.goto('/reports');
+			await page.locator('#report-period').click();
+			await page
+				.locator('[data-slot="select-item"]')
+				.filter({ hasText: /Last 12 months|Últimos 12 meses/ })
+				.click();
+
+			const chart = page.getByTestId('net-worth-chart');
+			await expect(chart).toBeVisible();
+			const table = page.getByTestId('net-worth-table');
+
+			// Assets and debts move under the month, so the row has room for the net worth.
+			await expect(table.getByRole('columnheader')).toHaveCount(2);
+
+			// The chart lays itself out after it mounts, so wait for it to settle.
+			await expect
+				.poll(
+					() =>
+						page.evaluate(() => {
+							const card = document
+								.querySelector('[data-testid="net-worth-chart"]')!
+								.closest('.rounded-xl')!;
+							const bounds = card.getBoundingClientRect();
+							return [
+								...card.querySelectorAll('.lc-axis-tick-label'),
+								...card.querySelectorAll('[data-testid="net-worth-table"] :is(td, th)')
+							]
+								.filter((el) => {
+									const box = el.getBoundingClientRect();
+									if (box.width === 0) return false; // hidden on a phone
+									return (
+										box.left < bounds.left ||
+										box.right > bounds.right ||
+										// SVG text reports meaningless scroll sizes, so only cells are clipped-checked.
+										(el instanceof HTMLElement && el.scrollWidth > el.clientWidth + 1)
+									);
+								})
+								.map((el) => el.textContent?.trim());
+						}),
+					{ message: 'cells or axis labels outside the card' }
+				)
+				.toEqual([]);
+		});
+	}
 });

@@ -10,6 +10,7 @@
 	import { errorMessage } from '$i18n/errors';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import {
+		axisMonthLabel,
 		isSingleMonth,
 		netWorthChange,
 		netWorthThrough,
@@ -85,7 +86,7 @@
 					series={[
 						{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
 					]}
-					padding={{ top: 8, right: 8, bottom: 34, left: 56 }}
+					padding={{ top: 8, right: 28, bottom: 34, left: 56 }}
 					points={chartData.length <= 13}
 					props={{
 						area: {
@@ -95,12 +96,21 @@
 						points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
 						xAxis: {
 							ticks: chartData.map((d) => d.date),
-							format: (d: Date) => formatMonth(d.toISOString().slice(0, 7), getLocale()),
+							// Names only, so twelve months fit a phone; the tooltip and table say the year.
+							format: (d: Date) => {
+								const month = d.toISOString().slice(0, 7);
+								return axisMonthLabel(month, month === points[0]?.month, getLocale());
+							},
 							// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
 							tickLength: 10,
 							tickOcclusion: { padding: 8 }
 						},
-						yAxis: { format: session.formatCompact, ticks: 4, tickLength: 0 }
+						yAxis: {
+							format: session.formatCompact,
+							ticks: 4,
+							tickLength: 0,
+							tickLabelProps: { dx: -6 }
+						}
 					}}
 				>
 					{#snippet tooltip()}<NetWorthTooltip />{/snippet}
@@ -121,18 +131,39 @@
 			<thead class="text-left text-xs text-muted-foreground">
 				<tr>
 					<th scope="col" class="py-1 font-medium">{m.reports_month()}</th>
-					<th scope="col" class="py-1 text-right font-medium">{m.reports_assets()}</th>
-					<th scope="col" class="py-1 text-right font-medium">{m.reports_debts()}</th>
-					<th scope="col" class="py-1 text-right font-medium">{m.reports_net_worth()}</th>
+					<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
+						{m.reports_assets()}
+					</th>
+					<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
+						{m.reports_debts()}
+					</th>
+					<th scope="col" class="py-1 text-right font-medium whitespace-nowrap">
+						{m.reports_net_worth()}
+					</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each shown as point (point.month)}
 					<tr class="border-t">
-						<td class="py-1.5">{formatMonth(point.month, getLocale())}</td>
-						<td class="py-1.5 text-right tabular-nums">{session.format(point.assets)}</td>
-						<td class="py-1.5 text-right tabular-nums">{session.format(point.debts)}</td>
-						<td class="py-1.5 text-right font-medium tabular-nums">
+						<td class="py-1.5 whitespace-nowrap">
+							{formatMonth(point.month, getLocale())}
+							<!-- On a phone there is no room for a column each, so assets and debts sit under
+							the month and the net worth keeps the right edge. -->
+							<span
+								class="block text-xs whitespace-normal text-muted-foreground tabular-nums md:hidden"
+							>
+								{m.reports_assets()}
+								{session.format(point.assets)} · {m.reports_debts()}
+								{session.format(point.debts)}
+							</span>
+						</td>
+						<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
+							{session.format(point.assets)}
+						</td>
+						<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
+							{session.format(point.debts)}
+						</td>
+						<td class="py-1.5 text-right font-medium whitespace-nowrap tabular-nums">
 							{session.format(point.netWorth)}
 						</td>
 					</tr>

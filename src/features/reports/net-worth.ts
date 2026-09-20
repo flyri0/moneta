@@ -1,5 +1,6 @@
 import { compareMonths, currentMonth, monthOf, type Month } from '$domain/month';
 import type { NetWorthPoint } from '$domain/net-worth';
+import { formatMonthName } from '$i18n/formats';
 import type { DateRange } from './range';
 
 /** The month to ask the repo for: the range's last month, never past the current one. */
@@ -51,4 +52,13 @@ export function netWorthChange(points: NetWorthPoint[]): NetWorthChange | null {
 		to: last.month,
 		months: points.length
 	};
+}
+
+/**
+ * A month's label on the chart's x axis: the name alone, which is what fits a phone, plus the
+ * year on the first tick and on January, the two places the reader needs it.
+ */
+export function axisMonthLabel(month: Month, isFirst: boolean, locale: string): string {
+	const name = formatMonthName(Number(month.slice(5)), locale);
+	return isFirst || month.endsWith('-01') ? `${name} ${month.slice(0, 4)}` : name;
 }

@@ -98,8 +98,12 @@
 									</span>
 								</button>
 							</th>
-							<td class="py-2 text-right align-top tabular-nums">{session.format(row.amount)}</td>
-							<td class="py-2 text-right align-top text-muted-foreground tabular-nums">
+							<td class="py-2 text-right align-top whitespace-nowrap tabular-nums">
+								{session.format(row.amount)}
+							</td>
+							<td
+								class="py-2 pl-2 text-right align-top whitespace-nowrap text-muted-foreground tabular-nums"
+							>
 								{percent.format(row.share / 100)}
 							</td>
 						</tr>

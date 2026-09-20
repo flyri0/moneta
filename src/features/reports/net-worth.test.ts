@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { NetWorthPoint } from '$domain/net-worth';
 import { presetRange } from './range';
-import { isSingleMonth, netWorthChange, netWorthThrough, pointsInRange } from './net-worth';
+import {
+	axisMonthLabel,
+	isSingleMonth,
+	netWorthChange,
+	netWorthThrough,
+	pointsInRange
+} from './net-worth';
 
 const TODAY = '2026-09-19';
 
@@ -99,5 +105,21 @@ describe('netWorthChange', () => {
 	it('measures across zero', () => {
 		const crossing = [point('2026-07', -500), point('2026-08', 0), point('2026-09', 1500)];
 		expect(netWorthChange(crossing)).toMatchObject({ current: 1500, change: 2000 });
+	});
+});
+
+describe('axisMonthLabel', () => {
+	it('drops the year from a month that is neither first nor January', () => {
+		expect(axisMonthLabel('2026-08', false, 'en')).toBe('Aug');
+		expect(axisMonthLabel('2026-08', false, 'pt-BR')).toBe('ago.');
+	});
+
+	it('keeps the year on the first tick so the axis says where it starts', () => {
+		expect(axisMonthLabel('2026-07', true, 'en')).toBe('Jul 2026');
+		expect(axisMonthLabel('2026-07', true, 'pt-BR')).toBe('jul. 2026');
+	});
+
+	it('keeps the year on January, where the year changes', () => {
+		expect(axisMonthLabel('2027-01', false, 'en')).toBe('Jan 2027');
 	});
 });
