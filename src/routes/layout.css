@@ -74,6 +74,152 @@
 	--sidebar-ring: oklch(0.556 0 0);
 }
 
+/*
+ * Accent themes. mode-watcher writes `data-theme` on <html>, including before the first paint,
+ * so these come after :root and .dark and win on source order. The dark blocks only restate
+ * --primary: the light block's var(--primary) references resolve against whichever one wins.
+ */
+
+[data-theme='blue'] {
+	--primary: oklch(54.6% 0.245 262.881);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='blue'] {
+	--primary: oklch(70.7% 0.165 254.624);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='indigo'] {
+	--primary: oklch(51.1% 0.262 276.966);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='indigo'] {
+	--primary: oklch(67.3% 0.182 276.935);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='violet'] {
+	--primary: oklch(54.1% 0.281 293.009);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='violet'] {
+	--primary: oklch(70.2% 0.183 293.541);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='cyan'] {
+	--primary: oklch(60.9% 0.126 221.723);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='cyan'] {
+	--primary: oklch(78.9% 0.154 211.53);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='teal'] {
+	--primary: oklch(60% 0.118 184.704);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='teal'] {
+	--primary: oklch(77.7% 0.152 181.912);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='emerald'] {
+	--primary: oklch(59.6% 0.145 163.225);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='emerald'] {
+	--primary: oklch(76.5% 0.177 163.223);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='amber'] {
+	--primary: oklch(76.9% 0.188 70.08);
+	--primary-foreground: oklch(0.145 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='amber'] {
+	--primary: oklch(82.8% 0.189 84.429);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='orange'] {
+	--primary: oklch(70.5% 0.213 47.604);
+	--primary-foreground: oklch(0.145 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='orange'] {
+	--primary: oklch(75% 0.183 55.934);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='rose'] {
+	--primary: oklch(58.6% 0.253 17.585);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='rose'] {
+	--primary: oklch(71.2% 0.194 13.428);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
+[data-theme='pink'] {
+	--primary: oklch(59.2% 0.249 0.584);
+	--primary-foreground: oklch(1 0 0);
+	--ring: var(--primary);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--primary);
+}
+
+.dark[data-theme='pink'] {
+	--primary: oklch(71.8% 0.202 349.761);
+	--primary-foreground: oklch(0.145 0 0);
+}
+
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
 	--color-sidebar-ring: var(--sidebar-ring);

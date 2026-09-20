@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 	import { formatBytes } from '$lib/i18n/formats';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -22,28 +22,21 @@
 	onMount(() => void refresh());
 </script>
 
-<Card.Root>
-	<Card.Header>
-		<Card.Title>{m.settings_storage()}</Card.Title>
-	</Card.Header>
-	<Card.Content class="grid gap-4 text-sm">
-		{#if persisted !== null}
-			<p data-testid="storage-persisted">
-				{persisted ? m.storage_persisted() : m.storage_not_persisted()}
-			</p>
-			{#if !persisted}
-				<Button variant="outline" class="justify-self-start" onclick={ask}>
-					{m.storage_persist_ask()}
-				</Button>
-			{/if}
+<SettingsGroup title={m.settings_storage()}>
+	{#if persisted !== null}
+		<p class="px-4 py-3 text-sm text-muted-foreground" data-testid="storage-persisted">
+			{persisted ? m.storage_persisted() : m.storage_not_persisted()}
+		</p>
+		{#if !persisted}
+			<SettingsRow label={m.storage_persist_ask()} onclick={ask} />
 		{/if}
-		{#if estimate?.usage !== undefined && estimate.quota !== undefined}
-			<p>
-				{m.storage_used({
-					used: formatBytes(estimate.usage, getLocale()),
-					quota: formatBytes(estimate.quota, getLocale())
-				})}
-			</p>
-		{/if}
-	</Card.Content>
-</Card.Root>
+	{/if}
+	{#if estimate?.usage !== undefined && estimate.quota !== undefined}
+		<p class="px-4 py-3 text-sm text-muted-foreground">
+			{m.storage_used({
+				used: formatBytes(estimate.usage, getLocale()),
+				quota: formatBytes(estimate.quota, getLocale())
+			})}
+		</p>
+	{/if}
+</SettingsGroup>

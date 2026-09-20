@@ -30,7 +30,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 
 - `src/lib/domain/`: pure TS (money, months, budget engine, quick-assign). No DB, no DOM.
 - `src/lib/db/`: runs only in the worker. Schema and migrations, repos, RPC surface (`api.ts`), dispatcher. `system.ts` holds the budget-file calls (`api.system.*`) over a `FileStore`: the OPFS pool in `worker.ts`, in-memory databases in tests (`memoryFileStore`). `backup.ts` checks restores.
-- `src/lib/client/`: main thread. Typed RPC client (`rpc.ts`), worker start (`db.ts`), `liveQuery` (`live.ts`) and `useLive` (`live.svelte.ts`), tab lock, budget registry and session, app state (`app-state.svelte.ts`: `useSession()`), `runAction`/`notifyError` (`notify.ts`).
+- `src/lib/client/`: main thread. Typed RPC client (`rpc.ts`), worker start (`db.ts`), `liveQuery` (`live.ts`) and `useLive` (`live.svelte.ts`), tab lock, budget registry and session, app state (`app-state.svelte.ts`: `useSession()`), `runAction`/`notifyError` (`notify.ts`), the accent palette (`accent.ts`; mode-watcher stores the choice and writes it as `data-theme`).
 - `src/lib/budget/`, `src/lib/accounts/`, `src/lib/transactions/`, `src/lib/reports/`: pure, unit-tested screen logic (grid model, category order, account defaults, register display, transaction form rules, report ranges).
 - `src/lib/backup/`: backups (`.sqlite`), CSV and JSON exports, the backup reminder. Files go out through a `BackupTarget` (downloads in v1).
 - `src/lib/i18n/`: message catalogs (`messages/en.json`, `messages/pt-BR.json`), error messages, labels for system rows, formats. Paraglide compiles them into `src/lib/paraglide/` (generated, not committed).

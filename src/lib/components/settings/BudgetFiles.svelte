@@ -3,7 +3,8 @@
 	import { resolve } from '$app/paths';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 	import { getApp, useSession } from '$lib/client/app-state.svelte';
 	import { runAction } from '$lib/client/notify';
 	import { loadRegistry } from '$lib/client/registry';
@@ -43,49 +44,46 @@
 	}
 </script>
 
-<Card.Root>
-	<Card.Header>
-		<Card.Title>{m.settings_budget_files()}</Card.Title>
-	</Card.Header>
-	<Card.Content class="grid gap-4">
-		<ul class="grid gap-2" data-testid="budget-files">
-			{#each budgets as budget (budget.file)}
-				{@const current = budget.file === session.file}
-				{@const name = current ? session.meta.name : budget.name}
-				<li class="flex flex-wrap items-center gap-2">
-					<span class="min-w-0 flex-1 truncate">{name}</span>
-					{#if current}
-						<Badge variant="secondary">{m.settings_budget_current()}</Badge>
-					{:else}
+<SettingsGroup title={m.settings_budget_files()}>
+	<ul class="divide-y" data-testid="budget-files">
+		{#each budgets as budget (budget.file)}
+			{@const current = budget.file === session.file}
+			{@const name = current ? session.meta.name : budget.name}
+			<li>
+				<SettingsRow label={name}>
+					{#snippet control()}
+						{#if current}
+							<Badge variant="secondary">{m.settings_budget_current()}</Badge>
+						{:else}
+							<Button
+								variant="outline"
+								size="sm"
+								aria-label={m.settings_budget_open_named({ name })}
+								onclick={() => open(budget.file)}
+							>
+								{m.settings_budget_open()}
+							</Button>
+						{/if}
 						<Button
-							variant="outline"
+							variant="destructive"
 							size="sm"
-							aria-label={m.settings_budget_open_named({ name })}
-							onclick={() => open(budget.file)}
+							aria-label={confirming === budget.file
+								? undefined
+								: m.settings_budget_delete_named({ name })}
+							onclick={() => remove(budget.file)}
 						>
-							{m.settings_budget_open()}
+							{confirming === budget.file ? m.confirm_delete() : m.delete()}
 						</Button>
-					{/if}
-					<Button
-						variant="destructive"
-						size="sm"
-						aria-label={confirming === budget.file
-							? undefined
-							: m.settings_budget_delete_named({ name })}
-						onclick={() => remove(budget.file)}
-					>
-						{confirming === budget.file ? m.confirm_delete() : m.delete()}
-					</Button>
-				</li>
-			{/each}
-		</ul>
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-		<Button
-			variant="outline"
-			class="justify-self-start"
-			onclick={() => (app.boot = { kind: 'onboarding' })}
-		>
-			{m.settings_budget_new()}
-		</Button>
-	</Card.Content>
-</Card.Root>
+					{/snippet}
+				</SettingsRow>
+			</li>
+		{/each}
+	</ul>
+	{#if error}
+		<p class="px-4 py-3 text-sm text-destructive" role="alert">{error}</p>
+	{/if}
+	<SettingsRow
+		label={m.settings_budget_new()}
+		onclick={() => (app.boot = { kind: 'onboarding' })}
+	/>
+</SettingsGroup>

@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import RestoreDialog from './RestoreDialog.svelte';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 	import { backUp, exportBudgetJson, exportTransactionsCsv } from '$lib/backup/actions';
 	import { useSession } from '$lib/client/app-state.svelte';
 	import { runActionToast } from '$lib/client/notify';
@@ -24,22 +22,15 @@
 	}
 </script>
 
-<Card.Root>
-	<Card.Header>
-		<Card.Title>{m.settings_backup()}</Card.Title>
-		<Card.Description>{m.backup_hint()}</Card.Description>
-	</Card.Header>
-	<Card.Content class="grid gap-4">
-		<p class="text-sm" data-testid="last-backup">
-			{session.meta.lastBackupAt
-				? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
-				: m.backup_never()}
-		</p>
-		<Button class="justify-self-start" onclick={() => runActionToast(() => backUp(session))}>
-			{m.backup_now()}
-		</Button>
-		<div class="grid gap-2">
-			<Label for="restore-file">{m.backup_restore()}</Label>
+<SettingsGroup title={m.settings_backup()} description={m.backup_hint()}>
+	<p class="px-4 py-3 text-sm text-muted-foreground" data-testid="last-backup">
+		{session.meta.lastBackupAt
+			? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
+			: m.backup_never()}
+	</p>
+	<SettingsRow label={m.backup_now()} onclick={() => runActionToast(() => backUp(session))} />
+	<SettingsRow stacked label={m.backup_restore()} labelFor="restore-file">
+		{#snippet control()}
 			<Input
 				id="restore-file"
 				type="file"
@@ -47,24 +38,19 @@
 				accept=".sqlite,.sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3"
 				onchange={pick}
 			/>
-		</div>
-		<Separator />
-		<div class="grid gap-2">
-			<p class="text-sm font-medium">{m.backup_exports()}</p>
-			<p class="text-xs text-muted-foreground">{m.backup_exports_hint()}</p>
-			<div class="flex flex-wrap gap-2">
-				<Button
-					variant="outline"
-					onclick={() => runActionToast(() => exportTransactionsCsv(session))}
-				>
-					{m.backup_export_csv()}
-				</Button>
-				<Button variant="outline" onclick={() => runActionToast(() => exportBudgetJson(session))}>
-					{m.backup_export_json()}
-				</Button>
-			</div>
-		</div>
-	</Card.Content>
-</Card.Root>
+		{/snippet}
+	</SettingsRow>
+</SettingsGroup>
+
+<SettingsGroup title={m.backup_exports()} description={m.backup_exports_hint()}>
+	<SettingsRow
+		label={m.backup_export_csv()}
+		onclick={() => runActionToast(() => exportTransactionsCsv(session))}
+	/>
+	<SettingsRow
+		label={m.backup_export_json()}
+		onclick={() => runActionToast(() => exportBudgetJson(session))}
+	/>
+</SettingsGroup>
 
 <RestoreDialog bind:open={restoring} file={picked} />

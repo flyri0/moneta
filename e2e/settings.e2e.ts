@@ -53,3 +53,40 @@ test('deleting the last budget starts over', async ({ page }) => {
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Cancel' })).toBeHidden();
 });
+
+test('picks an accent colour and a theme that outlive a reload', async ({ page }) => {
+	await onboard(page);
+	await openSettings(page);
+	const html = page.locator('html');
+	await expect(html).toHaveAttribute('data-theme', 'teal');
+
+	await page.getByRole('button', { name: 'Violet' }).click();
+	await page.getByRole('button', { name: 'Dark' }).click();
+	await expect(html).toHaveAttribute('data-theme', 'violet');
+	await expect(html).toHaveClass(/dark/);
+
+	await page.reload();
+	await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+	await expect(html).toHaveAttribute('data-theme', 'violet');
+	await expect(html).toHaveClass(/dark/);
+	await expect(page.getByRole('button', { name: 'Violet' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
+	);
+});
+
+test.describe('on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('picks an accent colour from a sheet', async ({ page }) => {
+		await onboard(page);
+		await openSettings(page);
+		// The swatches only fit in a sheet, so the row shows the current colour and opens one.
+		await expect(page.getByRole('button', { name: 'Amber' })).toBeHidden();
+
+		await page.getByRole('button', { name: 'Accent color' }).click();
+		await page.getByRole('button', { name: 'Amber' }).click();
+		await expect(page.locator('html')).toHaveAttribute('data-theme', 'amber');
+		await expect(page.getByRole('button', { name: 'Accent color' })).toContainText('Amber');
+	});
+});

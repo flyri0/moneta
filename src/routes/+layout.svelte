@@ -2,6 +2,7 @@
 	import './layout.css';
 	import type { Snippet } from 'svelte';
 	import { ModeWatcher } from 'mode-watcher';
+	import { DEFAULT_ACCENT } from '$lib/client/accent';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import Boot from '$lib/components/app/Boot.svelte';
 	import { m } from '$lib/paraglide/messages';
@@ -17,6 +18,6 @@
 	<title>{m.app_name()}</title>
 </svelte:head>
 
-<ModeWatcher />
+<ModeWatcher defaultTheme={DEFAULT_ACCENT} />
 <Toaster richColors closeButton />
 <Boot>{@render children()}</Boot>
