@@ -176,14 +176,20 @@
 					</Command.Group>
 				{/if}
 				{#if showCreateOption}
+					<Command.Separator />
 					<Command.Group>
 						<Command.Item
 							value={trimmedSearch}
 							keywords={[trimmedSearch]}
 							onSelect={() => handleSelect(trimmedSearch)}
+							class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
 						>
-							<PlusIcon class="mr-2 size-4 text-muted-foreground" />
-							<span>
+							<div
+								class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+							>
+								<PlusIcon class="size-3.5 stroke-[2.5]" />
+							</div>
+							<span class="truncate">
 								{createLabel
 									? createLabel(trimmedSearch)
 									: m.combobox_create({ name: trimmedSearch })}
