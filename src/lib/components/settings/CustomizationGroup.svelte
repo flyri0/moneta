@@ -11,6 +11,8 @@
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
 
+	let { title = m.settings_customization() }: { title?: string } = $props();
+
 	const LANGUAGE_NAMES: Record<Locale, string> = { en: 'English', 'pt-BR': 'Português (Brasil)' };
 
 	const desktop = new MediaQuery('min-width: 768px');
@@ -18,7 +20,7 @@
 	let picking = $state(false);
 </script>
 
-<SettingsGroup title={m.settings_customization()}>
+<SettingsGroup {title}>
 	{#if desktop.current}
 		<SettingsRow stacked label={m.settings_accent()}>
 			{#snippet control()}

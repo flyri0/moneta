@@ -43,3 +43,43 @@ test('a second tab waits until it takes over', async ({ context }) => {
 	await expect(second.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await expect(first.getByText('Moneta is open in another tab')).toBeVisible();
 });
+
+test('onboarding allows choosing theme, accent, and language on the welcome step', async ({
+	page
+}) => {
+	await page.goto('/');
+	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
+
+	const html = page.locator('html');
+	await expect(html).toHaveAttribute('data-theme', 'teal');
+
+	await page.getByRole('button', { name: 'Violet' }).click();
+	await page.getByRole('button', { name: 'Dark' }).click();
+	await expect(html).toHaveAttribute('data-theme', 'violet');
+	await expect(html).toHaveClass(/dark/);
+
+	await page.getByLabel('Language').selectOption('pt-BR');
+	await expect(page.getByText('Boas-vindas ao Moneta')).toBeVisible();
+	await expect(html).toHaveAttribute('data-theme', 'violet');
+	await expect(html).toHaveClass(/dark/);
+
+	await page.getByRole('button', { name: 'Avançar' }).click();
+	await expect(page.getByText('Um ponto de atenção')).toBeVisible();
+	await page.getByRole('button', { name: 'Avançar' }).click();
+	await expect(page.getByLabel('Nome do orçamento')).toHaveValue('Meu orçamento');
+});
+
+test.describe('onboarding on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('picks an accent colour from a sheet during onboarding', async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByText('Welcome to Moneta')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Amber' })).toBeHidden();
+
+		await page.getByRole('button', { name: 'Accent color' }).click();
+		await page.getByRole('button', { name: 'Amber' }).click();
+		await expect(page.locator('html')).toHaveAttribute('data-theme', 'amber');
+		await expect(page.getByRole('button', { name: 'Accent color' })).toContainText('Amber');
+	});
+});
