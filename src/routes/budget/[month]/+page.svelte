@@ -13,6 +13,7 @@
 	import MonthPicker from '$features/budget/MonthPicker.svelte';
 	import OrderEditor from '$features/budget/OrderEditor.svelte';
 	import RtaCard from '$features/budget/RtaCard.svelte';
+	import { fade, slide } from '$client/motion.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import {
@@ -66,15 +67,17 @@
 	</header>
 
 	{#if view.data?.futureNegativeMonth}
-		<Alert.Root variant="destructive">
-			<TriangleAlertIcon />
-			<Alert.Title>{m.budget_future_negative_title()}</Alert.Title>
-			<Alert.Description>
-				{m.budget_future_negative_body({
-					month: formatMonthLong(view.data.futureNegativeMonth, getLocale())
-				})}
-			</Alert.Description>
-		</Alert.Root>
+		<div transition:slide>
+			<Alert.Root variant="destructive">
+				<TriangleAlertIcon />
+				<Alert.Title>{m.budget_future_negative_title()}</Alert.Title>
+				<Alert.Description>
+					{m.budget_future_negative_body({
+						month: formatMonthLong(view.data.futureNegativeMonth, getLocale())
+					})}
+				</Alert.Description>
+			</Alert.Root>
+		</div>
 	{/if}
 
 	{#if view.error && !view.data}
@@ -83,57 +86,61 @@
 
 	{#if view.data && model}
 		{#if editingOrder}
-			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
-		{:else}
-			<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
-			<div class="flex justify-end gap-2">
-				<Button
-					variant="outline"
-					size="sm"
-					aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
-					onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
-				>
-					{#if everyCollapsed}
-						<ChevronsUpDownIcon />
-						<span class="hidden md:inline">{m.budget_expand_all()}</span>
-					{:else}
-						<ChevronsDownUpIcon />
-						<span class="hidden md:inline">{m.budget_collapse_all()}</span>
-					{/if}
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					aria-label={m.budget_add_group()}
-					onclick={() => (addingGroup = true)}
-				>
-					<PlusIcon />
-					<span class="hidden md:inline">{m.budget_add_group()}</span>
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					aria-label={m.budget_edit_order()}
-					onclick={() => (editingOrder = true)}
-				>
-					<ArrowUpDownIcon />
-					<span class="hidden md:inline">{m.budget_edit_order()}</span>
-				</Button>
+			<div in:fade={{ duration: 150 }}>
+				<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
 			</div>
-			<BudgetGrid
-				{model}
-				month={data.month}
-				{collapsed}
-				onToggleGroup={(id) => setCollapsed(toggleCollapsed(collapsed, id))}
-				onSelectCategory={(id) => {
-					categoryId = id;
-					categoryOpen = true;
-				}}
-				onSelectGroup={(id) => {
-					groupId = id;
-					groupOpen = true;
-				}}
-			/>
+		{:else}
+			<div in:fade={{ duration: 150 }}>
+				<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
+				<div class="flex justify-end gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
+						onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
+					>
+						{#if everyCollapsed}
+							<ChevronsUpDownIcon />
+							<span class="hidden md:inline">{m.budget_expand_all()}</span>
+						{:else}
+							<ChevronsDownUpIcon />
+							<span class="hidden md:inline">{m.budget_collapse_all()}</span>
+						{/if}
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						aria-label={m.budget_add_group()}
+						onclick={() => (addingGroup = true)}
+					>
+						<PlusIcon />
+						<span class="hidden md:inline">{m.budget_add_group()}</span>
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						aria-label={m.budget_edit_order()}
+						onclick={() => (editingOrder = true)}
+					>
+						<ArrowUpDownIcon />
+						<span class="hidden md:inline">{m.budget_edit_order()}</span>
+					</Button>
+				</div>
+				<BudgetGrid
+					{model}
+					month={data.month}
+					{collapsed}
+					onToggleGroup={(id) => setCollapsed(toggleCollapsed(collapsed, id))}
+					onSelectCategory={(id) => {
+						categoryId = id;
+						categoryOpen = true;
+					}}
+					onSelectGroup={(id) => {
+						groupId = id;
+						groupOpen = true;
+					}}
+				/>
+			</div>
 		{/if}
 
 		{#if category}

@@ -4,6 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Button } from '$ui/button';
 	import { addMonths, currentMonth, type Month } from '$domain/month';
+	import { fade } from '$client/motion.svelte';
 	import { formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -25,7 +26,11 @@
 		class="min-w-0 flex-1 truncate text-center text-lg font-semibold capitalize md:min-w-40 md:flex-none"
 		data-testid="month-label"
 	>
-		{formatMonthLong(month, getLocale())}
+		{#key month}
+			<span class="inline-block" in:fade={{ duration: 150 }}>
+				{formatMonthLong(month, getLocale())}
+			</span>
+		{/key}
 	</h1>
 	<Button
 		variant="ghost"

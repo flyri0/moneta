@@ -2,6 +2,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { MediaQuery } from 'svelte/reactivity';
 	import * as Collapsible from '$ui/collapsible';
+	import { slide } from '$client/motion.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
@@ -109,9 +110,11 @@
 				<span class="text-right tabular-nums">{session.format(group.available)}</span>
 			</div>
 			{#if open}
-				{#each group.categories as category (category.id)}
-					{@render categoryRow(category)}
-				{/each}
+				<div transition:slide>
+					{#each group.categories as category (category.id)}
+						{@render categoryRow(category)}
+					{/each}
+				</div>
 			{/if}
 		{/each}
 	</section>
@@ -135,9 +138,11 @@
 					</span>
 				</div>
 				{#if open}
-					{#each group.categories as category (category.id)}
-						<CategoryCard {category} onSelect={onSelectCategory} />
-					{/each}
+					<div class="grid gap-2" transition:slide>
+						{#each group.categories as category (category.id)}
+							<CategoryCard {category} onSelect={onSelectCategory} />
+						{/each}
+					</div>
 				{/if}
 			</div>
 		{/each}

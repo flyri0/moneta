@@ -5,6 +5,7 @@
 	import { Button } from '$ui/button';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
+	import { slide } from '$client/motion.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
@@ -49,7 +50,7 @@
 		{#each budgets as budget (budget.file)}
 			{@const current = budget.file === session.file}
 			{@const name = current ? session.meta.name : budget.name}
-			<li>
+			<li transition:slide>
 				<SettingsRow label={name}>
 					{#snippet control()}
 						{#if current}

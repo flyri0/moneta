@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
+	import { fade, motion } from '$client/motion.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import StatTile from './StatTile.svelte';
@@ -73,44 +74,65 @@
 		/>
 
 		{#if chartData.length > 1}
-			<Chart.Container
-				{config}
-				class="aspect-auto h-56 w-full md:h-64"
-				data-testid="net-worth-chart"
-			>
-				<AreaChart
-					data={chartData}
-					x="date"
-					y="netWorth"
-					series={[
-						{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
-					]}
-					padding={{ top: 8, right: 8, bottom: 34, left: 56 }}
-					points={chartData.length <= 13}
-					props={{
-						area: {
-							fillOpacity: 0.1,
-							line: { strokeWidth: 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-						},
-						points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
-						xAxis: {
-							ticks: chartData.map((d) => d.date),
-							format: (d: Date) => formatMonth(d.toISOString().slice(0, 7), getLocale()),
-							// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
-							tickLength: 10,
-							tickOcclusion: { padding: 8 }
-						},
-						yAxis: { format: session.formatCompact, ticks: 4, tickLength: 0 }
-					}}
+			<div in:fade={{ duration: 150 }}>
+				<Chart.Container
+					{config}
+					class="aspect-auto h-56 w-full md:h-64"
+					data-testid="net-worth-chart"
 				>
-					{#snippet tooltip()}<NetWorthTooltip />{/snippet}
-				</AreaChart>
-			</Chart.Container>
+					<AreaChart
+						data={chartData}
+						x="date"
+						y="netWorth"
+						series={[
+							{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
+						]}
+						padding={{ top: 8, right: 8, bottom: 34, left: 56 }}
+						points={chartData.length <= 13}
+						motion={motion.chartMotion}
+						props={{
+							area: {
+								fillOpacity: 0.1,
+								line: {
+									strokeWidth: 2,
+									'stroke-linecap': 'round',
+									'stroke-linejoin': 'round',
+									motion: motion.chartMotion
+								},
+								motion: motion.chartMotion
+							},
+							points: {
+								r: 3.5,
+								class: 'stroke-background',
+								strokeWidth: 2,
+								motion: motion.chartMotion
+							},
+							xAxis: {
+								ticks: chartData.map((d) => d.date),
+								format: (d: Date) => formatMonth(d.toISOString().slice(0, 7), getLocale()),
+								// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
+								tickLength: 10,
+								tickOcclusion: { padding: 8 },
+								motion: motion.chartMotion
+							},
+							yAxis: {
+								format: session.formatCompact,
+								ticks: 4,
+								tickLength: 0,
+								motion: motion.chartMotion
+							},
+							grid: { motion: motion.chartMotion }
+						}}
+					>
+						{#snippet tooltip()}<NetWorthTooltip />{/snippet}
+					</AreaChart>
+				</Chart.Container>
+			</div>
 		{:else}
 			<!-- One point means either the period is a single month, or the budget has only one
 			month of history -- and telling someone to widen a period that is already wide is
 			advice they cannot act on. -->
-			<p class="text-sm text-muted-foreground">
+			<p class="text-sm text-muted-foreground" in:fade={{ duration: 150 }}>
 				{isSingleMonth(range, todayIso())
 					? m.reports_net_worth_single_month()
 					: m.reports_net_worth_one_month()}

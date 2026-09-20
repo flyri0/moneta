@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import { slide } from '$client/motion.svelte';
 	import { payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
@@ -118,7 +119,7 @@
 		</a>
 	{/if}
 	{#if row.isSplit && expanded}
-		<ul class="order-6 col-span-full grid gap-1 py-1 text-sm md:col-start-3">
+		<ul class="order-6 col-span-full grid gap-1 py-1 text-sm md:col-start-3" transition:slide>
 			{#each row.splits as split (split.id)}
 				<li class="flex justify-between gap-2">
 					<span class="truncate">

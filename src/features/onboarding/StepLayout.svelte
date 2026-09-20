@@ -47,7 +47,11 @@
 			</p>
 			<div class="mt-2 mb-3 flex gap-1" aria-hidden="true">
 				{#each { length: total }, i (i)}
-					<span class="h-1 flex-1 rounded-full {i < current ? 'bg-primary' : 'bg-muted'}"></span>
+					<span
+						class="h-1 flex-1 rounded-full transition-colors duration-300 {i < current
+							? 'bg-primary'
+							: 'bg-muted'}"
+					></span>
 				{/each}
 			</div>
 			<Card.Title class="text-xl">{title}</Card.Title>

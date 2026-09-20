@@ -2,6 +2,7 @@
 	import { signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
 	import { runAction } from '$client/notify';
+	import { fade } from '$client/motion.svelte';
 	import { createBudget, restoreBudget, type SessionApi } from '$client/session';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
@@ -123,52 +124,60 @@
 	}
 </script>
 
-{#if step === 'welcome'}
-	<WelcomeStep current={stepNumber(steps, step)} {total} onNext={next} />
-{:else if step === 'backups'}
-	<BackupsStep
-		current={stepNumber(steps, step)}
-		{total}
-		{busy}
-		{error}
-		onNext={next}
-		onBack={back}
-		onRestore={restore}
-	/>
-{:else if step === 'budget'}
-	<BudgetStep
-		title={onCancel ? m.onboarding_new_title() : m.onboarding_budget_section()}
-		current={stepNumber(steps, step)}
-		{total}
-		onNext={next}
-		onBack={back}
-		backLabel={stepBefore(steps, step) ? m.onboarding_back() : onCancel ? m.cancel() : undefined}
-		bind:name
-		bind:locale
-		bind:currency
-	/>
-{:else if step === 'categories'}
-	<CategoriesStep
-		current={stepNumber(steps, step)}
-		{total}
-		onNext={next}
-		onBack={back}
-		bind:selection
-	/>
-{:else if step === 'account'}
-	<AccountStep
-		current={stepNumber(steps, step)}
-		{total}
-		onNext={create}
-		onBack={back}
-		{busy}
-		{error}
-		bind:name={accountName}
-		bind:type={accountType}
-		bind:onBudget
-		bind:balance
-		bind:date
-	/>
-{:else if step === 'done'}
-	<DoneStep current={stepNumber(steps, step)} {total} onNext={finish} />
-{/if}
+{#key step}
+	<div in:fade={{ duration: 150 }}>
+		{#if step === 'welcome'}
+			<WelcomeStep current={stepNumber(steps, step)} {total} onNext={next} />
+		{:else if step === 'backups'}
+			<BackupsStep
+				current={stepNumber(steps, step)}
+				{total}
+				{busy}
+				{error}
+				onNext={next}
+				onBack={back}
+				onRestore={restore}
+			/>
+		{:else if step === 'budget'}
+			<BudgetStep
+				title={onCancel ? m.onboarding_new_title() : m.onboarding_budget_section()}
+				current={stepNumber(steps, step)}
+				{total}
+				onNext={next}
+				onBack={back}
+				backLabel={stepBefore(steps, step)
+					? m.onboarding_back()
+					: onCancel
+						? m.cancel()
+						: undefined}
+				bind:name
+				bind:locale
+				bind:currency
+			/>
+		{:else if step === 'categories'}
+			<CategoriesStep
+				current={stepNumber(steps, step)}
+				{total}
+				onNext={next}
+				onBack={back}
+				bind:selection
+			/>
+		{:else if step === 'account'}
+			<AccountStep
+				current={stepNumber(steps, step)}
+				{total}
+				onNext={create}
+				onBack={back}
+				{busy}
+				{error}
+				bind:name={accountName}
+				bind:type={accountType}
+				bind:onBudget
+				bind:balance
+				bind:date
+			/>
+		{:else if step === 'done'}
+			<DoneStep current={stepNumber(steps, step)} {total} onNext={finish} />
+		{/if}
+	</div>
+{/key}

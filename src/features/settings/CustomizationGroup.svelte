@@ -8,6 +8,8 @@
 	import SettingsRow from './SettingsRow.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { ACCENT_SWATCH, accentLabel, readAccent } from '$client/accent';
+	import { motion } from '$client/motion.svelte';
+	import { Switch } from '$ui/switch';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$i18n/paraglide/runtime';
 
@@ -65,6 +67,16 @@
 					{/each}
 				</Select.Content>
 			</Select.Root>
+		{/snippet}
+	</SettingsRow>
+
+	<SettingsRow label={m.settings_animations()} labelFor="settings-animations">
+		{#snippet control()}
+			<Switch
+				id="settings-animations"
+				checked={motion.enabled}
+				onCheckedChange={(val) => motion.setEnabled(val)}
+			/>
 		{/snippet}
 	</SettingsRow>
 </SettingsGroup>

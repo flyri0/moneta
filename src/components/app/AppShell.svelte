@@ -3,6 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { fade } from '$client/motion.svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -114,7 +115,13 @@
 			<AccountList accounts={accounts.data ?? []} />
 		</aside>
 
-		<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>
+		<main class="min-w-0 flex-1 pb-24 md:pb-0">
+			{#key page.route.id}
+				<div in:fade={{ duration: 150 }}>
+					{@render children()}
+				</div>
+			{/key}
+		</main>
 	</div>
 
 	<nav

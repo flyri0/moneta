@@ -4,6 +4,7 @@
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
 	import * as Collapsible from '$ui/collapsible';
+	import { slide } from '$client/motion.svelte';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import {
@@ -84,7 +85,7 @@
 				</div>
 				<Collapsible.Content class="grid flex-1 gap-3 border-t px-3 py-3">
 					{#each group.categories as category, ci (category.name)}
-						<div class="flex items-center gap-3">
+						<div class="flex items-center gap-3" transition:slide={{ duration: 150 }}>
 							<Checkbox
 								id="starter-category-{gi}-{ci}"
 								bind:checked={

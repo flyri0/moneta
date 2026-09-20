@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { fade, slide } from '$client/motion.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import { payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
@@ -61,9 +62,9 @@
 
 <ReportSection title={m.reports_spending()}>
 	{#if spending.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(spending.error)}</p>
+		<p class="text-sm text-destructive" role="alert" in:fade>{errorMessage(spending.error)}</p>
 	{:else if spending.data && report.rows.length === 0}
-		<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
+		<p class="text-sm text-muted-foreground" in:fade>{m.reports_spending_empty()}</p>
 	{:else if report.rows.length > 0}
 		<!-- The drill-down gets its own column on a wide screen; with none open the list keeps the
 		width to itself rather than leaving half the card empty. -->
@@ -92,7 +93,7 @@
 									</span>
 									<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
 										<span
-											class="block h-full rounded-full bg-chart-1"
+											class="block h-full rounded-full bg-chart-1 transition-[width] duration-500 ease-out"
 											style="width: {(row.amount / max) * 100}%"
 										></span>
 									</span>
@@ -133,6 +134,7 @@
 			{#if category}
 				<section
 					class="grid gap-2"
+					transition:slide
 					aria-label={m.reports_category_transactions({ category: category.name })}
 				>
 					<h3 class="text-sm font-medium">

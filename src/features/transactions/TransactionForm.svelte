@@ -7,6 +7,7 @@
 	import { Label } from '$ui/label';
 	import { Combobox } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
+	import { slide } from '$client/motion.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import { groupLabel, categoryLabel } from '$i18n/labels';
@@ -228,10 +229,13 @@
 	{/if}
 
 	{#if draft.splits && splittable}
-		<fieldset class="grid gap-2 rounded-md border p-3">
+		<fieldset class="grid gap-2 rounded-md border p-3" transition:slide>
 			<legend class="px-1 text-sm font-medium">{m.transaction_split_lines()}</legend>
 			{#each draft.splits as line, i (i)}
-				<div class="grid grid-cols-[1fr_7rem_auto] items-center gap-2">
+				<div
+					class="grid grid-cols-[1fr_7rem_auto] items-center gap-2"
+					transition:slide={{ duration: 150 }}
+				>
 					{@render categorySelect(
 						line.categoryId,
 						(id) => (line.categoryId = id),

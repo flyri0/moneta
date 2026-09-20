@@ -2,6 +2,7 @@
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
+	import { flip } from '$client/motion.svelte';
 	import { Button } from '$ui/button';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
@@ -54,6 +55,7 @@
 	{#each layout as group, gi (group.id)}
 		<section
 			class="rounded-lg border"
+			animate:flip
 			aria-label={groupLabel(group)}
 			ondragover={(e) => e.preventDefault()}
 			ondrop={(e) => drop(e, group.id, group.categories.length)}
@@ -82,6 +84,7 @@
 					class="flex items-center gap-2 border-t px-3 py-1.5 {dragging === category.id
 						? 'opacity-50'
 						: ''}"
+					animate:flip
 					role="listitem"
 					draggable={!group.system}
 					ondragstart={(e) => {

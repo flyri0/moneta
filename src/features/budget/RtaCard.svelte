@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { slide } from '$client/motion.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
 	import { m } from '$i18n/paraglide/messages';
@@ -33,7 +34,7 @@
 		<ChevronDownIcon class="size-5 transition-transform {expanded ? 'rotate-180' : ''}" />
 	</button>
 	{#if expanded}
-		<dl class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-4 pb-3 text-sm">
+		<dl class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-4 pb-3 text-sm" transition:slide>
 			<dt>{m.budget_funds_available()}</dt>
 			<dd class="text-right tabular-nums">{session.format(view.availableFunds)}</dd>
 			<dt>{m.budget_overspent_last_month()}</dt>

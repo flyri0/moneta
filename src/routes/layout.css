@@ -288,4 +288,18 @@
 	html {
 		@apply font-sans;
 	}
+
+	:root[data-animations='false'] * {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:root:not([data-animations='true']) * {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
 }
