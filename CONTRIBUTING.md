@@ -45,16 +45,17 @@ format.
 
 ## How the code is organised
 
-`src/lib/domain/` is pure TypeScript — money, months, the budget engine, quick-assign — with
-no DB and no DOM. `src/lib/db/` runs **only** inside the Web Worker. `src/lib/client/` is
-the main thread. The screen logic in `src/lib/budget/`, `accounts/`, `transactions/` and
-`reports/` is pure and unit-tested, so the Svelte components in `src/lib/components/` stay
-thin.
+`src/core/domain/` is pure TypeScript — money, months, the budget engine, quick-assign — with
+no DB and no DOM. `src/core/db/` runs **only** inside the Web Worker. `src/core/client/` is
+the main thread. The feature modules under `src/features/` (`budget/`, `accounts/`, `transactions/`,
+`reports/`, `settings/`, `onboarding/`, `welcome/`, `backup/`, `demo/`) colocate pure screen logic
+with their Svelte components. Shared components live in `src/components/` (`ui/` holds shadcn-svelte
+primitives and `app/` holds the application shell).
 
 The rule that catches newcomers: **the database lives only in the worker.** The main thread
-never imports `$lib/db/repos/*`, `$lib/db/connection` or `@sqlite.org/sqlite-wasm` at
+never imports `$db/repos/*`, `$db/connection` or `@sqlite.org/sqlite-wasm` at
 runtime (`import type` is fine). It goes through `api.<namespace>.<method>()`. New RPC
-methods are declared in `src/lib/db/api.ts`, and a write declares the tables it changes —
+methods are declared in `src/core/db/api.ts`, and a write declares the tables it changes —
 that is what drives live-query refreshes.
 
 ## House rules
@@ -62,9 +63,9 @@ that is what drives live-query refreshes.
 - **Money is integer minor units** (cents), negative means outflow. Never use floats for
   storage or budget math.
 - **Store only facts.** Balances, activity, available and Ready to Assign are always
-  derived (SQL aggregates plus `src/lib/domain/budget-engine.ts`), never cached.
+  derived (SQL aggregates plus `src/core/domain/budget-engine.ts`), never cached.
 - Multi-statement writes go through `tx(db, fn)`, a nestable SAVEPOINT.
-- Domain failures throw `DomainError` with a typed code from `src/lib/domain/errors.ts`.
+- Domain failures throw `DomainError` with a typed code from `src/core/domain/errors.ts`.
   Nothing else is thrown on purpose.
 - IDs are UUIDv7. Dates are `'YYYY-MM-DD'`, months `'YYYY-MM'`. Booleans are 0/1 in SQL and
   `boolean` in repo results.
@@ -76,7 +77,7 @@ that is what drives live-query refreshes.
 
 ### Changing the schema
 
-Add a **new** numbered file in `src/lib/db/migrations/` and register it in `MIGRATIONS`.
+Add a **new** numbered file in `src/core/db/migrations/` and register it in `MIGRATIONS`.
 Never edit a migration that has already shipped — someone's budget has already run it.
 Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean.
 
@@ -87,16 +88,16 @@ end-to-end tests are `e2e/*.e2e.ts`. Vitest runs with `requireAssertions`, so ev
 must assert something.
 
 Database tests use a real in-memory SQLite through `createBudgetDb()` and `createTestDb()`
-from `src/lib/db/testing.ts`. Lines like `sqlite3_step() rc=` in the test output come from
+from `src/core/db/testing.ts`. Lines like `sqlite3_step() rc=` in the test output come from
 statements that are expected to fail — they are harmless.
 
 ## Translations
 
 Every user-facing string comes from Paraglide: `m.<key>()`, imported from
-`$lib/paraglide/messages`. Add the key to **both** `src/lib/i18n/messages/en.json` and
+`$i18n/paraglide/messages`. Add the key to **both** `src/core/i18n/messages/en.json` and
 `pt-BR.json`; the catalogs must keep identical keys and placeholders, and
-`src/lib/i18n/catalog.test.ts` fails if they drift. System rows are stored in English and
-displayed through `$lib/i18n/labels`.
+`src/core/i18n/catalog.test.ts` fails if they drift. System rows are stored in English and
+displayed through `$i18n/labels`.
 
 Display money with `session.format(minor)`, parse typed amounts with `session.parse(text)`,
 and prefill inputs with `formatAmountInput`.

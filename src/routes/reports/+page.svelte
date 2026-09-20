@@ -1,10 +1,10 @@
 <script lang="ts">
-	import NetWorthReport from '$lib/components/reports/NetWorthReport.svelte';
-	import PeriodBar from '$lib/components/reports/PeriodBar.svelte';
-	import SpendingReport from '$lib/components/reports/SpendingReport.svelte';
-	import { todayIso } from '$lib/domain/month';
-	import { type DateRange, presetRange, type RangePreset } from '$lib/reports/range';
-	import { m } from '$lib/paraglide/messages';
+	import NetWorthReport from '$features/reports/NetWorthReport.svelte';
+	import PeriodBar from '$features/reports/PeriodBar.svelte';
+	import SpendingReport from '$features/reports/SpendingReport.svelte';
+	import { todayIso } from '$domain/month';
+	import { type DateRange, presetRange, type RangePreset } from '$features/reports/range';
+	import { m } from '$i18n/paraglide/messages';
 
 	// One range for the whole page: both reports answer the same question about the same slice.
 	let preset = $state<RangePreset | 'custom'>('this_month');

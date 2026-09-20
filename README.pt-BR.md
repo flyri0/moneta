@@ -152,25 +152,30 @@ sudo pnpm exec playwright install-deps chromium
 ### Estrutura do projeto
 
 ```
-src/lib/domain/        TypeScript puro: dinheiro, meses, motor do orçamento, atribuição rápida
-src/lib/db/            lado do SQLite (roda em um Web Worker): esquema, migrações, repositórios, RPC
-src/lib/client/        lado da thread principal: cliente RPC, live queries, tab lock, registro e sessão
-src/lib/budget/        lógica da tela de orçamento (modelo da grade, ordem das categorias)
-src/lib/accounts/      lógica de contas e do extrato
-src/lib/transactions/  lógica do formulário de transações
-src/lib/reports/       lógica dos relatórios (intervalos de datas, participação nos gastos)
-src/lib/backup/        backups, exportações CSV e JSON, lembrete de backup
-src/lib/i18n/          catálogos de mensagens (en, pt-BR), mensagens de erro, rótulos e formatos
-src/lib/components/    componentes Svelte (ui/ tem os primitivos do shadcn-svelte)
+src/core/domain/       TypeScript puro: dinheiro, meses, motor do orçamento, atribuição rápida
+src/core/db/           lado do SQLite (roda em um Web Worker): esquema, migrações, repositórios, RPC
+src/core/client/       lado da thread principal: cliente RPC, live queries, tab lock, registro e sessão
+src/core/i18n/         catálogos de mensagens (en, pt-BR), mensagens de erro, rótulos e formatos
+src/features/          módulos de funcionalidades (lógica de tela + componentes Svelte juntos):
+  budget/              grade do orçamento, painéis de categoria/grupo, ordem, progresso, visualização
+  accounts/            lista de contas, extrato, diálogos de criação de contas
+  transactions/        diálogo de transação, validação de formulário
+  reports/             patrimônio líquido, gastos por categoria, intervalos de datas
+  settings/            backup e restauração, armazenamento, tema, arquivos de orçamento
+  onboarding/          passos iniciais, categorias de início
+  welcome/             tela inicial, diálogo de instalação PWA
+  backup/              backups, exportações CSV e JSON, lembrete de backup
+  demo/                conjunto de dados de demonstração, sementes
+src/components/        componentes Svelte compartilhados (ui/ tem os primitivos do shadcn-svelte, app/ tem a casca da aplicação)
 src/routes/            páginas do SvelteKit
 e2e/                   testes do Playwright
 ```
 
 ### Traduções
 
-Os textos da interface ficam em `src/lib/i18n/messages/en.json` e `pt-BR.json`, e o
+Os textos da interface ficam em `src/core/i18n/messages/en.json` e `pt-BR.json`, e o
 [Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) os compila em
-`src/lib/paraglide/` (gerado, não versionado). `pnpm dev`, `pnpm build` e `pnpm check`
+`src/core/i18n/paraglide/` (gerado, não versionado). `pnpm dev`, `pnpm build` e `pnpm check`
 compilam por você; `pnpm i18n` faz isso sozinho. A primeira compilação baixa os plugins de
 formato de mensagem do Paraglide pelo jsDelivr, então ela precisa de rede uma vez.
 

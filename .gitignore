@@ -24,5 +24,5 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results
 # Paraglide
-src/lib/paraglide
+src/core/i18n/paraglide
 project.inlang/cache/

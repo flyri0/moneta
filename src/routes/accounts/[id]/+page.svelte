@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { Button } from '$lib/components/ui/button';
-	import { DatePicker } from '$lib/components/ui/date-picker';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import RegisterRow from '$lib/components/accounts/RegisterRow.svelte';
-	import TransactionDialog from '$lib/components/transactions/TransactionDialog.svelte';
-	import { PAGE_SIZE, registerBalances } from '$lib/accounts/register';
-	import { useSession } from '$lib/client/app-state.svelte';
-	import { useLive } from '$lib/client/live.svelte';
-	import type { TransactionRow } from '$lib/db/repos/transactions';
-	import { errorMessage } from '$lib/i18n/errors';
-	import { m } from '$lib/paraglide/messages';
+	import { Button } from '$ui/button';
+	import { DatePicker } from '$ui/date-picker';
+	import { Input } from '$ui/input';
+	import { Label } from '$ui/label';
+	import RegisterRow from '$features/accounts/RegisterRow.svelte';
+	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
+	import { PAGE_SIZE, registerBalances } from '$features/accounts/register';
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import type { TransactionRow } from '$db/repos/transactions';
+	import { errorMessage } from '$i18n/errors';
+	import { m } from '$i18n/paraglide/messages';
 
 	const accountId = $derived(page.params.id ?? '');
 	const session = useSession();

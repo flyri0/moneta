@@ -1,0 +1,103 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import { buildDemo, type DemoCategoryNames } from '$features/demo/dataset';
+import { currentMonth, todayIso } from '$domain/month';
+import { defaultCategoryGroups } from '$i18n/defaults';
+import type { Db } from '../connection';
+import { createTestDb } from '../testing';
+import { listAccounts } from './accounts';
+import { getBudgetMonth } from './budget';
+import { createDemo } from './demo';
+import { listTransactions } from './transactions';
+
+const [bills, everyday, goals, fun] = defaultCategoryGroups('en');
+const CATEGORIES: DemoCategoryNames = {
+	rent: bills.categories[0],
+	utilities: bills.categories[1],
+	phone: bills.categories[2],
+	insurance: bills.categories[3],
+	groceries: everyday.categories[0],
+	transport: everyday.categories[1],
+	dining: everyday.categories[2],
+	household: everyday.categories[3],
+	emergencyFund: goals.categories[0],
+	vacation: goals.categories[1],
+	entertainment: fun.categories[0],
+	hobbies: fun.categories[1]
+};
+
+async function demoDb(): Promise<Db> {
+	const db = await createTestDb();
+	createDemo(db, {
+		init: {
+			name: 'Demo',
+			currency: 'USD',
+			locale: 'en-US',
+			groups: defaultCategoryGroups('en')
+		},
+		seed: buildDemo({
+			today: todayIso(),
+			scale: 100,
+			accounts: { checking: 'Checking', savings: 'Savings', card: 'Credit Card' },
+			payees: {
+				salary: 'Paycheck',
+				landlord: 'Landlord',
+				utility: 'City Utilities',
+				telecom: 'Internet Provider',
+				insurance: 'Insurance Co.',
+				grocery: 'Corner Market',
+				transport: 'Gas Station',
+				coffee: 'Coffee Shop',
+				restaurant: 'Restaurant',
+				household: 'Home Store',
+				streaming: 'Streaming Service',
+				hobby: 'Bookshop'
+			},
+			categories: CATEGORIES
+		})
+	});
+	return db;
+}
+
+describe('seedDemo', () => {
+	let db: Db;
+	beforeAll(async () => {
+		db = await demoDb();
+	});
+
+	it('opens the three accounts with money in them', () => {
+		const accounts = listAccounts(db);
+		expect(accounts.map((a) => a.name)).toEqual(['Checking', 'Savings', 'Credit Card']);
+		expect(accounts[0].balance).toBeGreaterThan(0);
+		expect(accounts[1].balance).toBeGreaterThan(0);
+		expect(accounts[2].balance).toBeLessThanOrEqual(0);
+	});
+
+	it('records a few months of history, most of it cleared', () => {
+		const rows = listTransactions(db);
+		expect(rows.length).toBeGreaterThan(40);
+		expect(rows.filter((r) => r.cleared).length).toBeGreaterThan(rows.length / 2);
+		expect(rows.some((r) => r.isSplit)).toBe(true);
+		expect(rows.some((r) => r.transferAccountName === 'Credit Card')).toBe(true);
+	});
+
+	it('names its payees', () => {
+		const payees = new Set(listTransactions(db).map((r) => r.payeeName));
+		expect(payees).toContain('Corner Market');
+		expect(payees).toContain('Paycheck');
+	});
+
+	it('leaves nothing to assign and nothing overspent', () => {
+		const view = getBudgetMonth(db, currentMonth());
+		expect(view.readyToAssign).toBe(0);
+		const categories = view.groups.flatMap((g) => g.categories);
+		expect(categories.filter((c) => c.available < 0)).toEqual([]);
+		expect(view.assignedThisMonth).toBeGreaterThan(0);
+	});
+
+	it('funds the card payment category from the spending it covers', () => {
+		const view = getBudgetMonth(db, currentMonth());
+		const cards = view.groups.find((g) => g.system === 'credit_card_payments');
+		expect(cards?.categories.length).toBe(1);
+		expect(cards?.available).toBeGreaterThanOrEqual(0);
+	});
+});

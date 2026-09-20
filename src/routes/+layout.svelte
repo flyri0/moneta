@@ -3,12 +3,12 @@
 	import type { Snippet } from 'svelte';
 	import { ModeWatcher } from 'mode-watcher';
 	import { page } from '$app/state';
-	import { DEFAULT_ACCENT } from '$lib/client/accent';
-	import '$lib/client/install.svelte';
-	import { Toaster } from '$lib/components/ui/sonner';
-	import Boot from '$lib/components/app/Boot.svelte';
-	import { m } from '$lib/paraglide/messages';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import { DEFAULT_ACCENT } from '$client/accent';
+	import '$client/install.svelte';
+	import { Toaster } from '$ui/sonner';
+	import Boot from '$components/app/Boot.svelte';
+	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 
 	let { children }: { children: Snippet } = $props();
 

@@ -4,29 +4,29 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import * as Alert from '$lib/components/ui/alert';
-	import { Button } from '$lib/components/ui/button';
-	import AddGroupDialog from '$lib/components/budget/AddGroupDialog.svelte';
-	import BudgetGrid from '$lib/components/budget/BudgetGrid.svelte';
-	import CategorySheet from '$lib/components/budget/CategorySheet.svelte';
-	import GroupSheet from '$lib/components/budget/GroupSheet.svelte';
-	import MonthPicker from '$lib/components/budget/MonthPicker.svelte';
-	import OrderEditor from '$lib/components/budget/OrderEditor.svelte';
-	import RtaCard from '$lib/components/budget/RtaCard.svelte';
-	import { useSession } from '$lib/client/app-state.svelte';
-	import { useLive } from '$lib/client/live.svelte';
+	import * as Alert from '$ui/alert';
+	import { Button } from '$ui/button';
+	import AddGroupDialog from '$features/budget/AddGroupDialog.svelte';
+	import BudgetGrid from '$features/budget/BudgetGrid.svelte';
+	import CategorySheet from '$features/budget/CategorySheet.svelte';
+	import GroupSheet from '$features/budget/GroupSheet.svelte';
+	import MonthPicker from '$features/budget/MonthPicker.svelte';
+	import OrderEditor from '$features/budget/OrderEditor.svelte';
+	import RtaCard from '$features/budget/RtaCard.svelte';
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
 	import {
 		allCollapsed,
 		loadCollapsed,
 		saveCollapsed,
 		toggleAll,
 		toggleCollapsed
-	} from '$lib/budget/collapse';
-	import { BUDGET_TABLES, gridModel } from '$lib/budget/view';
-	import { errorMessage } from '$lib/i18n/errors';
-	import { formatMonthLong } from '$lib/i18n/formats';
-	import { m } from '$lib/paraglide/messages';
-	import { getLocale } from '$lib/paraglide/runtime';
+	} from '$features/budget/collapse';
+	import { BUDGET_TABLES, gridModel } from '$features/budget/view';
+	import { errorMessage } from '$i18n/errors';
+	import { formatMonthLong } from '$i18n/formats';
+	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

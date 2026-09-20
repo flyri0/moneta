@@ -1,13 +1,13 @@
 <script lang="ts">
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { Button } from '$lib/components/ui/button';
-	import AccountList from '$lib/components/accounts/AccountList.svelte';
-	import AccountSettingsDialog from '$lib/components/accounts/AccountSettingsDialog.svelte';
-	import AddAccountDialog from '$lib/components/accounts/AddAccountDialog.svelte';
-	import { useSession } from '$lib/client/app-state.svelte';
-	import { useLive } from '$lib/client/live.svelte';
-	import type { Account } from '$lib/db/repos/accounts';
-	import { m } from '$lib/paraglide/messages';
+	import { Button } from '$ui/button';
+	import AccountList from '$features/accounts/AccountList.svelte';
+	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
+	import AddAccountDialog from '$features/accounts/AddAccountDialog.svelte';
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import type { Account } from '$db/repos/accounts';
+	import { m } from '$i18n/paraglide/messages';
 
 	const session = useSession();
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>

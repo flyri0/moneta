@@ -150,25 +150,30 @@ sudo pnpm exec playwright install-deps chromium
 ### Project layout
 
 ```
-src/lib/domain/        pure TypeScript: money, months, budget engine, quick-assign
-src/lib/db/            SQLite side (runs in a Web Worker): schema, migrations, repositories, RPC dispatcher
-src/lib/client/        main-thread side: RPC client, live queries, tab lock, budget registry and session
-src/lib/budget/        budget screen logic (grid model, category order)
-src/lib/accounts/      account and register logic
-src/lib/transactions/  transaction form logic
-src/lib/reports/       report logic (date ranges, spending shares)
-src/lib/backup/        backups, CSV and JSON exports, the backup reminder
-src/lib/i18n/          message catalogs (en, pt-BR), error messages, labels and formats
-src/lib/components/    Svelte components (ui/ holds the shadcn-svelte primitives)
+src/core/domain/       pure TypeScript: money, months, budget engine, quick-assign
+src/core/db/           SQLite side (runs in a Web Worker): schema, migrations, repositories, RPC dispatcher
+src/core/client/       main-thread side: RPC client, live queries, tab lock, budget registry and session
+src/core/i18n/         message catalogs (en, pt-BR), error messages, labels and formats
+src/features/          feature modules (colocated screen logic + Svelte components):
+  budget/              budget grid, category & group sheets, order, progress, view
+  accounts/            account list, register, account creation dialogs
+  transactions/        transaction entry dialog, form validation
+  reports/             net worth, spending breakdown, date ranges
+  settings/            backup & restore, storage, theme, budget files
+  onboarding/          first-run steps, starter categories
+  welcome/             landing page, PWA install dialog
+  backup/              backups, CSV and JSON exports, backup reminder
+  demo/                demo dataset, seed data
+src/components/        shared Svelte components (ui/ holds shadcn-svelte primitives, app/ holds shell)
 src/routes/            SvelteKit pages
 e2e/                   Playwright tests
 ```
 
 ### Translations
 
-UI text lives in `src/lib/i18n/messages/en.json` and `pt-BR.json`, and
+UI text lives in `src/core/i18n/messages/en.json` and `pt-BR.json`, and
 [Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) compiles it into
-`src/lib/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check`
+`src/core/i18n/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check`
 compile it for you; `pnpm i18n` does it on its own. The first compile downloads Paraglide's
 message-format plugins from jsDelivr, so it needs a network connection once.
 

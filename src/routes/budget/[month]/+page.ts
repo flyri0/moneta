@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
-import { currentMonth, isMonth } from '$lib/domain/month';
+import { currentMonth, isMonth } from '$domain/month';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = ({ params }) => {

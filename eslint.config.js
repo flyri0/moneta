@@ -35,7 +35,7 @@ export default defineConfig(
 	},
 	{
 		// Vendored shadcn-svelte components pass caller-provided hrefs through unchanged.
-		files: ['src/lib/components/ui/**'],
+		files: ['src/components/ui/**'],
 		rules: { 'svelte/no-navigation-without-resolve': 'off' }
 	}
 );

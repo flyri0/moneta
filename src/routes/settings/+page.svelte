@@ -1,10 +1,10 @@
 <script lang="ts">
-	import BackupCard from '$lib/components/settings/BackupCard.svelte';
-	import BudgetDetails from '$lib/components/settings/BudgetDetails.svelte';
-	import BudgetFiles from '$lib/components/settings/BudgetFiles.svelte';
-	import CustomizationGroup from '$lib/components/settings/CustomizationGroup.svelte';
-	import StorageCard from '$lib/components/settings/StorageCard.svelte';
-	import { m } from '$lib/paraglide/messages';
+	import BackupCard from '$features/settings/BackupCard.svelte';
+	import BudgetDetails from '$features/settings/BudgetDetails.svelte';
+	import BudgetFiles from '$features/settings/BudgetFiles.svelte';
+	import CustomizationGroup from '$features/settings/CustomizationGroup.svelte';
+	import StorageCard from '$features/settings/StorageCard.svelte';
+	import { m } from '$i18n/paraglide/messages';
 </script>
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:max-w-5xl md:p-6">

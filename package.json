@@ -10,7 +10,7 @@
 		"preview": "sirv build --single --port 4173",
 		"icons": "pnpm --allow-build=sharp dlx @vite-pwa/assets-generator@1.0.2",
 		"prepare": "husky && svelte-kit sync || echo ''",
-		"i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations --silent",
+		"i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/core/i18n/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations --silent",
 		"check": "pnpm i18n && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "pnpm i18n && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
