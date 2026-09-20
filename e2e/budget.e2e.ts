@@ -153,3 +153,23 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 	await expect(names.nth(6)).toHaveText('Household');
 	await expect(names.nth(7)).toHaveText('Dining Out');
 });
+
+test('picks month and year from the month reader date picker', async ({ page }) => {
+	await onboard(page);
+	await expect(page).toHaveURL(/\/budget\/(\d{4})-(\d{2})$/);
+	const match = page.url().match(/\/budget\/(\d{4})-(\d{2})$/);
+	const initialYear = Number(match![1]);
+
+	await page.getByTestId('month-label').click();
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	await expect(popover).toBeVisible();
+
+	await popover.getByRole('button', { name: 'Previous year' }).click();
+	await popover.getByRole('button', { name: new RegExp(`January ${initialYear - 1}`) }).click();
+
+	await expect(popover).toBeHidden();
+	await expect(page).toHaveURL(new RegExp(`/budget/${initialYear - 1}-01$`));
+	await expect(page.getByTestId('month-label')).toContainText(
+		new RegExp(`January ${initialYear - 1}`)
+	);
+});
