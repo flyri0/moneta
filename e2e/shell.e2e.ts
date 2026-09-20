@@ -7,7 +7,7 @@ test('navigates between screens and switches the language', async ({ page }) => 
 	await expect(page.getByRole('heading', { name: 'Accounts' })).toBeVisible();
 	await page.getByRole('link', { name: 'Settings' }).first().click();
 	await chooseSelect(page, 'Language', 'Português (Brasil)');
-	await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible();
 	await page.getByRole('link', { name: 'Orçamento' }).first().click();
 	await expect(page.getByText('Pronto para atribuir').first()).toBeVisible();
 });
@@ -58,5 +58,33 @@ test.describe('on a phone', () => {
 
 		await add.click();
 		await expect(page.getByRole('dialog')).toBeVisible();
+	});
+
+	test('keeps every bottom-bar label inside its slot in Portuguese', async ({ page }) => {
+		await onboard(page);
+		await page
+			.getByRole('navigation', { name: 'Main' })
+			.getByRole('link', { name: 'Settings' })
+			.click();
+		await chooseSelect(page, 'Language', 'Português (Brasil)');
+		const bar = page.getByRole('navigation', { name: 'Principal' });
+		// The active item is bolder, so measure with the longest label active.
+		await bar.getByRole('link', { name: 'Orçamento' }).click();
+
+		for (const width of [390, 320]) {
+			await page.setViewportSize({ width, height: 844 });
+			const labels = bar.locator('[data-nav-label]');
+			await expect(labels).toHaveCount(5);
+			const clipped = await labels.evaluateAll((els) =>
+				els
+					.filter(
+						(el) =>
+							el.scrollWidth > el.clientWidth ||
+							el.parentElement!.scrollWidth > el.parentElement!.clientWidth
+					)
+					.map((el) => el.textContent)
+			);
+			expect(clipped, `labels clipped or overflowing at ${width}px`).toEqual([]);
+		}
 	});
 });

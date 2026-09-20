@@ -107,7 +107,7 @@ registrado em `/`.
 Cada orçamento é um único arquivo SQLite no armazenamento privado do navegador (OPFS).
 Nada sai do dispositivo por conta própria.
 
-Em **Configurações → Backup** você salva esse arquivo nos downloads e restaura um backup, e
+Em **Ajustes → Backup** você salva esse arquivo nos downloads e restaura um backup, e
 o Moneta avisa quando o último backup tem mais de duas semanas. Antes que uma atualização
 do app mude o esquema de um orçamento, o Moneta guarda uma cópia do arquivo antigo no mesmo
 armazenamento (as três últimas), para que atualizar nunca seja um caminho sem volta.

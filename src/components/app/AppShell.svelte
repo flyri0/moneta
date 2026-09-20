@@ -73,10 +73,10 @@
 	<a
 		href={item.href}
 		aria-current={item.active ? 'page' : undefined}
-		class="flex flex-col items-center gap-0.5 py-2 text-xs text-muted-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
+		class="flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
 	>
 		<item.icon class="size-5" />
-		{item.label}
+		<span data-nav-label class="max-w-full truncate">{item.label}</span>
 	</a>
 {/snippet}
 
@@ -127,7 +127,7 @@
 		<button
 			type="button"
 			onclick={() => (adding = true)}
-			class="relative flex flex-col items-center justify-end py-2 text-xs text-muted-foreground"
+			class="relative flex min-w-0 flex-col items-center justify-end px-0.5 py-2 text-[0.6875rem] text-muted-foreground"
 		>
 			<!-- Lifted out of the bar without moving the label off the other labels' baseline. -->
 			<span
@@ -135,7 +135,7 @@
 			>
 				<PlusIcon class="size-6" />
 			</span>
-			{m.add_transaction()}
+			<span data-nav-label class="max-w-full truncate">{m.add_transaction()}</span>
 		</button>
 		{#each nav.slice(2) as item (item.label)}
 			{@render bottomLink(item)}
