@@ -150,6 +150,8 @@ function conservationGap(db: Db): number {
 }
 
 describe('money conservation', () => {
+	// Fifty whole budgets, each built one write at a time, sit close enough to the default 5s that
+	// a loaded machine tips them over. The check is the point, not how fast it runs.
 	it('holds across seeded random histories written through the repos', async () => {
 		const gaps: { seed: number; gap: number }[] = [];
 		for (let seed = 1; seed <= TRIALS; seed++) {
@@ -159,5 +161,5 @@ describe('money conservation', () => {
 			db.close();
 		}
 		expect(gaps).toEqual([]);
-	});
+	}, 30_000);
 });
