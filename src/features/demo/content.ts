@@ -25,6 +25,7 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 	const groups = defaultCategoryGroups();
 	const [bills, everyday, goals, fun] = groups;
 	const categories: DemoCategoryNames = {
+		salary: locale.startsWith('pt') ? 'Salário' : 'Salary',
 		rent: bills.categories[0],
 		utilities: bills.categories[1],
 		phone: bills.categories[2],

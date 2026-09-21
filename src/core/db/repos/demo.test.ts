@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { buildDemo, type DemoCategoryNames } from '$features/demo/dataset';
 import { currentMonth, todayIso } from '$domain/month';
 import { defaultCategoryGroups } from '$i18n/defaults';
+import { demoBudget } from '$features/demo/content';
 import type { Db } from '../connection';
 import { createTestDb } from '../testing';
 import { listAccounts } from './accounts';
@@ -11,6 +12,7 @@ import { listTransactions } from './transactions';
 
 const [bills, everyday, goals, fun] = defaultCategoryGroups('en');
 const CATEGORIES: DemoCategoryNames = {
+	salary: 'Salary',
 	rent: bills.categories[0],
 	utilities: bills.categories[1],
 	phone: bills.categories[2],
@@ -94,10 +96,20 @@ describe('seedDemo', () => {
 		expect(view.assignedThisMonth).toBeGreaterThan(0);
 	});
 
-	it('funds the card payment category from the spending it covers', () => {
-		const view = getBudgetMonth(db, currentMonth());
-		const cards = view.groups.find((g) => g.system === 'credit_card_payments');
-		expect(cards?.categories.length).toBe(1);
-		expect(cards?.available).toBeGreaterThanOrEqual(0);
+	it('seeds demo with credit card debt and income in Salary category without cc payment categories', async () => {
+		const testDb = await createTestDb();
+		const demo = demoBudget();
+		createDemo(testDb, demo);
+
+		const view = getBudgetMonth(testDb, currentMonth());
+		const ccGroup = view.groups.find((g) => g.name === 'Credit Card Payments');
+		expect(ccGroup).toBeUndefined();
+
+		const incomeGroup = view.groups.find((g) => g.system === 'income')!;
+		expect(incomeGroup).toBeDefined();
+		expect(incomeGroup.activity).toBeGreaterThan(0);
+
+		const card = listAccounts(testDb).find((a) => a.type === 'credit_card')!;
+		expect(card.balance).toBeLessThanOrEqual(0);
 	});
 });
