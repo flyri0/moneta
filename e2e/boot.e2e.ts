@@ -30,6 +30,7 @@ test('onboarding seeds only the categories that were picked', async ({ page }) =
 	await page.getByLabel('Add a category — Goals').press('Enter');
 	await nextStep(page).click();
 
+	await page.getByRole('button', { name: 'Checking' }).click();
 	await page.getByLabel('Account name').fill('Checking');
 	await page.getByLabel('Current balance').fill('1000');
 	await page.getByRole('button', { name: 'Create budget' }).click();

@@ -17,8 +17,8 @@ test('adds, closes and protects accounts', async ({ page }) => {
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
 	await page.getByRole('button', { name: 'Add account' }).click();
 	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Savings' }).click();
 	await dialog.getByLabel('Account name').fill('Old savings');
-	await chooseSelect(dialog, 'Type', 'Savings');
 	await dialog.getByRole('button', { name: 'Add account' }).click();
 	await expect(dialog).toBeHidden();
 

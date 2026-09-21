@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { m } from '$i18n/paraglide/messages';
 import { defaultCategoryGroups } from './defaults';
-import { accountTypeLabel, categoryLabel, groupLabel, storedCategoryLabel } from './labels';
+import {
+	accountTypeDescription,
+	accountTypeLabel,
+	categoryLabel,
+	groupLabel,
+	storedCategoryLabel
+} from './labels';
 
 describe('labels', () => {
 	it('translates system groups and categories, and leaves user names alone', () => {
@@ -21,6 +27,11 @@ describe('labels', () => {
 	it('names account types', () => {
 		expect(accountTypeLabel('credit_card')).toBe(m.account_type_credit_card());
 		expect(accountTypeLabel('checking')).toBe(m.account_type_checking());
+	});
+
+	it('describes account types', () => {
+		expect(accountTypeDescription('checking')).toBe(m.account_type_checking_desc());
+		expect(accountTypeDescription('credit_card')).toBe(m.account_type_credit_card_desc());
 	});
 });
 

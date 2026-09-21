@@ -33,3 +33,17 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, () => string> = {
 export function accountTypeLabel(type: AccountType): string {
 	return ACCOUNT_TYPE_LABELS[type]();
 }
+
+const ACCOUNT_TYPE_DESCRIPTIONS: Record<AccountType, () => string> = {
+	checking: m.account_type_checking_desc,
+	savings: m.account_type_savings_desc,
+	cash: m.account_type_cash_desc,
+	credit_card: m.account_type_credit_card_desc,
+	investment: m.account_type_investment_desc,
+	loan: m.account_type_loan_desc,
+	other: m.account_type_other_desc
+};
+
+export function accountTypeDescription(type: AccountType): string {
+	return ACCOUNT_TYPE_DESCRIPTIONS[type]();
+}

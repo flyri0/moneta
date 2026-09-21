@@ -10,6 +10,28 @@ export const ACCOUNT_TYPES: readonly AccountType[] = [
 	'other'
 ];
 
+export type AccountCategoryKey = 'budget' | 'tracking';
+
+export interface AccountTypeCategory {
+	key: AccountCategoryKey;
+	types: readonly AccountType[];
+}
+
+export const ACCOUNT_CATEGORIES: readonly AccountTypeCategory[] = [
+	{
+		key: 'budget',
+		types: ['checking', 'savings', 'cash', 'credit_card']
+	},
+	{
+		key: 'tracking',
+		types: ['investment', 'loan', 'other']
+	}
+];
+
+export function accountCategory(type: AccountType): AccountCategoryKey {
+	return type === 'investment' || type === 'loan' || type === 'other' ? 'tracking' : 'budget';
+}
+
 /**
  * Loans and investments default to off-budget: their balances aren't spendable cash, and an
  * on-budget starting balance would count as Ready to Assign income.

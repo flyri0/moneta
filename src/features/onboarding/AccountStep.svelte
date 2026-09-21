@@ -1,5 +1,7 @@
 <script lang="ts">
 	import AccountFields from '$features/accounts/AccountFields.svelte';
+	import AccountTypePicker from '$features/accounts/AccountTypePicker.svelte';
+	import { defaultOnBudget } from '$features/accounts/account-form';
 	import type { AccountType } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
@@ -29,20 +31,56 @@
 		balance: string;
 		date: string;
 	} = $props();
+
+	let step = $state<1 | 2>(1);
+
+	function selectType(selectedType: AccountType) {
+		type = selectedType;
+		onBudget = defaultOnBudget(selectedType);
+		step = 2;
+	}
+
+	function handleBack() {
+		if (step === 2) {
+			step = 1;
+		} else {
+			onBack();
+		}
+	}
+
+	function handleNext() {
+		if (step === 1) {
+			step = 2;
+		} else {
+			onNext();
+		}
+	}
 </script>
 
 <StepLayout
 	title={m.onboarding_account_section()}
 	{current}
 	{total}
-	nextLabel={m.onboarding_create()}
+	nextLabel={step === 1 ? m.onboarding_next() : m.onboarding_create()}
 	backLabel={m.onboarding_back()}
-	{onBack}
-	{onNext}
+	onBack={handleBack}
+	onNext={handleNext}
 	{busy}
 	{error}
+	cardClass={step === 1 ? 'max-w-lg md:max-w-2xl' : 'max-w-lg'}
 >
 	<div class="grid gap-4">
-		<AccountFields bind:name bind:type bind:onBudget bind:balance bind:date />
+		{#if step === 1}
+			<AccountTypePicker selected={type} onSelect={selectType} />
+		{:else}
+			<AccountFields
+				bind:name
+				bind:type
+				bind:onBudget
+				bind:balance
+				bind:date
+				onChangeType={() => (step = 1)}
+			/>
+		{/if}
 	</div>
 </StepLayout>

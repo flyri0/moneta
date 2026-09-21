@@ -91,6 +91,7 @@ export async function fillNewBudget(page: Page, name: string, balance: string): 
 	await chooseCombobox(page, 'Currency', 'USD', 'USD');
 	await nextStep(page).click();
 	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Checking' }).click();
 	await page.getByLabel('Account name').fill('Checking');
 	await page.getByLabel('Current balance').fill(balance);
 	await page.getByRole('button', { name: 'Create budget' }).click();

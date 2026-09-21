@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { categoryRow, chooseCombobox, chooseSelect, onboard } from './helpers';
+import { categoryRow, chooseCombobox, onboard } from './helpers';
 
 async function addTransaction(
 	page: Page,
@@ -36,8 +36,8 @@ test('income, assigning, spending, a card purchase and a card payment add up', a
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
 	await page.getByRole('button', { name: 'Add account' }).click();
 	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Credit card' }).click();
 	await dialog.getByLabel('Account name').fill('Visa');
-	await chooseSelect(dialog, 'Type', 'Credit card');
 	await dialog.getByRole('button', { name: 'Add account' }).click();
 	await expect(dialog).toBeHidden();
 	await page.getByRole('link', { name: 'Budget' }).first().click();
