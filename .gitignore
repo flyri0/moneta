@@ -26,3 +26,10 @@ test-results
 # Paraglide
 src/core/i18n/paraglide
 project.inlang/cache/
+
+# Specs and implementation docs
+/docs/
+
+# Worktrees
+.worktrees
+.worktrees/
