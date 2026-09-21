@@ -21,7 +21,7 @@ CREATE TABLE category_groups (
 	name TEXT NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
-	system TEXT UNIQUE CHECK (system IN ('income', 'credit_card_payments'))
+	system TEXT UNIQUE CHECK (system IN ('income'))
 );
 
 CREATE TABLE categories (
@@ -30,9 +30,7 @@ CREATE TABLE categories (
 	name TEXT NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
-	carryover_overspending INTEGER NOT NULL DEFAULT 0 CHECK (carryover_overspending IN (0, 1)),
-	cc_account_id TEXT UNIQUE REFERENCES accounts (id),
-	system TEXT UNIQUE CHECK (system IN ('ready_to_assign'))
+	carryover_overspending INTEGER NOT NULL DEFAULT 0 CHECK (carryover_overspending IN (0, 1))
 );
 
 CREATE TABLE payees (

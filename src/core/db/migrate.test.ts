@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { categoryId, createBudgetDb, createTestDb } from './testing';
+import { createTestDb } from './testing';
 import { MIGRATIONS, migrate, schemaVersion, SCHEMA_VERSION } from './migrate';
 import { all, run } from './connection';
 
@@ -12,12 +12,10 @@ CREATE TABLE categories_new (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
 	carryover_overspending INTEGER NOT NULL DEFAULT 0 CHECK (carryover_overspending IN (0, 1)),
-	cc_account_id TEXT UNIQUE REFERENCES accounts (id),
-	system TEXT UNIQUE CHECK (system IN ('ready_to_assign')),
 	note TEXT NOT NULL DEFAULT ''
 );
-INSERT INTO categories_new (id, group_id, name, sort_order, hidden, carryover_overspending, cc_account_id, system)
-	SELECT id, group_id, name, sort_order, hidden, carryover_overspending, cc_account_id, system FROM categories;
+INSERT INTO categories_new (id, group_id, name, sort_order, hidden, carryover_overspending)
+	SELECT id, group_id, name, sort_order, hidden, carryover_overspending FROM categories;
 DROP TABLE categories;
 ALTER TABLE categories_new RENAME TO categories;
 `;
@@ -55,11 +53,12 @@ describe('migrate', () => {
 	});
 
 	it('rebuilds a referenced table without cascading deletes', async () => {
-		const db = await createBudgetDb();
+		const db = await createTestDb();
+		run(db, "INSERT INTO category_groups (id, name) VALUES ('g1', 'Everyday')");
+		run(db, "INSERT INTO categories (id, group_id, name) VALUES ('c1', 'g1', 'Food')");
 		run(
 			db,
-			"INSERT INTO budget_assignments (category_id, month, assigned) VALUES (?, '2026-09', 500)",
-			[categoryId(db, 'Food')]
+			"INSERT INTO budget_assignments (category_id, month, assigned) VALUES ('c1', '2026-09', 500)"
 		);
 		migrate(db, [...MIGRATIONS, REBUILD_CATEGORIES]);
 		expect(schemaVersion(db)).toBe(SCHEMA_VERSION + 1);
@@ -68,7 +67,9 @@ describe('migrate', () => {
 	});
 
 	it('rolls back a migration that breaks foreign keys', async () => {
-		const db = await createBudgetDb();
+		const db = await createTestDb();
+		run(db, "INSERT INTO category_groups (id, name) VALUES ('g1', 'Everyday')");
+		run(db, "INSERT INTO categories (id, group_id, name) VALUES ('c1', 'g1', 'Food')");
 		expect(() => migrate(db, [...MIGRATIONS, 'DELETE FROM category_groups'])).toThrow(
 			expect.objectContaining({ code: 'INTERNAL' })
 		);
@@ -82,5 +83,23 @@ describe('migrate', () => {
 		expect(() =>
 			db.exec("INSERT INTO categories (id, group_id, name) VALUES ('c', 'missing-group', 'Food')")
 		).toThrow(/FOREIGN KEY/);
+	});
+
+	it('rejects credit_card_payments as category group system type', async () => {
+		const db = await createTestDb();
+		expect(() =>
+			run(
+				db,
+				"INSERT INTO category_groups (id, name, system) VALUES ('g', 'CC', 'credit_card_payments')"
+			)
+		).toThrow();
+	});
+
+	it('creates categories table without cc_account_id or system columns', async () => {
+		const db = await createTestDb();
+		const cols = all<{ name: string }>(db, 'PRAGMA table_info(categories)').map((c) => c.name);
+		expect(cols).toContain('carryover_overspending');
+		expect(cols).not.toContain('cc_account_id');
+		expect(cols).not.toContain('system');
 	});
 });
