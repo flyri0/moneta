@@ -75,11 +75,53 @@
 	</div>
 {/snippet}
 
-{#snippet categoryItem(category: BudgetCategoryView)}
+{#snippet incomeCategoryRow(category: BudgetCategoryView)}
+	<div class="{COLUMNS} px-4 py-2 transition-colors hover:bg-muted/30" data-testid="category-row">
+		<button
+			type="button"
+			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
+			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+		>
+		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
+		<span
+			class="text-right text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+			data-testid="activity"
+		>
+			{session.format(category.activity)}
+		</span>
+		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
+	</div>
+{/snippet}
+
+{#snippet incomeCategoryCard(category: BudgetCategoryView)}
+	<div
+		class="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
+		data-testid="category-row"
+	>
+		<button
+			type="button"
+			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium hover:underline"
+			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+		>
+		<span class="text-sm font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
+			{session.format(category.activity)}
+		</span>
+	</div>
+{/snippet}
+
+{#snippet categoryItem(category: BudgetCategoryView, isIncome = false)}
 	{#if desktop.current}
-		{@render categoryRow(category)}
+		{#if isIncome}
+			{@render incomeCategoryRow(category)}
+		{:else}
+			{@render categoryRow(category)}
+		{/if}
 	{:else}
-		<CategoryCard {category} onSelect={onSelectCategory} />
+		{#if isIncome}
+			{@render incomeCategoryCard(category)}
+		{:else}
+			<CategoryCard {category} onSelect={onSelectCategory} />
+		{/if}
 	{/if}
 {/snippet}
 
@@ -95,6 +137,7 @@
 		</div>
 		{#each model.groups as group (group.id)}
 			{@const open = !collapsed.has(group.id)}
+			{@const isIncome = group.system === 'income'}
 			<div
 				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
 				data-testid="group-card"
@@ -111,17 +154,31 @@
 							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
 						>
 					</div>
-					<span class="text-right font-medium tabular-nums">{session.format(group.assigned)}</span>
-					<span class="text-right text-sm text-muted-foreground tabular-nums"
-						>{session.format(group.activity)}</span
-					>
-					<span class="text-right font-semibold tabular-nums"
-						>{session.format(group.available)}</span
-					>
+					{#if isIncome}
+						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
+						<span
+							class="text-right text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+							>{session.format(group.activity)}</span
+						>
+						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
+					{:else}
+						<span class="text-right font-medium tabular-nums">{session.format(group.assigned)}</span
+						>
+						<span class="text-right text-sm text-muted-foreground tabular-nums"
+							>{session.format(group.activity)}</span
+						>
+						<span class="text-right font-semibold tabular-nums"
+							>{session.format(group.available)}</span
+						>
+					{/if}
 				</div>
 				{#if open}
 					{#each group.categories as category (category.id)}
-						{@render categoryRow(category)}
+						{#if isIncome}
+							{@render incomeCategoryRow(category)}
+						{:else}
+							{@render categoryRow(category)}
+						{/if}
 					{/each}
 				{/if}
 			</div>
@@ -131,6 +188,7 @@
 	<section class="grid gap-4" aria-label={m.budget_categories()}>
 		{#each model.groups as group (group.id)}
 			{@const open = !collapsed.has(group.id)}
+			{@const isIncome = group.system === 'income'}
 			<div class="grid gap-2" data-testid="group-card">
 				<div
 					class="flex items-center justify-between px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
@@ -144,16 +202,28 @@
 							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
 						>
 					</div>
-					<span class="shrink-0 text-sm font-semibold text-foreground tabular-nums">
-						{session.format(group.available)}
-					</span>
+					{#if isIncome}
+						<span
+							class="shrink-0 text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+						>
+							+{session.format(group.activity)}
+						</span>
+					{:else}
+						<span class="shrink-0 text-sm font-semibold text-foreground tabular-nums">
+							{session.format(group.available)}
+						</span>
+					{/if}
 				</div>
 				{#if open}
 					<div
 						class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
 					>
 						{#each group.categories as category (category.id)}
-							<CategoryCard {category} onSelect={onSelectCategory} />
+							{#if isIncome}
+								{@render incomeCategoryCard(category)}
+							{:else}
+								<CategoryCard {category} onSelect={onSelectCategory} />
+							{/if}
 						{/each}
 					</div>
 				{/if}
@@ -174,8 +244,8 @@
 			<div
 				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
 			>
-				{#each model.hidden as { category } (category.id)}
-					{@render categoryItem(category)}
+				{#each model.hidden as { category, group } (category.id)}
+					{@render categoryItem(category, group.system === 'income')}
 				{/each}
 			</div>
 		</Collapsible.Content>
