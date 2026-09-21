@@ -55,6 +55,7 @@
 	"demo_payee_household": "Loja de Casa e Construção",
 	"demo_payee_streaming": "Serviço de Streaming",
 	"demo_payee_hobby": "Livraria",
+	"demo_payee_starting_balance": "Saldo inicial",
 	"startup_storage_unavailable_title": "O armazenamento não está disponível",
 	"startup_storage_unavailable_body": "O Moneta guarda seu orçamento no armazenamento privado deste navegador, que não está disponível aqui. Janelas anônimas e alguns navegadores antigos o bloqueiam.",
 	"startup_quota_title": "O armazenamento está cheio",

@@ -55,6 +55,7 @@
 	"demo_payee_household": "Home Store",
 	"demo_payee_streaming": "Streaming Service",
 	"demo_payee_hobby": "Bookshop",
+	"demo_payee_starting_balance": "Starting Balance",
 	"startup_storage_unavailable_title": "Storage isn't available",
 	"startup_storage_unavailable_body": "Moneta keeps your budget in this browser's private storage, which isn't available here. Private windows and some older browsers block it.",
 	"startup_quota_title": "Storage is full",

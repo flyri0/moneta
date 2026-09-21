@@ -41,6 +41,21 @@ describe('createAccount', () => {
 		});
 	});
 
+	it('uses custom startingBalancePayee when provided', async () => {
+		const db = await createBudgetDb();
+		const id = createAccount(
+			db,
+			acct({
+				name: 'Banco',
+				type: 'checking',
+				startingBalance: 150000,
+				startingBalancePayee: 'Saldo inicial'
+			})
+		);
+		const [t] = listTransactions(db, { accountId: id });
+		expect(t.payeeName).toBe('Saldo inicial');
+	});
+
 	// Review Focus Pin #1: Negative starting balance on credit card
 	it('creates credit card without payment category and assigns starting debt to default income category', async () => {
 		const db = await createBudgetDb();

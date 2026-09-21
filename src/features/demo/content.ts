@@ -61,7 +61,8 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 				restaurant: m.demo_payee_restaurant(),
 				household: m.demo_payee_household(),
 				streaming: m.demo_payee_streaming(),
-				hobby: m.demo_payee_hobby()
+				hobby: m.demo_payee_hobby(),
+				startingBalance: m.demo_payee_starting_balance()
 			},
 			categories
 		})

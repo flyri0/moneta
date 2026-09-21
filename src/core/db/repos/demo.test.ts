@@ -52,7 +52,8 @@ async function demoDb(): Promise<Db> {
 				restaurant: 'Restaurant',
 				household: 'Home Store',
 				streaming: 'Streaming Service',
-				hobby: 'Bookshop'
+				hobby: 'Bookshop',
+				startingBalance: 'Starting Balance'
 			},
 			categories: CATEGORIES
 		})
@@ -86,6 +87,7 @@ describe('seedDemo', () => {
 		const payees = new Set(listTransactions(db).map((r) => r.payeeName));
 		expect(payees).toContain('Corner Market');
 		expect(payees).toContain('Paycheck');
+		expect(payees).toContain('Starting Balance');
 	});
 
 	it('leaves nothing to assign and nothing overspent', () => {

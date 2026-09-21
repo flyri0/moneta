@@ -24,6 +24,7 @@ export interface CreateAccountInput {
 	onBudget: boolean; // ignored for credit cards (always on-budget)
 	startingBalance: number; // minor units; negative for debt
 	startingDate: string; // YYYY-MM-DD
+	startingBalancePayee?: string;
 }
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
@@ -73,7 +74,7 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 				accountId: id,
 				date: input.startingDate,
 				amount: input.startingBalance,
-				payeeName: 'Starting Balance',
+				payeeName: input.startingBalancePayee?.trim() || 'Starting Balance',
 				categoryId: onBudget ? defaultIncomeCategoryId(db) : null,
 				cleared: true
 			});

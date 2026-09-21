@@ -51,7 +51,8 @@
 				type,
 				onBudget,
 				startingBalance: signedStartingBalance(type, typed),
-				startingDate: date
+				startingDate: date,
+				startingBalancePayee: m.demo_payee_starting_balance()
 			})
 		);
 		if (!error) open = false;

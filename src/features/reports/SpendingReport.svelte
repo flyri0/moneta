@@ -159,6 +159,8 @@
 										{payee.direction === 'to'
 											? m.register_transfer_to({ account: payee.accountName })
 											: m.register_transfer_from({ account: payee.accountName })}
+									{:else if payee.kind === 'starting-balance'}
+										{m.register_starting_balance()}
 									{:else if payee.kind === 'payee'}
 										{payee.name}
 									{:else}

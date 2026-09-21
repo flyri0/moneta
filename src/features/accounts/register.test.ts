@@ -19,6 +19,12 @@ describe('payeeDisplay', () => {
 		expect(payeeDisplay({ ...row, payeeName: 'Starting Balance' })).toEqual({
 			kind: 'starting-balance'
 		});
+		expect(payeeDisplay({ ...row, payeeName: 'Saldo inicial' })).toEqual({
+			kind: 'starting-balance'
+		});
+		expect(payeeDisplay({ ...row, payeeName: 'starting balance' })).toEqual({
+			kind: 'starting-balance'
+		});
 		expect(payeeDisplay({ ...row, payeeName: 'Mercado' })).toEqual({
 			kind: 'payee',
 			name: 'Mercado'
