@@ -3,10 +3,10 @@ import { dropCategory, moveCategory, moveGroup, toPayload, type OrderLayout } fr
 
 const layout: OrderLayout = [
 	{
-		id: 'cards',
-		name: 'Cards',
-		system: 'credit_card_payments',
-		categories: [{ id: 'visa', name: 'Visa' }]
+		id: 'income',
+		name: 'Income',
+		system: 'income',
+		categories: [{ id: 'salary', name: 'Salary' }]
 	},
 	{
 		id: 'bills',
@@ -26,14 +26,14 @@ const shape = (l: OrderLayout) =>
 describe('moveGroup', () => {
 	it('swaps user groups', () => {
 		expect(shape(moveGroup(layout, 'fun', -1))).toEqual([
-			'cards:visa',
+			'income:salary',
 			'fun:games',
 			'bills:rent,power'
 		]);
 	});
 
 	it('never moves system groups or moves anything above them', () => {
-		expect(moveGroup(layout, 'cards', 1)).toBe(layout);
+		expect(moveGroup(layout, 'income', 1)).toBe(layout);
 		expect(moveGroup(layout, 'bills', -1)).toBe(layout);
 		expect(moveGroup(layout, 'fun', 1)).toBe(layout);
 	});
@@ -42,7 +42,7 @@ describe('moveGroup', () => {
 describe('moveCategory', () => {
 	it('moves within a group', () => {
 		expect(shape(moveCategory(layout, 'power', -1))).toEqual([
-			'cards:visa',
+			'income:salary',
 			'bills:power,rent',
 			'fun:games'
 		]);
@@ -50,12 +50,12 @@ describe('moveCategory', () => {
 
 	it('crosses into the neighbouring user group at the edges', () => {
 		expect(shape(moveCategory(layout, 'power', 1))).toEqual([
-			'cards:visa',
+			'income:salary',
 			'bills:rent',
 			'fun:power,games'
 		]);
 		expect(shape(moveCategory(layout, 'games', -1))).toEqual([
-			'cards:visa',
+			'income:salary',
 			'bills:rent,power,games',
 			'fun:'
 		]);
@@ -63,23 +63,23 @@ describe('moveCategory', () => {
 
 	it('never crosses into or out of a system group', () => {
 		expect(moveCategory(layout, 'rent', -1)).toBe(layout);
-		expect(moveCategory(layout, 'visa', 1)).toBe(layout);
+		expect(moveCategory(layout, 'salary', 1)).toBe(layout);
 	});
 });
 
 describe('dropCategory', () => {
 	it('drops at an index, clamped to the group', () => {
 		expect(shape(dropCategory(layout, 'rent', 'fun', 99))).toEqual([
-			'cards:visa',
+			'income:salary',
 			'bills:power',
 			'fun:games,rent'
 		]);
-		expect(dropCategory(layout, 'rent', 'cards', 0)).toBe(layout);
+		expect(dropCategory(layout, 'rent', 'income', 0)).toBe(layout);
 	});
 
 	it('does not change the original layout', () => {
 		dropCategory(layout, 'rent', 'fun', 0);
-		expect(shape(layout)).toEqual(['cards:visa', 'bills:rent,power', 'fun:games']);
+		expect(shape(layout)).toEqual(['income:salary', 'bills:rent,power', 'fun:games']);
 	});
 });
 

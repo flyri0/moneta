@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import type { Db } from '../connection';
 import { createAccount } from './accounts';
-import { readyToAssignCategoryId } from './meta';
+import { defaultIncomeCategoryId } from './meta';
 import { netWorth, spendingByCategory } from './reports';
 import { createTransaction } from './transactions';
 
@@ -52,7 +52,7 @@ describe('spendingByCategory', () => {
 			accountId: bank,
 			date: '2026-09-12',
 			amount: 300000,
-			categoryId: readyToAssignCategoryId(db)
+			categoryId: defaultIncomeCategoryId(db)
 		});
 		createTransaction(db, {
 			accountId: bank,
