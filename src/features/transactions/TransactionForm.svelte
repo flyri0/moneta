@@ -253,8 +253,10 @@
 	{/if}
 
 	{#if draft.splits && splittable}
-		<fieldset class="grid gap-2 rounded-md border p-3">
-			<legend class="px-1 text-sm font-medium">{m.transaction_split_lines()}</legend>
+		<fieldset class="grid gap-2 rounded-xl border bg-muted/20 p-3.5 shadow-xs">
+			<legend class="px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+				{m.transaction_split_lines()}
+			</legend>
 			{#each draft.splits as line, i (i)}
 				<div class="grid grid-cols-[1fr_7rem_auto] items-center gap-2">
 					{@render categorySelect(

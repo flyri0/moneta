@@ -78,4 +78,34 @@ test.describe('on a phone', () => {
 		await expect(inflow).toHaveAttribute('aria-pressed', 'true');
 		await expect(outflow).toHaveAttribute('aria-pressed', 'false');
 	});
+
+	test('accounts and register never scroll sideways on small phones and can navigate back', async ({
+		page
+	}) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).click();
+
+		const overflow = () =>
+			page.evaluate(
+				() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+			);
+
+		for (const width of [390, 320]) {
+			await page.setViewportSize({ width, height: 844 });
+			await expect(page.getByTestId('accounts-total-balance')).toBeVisible();
+			expect(await overflow(), `accounts screen overflow at ${width}px`).toBeLessThanOrEqual(0);
+		}
+
+		await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+		await expect(page.getByTestId('register-title')).toHaveText('Checking');
+
+		for (const width of [390, 320]) {
+			await page.setViewportSize({ width, height: 844 });
+			await expect(page.getByTestId('register-balance')).toBeVisible();
+			expect(await overflow(), `register screen overflow at ${width}px`).toBeLessThanOrEqual(0);
+		}
+
+		await page.getByRole('link', { name: 'Accounts' }).first().click();
+		await expect(page.getByTestId('accounts-total-balance')).toBeVisible();
+	});
 });

@@ -150,6 +150,7 @@
 	"accounts_off_budget": "Tracking",
 	"accounts_closed": "Closed",
 	"accounts_add": "Add account",
+	"accounts_total_balance": "Total balance",
 	"accounts_empty": "No accounts yet.",
 	"account_name": "Account name",
 	"account_type": "Type",

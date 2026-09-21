@@ -111,7 +111,7 @@
 					</a>
 				{/each}
 			</nav>
-			<AccountList accounts={accounts.data ?? []} />
+			<AccountList accounts={accounts.data ?? []} variant="compact" />
 		</aside>
 
 		<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>

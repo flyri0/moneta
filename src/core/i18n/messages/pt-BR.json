@@ -150,6 +150,7 @@
 	"accounts_off_budget": "Acompanhamento",
 	"accounts_closed": "Encerradas",
 	"accounts_add": "Adicionar conta",
+	"accounts_total_balance": "Saldo total",
 	"accounts_empty": "Nenhuma conta ainda.",
 	"account_name": "Nome da conta",
 	"account_type": "Tipo",
