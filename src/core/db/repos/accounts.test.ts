@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import { all, one, type Db } from '../connection';
+import { all } from '../connection';
 import {
 	closeAccount,
 	createAccount,
@@ -12,16 +12,9 @@ import {
 	type CreateAccountInput
 } from './accounts';
 import { createTransaction, listTransactions } from './transactions';
-import { setAssigned } from './budget';
-import { currentMonth } from '$domain/month';
+import { defaultIncomeCategoryId } from './meta';
 
 const code = (c: string) => expect.objectContaining({ code: c });
-const cardCategory = (db: Db, name: string) =>
-	one<{ ccAccountId: string; hidden: number }>(
-		db,
-		'SELECT cc_account_id AS ccAccountId, hidden FROM categories WHERE name = ?',
-		[name]
-	);
 const base = { onBudget: true, startingBalance: 0, startingDate: '2026-01-01' } as const;
 const acct = (p: Partial<CreateAccountInput> & Pick<CreateAccountInput, 'name' | 'type'>) => ({
 	...base,
@@ -29,7 +22,7 @@ const acct = (p: Partial<CreateAccountInput> & Pick<CreateAccountInput, 'name' |
 });
 
 describe('createAccount', () => {
-	it('records an on-budget starting balance as Ready to Assign income', async () => {
+	it('records an on-budget starting balance as default income category', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 150000 }));
 		expect(getAccount(db, id)).toMatchObject({
@@ -42,21 +35,35 @@ describe('createAccount', () => {
 		expect(t).toMatchObject({
 			amount: 150000,
 			payeeName: 'Starting Balance',
-			categoryName: 'Ready to Assign',
+			categoryId: defaultIncomeCategoryId(db),
 			cleared: true,
 			date: '2026-01-01'
 		});
 	});
 
-	it('creates a card payment category and leaves starting debt uncategorized', async () => {
+	// Review Focus Pin #1: Negative starting balance on credit card
+	it('creates credit card without payment category and assigns starting debt to default income category', async () => {
 		const db = await createBudgetDb();
-		const id = createAccount(
-			db,
-			acct({ name: 'Visa', type: 'credit_card', onBudget: false, startingBalance: -50000 })
-		);
-		expect(getAccount(db, id)).toMatchObject({ onBudget: true, balance: -50000 });
-		expect(cardCategory(db, 'Visa')?.ccAccountId).toBe(id);
-		expect(listTransactions(db, { accountId: id })[0].categoryId).toBeNull();
+		const cardId = createAccount(db, {
+			name: 'Nubank',
+			type: 'credit_card',
+			onBudget: true,
+			startingBalance: -150000,
+			startingDate: '2026-01-01'
+		});
+
+		const card = getAccount(db, cardId);
+		expect(card.balance).toBe(-150000);
+
+		// No payment category created
+		const cats = all<{ name: string }>(db, "SELECT name FROM categories WHERE name = 'Nubank'");
+		expect(cats).toEqual([]);
+
+		// Starting balance transaction categorized to income
+		const txns = listTransactions(db, { accountId: cardId });
+		expect(txns.length).toBe(1);
+		expect(txns[0].amount).toBe(-150000);
+		expect(txns[0].categoryId).toBe(defaultIncomeCategoryId(db));
 	});
 
 	it('leaves off-budget starting balances uncategorized', async () => {
@@ -87,48 +94,44 @@ describe('account lifecycle', () => {
 		expect(listAccounts(db).find((x) => x.id === a)?.onBudget).toBe(false);
 	});
 
-	it('renames a card together with its payment category', async () => {
+	it('renames an account', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
 		renameAccount(db, id, 'Visa Gold');
 		expect(getAccount(db, id).name).toBe('Visa Gold');
-		expect(cardCategory(db, 'Visa Gold')?.ccAccountId).toBe(id);
 	});
 
-	it('closes only zero-balance accounts and hides/unhides card categories', async () => {
+	it('closes and reopens only zero-balance accounts', async () => {
 		const db = await createBudgetDb();
 		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 100 }));
 		expect(() => closeAccount(db, bank)).toThrow(code('ACCOUNT_BALANCE_NOT_ZERO'));
 		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
 		closeAccount(db, card);
 		expect(getAccount(db, card).closed).toBe(true);
-		expect(cardCategory(db, 'Visa')?.hidden).toBe(1);
 		reopenAccount(db, card);
 		expect(getAccount(db, card).closed).toBe(false);
-		expect(cardCategory(db, 'Visa')?.hidden).toBe(0);
 	});
 
-	it('closes a card only when its payment category is empty', async () => {
+	it('closes credit card when balance is zero without payment category check', async () => {
 		const db = await createBudgetDb();
-		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
-		const payment = one<{ id: string }>(db, 'SELECT id FROM categories WHERE cc_account_id = ?', [
-			card
-		])!.id;
-		setAssigned(db, payment, currentMonth(), 5000);
-		expect(() => closeAccount(db, card)).toThrow(code('CC_PAYMENT_NOT_EMPTY'));
-		setAssigned(db, payment, currentMonth(), 0);
-		closeAccount(db, card);
-		expect(getAccount(db, card).closed).toBe(true);
+		const cardId = createAccount(db, {
+			name: 'Nubank',
+			type: 'credit_card',
+			onBudget: true,
+			startingBalance: 0,
+			startingDate: '2026-01-01'
+		});
+		closeAccount(db, cardId);
+		expect(getAccount(db, cardId).closed).toBe(true);
 	});
 
-	it('deletes only accounts without transactions, removing card categories', async () => {
+	it('deletes only accounts without transactions', async () => {
 		const db = await createBudgetDb();
 		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 100 }));
 		expect(() => deleteAccount(db, bank)).toThrow(code('ACCOUNT_HAS_TRANSACTIONS'));
 		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
 		deleteAccount(db, card);
 		expect(() => getAccount(db, card)).toThrow(code('NOT_FOUND'));
-		expect(all(db, 'SELECT id FROM categories WHERE cc_account_id IS NOT NULL')).toEqual([]);
 	});
 
 	it('refuses new transactions in closed accounts', async () => {

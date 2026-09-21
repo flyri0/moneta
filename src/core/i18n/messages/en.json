@@ -74,7 +74,6 @@
 	"error_account_closed": "This account is closed. Reopen it to make changes.",
 	"error_account_has_transactions": "Accounts with transactions can't be deleted. Close it instead.",
 	"error_account_balance_not_zero": "Only accounts with a zero balance can be closed.",
-	"error_cc_payment_not_empty": "Move the money out of this card's payment category before closing it.",
 	"error_category_required": "Choose a category.",
 	"error_category_not_allowed": "That category can't be used here.",
 	"error_system_entity_readonly": "Built-in groups and categories can't be changed.",

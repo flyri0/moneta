@@ -74,7 +74,6 @@
 	"error_account_closed": "Esta conta está encerrada. Reabra-a para fazer alterações.",
 	"error_account_has_transactions": "Contas com transações não podem ser excluídas. Encerre a conta.",
 	"error_account_balance_not_zero": "Só contas com saldo zero podem ser encerradas.",
-	"error_cc_payment_not_empty": "Tire o dinheiro da categoria de pagamento deste cartão antes de encerrá-lo.",
 	"error_category_required": "Escolha uma categoria.",
 	"error_category_not_allowed": "Essa categoria não pode ser usada aqui.",
 	"error_system_entity_readonly": "Grupos e categorias do sistema não podem ser alterados.",

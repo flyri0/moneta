@@ -13,7 +13,6 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	ACCOUNT_CLOSED: m.error_account_closed,
 	ACCOUNT_HAS_TRANSACTIONS: m.error_account_has_transactions,
 	ACCOUNT_BALANCE_NOT_ZERO: m.error_account_balance_not_zero,
-	CC_PAYMENT_NOT_EMPTY: m.error_cc_payment_not_empty,
 	CATEGORY_REQUIRED: m.error_category_required,
 	CATEGORY_NOT_ALLOWED: m.error_category_not_allowed,
 	SYSTEM_ENTITY_READONLY: m.error_system_entity_readonly,

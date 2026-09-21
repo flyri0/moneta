@@ -81,20 +81,9 @@ function getAccountInfo(db: Db, id: string): AccountInfo {
  * categories, and not Ready to Assign on a credit card. Income recorded on a card would pay
  * down debt without adding cash, so it could not be assigned; it belongs in a cash account.
  */
-function checkUsableCategory(db: Db, id: string, account: AccountInfo): void {
-	const row = one<{ ccAccountId: string | null; system: string | null }>(
-		db,
-		'SELECT cc_account_id AS ccAccountId, system FROM categories WHERE id = ?',
-		[id]
-	);
+function checkUsableCategory(db: Db, id: string): void {
+	const row = one<{ id: string }>(db, 'SELECT id FROM categories WHERE id = ?', [id]);
 	if (!row) throw new DomainError('NOT_FOUND', `Category ${id} not found`);
-	if (row.ccAccountId)
-		throw new DomainError(
-			'CATEGORY_NOT_ALLOWED',
-			'Card payment categories are managed automatically'
-		);
-	if (row.system === 'ready_to_assign' && account.type === 'credit_card')
-		throw new DomainError('CATEGORY_NOT_ALLOWED', 'Income cannot be recorded on a credit card');
 }
 
 interface Plan {
