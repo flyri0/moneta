@@ -66,6 +66,15 @@ describe('createAccount', () => {
 		expect(txns[0].categoryId).toBe(defaultIncomeCategoryId(db));
 	});
 
+	it('coerces credit cards with onBudget: false to onBudget: true', async () => {
+		const db = await createBudgetDb();
+		const id = createAccount(
+			db,
+			acct({ name: 'Nubank', type: 'credit_card', onBudget: false, startingBalance: 0 })
+		);
+		expect(getAccount(db, id).onBudget).toBe(true);
+	});
+
 	it('leaves off-budget starting balances uncategorized', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(
