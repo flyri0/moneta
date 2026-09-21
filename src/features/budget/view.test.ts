@@ -7,13 +7,10 @@ const cat = (id: string, p: Partial<BudgetCategoryView> = {}): BudgetCategoryVie
 	name: id,
 	hidden: false,
 	carryoverOverspending: false,
-	ccAccountId: null,
 	carryover: 0,
 	assigned: 0,
 	activity: 0,
 	available: 0,
-	cashOverspent: 0,
-	creditOverspent: 0,
 	...p
 });
 
@@ -43,12 +40,21 @@ const month = (groups: BudgetGroupView[]): BudgetMonthView => ({
 	groups
 });
 
-describe('availableTone', () => {
-	it('is green, neutral, yellow for uncovered card spending, and red for cash overspending', () => {
-		expect(availableTone({ available: 100, cashOverspent: 0 })).toBe('positive');
-		expect(availableTone({ available: 0, cashOverspent: 0 })).toBe('zero');
-		expect(availableTone({ available: -100, cashOverspent: 0 })).toBe('credit');
-		expect(availableTone({ available: -100, cashOverspent: 40 })).toBe('overspent');
+describe('availableTone (Actual Budget model)', () => {
+	it('returns positive when available > 0', () => {
+		expect(availableTone({ available: 100, carryoverOverspending: false })).toBe('positive');
+	});
+
+	it('returns zero when available === 0', () => {
+		expect(availableTone({ available: 0, carryoverOverspending: false })).toBe('zero');
+	});
+
+	it('returns overspent (red) when available < 0 and carryover is false', () => {
+		expect(availableTone({ available: -100, carryoverOverspending: false })).toBe('overspent');
+	});
+
+	it('returns carryover (amber) when available < 0 and carryover is true', () => {
+		expect(availableTone({ available: -100, carryoverOverspending: true })).toBe('carryover');
 	});
 });
 
@@ -69,10 +75,8 @@ describe('gridModel', () => {
 		]);
 	});
 
-	it('shows empty user groups but not an empty card payments group', () => {
-		const model = gridModel(
-			month([group('Cards', [], { system: 'credit_card_payments' }), group('New', [])])
-		);
+	it('shows empty user groups but not an empty income group', () => {
+		const model = gridModel(month([group('Income', [], { system: 'income' }), group('New', [])]));
 		expect(model.groups.map((g) => g.name)).toEqual(['New']);
 	});
 });
@@ -83,5 +87,16 @@ describe('moveTargets', () => {
 		expect(moveTargets(model, 'Rent')).toEqual([
 			{ id: 'Power', name: 'Power', group: { name: 'Bills', system: null } }
 		]);
+	});
+
+	it('excludes categories belonging to system groups', () => {
+		const model = gridModel(
+			month([
+				group('Income', [cat('Salary')], { system: 'income' }),
+				group('Bills', [cat('Rent'), cat('Power')])
+			])
+		);
+		const targets = moveTargets(model, 'Rent');
+		expect(targets.map((t) => t.name)).toEqual(['Power']);
 	});
 });
