@@ -117,22 +117,23 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 			"INSERT INTO category_groups (id, name, sort_order, system) VALUES (?, 'Income', 0, 'income')",
 			[incomeGroup]
 		);
-		run(
-			db,
-			"INSERT INTO categories (id, group_id, name, sort_order, system) VALUES (?, ?, 'Ready to Assign', 0, 'ready_to_assign')",
-			[uuidv7(), incomeGroup]
-		);
-		run(
-			db,
-			"INSERT INTO category_groups (id, name, sort_order, system) VALUES (?, 'Credit Card Payments', 1, 'credit_card_payments')",
-			[uuidv7()]
-		);
+		const defaultIncomeNames = input.locale.startsWith('pt')
+			? ['Salário', 'Outras receitas']
+			: ['Salary', 'Other Income'];
+		defaultIncomeNames.forEach((name, ci) => {
+			run(db, 'INSERT INTO categories (id, group_id, name, sort_order) VALUES (?, ?, ?, ?)', [
+				uuidv7(),
+				incomeGroup,
+				name,
+				ci
+			]);
+		});
 		input.groups.forEach((group, gi) => {
 			const groupId = uuidv7();
 			run(db, 'INSERT INTO category_groups (id, name, sort_order) VALUES (?, ?, ?)', [
 				groupId,
 				group.name,
-				gi + 2
+				gi + 1
 			]);
 			group.categories.forEach((name, ci) => {
 				run(db, 'INSERT INTO categories (id, group_id, name, sort_order) VALUES (?, ?, ?, ?)', [
@@ -146,13 +147,19 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 	});
 }
 
-export function readyToAssignCategoryId(db: Db): string {
-	const row = one<{ id: string }>(db, "SELECT id FROM categories WHERE system = 'ready_to_assign'");
-	if (!row) throw new DomainError('NOT_FOUND', 'Budget is not initialized');
+export function defaultIncomeCategoryId(db: Db): string {
+	const row = one<{ id: string }>(
+		db,
+		`SELECT c.id FROM categories c
+		 JOIN category_groups g ON g.id = c.group_id
+		 WHERE g.system = 'income'
+		 ORDER BY c.sort_order, c.name LIMIT 1`
+	);
+	if (!row) throw new DomainError('NOT_FOUND', 'No income category found');
 	return row.id;
 }
 
-export function systemGroupId(db: Db, system: 'income' | 'credit_card_payments'): string {
+export function systemGroupId(db: Db, system: 'income'): string {
 	const row = one<{ id: string }>(db, 'SELECT id FROM category_groups WHERE system = ?', [system]);
 	if (!row) throw new DomainError('NOT_FOUND', 'Budget is not initialized');
 	return row.id;
