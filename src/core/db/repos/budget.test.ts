@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
 import { createAccount } from './accounts';
+import { defaultIncomeCategoryId } from './meta';
 import { createTransaction } from './transactions';
 import {
 	applyQuickAssign,
@@ -76,7 +77,15 @@ describe('getBudgetMonth', () => {
 			availableFunds: 300000,
 			futureNegativeMonth: null
 		});
-		expect(view.groups.map((g) => g.name)).toEqual(['Credit Card Payments', 'Bills', 'Everyday']);
+		expect(view.groups.map((g) => g.name)).toEqual(['Income', 'Bills', 'Everyday']);
+	});
+
+	it('includes Income group in getBudgetMonth with income activity', () => {
+		const view = getBudgetMonth(db, '2026-01');
+		const incomeGroup = view.groups.find((g) => g.system === 'income');
+		expect(incomeGroup).toBeDefined();
+		expect(incomeGroup!.categories.length).toBeGreaterThan(0);
+		expect(incomeGroup!.activity).toBe(300000);
 	});
 
 	it('computes assigned, activity and available with group totals', () => {
@@ -102,7 +111,7 @@ describe('getBudgetMonth', () => {
 		});
 	});
 
-	it('runs the full card flow: funded spending, then payment', () => {
+	it('handles card spending and transfers between on-budget accounts', () => {
 		setAssigned(db, food, '2026-01', 50000);
 		createTransaction(db, {
 			accountId: visa,
@@ -111,12 +120,12 @@ describe('getBudgetMonth', () => {
 			categoryId: food
 		});
 		let view = getBudgetMonth(db, '2026-01');
-		expect(cat(view, 'Food').available).toBe(30000);
-		expect(cat(view, 'Visa')).toMatchObject({
-			activity: 20000,
-			available: 20000,
-			ccAccountId: visa
+		expect(cat(view, 'Food')).toMatchObject({
+			assigned: 50000,
+			activity: -20000,
+			available: 30000
 		});
+		expect(view.readyToAssign).toBe(250000);
 
 		createTransaction(db, {
 			accountId: bank,
@@ -125,7 +134,11 @@ describe('getBudgetMonth', () => {
 			transferAccountId: visa
 		});
 		view = getBudgetMonth(db, '2026-01');
-		expect(cat(view, 'Visa')).toMatchObject({ activity: 0, available: 0 });
+		expect(cat(view, 'Food')).toMatchObject({
+			assigned: 50000,
+			activity: -20000,
+			available: 30000
+		});
 		expect(view.readyToAssign).toBe(250000);
 	});
 
@@ -174,10 +187,9 @@ describe('assigning money', () => {
 		expect(all(db, 'SELECT * FROM budget_assignments')).toEqual([]);
 	});
 
-	it('refuses to assign to Ready to Assign', () => {
-		expect(() => setAssigned(db, categoryId(db, 'Ready to Assign'), '2026-01', 1)).toThrow(
-			code('CATEGORY_NOT_ALLOWED')
-		);
+	it('rejects assigning money directly to an income category', () => {
+		const incomeId = defaultIncomeCategoryId(db);
+		expect(() => setAssigned(db, incomeId, '2026-01', 5000)).toThrow(code('CATEGORY_NOT_ALLOWED'));
 	});
 
 	it('moves money between categories', () => {

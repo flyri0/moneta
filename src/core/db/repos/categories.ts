@@ -50,14 +50,26 @@ export function getCategory(db: Db, id: string): CategoryNode {
 	return toCategory(row);
 }
 
-function getGroup(db: Db, id: string): GroupRow {
+export interface GroupRecord {
+	id: string;
+	name: string;
+	sortOrder: number;
+	hidden: boolean;
+	system: GroupNode['system'];
+}
+
+function toGroup(r: GroupRow): GroupRecord {
+	return { ...r, hidden: r.hidden === 1 };
+}
+
+export function getGroup(db: Db, id: string): GroupRecord {
 	const row = one<GroupRow>(
 		db,
 		'SELECT id, name, sort_order AS sortOrder, hidden, system FROM category_groups WHERE id = ?',
 		[id]
 	);
 	if (!row) throw new DomainError('NOT_FOUND', `Group ${id} not found`);
-	return row;
+	return toGroup(row);
 }
 
 export function listCategoryTree(db: Db): GroupNode[] {
