@@ -6,16 +6,13 @@ import { addMonths } from '$domain/month';
 import { closeAccount, createAccount, listAccounts } from './accounts';
 import { applyQuickAssign, getBudgetMonth, moveMoney, setAssigned } from './budget';
 import { deleteCategory, updateCategory } from './categories';
-import { readyToAssignCategoryId } from './meta';
 import { createTransaction, deleteTransaction, updateTransaction } from './transactions';
 
 /*
  * Money conservation. Every unit of on-budget cash is either unassigned (Ready to Assign)
- * or sits in some category's Available. Card payment categories hold cash set aside for card
- * debt, and a category whose negative balance carries forward (toggle on) has its credit
- * overspending in Available even though that is card debt, not cash, so it is added back:
+ * or sits in some regular category's Available:
  *
- *   RTA + Σ available + Σ carried credit overspending = Σ balances of on-budget non-card accounts
+ *   RTA + Σ (available for regular categories) = Σ balances of on-budget accounts
  *
  * It is checked the month after the last data, where every cash overspending has already
  * been deducted from RTA (toggle off) or carried into Available (toggle on).
@@ -41,11 +38,15 @@ async function randomHistory(rnd: () => number): Promise<Db> {
 	const amount = () => Math.round((rnd() * 2 - 1.3) * 10000); // skewed toward outflows
 
 	const db = await createBudgetDb();
-	const rta = readyToAssignCategoryId(db);
 	const ids = (sql: string) => all<{ id: string }>(db, sql).map((r) => r.id);
 	const regular = () =>
-		ids('SELECT id FROM categories WHERE system IS NULL AND cc_account_id IS NULL');
-	const cardPayment = () => ids('SELECT id FROM categories WHERE cc_account_id IS NOT NULL');
+		ids(
+			'SELECT c.id FROM categories c JOIN category_groups g ON g.id = c.group_id WHERE g.system IS NULL'
+		);
+	const income = () =>
+		ids(
+			"SELECT c.id FROM categories c JOIN category_groups g ON g.id = c.group_id WHERE g.system = 'income'"
+		);
 
 	const opening = (name: string, type: 'checking' | 'savings' | 'credit_card' | 'investment') =>
 		({ name, type, onBudget: type !== 'investment', startingDate: '2026-01-01' }) as const;
@@ -61,7 +62,7 @@ async function randomHistory(rnd: () => number): Promise<Db> {
 	for (let step = 0; step < STEPS; step++) {
 		const month = `2026-0${1 + Math.floor(rnd() * 5)}`;
 		const date = `${month}-${String(1 + Math.floor(rnd() * 28)).padStart(2, '0')}`;
-		const categories = [...regular(), rta];
+		const categories = [...regular(), ...income()];
 		const r = rnd();
 		try {
 			if (r < 0.3) {
@@ -93,7 +94,7 @@ async function randomHistory(rnd: () => number): Promise<Db> {
 					})
 				);
 			} else if (r < 0.7) {
-				setAssigned(db, pick([...regular(), ...cardPayment()]), month, amount());
+				setAssigned(db, pick(regular()), month, amount());
 			} else if (r < 0.75) {
 				moveMoney(db, {
 					fromCategoryId: pick(regular()),
@@ -102,7 +103,7 @@ async function randomHistory(rnd: () => number): Promise<Db> {
 					amount: Math.abs(amount()) + 1
 				});
 			} else if (r < 0.8) {
-				updateCategory(db, pick([...regular(), ...cardPayment()]), {
+				updateCategory(db, pick(regular()), {
 					carryoverOverspending: rnd() < 0.5
 				});
 			} else if (r < 0.85 && transactions.length > 0) {
@@ -141,12 +142,14 @@ function conservationGap(db: Db): number {
 	)[0];
 	const view = getBudgetMonth(db, addMonths(lastData ?? '2026-01', 1));
 	let budgeted = view.readyToAssign;
-	for (const g of view.groups)
-		for (const c of g.categories) budgeted += c.available + c.creditOverspent;
-	const cash = listAccounts(db)
-		.filter((a) => a.onBudget && a.type !== 'credit_card')
+	for (const g of view.groups) {
+		if (g.system === 'income') continue;
+		for (const c of g.categories) budgeted += c.available;
+	}
+	const onBudgetBalances = listAccounts(db)
+		.filter((a) => a.onBudget)
 		.reduce((sum, a) => sum + a.balance, 0);
-	return budgeted - cash;
+	return budgeted - onBudgetBalances;
 }
 
 describe('money conservation', () => {

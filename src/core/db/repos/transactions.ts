@@ -139,8 +139,8 @@ function validate(db: Db, input: TransactionInput): Plan {
 		return { mainCategoryId: null, pair: null, splits };
 	}
 
-	if (categoryId) checkUsableCategory(db, categoryId);
-	else if (account.type !== 'credit_card') throw new DomainError('CATEGORY_REQUIRED');
+	if (!categoryId) throw new DomainError('CATEGORY_REQUIRED');
+	checkUsableCategory(db, categoryId);
 	return { mainCategoryId: categoryId, pair: null, splits: [] };
 }
 
