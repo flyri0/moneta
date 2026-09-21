@@ -98,7 +98,8 @@
 					type: accountType,
 					onBudget,
 					startingBalance: signedStartingBalance(accountType, typed),
-					startingDate: date
+					startingDate: date,
+					startingBalancePayee: m.demo_payee_starting_balance()
 				}
 			});
 		});

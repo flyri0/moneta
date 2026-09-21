@@ -51,7 +51,10 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
   rolagem do gasto a mais por categoria
 - Atribuição rápida: igual ao mês passado, média gasta, cobrir gasto a mais, zerar
 - Contas dentro do orçamento e fora dele (de acompanhamento)
-- Cartões de crédito com categorias de pagamento automáticas
+- Cartões de crédito no estilo Actual Budget: contas normais dentro do orçamento com saldo
+  negativo e transferências de pagamento neutras para o orçamento
+- Categorias de receitas personalizáveis em um grupo de sistema dedicado que alimentam o Pronto
+  para atribuir
 - Transações divididas e transferências entre contas
 - Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
 - Vários orçamentos lado a lado

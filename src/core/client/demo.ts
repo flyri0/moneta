@@ -2,6 +2,7 @@ import type { ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
 import { demoBudget } from '$features/demo/content';
 import type { DemoBudgetSeed } from '$features/demo/seed';
+import { getLocale } from '$i18n/paraglide/runtime';
 import type { KeyValueStore } from './registry';
 
 /**
@@ -47,7 +48,7 @@ export function endDemo(store: KeyValueStore): void {
 export async function openDemo(
 	api: DemoApi,
 	store: KeyValueStore,
-	budget: DemoBudgetSeed = demoBudget(navigator.language)
+	budget: DemoBudgetSeed = demoBudget(getLocale())
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	await api.system.open(DEMO_FILE);
 	if (!(await api.meta.isInitialized())) {

@@ -52,7 +52,9 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
   overspending rollover
 - Quick-assign helpers: same as last month, spent average, cover overspending, clear
 - On-budget and off-budget (tracking) accounts
-- Credit cards with automatic payment categories
+- Actual-style credit cards: standard on-budget accounts with negative balances and
+  budget-neutral payment transfers
+- Customizable income categories in a dedicated system group feeding Ready to Assign
 - Split transactions and transfers between accounts
 - Reports: spending by category and net worth over time
 - Several budget files side by side

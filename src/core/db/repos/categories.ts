@@ -9,8 +9,6 @@ export interface CategoryNode {
 	sortOrder: number;
 	hidden: boolean;
 	carryoverOverspending: boolean;
-	ccAccountId: string | null;
-	system: 'ready_to_assign' | null;
 }
 
 export interface GroupNode {
@@ -18,7 +16,7 @@ export interface GroupNode {
 	name: string;
 	sortOrder: number;
 	hidden: boolean;
-	system: 'income' | 'credit_card_payments' | null;
+	system: 'income' | null;
 	categories: CategoryNode[];
 }
 
@@ -29,8 +27,6 @@ interface CategoryRow {
 	sortOrder: number;
 	hidden: number;
 	carryoverOverspending: number;
-	ccAccountId: string | null;
-	system: 'ready_to_assign' | null;
 }
 
 interface GroupRow {
@@ -42,7 +38,7 @@ interface GroupRow {
 }
 
 const CATEGORY_COLUMNS = `id, group_id AS groupId, name, sort_order AS sortOrder, hidden,
-	carryover_overspending AS carryoverOverspending, cc_account_id AS ccAccountId, system`;
+	carryover_overspending AS carryoverOverspending`;
 
 function toCategory(r: CategoryRow): CategoryNode {
 	return { ...r, hidden: r.hidden === 1, carryoverOverspending: r.carryoverOverspending === 1 };
@@ -54,14 +50,26 @@ export function getCategory(db: Db, id: string): CategoryNode {
 	return toCategory(row);
 }
 
-function getGroup(db: Db, id: string): GroupRow {
+export interface GroupRecord {
+	id: string;
+	name: string;
+	sortOrder: number;
+	hidden: boolean;
+	system: GroupNode['system'];
+}
+
+function toGroup(r: GroupRow): GroupRecord {
+	return { ...r, hidden: r.hidden === 1 };
+}
+
+export function getGroup(db: Db, id: string): GroupRecord {
 	const row = one<GroupRow>(
 		db,
 		'SELECT id, name, sort_order AS sortOrder, hidden, system FROM category_groups WHERE id = ?',
 		[id]
 	);
 	if (!row) throw new DomainError('NOT_FOUND', `Group ${id} not found`);
-	return row;
+	return toGroup(row);
 }
 
 export function listCategoryTree(db: Db): GroupNode[] {
@@ -120,7 +128,7 @@ export function deleteGroup(db: Db, id: string): void {
 export function createCategory(db: Db, input: { groupId: string; name: string }): string {
 	return tx(db, () => {
 		const group = getGroup(db, input.groupId);
-		if (group.system) throw new DomainError('SYSTEM_ENTITY_READONLY');
+		if (group.system && group.system !== 'income') throw new DomainError('SYSTEM_ENTITY_READONLY');
 		const id = uuidv7();
 		run(
 			db,
@@ -141,37 +149,50 @@ export interface CategoryPatch {
 export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 	tx(db, () => {
 		const category = getCategory(db, id);
-		if (category.system) throw new DomainError('SYSTEM_ENTITY_READONLY');
-		if (
-			category.ccAccountId &&
-			(patch.name !== undefined || patch.groupId !== undefined || patch.hidden !== undefined)
-		) {
-			throw new DomainError('SYSTEM_ENTITY_READONLY', 'Card payment categories follow their card');
-		}
+		const currentGroup = getGroup(db, category.groupId);
+
 		if (patch.name !== undefined)
 			run(db, 'UPDATE categories SET name = ? WHERE id = ?', [requireName(patch.name), id]);
-		if (patch.groupId !== undefined) {
-			if (getGroup(db, patch.groupId).system) throw new DomainError('SYSTEM_ENTITY_READONLY');
+
+		if (patch.groupId !== undefined && patch.groupId !== category.groupId) {
+			const targetGroup = getGroup(db, patch.groupId);
+			if ((currentGroup.system === 'income') !== (targetGroup.system === 'income')) {
+				throw new DomainError('CATEGORY_NOT_ALLOWED');
+			}
+			if (targetGroup.system && targetGroup.system !== 'income') {
+				throw new DomainError('CATEGORY_NOT_ALLOWED');
+			}
 			run(db, 'UPDATE categories SET group_id = ? WHERE id = ?', [patch.groupId, id]);
 		}
+
 		if (patch.hidden !== undefined)
 			run(db, 'UPDATE categories SET hidden = ? WHERE id = ?', [patch.hidden ? 1 : 0, id]);
-		if (patch.carryoverOverspending !== undefined)
+
+		if (patch.carryoverOverspending !== undefined) {
+			const effectiveGroup =
+				patch.groupId !== undefined ? getGroup(db, patch.groupId) : currentGroup;
+			if (patch.carryoverOverspending && effectiveGroup.system === 'income') {
+				throw new DomainError(
+					'CATEGORY_NOT_ALLOWED',
+					'Income categories cannot carry over overspending'
+				);
+			}
 			run(db, 'UPDATE categories SET carryover_overspending = ? WHERE id = ?', [
 				patch.carryoverOverspending ? 1 : 0,
 				id
 			]);
+		}
 	});
 }
 
 /**
- * Deletes a regular category. If transactions, splits, or assignments use it,
- * `reassignTo` (another regular category) must be given; everything moves there.
+ * Deletes a category. If transactions, splits, or assignments use it,
+ * `reassignTo` (a category of the same kind) must be given; everything moves there.
  */
 export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 	tx(db, () => {
 		const category = getCategory(db, id);
-		if (category.system || category.ccAccountId) throw new DomainError('SYSTEM_ENTITY_READONLY');
+		const group = getGroup(db, category.groupId);
 		const used =
 			one(db, 'SELECT 1 AS x FROM transactions WHERE category_id = ?', [id]) ||
 			one(db, 'SELECT 1 AS x FROM transaction_splits WHERE category_id = ?', [id]) ||
@@ -179,7 +200,13 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 		if (used) {
 			if (!reassignTo || reassignTo === id) throw new DomainError('REASSIGN_REQUIRED');
 			const target = getCategory(db, reassignTo);
-			if (target.system || target.ccAccountId) throw new DomainError('CATEGORY_NOT_ALLOWED');
+			const targetGroup = getGroup(db, target.groupId);
+			if ((group.system === 'income') !== (targetGroup.system === 'income')) {
+				throw new DomainError('CATEGORY_NOT_ALLOWED');
+			}
+			if (targetGroup.system && targetGroup.system !== 'income') {
+				throw new DomainError('CATEGORY_NOT_ALLOWED');
+			}
 			run(db, 'UPDATE transactions SET category_id = ? WHERE category_id = ?', [reassignTo, id]);
 			run(db, 'UPDATE transaction_splits SET category_id = ? WHERE category_id = ?', [
 				reassignTo,
@@ -198,7 +225,7 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 }
 
 /** System groups keep these positions; user groups follow in the order saved. */
-const SYSTEM_GROUP_ORDER = { income: 0, credit_card_payments: 1 } as const;
+const SYSTEM_GROUP_ORDER = { income: 0 } as const;
 
 /** Persists drag-and-drop order: group order, category order and group membership. */
 export function saveCategoryOrder(
@@ -214,8 +241,14 @@ export function saveCategoryOrder(
 			entry.categoryIds.forEach((categoryId, ci) => {
 				const category = getCategory(db, categoryId);
 				const moving = category.groupId !== entry.groupId;
-				if (moving && (group.system || category.system || category.ccAccountId)) {
-					throw new DomainError('SYSTEM_ENTITY_READONLY');
+				if (moving) {
+					const sourceGroup = getGroup(db, category.groupId);
+					if ((sourceGroup.system === 'income') !== (group.system === 'income')) {
+						throw new DomainError('CATEGORY_NOT_ALLOWED');
+					}
+					if (group.system && group.system !== 'income') {
+						throw new DomainError('CATEGORY_NOT_ALLOWED');
+					}
 				}
 				run(db, 'UPDATE categories SET group_id = ?, sort_order = ? WHERE id = ?', [
 					entry.groupId,

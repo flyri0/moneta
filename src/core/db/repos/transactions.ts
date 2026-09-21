@@ -76,25 +76,10 @@ function getAccountInfo(db: Db, id: string): AccountInfo {
 	return row;
 }
 
-/**
- * Categories a transaction may use on `account` (the on-budget leg): never card payment
- * categories, and not Ready to Assign on a credit card. Income recorded on a card would pay
- * down debt without adding cash, so it could not be assigned; it belongs in a cash account.
- */
-function checkUsableCategory(db: Db, id: string, account: AccountInfo): void {
-	const row = one<{ ccAccountId: string | null; system: string | null }>(
-		db,
-		'SELECT cc_account_id AS ccAccountId, system FROM categories WHERE id = ?',
-		[id]
-	);
+/** Validates that the category exists. */
+function checkUsableCategory(db: Db, id: string): void {
+	const row = one<{ id: string }>(db, 'SELECT id FROM categories WHERE id = ?', [id]);
 	if (!row) throw new DomainError('NOT_FOUND', `Category ${id} not found`);
-	if (row.ccAccountId)
-		throw new DomainError(
-			'CATEGORY_NOT_ALLOWED',
-			'Card payment categories are managed automatically'
-		);
-	if (row.system === 'ready_to_assign' && account.type === 'credit_card')
-		throw new DomainError('CATEGORY_NOT_ALLOWED', 'Income cannot be recorded on a credit card');
 }
 
 interface Plan {
@@ -124,7 +109,7 @@ function validate(db: Db, input: TransactionInput): Plan {
 			return { mainCategoryId: null, pair: { accountId: other.id, categoryId: null }, splits: [] };
 		}
 		if (!categoryId) throw new DomainError('CATEGORY_REQUIRED');
-		checkUsableCategory(db, categoryId, account.onBudget ? account : other);
+		checkUsableCategory(db, categoryId);
 		return account.onBudget
 			? { mainCategoryId: categoryId, pair: { accountId: other.id, categoryId: null }, splits: [] }
 			: { mainCategoryId: null, pair: { accountId: other.id, categoryId }, splits: [] };
@@ -143,7 +128,7 @@ function validate(db: Db, input: TransactionInput): Plan {
 		for (const s of splits) {
 			if (!Number.isSafeInteger(s.amount))
 				throw new DomainError('INVALID_INPUT', 'Amount must be an integer');
-			checkUsableCategory(db, s.categoryId, account);
+			checkUsableCategory(db, s.categoryId);
 			sum += s.amount;
 		}
 		if (sum !== input.amount)
@@ -154,8 +139,8 @@ function validate(db: Db, input: TransactionInput): Plan {
 		return { mainCategoryId: null, pair: null, splits };
 	}
 
-	if (categoryId) checkUsableCategory(db, categoryId, account);
-	else if (account.type !== 'credit_card') throw new DomainError('CATEGORY_REQUIRED');
+	if (!categoryId) throw new DomainError('CATEGORY_REQUIRED');
+	checkUsableCategory(db, categoryId);
 	return { mainCategoryId: categoryId, pair: null, splits: [] };
 }
 

@@ -10,17 +10,10 @@ import {
 } from './labels';
 
 describe('labels', () => {
-	it('translates system groups and categories, and leaves user names alone', () => {
+	it('translates system groups and leaves user names alone', () => {
 		expect(groupLabel({ name: 'Income', system: 'income' })).toBe(m.group_income());
-		expect(groupLabel({ name: 'Credit Card Payments', system: 'credit_card_payments' })).toBe(
-			m.group_cc_payments()
-		);
 		expect(groupLabel({ name: 'Bills', system: null })).toBe('Bills');
-		expect(categoryLabel({ name: 'Ready to Assign', system: 'ready_to_assign' })).toBe(
-			m.ready_to_assign()
-		);
-		expect(categoryLabel({ name: 'Food', system: null })).toBe('Food');
-		expect(storedCategoryLabel('Ready to Assign')).toBe(m.ready_to_assign());
+		expect(categoryLabel({ name: 'Food' })).toBe('Food');
 		expect(storedCategoryLabel('Food')).toBe('Food');
 	});
 

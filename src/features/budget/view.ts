@@ -11,15 +11,15 @@ export const BUDGET_TABLES: readonly Table[] = [
 	'accounts'
 ];
 
-/** The Available pill's color: green, neutral, yellow (card spending not covered) or red. */
-export type AvailableTone = 'positive' | 'zero' | 'credit' | 'overspent';
+/** The Available pill's color: green, neutral, red (overspent) or amber (carryover). */
+export type AvailableTone = 'positive' | 'zero' | 'overspent' | 'carryover';
 
 export function availableTone(
-	category: Pick<BudgetCategoryView, 'available' | 'cashOverspent'>
+	category: Pick<BudgetCategoryView, 'available' | 'carryoverOverspending'>
 ): AvailableTone {
 	if (category.available > 0) return 'positive';
 	if (category.available === 0) return 'zero';
-	return category.cashOverspent > 0 ? 'overspent' : 'credit';
+	return category.carryoverOverspending ? 'carryover' : 'overspent';
 }
 
 export interface HiddenCategory {
@@ -34,7 +34,7 @@ export interface GridModel {
 
 /**
  * Splits the month view into what the grid shows and the collapsible hidden section.
- * A hidden group hides all its categories. The card payments group is left out while empty.
+ * A hidden group hides all its categories. The income group is left out while empty.
  */
 export function gridModel(view: BudgetMonthView): GridModel {
 	const groups: BudgetGroupView[] = [];
@@ -55,11 +55,13 @@ export interface CategoryChoice {
 	group: Pick<BudgetGroupView, 'name' | 'system'>;
 }
 
-/** Visible categories to move money to or from, excluding `exceptId`. */
+/** Visible categories to move money to or from, excluding `exceptId` and system groups. */
 export function moveTargets(model: GridModel, exceptId: string): CategoryChoice[] {
-	return model.groups.flatMap((g) =>
-		g.categories
-			.filter((c) => c.id !== exceptId)
-			.map((c) => ({ id: c.id, name: c.name, group: { name: g.name, system: g.system } }))
-	);
+	return model.groups
+		.filter((g) => !g.system)
+		.flatMap((g) =>
+			g.categories
+				.filter((c) => c.id !== exceptId)
+				.map((c) => ({ id: c.id, name: c.name, group: { name: g.name, system: g.system } }))
+		);
 }

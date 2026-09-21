@@ -46,6 +46,3 @@ export interface DemoBudgetSeed {
 	init: InitBudgetInput;
 	seed: DemoSeed;
 }
-
-/** The category name a seed uses for Ready to Assign, whose stored name is always English. */
-export const READY_TO_ASSIGN = '@ready-to-assign';

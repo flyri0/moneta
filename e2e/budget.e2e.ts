@@ -180,10 +180,11 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 	await page.getByRole('button', { name: 'Edit order' }).click();
 	await page.getByRole('button', { name: 'Move Household up' }).click();
 	await page.getByRole('button', { name: 'Save' }).click();
-	// Everyday was Groceries, Transportation, Dining Out, Household (rows 5-8 after Bills' four).
-	const names = page.getByTestId('category-row').locator(':scope > button');
-	await expect(names.nth(6)).toHaveText('Household');
-	await expect(names.nth(7)).toHaveText('Dining Out');
+	// Everyday was Groceries, Transportation, Dining Out, Household; moving Household up swaps it with Dining Out.
+	const everyday = page.getByTestId('group-card').filter({ hasText: 'Everyday' });
+	const names = everyday.getByTestId('category-row').locator(':scope > button');
+	await expect(names.nth(2)).toHaveText('Household');
+	await expect(names.nth(3)).toHaveText('Dining Out');
 });
 
 test('picks month and year from the month reader date picker', async ({ page }) => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { addMonths, isDate, monthOf } from '$domain/month';
 import { buildDemo, type DemoInput } from './dataset';
-import { READY_TO_ASSIGN } from './seed';
 
 const CATEGORIES = {
+	salary: 'Salary',
 	rent: 'Rent',
 	utilities: 'Utilities',
 	phone: 'Phone',
@@ -35,7 +35,8 @@ function input(today: string, scale = 100): DemoInput {
 			restaurant: 'Restaurant',
 			household: 'Home Store',
 			streaming: 'Streaming',
-			hobby: 'Bookshop'
+			hobby: 'Bookshop',
+			startingBalance: 'Starting Balance'
 		},
 		categories: CATEGORIES
 	};
@@ -53,6 +54,9 @@ describe('buildDemo', () => {
 		expect(seed.accounts.map((a) => a.type)).toEqual(['checking', 'savings', 'credit_card']);
 		expect(seed.accounts.every((a) => a.onBudget)).toBe(true);
 		expect(seed.accounts.every((a) => Number.isSafeInteger(a.startingBalance))).toBe(true);
+		expect(seed.accounts.find((a) => a.key === 'checking')?.startingBalancePayee).toBe(
+			'Starting Balance'
+		);
 	});
 
 	it('covers this month and the two before it, never past today', () => {
@@ -101,9 +105,15 @@ describe('buildDemo', () => {
 		expect(payments.every((t) => t.amount < 0)).toBe(true);
 	});
 
+	it('categorizes paychecks to salary', () => {
+		const paychecks = seed.transactions.filter((t) => t.amount > 0 && !t.transferAccountKey);
+		expect(paychecks.length).toBe(3);
+		expect(paychecks.every((t) => t.categoryName === CATEGORIES.salary)).toBe(true);
+	});
+
 	it('assigns every paycheck down to the last cent, opening balances included', () => {
 		const income = seed.transactions
-			.filter((t) => t.categoryName === READY_TO_ASSIGN)
+			.filter((t) => t.categoryName === CATEGORIES.salary)
 			.reduce((sum, t) => sum + t.amount, 0);
 		const opening = seed.accounts
 			.filter((a) => a.type !== 'credit_card')
@@ -112,14 +122,14 @@ describe('buildDemo', () => {
 		expect(assigned).toBe(income + opening);
 	});
 
-	it('never assigns to Ready to Assign', () => {
-		expect(seed.assignments.some((a) => a.categoryName === READY_TO_ASSIGN)).toBe(false);
+	it('never assigns to income categories', () => {
+		expect(seed.assignments.some((a) => a.categoryName === CATEGORIES.salary)).toBe(false);
 	});
 
 	it('scales to a currency with no minor units', () => {
 		const yen = buildDemo(input(today, 1));
 		expect(yen.transactions.every((t) => Number.isSafeInteger(t.amount))).toBe(true);
-		const paycheck = yen.transactions.find((t) => t.categoryName === READY_TO_ASSIGN);
+		const paycheck = yen.transactions.find((t) => t.categoryName === CATEGORIES.salary);
 		expect(paycheck?.amount).toBe(3800);
 	});
 

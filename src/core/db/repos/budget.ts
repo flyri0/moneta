@@ -13,20 +13,17 @@ import {
 } from '$domain/quick-assign';
 import { one, run, tx, type Db } from '../connection';
 import { loadEngineInput } from './aggregates';
-import { getCategory, listCategoryTree, type GroupNode } from './categories';
+import { getCategory, getGroup, listCategoryTree, type GroupNode } from './categories';
 
 export interface BudgetCategoryView {
 	id: string;
 	name: string;
 	hidden: boolean;
 	carryoverOverspending: boolean;
-	ccAccountId: string | null;
 	carryover: number;
 	assigned: number;
 	activity: number;
 	available: number;
-	cashOverspent: number;
-	creditOverspent: number;
 }
 
 export interface BudgetGroupView {
@@ -47,7 +44,7 @@ export interface BudgetMonthView {
 	overspentLastMonth: number;
 	assignedThisMonth: number;
 	futureNegativeMonth: Month | null;
-	groups: BudgetGroupView[]; // excludes the Income group
+	groups: BudgetGroupView[];
 }
 
 function requireMonth(month: Month): void {
@@ -62,30 +59,27 @@ export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {
 	requireMonth(month);
 	const comp = compute(db, month);
 	const result = comp.months.get(month)!;
-	const groups = listCategoryTree(db)
-		.filter((g) => g.system !== 'income')
-		.map((g) => {
-			const categories = g.categories.map((c) => ({
-				id: c.id,
-				name: c.name,
-				hidden: c.hidden,
-				carryoverOverspending: c.carryoverOverspending,
-				ccAccountId: c.ccAccountId,
-				...categoryMonth(comp, month, c.id)
-			}));
-			const sum = (key: 'assigned' | 'activity' | 'available') =>
-				categories.reduce((s, c) => s + c[key], 0);
-			return {
-				id: g.id,
-				name: g.name,
-				hidden: g.hidden,
-				system: g.system,
-				assigned: sum('assigned'),
-				activity: sum('activity'),
-				available: sum('available'),
-				categories
-			};
-		});
+	const groups = listCategoryTree(db).map((g) => {
+		const categories = g.categories.map((c) => ({
+			id: c.id,
+			name: c.name,
+			hidden: c.hidden,
+			carryoverOverspending: c.carryoverOverspending,
+			...categoryMonth(comp, month, c.id)
+		}));
+		const sum = (key: 'assigned' | 'activity' | 'available') =>
+			categories.reduce((s, c) => s + c[key], 0);
+		return {
+			id: g.id,
+			name: g.name,
+			hidden: g.hidden,
+			system: g.system,
+			assigned: sum('assigned'),
+			activity: sum('activity'),
+			available: sum('available'),
+			categories
+		};
+	});
 	return {
 		month,
 		readyToAssign: result.readyToAssign,
@@ -98,8 +92,10 @@ export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {
 }
 
 function requireAssignable(db: Db, categoryId: string): void {
-	if (getCategory(db, categoryId).system)
-		throw new DomainError('CATEGORY_NOT_ALLOWED', 'Ready to Assign cannot be assigned');
+	const category = getCategory(db, categoryId);
+	const group = getGroup(db, category.groupId);
+	if (group.system === 'income')
+		throw new DomainError('CATEGORY_NOT_ALLOWED', 'Income categories cannot be assigned');
 }
 
 function writeAssigned(db: Db, categoryId: string, month: Month, amount: number): void {

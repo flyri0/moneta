@@ -11,7 +11,7 @@ import {
 	updateTransaction
 } from './transactions';
 import { listPayees } from './payees';
-import { readyToAssignCategoryId } from './meta';
+import { defaultIncomeCategoryId } from './meta';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 
@@ -78,13 +78,13 @@ describe('simple transactions', () => {
 		]);
 	});
 
-	it('requires a category on on-budget cash accounts but not on cards', () => {
+	it('requires a category on on-budget accounts including credit cards', () => {
 		expect(() =>
 			createTransaction(db, { accountId: bank, date: '2026-01-05', amount: -1 })
 		).toThrow(code('CATEGORY_REQUIRED'));
 		expect(() =>
 			createTransaction(db, { accountId: visa, date: '2026-01-05', amount: -1 })
-		).not.toThrow();
+		).toThrow(code('CATEGORY_REQUIRED'));
 	});
 
 	it('forbids categories on off-budget accounts', () => {
@@ -101,45 +101,26 @@ describe('simple transactions', () => {
 		).not.toThrow();
 	});
 
-	it('forbids card payment categories', () => {
-		expect(() =>
-			createTransaction(db, {
-				accountId: bank,
-				date: '2026-01-05',
-				amount: -1,
-				categoryId: categoryId(db, 'Visa')
-			})
-		).toThrow(code('CATEGORY_NOT_ALLOWED'));
-	});
+	// Review Focus Pin #5: Inflow / cashback on credit card
+	it('allows inflow to income category on a credit card', () => {
+		const card = createAccount(db, {
+			name: 'Nubank',
+			type: 'credit_card',
+			onBudget: true,
+			startingBalance: -50000,
+			startingDate: '2026-01-01'
+		});
+		const incomeId = defaultIncomeCategoryId(db);
 
-	it('refuses Ready to Assign on credit cards, even in splits and transfer legs', () => {
-		const rta = readyToAssignCategoryId(db);
-		const on = { date: '2026-01-05', amount: 1000 };
-		expect(() => createTransaction(db, { ...on, accountId: visa, categoryId: rta })).toThrow(
-			code('CATEGORY_NOT_ALLOWED')
-		);
-		expect(() =>
-			createTransaction(db, {
-				...on,
-				accountId: visa,
-				splits: [
-					{ categoryId: rta, amount: 500 },
-					{ categoryId: food, amount: 500 }
-				]
-			})
-		).toThrow(code('CATEGORY_NOT_ALLOWED'));
-		expect(() =>
-			createTransaction(db, {
-				...on,
-				accountId: broker,
-				amount: -1000,
-				transferAccountId: visa,
-				categoryId: rta
-			})
-		).toThrow(code('CATEGORY_NOT_ALLOWED'));
-		// A refund to a spending category is still fine, and so is income on a cash account.
-		expect(() => createTransaction(db, { ...on, accountId: visa, categoryId: food })).not.toThrow();
-		expect(() => createTransaction(db, { ...on, accountId: bank, categoryId: rta })).not.toThrow();
+		const id = createTransaction(db, {
+			accountId: card,
+			date: '2026-01-10',
+			amount: 2000, // cashback
+			categoryId: incomeId
+		});
+
+		expect(getTransaction(db, id).categoryId).toBe(incomeId);
+		expect(getAccount(db, card).balance).toBe(-48000);
 	});
 
 	it('validates amount and date', () => {
@@ -233,6 +214,37 @@ describe('splits', () => {
 });
 
 describe('transfers', () => {
+	// Review Focus Pin #4: Budget-neutral transfer between checking and credit card
+	it('creates budget-neutral transfer between checking and credit card with no category', () => {
+		const checking = createAccount(db, {
+			name: 'Checking',
+			type: 'checking',
+			onBudget: true,
+			startingBalance: 100000,
+			startingDate: '2026-01-01'
+		});
+		const card = createAccount(db, {
+			name: 'Nubank',
+			type: 'credit_card',
+			onBudget: true,
+			startingBalance: -50000,
+			startingDate: '2026-01-01'
+		});
+
+		// Paying the card
+		const id = createTransaction(db, {
+			accountId: checking,
+			date: '2026-01-05',
+			amount: -50000,
+			transferAccountId: card
+		});
+
+		const t = getTransaction(db, id);
+		expect(t.categoryId).toBeNull();
+		expect(getAccount(db, checking).balance).toBe(50000);
+		expect(getAccount(db, card).balance).toBe(0);
+	});
+
 	it('creates a budget-neutral pair between on-budget accounts', () => {
 		const id = createTransaction(db, {
 			accountId: bank,
@@ -284,14 +296,14 @@ describe('transfers', () => {
 			date: '2026-01-10',
 			amount: -20000,
 			transferAccountId: bank,
-			categoryId: categoryId(db, 'Ready to Assign')
+			categoryId: food
 		});
 		const t = getTransaction(db, id);
 		expect(t.categoryId).toBeNull();
 		expect(getTransaction(db, t.transferId!)).toMatchObject({
 			accountId: bank,
 			amount: 20000,
-			categoryName: 'Ready to Assign'
+			categoryName: 'Food'
 		});
 	});
 

@@ -1,10 +1,7 @@
 import { uuidv7 } from 'uuidv7';
-import { categoryMonth, computeBudget } from '$domain/budget-engine';
 import { DomainError } from '$domain/errors';
-import { currentMonth } from '$domain/month';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
-import { loadEngineInput } from './aggregates';
-import { readyToAssignCategoryId, systemGroupId } from './meta';
+import { defaultIncomeCategoryId } from './meta';
 import { createTransaction } from './transactions';
 
 export type AccountType =
@@ -27,6 +24,7 @@ export interface CreateAccountInput {
 	onBudget: boolean; // ignored for credit cards (always on-budget)
 	startingBalance: number; // minor units; negative for debt
 	startingDate: string; // YYYY-MM-DD
+	startingBalancePayee?: string;
 }
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
@@ -71,22 +69,13 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 			 VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM accounts), ?)`,
 			[id, name, input.type, onBudget ? 1 : 0, nowIso()]
 		);
-		if (isCard) {
-			const groupId = systemGroupId(db, 'credit_card_payments');
-			run(
-				db,
-				`INSERT INTO categories (id, group_id, name, sort_order, cc_account_id)
-				 VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?), ?)`,
-				[uuidv7(), groupId, name, groupId, id]
-			);
-		}
 		if (input.startingBalance !== 0) {
 			createTransaction(db, {
 				accountId: id,
 				date: input.startingDate,
 				amount: input.startingBalance,
-				payeeName: 'Starting Balance',
-				categoryId: onBudget && !isCard ? readyToAssignCategoryId(db) : null,
+				payeeName: input.startingBalancePayee?.trim() || 'Starting Balance',
+				categoryId: onBudget ? defaultIncomeCategoryId(db) : null,
 				cleared: true
 			});
 		}
@@ -99,29 +88,14 @@ export function renameAccount(db: Db, id: string, name: string): void {
 		getAccount(db, id);
 		const trimmed = requireName(name);
 		run(db, 'UPDATE accounts SET name = ? WHERE id = ?', [trimmed, id]);
-		run(db, 'UPDATE categories SET name = ? WHERE cc_account_id = ?', [trimmed, id]);
 	});
-}
-
-/** What a card's payment category holds at the end of the budget (this month or the last month with data). */
-function cardPaymentAvailable(db: Db, cardId: string): number {
-	const category = one<{ id: string }>(db, 'SELECT id FROM categories WHERE cc_account_id = ?', [
-		cardId
-	]);
-	if (!category) return 0;
-	const comp = computeBudget(loadEngineInput(db), currentMonth());
-	return categoryMonth(comp, comp.last, category.id).available;
 }
 
 export function closeAccount(db: Db, id: string): void {
 	tx(db, () => {
 		const account = getAccount(db, id);
 		if (account.balance !== 0) throw new DomainError('ACCOUNT_BALANCE_NOT_ZERO');
-		// Closing hides the payment category, so money left there would silently disappear from view.
-		if (account.type === 'credit_card' && cardPaymentAvailable(db, id) !== 0)
-			throw new DomainError('CC_PAYMENT_NOT_EMPTY');
 		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [id]);
-		run(db, 'UPDATE categories SET hidden = 1 WHERE cc_account_id = ?', [id]);
 	});
 }
 
@@ -129,7 +103,6 @@ export function reopenAccount(db: Db, id: string): void {
 	tx(db, () => {
 		getAccount(db, id);
 		run(db, 'UPDATE accounts SET closed = 0 WHERE id = ?', [id]);
-		run(db, 'UPDATE categories SET hidden = 0 WHERE cc_account_id = ?', [id]);
 	});
 }
 
@@ -138,7 +111,6 @@ export function deleteAccount(db: Db, id: string): void {
 		getAccount(db, id);
 		if (one(db, 'SELECT 1 AS x FROM transactions WHERE account_id = ?', [id]))
 			throw new DomainError('ACCOUNT_HAS_TRANSACTIONS');
-		run(db, 'DELETE FROM categories WHERE cc_account_id = ?', [id]);
 		run(db, 'DELETE FROM accounts WHERE id = ?', [id]);
 	});
 }

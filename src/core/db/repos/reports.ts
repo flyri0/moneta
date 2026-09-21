@@ -17,7 +17,7 @@ export interface SpendingQuery {
 
 /**
  * Net spending per category over a date range, on-budget accounts only, largest first.
- * Income (Ready to Assign) is left out, and so are categories whose refunds outweigh spending.
+ * Income is left out, and so are categories whose refunds outweigh spending.
  */
 export function spendingByCategory(db: Db, query: SpendingQuery): SpendingRow[] {
 	if (!isDate(query.from) || !isDate(query.to) || query.from > query.to)
@@ -39,7 +39,7 @@ export function spendingByCategory(db: Db, query: SpendingQuery): SpendingRow[] 
 		 ) e
 		 JOIN categories c ON c.id = e.categoryId
 		 JOIN category_groups g ON g.id = c.group_id
-		 WHERE c.system IS NULL
+		 WHERE g.system IS NULL
 		 GROUP BY c.id
 		 HAVING SUM(e.amount) < 0
 		 ORDER BY SUM(e.amount), c.name`,

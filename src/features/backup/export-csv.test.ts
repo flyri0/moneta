@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createAccount } from '$db/repos/accounts';
-import { readyToAssignCategoryId } from '$db/repos/meta';
+import { defaultIncomeCategoryId } from '$db/repos/meta';
 import { createTransaction, listTransactions } from '$db/repos/transactions';
 import { categoryId, createBudgetDb } from '$db/testing';
 import { minorToDecimal, transactionsCsv } from './export-csv';
@@ -37,7 +37,7 @@ describe('transactionsCsv', () => {
 			date: '2026-09-02',
 			amount: 100000,
 			payeeName: '=Employer',
-			categoryId: readyToAssignCategoryId(db),
+			categoryId: defaultIncomeCategoryId(db),
 			cleared: true
 		});
 		createTransaction(db, {
@@ -51,7 +51,7 @@ describe('transactionsCsv', () => {
 		expect(csv.startsWith('\uFEFF')).toBe(true);
 		expect(csv.slice(1).split('\r\n')).toEqual([
 			'Date,Account,Payee,Transfer,Category,Memo,Amount,Cleared',
-			"2026-09-02,Bank,'=Employer,,Ready to Assign,,1000.00,cleared",
+			"2026-09-02,Bank,'=Employer,,Salário,,1000.00,cleared",
 			'2026-09-03,Bank,"Market, ""Central""",,Food,food,-20.00,uncleared',
 			'2026-09-03,Bank,"Market, ""Central""",,Fun,week,-10.00,uncleared',
 			'2026-09-04,Bank,,Cash,,,-50.00,uncleared',

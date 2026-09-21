@@ -7,7 +7,7 @@ import { createAccount } from './accounts';
 import { loadEngineInput } from './aggregates';
 import { createCategory, createGroup } from './categories';
 import { getBudgetMonth, setAssigned } from './budget';
-import { readyToAssignCategoryId } from './meta';
+import { defaultIncomeCategoryId } from './meta';
 import { createTransaction } from './transactions';
 
 const YEARS = 5;
@@ -28,7 +28,7 @@ async function bigBudget(): Promise<Db> {
 	const categories = Array.from({ length: CATEGORIES }, (_, i) =>
 		createCategory(db, { groupId: group, name: `Category ${i + 1}` })
 	);
-	const income = readyToAssignCategoryId(db);
+	const income = defaultIncomeCategoryId(db);
 	tx(db, () => {
 		for (const month of monthRange(addMonths(LAST, -12 * YEARS + 1), LAST)) {
 			createTransaction(db, {

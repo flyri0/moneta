@@ -1,5 +1,5 @@
 import { addMonths, monthOf, type Month } from '$domain/month';
-import { READY_TO_ASSIGN, type DemoSeed, type DemoTransactionSeed } from './seed';
+import type { DemoSeed, DemoTransactionSeed } from './seed';
 
 /** Account names for the demo, in the UI language. */
 export interface DemoAccountNames {
@@ -22,10 +22,12 @@ export interface DemoPayeeNames {
 	household: string;
 	streaming: string;
 	hobby: string;
+	startingBalance: string;
 }
 
 /** The starter categories the demo spends in, by role rather than by position. */
 export interface DemoCategoryNames {
+	salary: string;
 	rent: string;
 	utilities: string;
 	phone: string;
@@ -63,7 +65,7 @@ const SAVINGS_START = 5000;
 const SAVINGS_TRANSFER = 300;
 
 /** Assigned every month. The total is exactly one paycheck, so Ready to Assign lands on zero. */
-const ASSIGNED: Record<keyof DemoCategoryNames, number> = {
+const ASSIGNED: Record<Exclude<keyof DemoCategoryNames, 'salary'>, number> = {
 	rent: 1250,
 	utilities: 100,
 	phone: 75,
@@ -161,7 +163,8 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				type: 'checking',
 				onBudget: true,
 				startingBalance: money(CHECKING_START),
-				startingDate: opened
+				startingDate: opened,
+				startingBalancePayee: payees.startingBalance
 			},
 			{
 				key: SAVINGS,
@@ -169,7 +172,8 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				type: 'savings',
 				onBudget: true,
 				startingBalance: money(SAVINGS_START),
-				startingDate: opened
+				startingDate: opened,
+				startingBalancePayee: payees.startingBalance
 			},
 			{
 				key: CARD,
@@ -195,7 +199,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				date: dayOf(month, 1),
 				amount: money(SALARY),
 				payeeName: payees.salary,
-				categoryName: READY_TO_ASSIGN
+				categoryName: categories.salary
 			});
 		}
 		// Nothing was charged before the first month, so there is nothing to pay off in it either.

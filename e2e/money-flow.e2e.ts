@@ -23,7 +23,7 @@ test('income, assigning, spending, a card purchase and a card payment add up', a
 		account: 'Checking',
 		payee: 'Employer',
 		amount: '500',
-		category: 'Ready to Assign',
+		category: 'Salary',
 		inflow: true
 	});
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,500.00');
@@ -57,13 +57,21 @@ test('income, assigning, spending, a card purchase and a card payment add up', a
 		category: 'Groceries'
 	});
 	await expect(groceries.getByTestId('available')).toHaveText('$150.00');
-	await expect(categoryRow(page, 'Visa').getByTestId('available')).toHaveText('$100.00');
+
+	// In the Actual Budget model, credit cards are regular on-budget accounts with negative debt
+	// and do not create budget payment categories.
+	const accounts = page.getByTestId('account-row');
+	await expect(accounts.filter({ hasText: 'Checking' }).getByTestId('account-balance')).toHaveText(
+		'$1,450.00'
+	);
+	await expect(accounts.filter({ hasText: 'Visa' }).getByTestId('account-balance')).toHaveText(
+		'-$100.00'
+	);
 
 	await addTransaction(page, { account: 'Checking', payee: 'Transfer: Visa', amount: '100' });
-	await expect(categoryRow(page, 'Visa').getByTestId('available')).toHaveText('$0.00');
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,200.00');
+	await expect(groceries.getByTestId('available')).toHaveText('$150.00');
 
-	const accounts = page.getByTestId('account-row');
 	await expect(accounts.filter({ hasText: 'Checking' }).getByTestId('account-balance')).toHaveText(
 		'$1,350.00'
 	);
