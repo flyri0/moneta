@@ -158,13 +158,11 @@
 		groups={categoryGroups}
 		emptyOption={{
 			value: '',
-			label: mode === 'optional' ? m.transaction_no_category() : m.transaction_choose_category()
+			label: m.transaction_choose_category()
 		}}
 		{value}
 		onSelect={onChange}
-		placeholder={mode === 'optional'
-			? m.transaction_no_category()
-			: m.transaction_choose_category()}
+		placeholder={m.transaction_choose_category()}
 		class={className}
 	/>
 {/snippet}

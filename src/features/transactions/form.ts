@@ -81,16 +81,14 @@ function budgetLeg(draft: TransactionDraft, ctx: FormContext): FormAccount | nul
 	return own.onBudget ? own : null;
 }
 
-export type CategoryMode = 'required' | 'optional' | 'hidden';
+export type CategoryMode = 'required' | 'hidden';
 
 /** Whether the form shows the category field and whether it must be filled. */
 export function categoryMode(draft: TransactionDraft, ctx: FormContext): CategoryMode {
 	if (draft.splits && canSplit(draft, ctx)) return 'hidden';
 	const leg = budgetLeg(draft, ctx);
 	if (!leg) return 'hidden';
-	if (transferTarget(draft, ctx)) return 'required';
-	// Uncategorized card spending is plain debt with no budget effect.
-	return leg.type === 'credit_card' ? 'optional' : 'required';
+	return 'required';
 }
 
 /** Splitting is for categorized, non-transfer transactions on on-budget accounts. */
@@ -101,7 +99,7 @@ export function canSplit(draft: TransactionDraft, ctx: FormContext): boolean {
 export interface CategoryOption {
 	id: string;
 	name: string;
-	system: 'ready_to_assign' | null;
+	system: null;
 }
 
 export interface CategoryOptionGroup {
@@ -112,23 +110,18 @@ export interface CategoryOptionGroup {
 }
 
 /**
- * The categories the form offers: never card payment categories, no hidden ones unless already
- * chosen, and no Ready to Assign when the budget side is a credit card.
+ * The categories the form offers: no hidden ones unless already chosen.
  */
 export function categoryOptions(draft: TransactionDraft, ctx: FormContext): CategoryOptionGroup[] {
 	const chosen = new Set([draft.categoryId, ...(draft.splits ?? []).map((s) => s.categoryId)]);
-	const leg = budgetLeg(draft, ctx) ?? findAccount(ctx, draft.accountId);
-	const noIncome = leg?.type === 'credit_card';
 	return ctx.tree
 		.map((g) => ({
 			id: g.id,
 			name: g.name,
 			system: g.system,
 			categories: g.categories
-				.filter((c) => !c.ccAccountId)
 				.filter((c) => !c.hidden || chosen.has(c.id))
-				.filter((c) => !(noIncome && c.system === 'ready_to_assign'))
-				.map((c) => ({ id: c.id, name: c.name, system: c.system }))
+				.map((c) => ({ id: c.id, name: c.name, system: null }))
 		}))
 		.filter((g) => g.categories.length > 0);
 }

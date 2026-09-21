@@ -35,8 +35,6 @@ const category = (
 	sortOrder: 0,
 	hidden: false,
 	carryoverOverspending: false,
-	ccAccountId: null,
-	system: null,
 	...extra
 });
 
@@ -47,20 +45,12 @@ const tree: GroupNode[] = [
 		sortOrder: 0,
 		hidden: false,
 		system: 'income',
-		categories: [category('rta', 'income', { name: 'Ready to Assign', system: 'ready_to_assign' })]
-	},
-	{
-		id: 'cards',
-		name: 'Credit Card Payments',
-		sortOrder: 1,
-		hidden: false,
-		system: 'credit_card_payments',
-		categories: [category('visaPayment', 'cards', { name: 'Visa', ccAccountId: 'visa' })]
+		categories: [category('rta', 'income', { name: 'Ready to Assign' })]
 	},
 	{
 		id: 'everyday',
 		name: 'Everyday',
-		sortOrder: 2,
+		sortOrder: 1,
 		hidden: false,
 		system: null,
 		categories: [category('food', 'everyday'), category('old', 'everyday', { hidden: true })]
@@ -117,7 +107,7 @@ describe('transfers in the payee field', () => {
 describe('categoryMode', () => {
 	it.each([
 		['checking', '', 'required'],
-		['visa', '', 'optional'],
+		['visa', '', 'required'],
 		['broker', '', 'hidden'],
 		['checking', 'Transfer: Savings', 'hidden'],
 		['checking', 'Transfer: Visa', 'hidden'],
@@ -129,6 +119,20 @@ describe('categoryMode', () => {
 
 	it('hides the category while split', () => {
 		expect(categoryMode(draft({ splits: [] }), ctx)).toBe('hidden');
+	});
+
+	it('requires category for non-transfer credit card spending', () => {
+		const draft = { ...newDraft('visa', '2026-01-05'), amount: '50' };
+		expect(categoryMode(draft, ctx)).toBe('required');
+	});
+
+	it('hides category for transfers between checking and credit card', () => {
+		const draft = {
+			...newDraft('checking', '2026-01-05'),
+			amount: '50',
+			payee: ctx.transferLabel('Visa')
+		};
+		expect(categoryMode(draft, ctx)).toBe('hidden');
 	});
 });
 
@@ -144,17 +148,19 @@ describe('categoryOptions', () => {
 	const ids = (d: TransactionDraft) =>
 		categoryOptions(d, ctx).flatMap((g) => g.categories.map((c) => c.id));
 
-	it('never offers card payment or hidden categories', () => {
+	it('offers income categories in category options for credit card transactions', () => {
+		const draft = newDraft('visa', '2026-01-05');
+		const options = categoryOptions(draft, ctx);
+		const income = options.find((g) => g.system === 'income');
+		expect(income).toBeDefined();
+	});
+
+	it('never offers hidden categories unless chosen', () => {
 		expect(ids(draft({}))).toEqual(['rta', 'food']);
 	});
 
 	it('keeps a hidden category that is already chosen', () => {
 		expect(ids(draft({ categoryId: 'old' }))).toEqual(['rta', 'food', 'old']);
-	});
-
-	it('leaves out Ready to Assign when the budget side is a card', () => {
-		expect(ids(draft({ accountId: 'visa' }))).toEqual(['food']);
-		expect(ids(draft({ accountId: 'broker', payee: 'Transfer: Visa' }))).toEqual(['food']);
 	});
 });
 
@@ -201,10 +207,16 @@ describe('buildTransactionInput', () => {
 		expect(result).toMatchObject({ ok: true, input: { amount: 125050, categoryId: 'rta' } });
 	});
 
-	it('allows uncategorized card spending', () => {
-		expect(buildTransactionInput(draft({ accountId: 'visa', amount: '10' }), ctx)).toMatchObject({
+	it('requires category for card spending', () => {
+		expect(buildTransactionInput(draft({ accountId: 'visa', amount: '10' }), ctx)).toEqual({
+			ok: false,
+			error: 'CATEGORY_REQUIRED'
+		});
+		expect(
+			buildTransactionInput(draft({ accountId: 'visa', amount: '10', categoryId: 'food' }), ctx)
+		).toMatchObject({
 			ok: true,
-			input: { accountId: 'visa', amount: -1000, categoryId: null }
+			input: { accountId: 'visa', amount: -1000, categoryId: 'food' }
 		});
 	});
 
