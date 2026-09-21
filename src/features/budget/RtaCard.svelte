@@ -8,40 +8,58 @@
 	const session = useSession();
 	let expanded = $state(false);
 
-	const tone = $derived(
+	const amountTone = $derived(
 		view.readyToAssign > 0
-			? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
+			? 'text-emerald-600 dark:text-emerald-400'
 			: view.readyToAssign < 0
-				? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200'
-				: 'bg-muted text-foreground'
+				? 'text-destructive'
+				: ''
 	);
 </script>
 
-<div class="rounded-xl {tone}">
+<section
+	class="grid gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"
+	aria-label={m.budget_ready_to_assign()}
+	data-testid="rta-card"
+>
 	<button
 		type="button"
-		class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
+		class="group flex w-full cursor-pointer items-center justify-between text-left focus-visible:outline-hidden"
 		aria-expanded={expanded}
 		onclick={() => (expanded = !expanded)}
 	>
-		<span>
-			<span class="block text-2xl font-semibold tabular-nums" data-testid="rta-amount">
+		<div class="grid gap-1">
+			<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+				{m.budget_ready_to_assign()}
+			</span>
+			<span
+				class="text-2xl font-bold tracking-tight tabular-nums {amountTone}"
+				data-testid="rta-amount"
+			>
 				{session.format(view.readyToAssign)}
 			</span>
-			<span class="text-sm">{m.budget_ready_to_assign()}</span>
-		</span>
-		<ChevronDownIcon class="size-5 transition-transform {expanded ? 'rotate-180' : ''}" />
+		</div>
+		<div
+			class="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground"
+		>
+			<ChevronDownIcon class="size-5 transition-transform {expanded ? 'rotate-180' : ''}" />
+		</div>
 	</button>
+
 	{#if expanded}
-		<dl class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 px-4 pb-3 text-sm">
-			<dt>{m.budget_funds_available()}</dt>
-			<dd class="text-right tabular-nums">{session.format(view.availableFunds)}</dd>
-			<dt>{m.budget_overspent_last_month()}</dt>
-			<dd class="text-right tabular-nums">{session.format(-view.overspentLastMonth)}</dd>
-			<dt>{m.budget_assigned_this_month()}</dt>
-			<dd class="text-right tabular-nums">{session.format(-view.assignedThisMonth)}</dd>
-			<dt class="font-medium">{m.budget_ready_to_assign()}</dt>
-			<dd class="text-right font-medium tabular-nums">{session.format(view.readyToAssign)}</dd>
-		</dl>
+		<div class="grid gap-2 border-t pt-3 sm:grid-cols-3 sm:gap-3">
+			<div class="flex items-center justify-between sm:grid sm:gap-0.5">
+				<span class="text-xs text-muted-foreground">{m.budget_funds_available()}</span>
+				<span class="font-medium tabular-nums">{session.format(view.availableFunds)}</span>
+			</div>
+			<div class="flex items-center justify-between sm:grid sm:gap-0.5">
+				<span class="text-xs text-muted-foreground">{m.budget_overspent_last_month()}</span>
+				<span class="font-medium tabular-nums">{session.format(-view.overspentLastMonth)}</span>
+			</div>
+			<div class="flex items-center justify-between sm:grid sm:gap-0.5">
+				<span class="text-xs text-muted-foreground">{m.budget_assigned_this_month()}</span>
+				<span class="font-medium tabular-nums">{session.format(-view.assignedThisMonth)}</span>
+			</div>
+		</div>
 	{/if}
-</div>
+</section>

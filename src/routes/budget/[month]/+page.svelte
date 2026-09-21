@@ -58,7 +58,7 @@
 	const group = $derived(model?.groups.find((g) => g.id === groupId) ?? null);
 </script>
 
-<div class="mx-auto grid max-w-5xl gap-4 p-3 md:p-6">
+<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
 	<!-- Side by side only from 1024px up: below that the month picker has no room next to the card. -->
 	<header class="grid gap-3 lg:grid-cols-[1fr_20rem] lg:items-center">
 		<MonthPicker month={data.month} />
@@ -67,7 +67,7 @@
 
 	{#if view.data?.futureNegativeMonth}
 		<Alert.Root variant="destructive">
-			<TriangleAlertIcon />
+			<TriangleAlertIcon class="size-4" />
 			<Alert.Title>{m.budget_future_negative_title()}</Alert.Title>
 			<Alert.Description>
 				{m.budget_future_negative_body({
@@ -86,37 +86,40 @@
 			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
 		{:else}
 			<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
-			<div class="flex justify-end gap-2">
+			<div class="flex items-center justify-end gap-2">
 				<Button
 					variant="outline"
 					size="sm"
+					class="cursor-pointer shadow-xs"
 					aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
 					onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
 				>
 					{#if everyCollapsed}
-						<ChevronsUpDownIcon />
+						<ChevronsUpDownIcon class="size-4" />
 						<span class="hidden md:inline">{m.budget_expand_all()}</span>
 					{:else}
-						<ChevronsDownUpIcon />
+						<ChevronsDownUpIcon class="size-4" />
 						<span class="hidden md:inline">{m.budget_collapse_all()}</span>
 					{/if}
 				</Button>
 				<Button
 					variant="outline"
 					size="sm"
+					class="cursor-pointer shadow-xs"
 					aria-label={m.budget_add_group()}
 					onclick={() => (addingGroup = true)}
 				>
-					<PlusIcon />
+					<PlusIcon class="size-4" />
 					<span class="hidden md:inline">{m.budget_add_group()}</span>
 				</Button>
 				<Button
 					variant="outline"
 					size="sm"
+					class="cursor-pointer shadow-xs"
 					aria-label={m.budget_edit_order()}
 					onclick={() => (editingOrder = true)}
 				>
-					<ArrowUpDownIcon />
+					<ArrowUpDownIcon class="size-4" />
 					<span class="hidden md:inline">{m.budget_edit_order()}</span>
 				</Button>
 			</div>

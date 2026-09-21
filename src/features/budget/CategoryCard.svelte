@@ -34,11 +34,11 @@
 	});
 </script>
 
-<div class="grid gap-2 rounded-lg border px-3 py-2.5" data-testid="category-row">
+<div class="grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40" data-testid="category-row">
 	<div class="flex items-center justify-between gap-3">
 		<button
 			type="button"
-			class="-my-1 min-w-0 flex-1 truncate py-1 text-left font-medium hover:underline"
+			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium hover:underline"
 			onclick={() => onSelect(category.id)}>{category.name}</button
 		>
 		<AvailablePill {category} />

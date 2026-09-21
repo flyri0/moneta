@@ -44,7 +44,7 @@
 {#snippet chevron(group: BudgetGroupView, open: boolean)}
 	<button
 		type="button"
-		class="-ml-1 rounded p-0.5 text-muted-foreground hover:text-foreground"
+		class="-ml-1 cursor-pointer rounded p-0.5 text-muted-foreground hover:text-foreground"
 		aria-expanded={open}
 		aria-label={toggleLabel(group, open)}
 		onclick={() => onToggleGroup(group.id)}
@@ -54,10 +54,10 @@
 {/snippet}
 
 {#snippet categoryRow(category: BudgetCategoryView)}
-	<div class="{COLUMNS} border-b px-3 py-1.5" data-testid="category-row">
+	<div class="{COLUMNS} px-4 py-2 transition-colors hover:bg-muted/30" data-testid="category-row">
 		<button
 			type="button"
-			class="truncate text-left hover:underline"
+			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
 			onclick={() => onSelectCategory(category.id)}>{category.name}</button
 		>
 		<div>
@@ -84,9 +84,9 @@
 {/snippet}
 
 {#if desktop.current}
-	<section aria-label={m.budget_categories()}>
+	<section class="grid gap-4" aria-label={m.budget_categories()}>
 		<div
-			class="{COLUMNS} sticky top-[var(--app-top,0px)] z-10 border-b bg-background px-3 py-2 text-xs font-medium text-muted-foreground uppercase"
+			class="{COLUMNS} px-4 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
 		>
 			<span>{m.budget_category()}</span>
 			<span class="text-right">{m.budget_assigned()}</span>
@@ -95,49 +95,67 @@
 		</div>
 		{#each model.groups as group (group.id)}
 			{@const open = !collapsed.has(group.id)}
-			<div class="{COLUMNS} border-b bg-muted/60 px-3 py-2 font-medium" data-testid="group-row">
-				<div class="flex min-w-0 items-center gap-1">
-					{@render chevron(group, open)}
-					<button
-						type="button"
-						class="truncate text-left hover:underline"
-						onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+			<div
+				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+				data-testid="group-card"
+			>
+				<div
+					class="{COLUMNS} bg-muted/40 px-4 py-2.5 font-medium transition-colors"
+					data-testid="group-row"
+				>
+					<div class="flex min-w-0 items-center gap-1.5">
+						{@render chevron(group, open)}
+						<button
+							type="button"
+							class="cursor-pointer truncate text-left font-semibold hover:underline"
+							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+						>
+					</div>
+					<span class="text-right font-medium tabular-nums">{session.format(group.assigned)}</span>
+					<span class="text-right text-sm text-muted-foreground tabular-nums"
+						>{session.format(group.activity)}</span
+					>
+					<span class="text-right font-semibold tabular-nums"
+						>{session.format(group.available)}</span
 					>
 				</div>
-				<span class="text-right tabular-nums">{session.format(group.assigned)}</span>
-				<span class="text-right text-sm tabular-nums">{session.format(group.activity)}</span>
-				<span class="text-right tabular-nums">{session.format(group.available)}</span>
+				{#if open}
+					{#each group.categories as category (category.id)}
+						{@render categoryRow(category)}
+					{/each}
+				{/if}
 			</div>
-			{#if open}
-				{#each group.categories as category (category.id)}
-					{@render categoryRow(category)}
-				{/each}
-			{/if}
 		{/each}
 	</section>
 {:else}
 	<section class="grid gap-4" aria-label={m.budget_categories()}>
 		{#each model.groups as group (group.id)}
 			{@const open = !collapsed.has(group.id)}
-			<div class="grid gap-2">
+			<div class="grid gap-2" data-testid="group-card">
 				<div
-					class="sticky top-[var(--app-top,0px)] z-10 -mx-3 flex items-center gap-1 bg-background px-3 py-1.5"
+					class="flex items-center justify-between px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
 					data-testid="group-row"
 				>
-					{@render chevron(group, open)}
-					<button
-						type="button"
-						class="min-w-0 flex-1 truncate text-left text-xs font-medium tracking-wide text-muted-foreground uppercase hover:text-foreground"
-						onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
-					>
-					<span class="shrink-0 text-sm font-medium tabular-nums">
+					<div class="flex min-w-0 items-center gap-1.5">
+						{@render chevron(group, open)}
+						<button
+							type="button"
+							class="min-w-0 flex-1 cursor-pointer truncate text-left hover:text-foreground"
+							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+						>
+					</div>
+					<span class="shrink-0 text-sm font-semibold text-foreground tabular-nums">
 						{session.format(group.available)}
 					</span>
 				</div>
 				{#if open}
-					{#each group.categories as category (category.id)}
-						<CategoryCard {category} onSelect={onSelectCategory} />
-					{/each}
+					<div
+						class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+					>
+						{#each group.categories as category (category.id)}
+							<CategoryCard {category} onSelect={onSelectCategory} />
+						{/each}
+					</div>
 				{/if}
 			</div>
 		{/each}
@@ -145,17 +163,21 @@
 {/if}
 
 {#if model.hidden.length > 0}
-	<Collapsible.Root class="mt-4">
+	<Collapsible.Root class="mt-4 grid gap-2">
 		<Collapsible.Trigger
-			class="group flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+			class="group inline-flex cursor-pointer items-center gap-1.5 px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase hover:text-foreground"
 		>
 			<ChevronRightIcon class="size-4 transition-transform group-data-[state=open]:rotate-90" />
 			{m.budget_hidden_categories({ count: model.hidden.length })}
 		</Collapsible.Trigger>
-		<Collapsible.Content class="grid gap-2">
-			{#each model.hidden as { category } (category.id)}
-				{@render categoryItem(category)}
-			{/each}
+		<Collapsible.Content>
+			<div
+				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+			>
+				{#each model.hidden as { category } (category.id)}
+					{@render categoryItem(category)}
+				{/each}
+			</div>
 		</Collapsible.Content>
 	</Collapsible.Root>
 {/if}

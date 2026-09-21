@@ -9,6 +9,25 @@ test('shows the month with Ready to Assign and the starter categories', async ({
 	await expect(page.getByText('Funds available')).toBeVisible();
 });
 
+test('renders RTA hero card and divided category group cards', async ({ page }) => {
+	await onboard(page);
+	const rtaCard = page.getByTestId('rta-card');
+	await expect(rtaCard).toBeVisible();
+	await expect(rtaCard.getByTestId('rta-amount')).toHaveText('$1,000.00');
+
+	// Toggle RTA breakdown open and closed
+	await page.getByTestId('rta-amount').click();
+	await expect(page.getByText('Funds available')).toBeVisible();
+	await expect(page.getByText('Assigned this month')).toBeVisible();
+	await page.getByTestId('rta-amount').click();
+	await expect(page.getByText('Funds available')).toBeHidden();
+
+	// Group card containers
+	const groupCards = page.getByTestId('group-card');
+	await expect(groupCards.first()).toBeVisible();
+	await expect(groupCards.filter({ hasText: 'Everyday' })).toBeVisible();
+});
+
 test('sends invalid months to the current one', async ({ page }) => {
 	await onboard(page);
 	const current = page.url();
@@ -120,17 +139,30 @@ test.describe('on a phone', () => {
 		await expect(categoryRow(page, 'Groceries')).toBeVisible();
 	});
 
-	test('never scrolls sideways', async ({ page }) => {
+	test('budget screen never scrolls sideways on small phones and cards are styled consistently', async ({
+		page
+	}) => {
 		await onboard(page);
 		const overflow = () =>
 			page.evaluate(
 				() => document.documentElement.scrollWidth - document.documentElement.clientWidth
 			);
-		expect(await overflow()).toBeLessThanOrEqual(0);
 
-		await page.setViewportSize({ width: 360, height: 640 });
-		await expect(page.getByTestId('month-label')).toBeVisible();
-		expect(await overflow()).toBeLessThanOrEqual(0);
+		for (const width of [390, 360, 320]) {
+			await page.setViewportSize({ width, height: 844 });
+			await expect(page.getByTestId('rta-card')).toBeVisible();
+			expect(await overflow(), `budget screen overflow at ${width}px`).toBeLessThanOrEqual(0);
+		}
+
+		// Expand RTA breakdown and check overflow
+		await page.getByTestId('rta-amount').click();
+		await expect(page.getByText('Funds available')).toBeVisible();
+		for (const width of [390, 320]) {
+			await page.setViewportSize({ width, height: 844 });
+			expect(await overflow(), `expanded budget screen overflow at ${width}px`).toBeLessThanOrEqual(
+				0
+			);
+		}
 	});
 });
 
