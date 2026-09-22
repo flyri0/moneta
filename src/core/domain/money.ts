@@ -196,5 +196,7 @@ export function parseAmount(input: string, fmt: MoneyFormat): number | null {
 	if (value === null || !Number.isFinite(value)) return null;
 	const scaled = value * 10 ** digits;
 	const rounded = Math.sign(scaled) * Math.round(Math.abs(scaled));
+	// Past 2^53 minor units the amount is no longer exact, and the repos refuse it anyway.
+	if (!Number.isSafeInteger(rounded)) return null;
 	return rounded === 0 ? 0 : rounded;
 }

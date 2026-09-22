@@ -76,6 +76,13 @@ describe('parseAmount', () => {
 	])('rejects ambiguous or mistyped %s', (input, fmt) => {
 		expect(parseAmount(input, fmt)).toBeNull();
 	});
+
+	it('rejects amounts beyond the safe integer range in minor units', () => {
+		expect(parseAmount('99999999999999', USD)).toBeNull();
+		expect(parseAmount('-99999999999999', USD)).toBeNull();
+		expect(parseAmount('9007199254740992', JPY)).toBeNull();
+		expect(parseAmount('9007199254740991', JPY)).toBe(Number.MAX_SAFE_INTEGER);
+	});
 });
 
 describe('formatAmountInput', () => {
