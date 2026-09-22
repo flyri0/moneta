@@ -60,3 +60,19 @@ export function todayIso(now: Date = new Date()): string {
 export function currentMonth(now: Date = new Date()): Month {
 	return monthOf(todayIso(now));
 }
+
+/** How many years past the current one the budget screen can show. */
+export const BUDGET_YEARS_AHEAD = 25;
+
+/**
+ * The last month the budget screen shows. The engine walks every month up to the one on screen,
+ * so the route stays well short of MAX_DATE.
+ */
+export function lastBudgetMonth(now: Date = new Date()): Month {
+	return `${now.getFullYear() + BUDGET_YEARS_AHEAD}-12`;
+}
+
+/** Whether `value` is a month the budget screen can show. */
+export function isBudgetMonth(value: string, now: Date = new Date()): boolean {
+	return isMonth(value) && value <= lastBudgetMonth(now);
+}

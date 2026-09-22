@@ -8,6 +8,8 @@ import {
 	monthRange,
 	todayIso,
 	currentMonth,
+	isBudgetMonth,
+	lastBudgetMonth,
 	MIN_DATE,
 	MAX_DATE
 } from './month';
@@ -25,6 +27,16 @@ describe('month helpers', () => {
 		expect(isMonth('2199-12')).toBe(true);
 		expect(isMonth('2200-01')).toBe(false);
 		expect(isMonth('9999-01')).toBe(false);
+	});
+
+	it('limits the budget screen to 25 years past the current one', () => {
+		const now = new Date(2026, 8, 22);
+		expect(lastBudgetMonth(now)).toBe('2051-12');
+		expect(isBudgetMonth('2051-12', now)).toBe(true);
+		expect(isBudgetMonth('2052-01', now)).toBe(false);
+		expect(isBudgetMonth('2199-12', now)).toBe(false);
+		expect(isBudgetMonth('1900-01', now)).toBe(true);
+		expect(isBudgetMonth('2026-13', now)).toBe(false);
 	});
 
 	it('spans the whole allowed range with MIN_DATE and MAX_DATE', () => {

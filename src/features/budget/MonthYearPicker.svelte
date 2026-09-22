@@ -5,7 +5,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Button } from '$ui/button';
 	import * as Select from '$ui/select';
-	import { currentMonth, type Month } from '$domain/month';
+	import { currentMonth, lastBudgetMonth, type Month } from '$domain/month';
 	import { formatMonthLong, formatMonthName } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -28,7 +28,7 @@
 	const locale = $derived(getLocale());
 
 	const minYear = $derived(Math.min(1950, viewingYear));
-	const maxYear = $derived(Math.max(2050, viewingYear));
+	const maxYear = $derived(Math.max(Number(lastBudgetMonth().slice(0, 4)), viewingYear));
 
 	const years = $derived.by(() => {
 		const list: { value: string; label: string }[] = [];
