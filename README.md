@@ -105,8 +105,10 @@ domain: the service worker that makes the app work offline is registered at `/`.
 
 The Content-Security-Policy ships inside `index.html` as a `<meta>` tag, so the app is locked
 down on any host. If yours lets you set headers, also send `Content-Security-Policy:
-frame-ancestors 'none'` (a meta tag can't forbid framing), `X-Content-Type-Options: nosniff`
-and `Referrer-Policy: no-referrer`. `netlify.toml` has an example.
+frame-ancestors 'none'` (a meta tag can't forbid framing), `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: no-referrer` and `Permissions-Policy: camera=(), microphone=(), geolocation=(),
+payment=()`. None of these is required. `netlify.toml` has an example, along with the
+`index.html` fallback rule.
 
 ## Where your data lives
 

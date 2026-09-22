@@ -3,6 +3,13 @@
     publish = "build"
     ignore = "exit 0"
 
+# The app is a single-page app: every route that isn't a file gets index.html. A 200 rule without
+# `force` only applies when no file matches, so assets and the service worker are served as is.
+[[redirects]]
+    from = "/*"
+    to = "/index.html"
+    status = 200
+
 # Optional hardening: the Content-Security-Policy ships in the HTML as a <meta> tag. These cover
 # what a meta tag can't (framing) and add the usual safe defaults.
 [[headers]]
@@ -11,3 +18,4 @@
         Content-Security-Policy = "frame-ancestors 'none'"
         X-Content-Type-Options = "nosniff"
         Referrer-Policy = "no-referrer"
+        Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"

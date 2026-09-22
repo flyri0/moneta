@@ -108,8 +108,9 @@ registrado em `/`.
 A Content-Security-Policy vai dentro do `index.html` como uma tag `<meta>`, então o app fica
 protegido em qualquer host. Se o seu permitir configurar cabeçalhos, envie também
 `Content-Security-Policy: frame-ancestors 'none'` (uma tag meta não consegue proibir que o app
-seja embutido em frames), `X-Content-Type-Options: nosniff` e `Referrer-Policy: no-referrer`.
-O `netlify.toml` tem um exemplo.
+seja embutido em frames), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` e
+`Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`. Nenhum deles é
+obrigatório. O `netlify.toml` tem um exemplo, junto com a regra que devolve o `index.html`.
 
 ## Onde ficam seus dados
 
