@@ -1,4 +1,5 @@
 import type { Db, Table } from './connection';
+import type { ArgSpec } from './args';
 import { ALL_TABLES } from './connection';
 import * as meta from './repos/meta';
 import * as accounts from './repos/accounts';
@@ -13,18 +14,24 @@ import * as demo from './repos/demo';
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
 	tables: readonly Table[];
+	/** The top-level shape of each argument, checked before `fn` runs. */
+	args: readonly string[];
 	fn: (db: Db, ...args: A) => R;
 }
 
-function read<A extends unknown[], R>(fn: (db: Db, ...args: A) => R): Handler<A, R> {
-	return { kind: 'read', tables: [], fn };
+function read<A extends unknown[], R>(
+	fn: (db: Db, ...args: A) => R,
+	args: NoInfer<ArgSpec<A>>
+): Handler<A, R> {
+	return { kind: 'read', tables: [], args, fn };
 }
 
 function write<A extends unknown[], R>(
 	tables: readonly Table[],
-	fn: (db: Db, ...args: A) => R
+	fn: (db: Db, ...args: A) => R,
+	args: NoInfer<ArgSpec<A>>
 ): Handler<A, R> {
-	return { kind: 'write', tables, fn };
+	return { kind: 'write', tables, args, fn };
 }
 
 const TXN: readonly Table[] = ['transactions', 'transaction_splits', 'payees'];
@@ -32,56 +39,61 @@ const TXN: readonly Table[] = ['transactions', 'transaction_splits', 'payees'];
 /** Every operation the UI can call. Writes declare the tables they change. */
 export const api = {
 	meta: {
-		isInitialized: read(meta.isInitialized),
-		get: read(meta.getMeta),
-		update: write(['meta'], meta.updateMeta),
-		init: write(ALL_TABLES, meta.initBudget)
+		isInitialized: read(meta.isInitialized, []),
+		get: read(meta.getMeta, []),
+		update: write(['meta'], meta.updateMeta, ['object']),
+		init: write(ALL_TABLES, meta.initBudget, ['object'])
 	},
 	accounts: {
-		list: read(accounts.listAccounts),
-		get: read(accounts.getAccount),
-		create: write(['accounts', 'categories', ...TXN], accounts.createAccount),
-		rename: write(['accounts', 'categories'], accounts.renameAccount),
-		close: write(['accounts', 'categories'], accounts.closeAccount),
-		reopen: write(['accounts', 'categories'], accounts.reopenAccount),
-		delete: write(['accounts', 'categories', 'budget_assignments'], accounts.deleteAccount)
+		list: read(accounts.listAccounts, []),
+		get: read(accounts.getAccount, ['string']),
+		create: write(['accounts', 'categories', ...TXN], accounts.createAccount, ['object']),
+		rename: write(['accounts', 'categories'], accounts.renameAccount, ['string', 'string']),
+		close: write(['accounts', 'categories'], accounts.closeAccount, ['string']),
+		reopen: write(['accounts', 'categories'], accounts.reopenAccount, ['string']),
+		delete: write(['accounts', 'categories', 'budget_assignments'], accounts.deleteAccount, [
+			'string'
+		])
 	},
 	categories: {
-		tree: read(categories.listCategoryTree),
-		createGroup: write(['category_groups'], categories.createGroup),
-		updateGroup: write(['category_groups'], categories.updateGroup),
-		deleteGroup: write(['category_groups'], categories.deleteGroup),
-		create: write(['categories'], categories.createCategory),
-		update: write(['categories'], categories.updateCategory),
-		delete: write(['categories', 'budget_assignments', ...TXN], categories.deleteCategory),
-		saveOrder: write(['category_groups', 'categories'], categories.saveCategoryOrder)
+		tree: read(categories.listCategoryTree, []),
+		createGroup: write(['category_groups'], categories.createGroup, ['object']),
+		updateGroup: write(['category_groups'], categories.updateGroup, ['string', 'object']),
+		deleteGroup: write(['category_groups'], categories.deleteGroup, ['string']),
+		create: write(['categories'], categories.createCategory, ['object']),
+		update: write(['categories'], categories.updateCategory, ['string', 'object']),
+		delete: write(['categories', 'budget_assignments', ...TXN], categories.deleteCategory, [
+			'string',
+			'string?'
+		]),
+		saveOrder: write(['category_groups', 'categories'], categories.saveCategoryOrder, ['array'])
 	},
 	payees: {
-		list: read(payees.listPayees)
+		list: read(payees.listPayees, [])
 	},
 	transactions: {
-		list: read(transactions.listTransactions),
-		get: read(transactions.getTransaction),
-		create: write(TXN, transactions.createTransaction),
-		update: write(TXN, transactions.updateTransaction),
-		delete: write(TXN, transactions.deleteTransaction),
-		setCleared: write(['transactions'], transactions.setCleared)
+		list: read(transactions.listTransactions, ['object?']),
+		get: read(transactions.getTransaction, ['string']),
+		create: write(TXN, transactions.createTransaction, ['object']),
+		update: write(TXN, transactions.updateTransaction, ['string', 'object']),
+		delete: write(TXN, transactions.deleteTransaction, ['string']),
+		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
 	},
 	budget: {
-		month: read(budget.getBudgetMonth),
-		setAssigned: write(['budget_assignments'], budget.setAssigned),
-		moveMoney: write(['budget_assignments'], budget.moveMoney),
-		quickAssign: write(['budget_assignments'], budget.applyQuickAssign)
+		month: read(budget.getBudgetMonth, ['string']),
+		setAssigned: write(['budget_assignments'], budget.setAssigned, ['string', 'string', 'number']),
+		moveMoney: write(['budget_assignments'], budget.moveMoney, ['object']),
+		quickAssign: write(['budget_assignments'], budget.applyQuickAssign, ['object'])
 	},
 	reports: {
-		spending: read(reports.spendingByCategory),
-		netWorth: read(reports.netWorth)
+		spending: read(reports.spendingByCategory, ['object']),
+		netWorth: read(reports.netWorth, ['string'])
 	},
 	backup: {
-		dump: read((db) => dump.dumpBudget(db))
+		dump: read((db: Db) => dump.dumpBudget(db), [])
 	},
 	demo: {
-		create: write(ALL_TABLES, demo.createDemo)
+		create: write(ALL_TABLES, demo.createDemo, ['object'])
 	}
 };
 

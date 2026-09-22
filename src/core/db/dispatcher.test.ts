@@ -92,6 +92,60 @@ describe('createDispatcher', () => {
 		}
 	});
 
+	it('rejects arguments of the wrong shape as INVALID_INPUT without running the handler', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		const spy = vi.spyOn(api.transactions.create, 'fn');
+		try {
+			for (const args of [['texto'], [null], [[]], [], [{}, 'extra']]) {
+				const res = await dispatch({ id: 10, method: 'transactions.create', args });
+				expect(res).toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+			}
+			const notArray = { id: 11, method: 'meta.get', args: 'x' as unknown as unknown[] };
+			expect(await dispatch(notArray)).toMatchObject({
+				ok: false,
+				error: { code: 'INVALID_INPUT' }
+			});
+			expect(spy).not.toHaveBeenCalled();
+		} finally {
+			spy.mockRestore();
+		}
+	});
+
+	it('accepts calls that leave optional arguments out', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		expect(await dispatch({ id: 12, method: 'transactions.list', args: [] })).toMatchObject({
+			ok: true
+		});
+		expect(
+			await dispatch({ id: 13, method: 'transactions.list', args: [undefined] })
+		).toMatchObject({ ok: true });
+	});
+
+	it('rejects system calls with arguments of the wrong shape', async () => {
+		const { system, opened } = fakeSystem();
+		const dispatch = createDispatcher({ system, getDb: () => null });
+		for (const [method, args] of [
+			['system.open', [42]],
+			['system.open', []],
+			['system.importFile', ['b.sqlite3', 'not bytes']],
+			['system.listFiles', ['extra']]
+		] as const) {
+			const res = await dispatch({ id: 14, method, args: [...args] });
+			expect(res).toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+		}
+		expect(opened).toEqual([]);
+	});
+
+	it('describes the arguments of every handler', () => {
+		for (const group of Object.values(api)) {
+			for (const handler of Object.values(group)) {
+				expect(handler.args.length).toBeGreaterThanOrEqual(handler.fn.length - 1);
+			}
+		}
+	});
+
 	it('runs each write call as one SQL transaction', async () => {
 		const db = await createBudgetDb();
 		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
