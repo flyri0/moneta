@@ -111,7 +111,7 @@
 	}
 
 	/**
-	 * Installs a waiting app update (spec §8): let in-flight calls finish, close the database
+	 * Installs a waiting app update: let in-flight calls finish, close the database
 	 * cleanly, then activate the new service worker, which reloads the page.
 	 */
 	async function applyUpdate() {

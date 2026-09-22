@@ -23,7 +23,7 @@ function isIntact(db: Db): boolean {
 }
 
 /**
- * Checks a `.sqlite` backup before it may replace anything (spec §6, in this order): the SQLite
+ * Checks a `.sqlite` backup before it may replace anything: the SQLite
  * header, `PRAGMA integrity_check`, the `meta` table, and a schema version this app knows.
  * Older budgets are migrated. Returns the checked, migrated file. Works on an in-memory copy.
  */

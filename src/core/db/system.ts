@@ -44,7 +44,7 @@ function copyPrefix(fileName: string): string {
 	return `premigration-${fileName.replace(/\.sqlite3$/, '')}-`;
 }
 
-/** The worker's file operations (spec §2, §7) over any FileStore. */
+/** The worker's file operations over any FileStore. */
 export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () => Db | null } {
 	const { sqlite3, store } = deps;
 	const migrations = deps.migrations ?? MIGRATIONS;

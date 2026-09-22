@@ -11,7 +11,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
-			// Ask before updating (spec §8): the app shows a "Reload" toast.
+			// Ask before updating: the app shows a "Reload" toast.
 			registerType: 'prompt',
 			injectRegister: false,
 			// SvelteKit builds with relative asset paths; the service worker must live at the root.
