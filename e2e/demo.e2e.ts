@@ -44,7 +44,7 @@ test('vanishes on the way back to the welcome page', async ({ page }) => {
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 
-test('client-side navigation to / and back does not block the app (MON-002)', async ({ page }) => {
+test('client-side navigation to / and back does not block the app', async ({ page }) => {
 	await tryDemo(page);
 
 	await page.goBack();
