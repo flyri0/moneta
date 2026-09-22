@@ -9,7 +9,7 @@
 	import { downloadCopy } from './actions';
 
 	/**
-	 * A budget's pre-migration copies (`api.system.listCopies`), each of which can be downloaded
+	 * A budget's saved copies (`api.system.listCopies`), each of which can be downloaded
 	 * as a backup or restored. `onRestore` gets the copy's bytes.
 	 */
 	let {

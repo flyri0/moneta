@@ -189,7 +189,7 @@ describe('deleteBudget', () => {
 
 describe('restoreBudget', () => {
 	it('replaces the open budget with a backup', async () => {
-		const { api, store, files } = await setup();
+		const { api, store } = await setup();
 		const { file } = await createBudget(api, store, HOME);
 		const backup = await api.system.exportFile();
 		await api.meta.update({ name: 'Changed' });
@@ -197,7 +197,7 @@ describe('restoreBudget', () => {
 		const restored = await restoreBudget(api, store, backup, file, true);
 		expect(restored.file).not.toBe(file);
 		expect(restored.meta.name).toBe('Home');
-		expect([...files.keys()]).toEqual([restored.file]);
+		expect(await api.system.listFiles()).not.toContain(file);
 		expect(store.getItem(collapsedKey(file))).toBeNull();
 		expect(loadRegistry(store)).toEqual({
 			budgets: [{ file: restored.file, name: 'Home' }],
@@ -205,6 +205,18 @@ describe('restoreBudget', () => {
 		});
 		const [account] = await api.accounts.list();
 		expect(account).toMatchObject({ name: 'Checking', balance: 150000 });
+	});
+
+	it('keeps the replaced budget as a copy of the restored one', async () => {
+		const { api, store } = await setup();
+		const { file } = await createBudget(api, store, HOME);
+		const backup = await api.system.exportFile();
+		await api.meta.update({ name: 'Changed' });
+		const restored = await restoreBudget(api, store, backup, file, true);
+		const [copy, ...rest] = await api.system.listCopies(restored.file);
+		expect(rest).toEqual([]);
+		const undone = await restoreBudget(api, store, await api.system.readCopy(copy.name));
+		expect(undone.meta.name).toBe('Changed');
 	});
 
 	it('imports a backup as a new budget', async () => {
@@ -436,6 +448,7 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		close: system.close,
 		listFiles: system.listFiles,
 		deleteFile: system.deleteFile,
+		replaceFile: system.replaceFile,
 		release: system.release,
 		listCopies: system.listCopies,
 		readCopy: system.readCopy,

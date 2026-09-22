@@ -76,11 +76,29 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			.sort();
 	}
 
-	/** Saves `current` as a timestamped copy of `fileName` and keeps only the newest few. */
-	async function saveCopy(fileName: string, current: Db): Promise<void> {
+	/** Saves `image` as a timestamped copy of `fileName` and keeps only the newest few. */
+	async function saveCopy(fileName: string, image: Uint8Array): Promise<void> {
 		const stamp = now().toISOString().replace(/\D/g, '');
-		await store.write(`${copyPrefix(fileName)}${stamp}.sqlite3`, toImage(sqlite3, current));
+		await store.write(`${copyPrefix(fileName)}${stamp}.sqlite3`, image);
 		for (const old of copiesOf(fileName).slice(0, -KEPT_COPIES)) store.remove(old);
+	}
+
+	/** Removes a budget file and its copies, closing it first if it is the open one. */
+	function removeFile(fileName: string): void {
+		if (openName === fileName) closeDb();
+		store.remove(fileName);
+		for (const copy of copiesOf(fileName)) store.remove(copy);
+	}
+
+	/** The bytes of a budget file, whether or not it is the open one. */
+	function readImage(fileName: string): Uint8Array {
+		if (db && openName === fileName) return toImage(sqlite3, db);
+		const file = store.open(fileName);
+		try {
+			return toImage(sqlite3, file);
+		} finally {
+			store.close(file);
+		}
 	}
 
 	const system: SystemApi = {
@@ -92,7 +110,8 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			try {
 				configure(next);
 				const version = schemaVersion(next);
-				if (version > 0 && version < migrations.length) await saveCopy(fileName, next);
+				if (version > 0 && version < migrations.length)
+					await saveCopy(fileName, toImage(sqlite3, next));
 				migrate(next, migrations);
 			} catch (err) {
 				store.close(next);
@@ -107,9 +126,18 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 		},
 		deleteFile(fileName) {
 			checkFileName(fileName);
-			if (openName === fileName) closeDb();
-			store.remove(fileName);
-			for (const copy of copiesOf(fileName)) store.remove(copy);
+			removeFile(fileName);
+		},
+		async replaceFile(oldFile, newFile) {
+			checkFileName(oldFile);
+			checkFileName(newFile);
+			const files = store.list();
+			if (oldFile === newFile || !files.includes(oldFile) || !files.includes(newFile))
+				throw new DomainError('INVALID_INPUT', `Cannot replace ${oldFile} with ${newFile}`);
+			await store.reserve(SPARE_FILES);
+			// Written before anything is removed, so a failure leaves the old budget in place.
+			await saveCopy(newFile, readImage(oldFile));
+			removeFile(oldFile);
 		},
 		listCopies(fileName) {
 			checkFileName(fileName);

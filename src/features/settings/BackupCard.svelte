@@ -39,7 +39,7 @@
 		return () => (current = false);
 	});
 
-	/** Restores a pre-migration copy next to the open budget, which is left as it is. */
+	/** Restores a saved copy next to the open budget, which is left as it is. */
 	async function restoreCopy(bytes: Uint8Array) {
 		const restored = await restoreBudget(session.api, localStorage, bytes, session.file);
 		app.show(session.client, restored.file, restored.meta);

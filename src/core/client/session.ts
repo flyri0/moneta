@@ -183,7 +183,8 @@ function forgetBudget(store: KeyValueStore, file: string): void {
 /**
  * Restores a `.sqlite` backup as a new budget file and opens it. The worker checks the backup
  * first, so an invalid one changes nothing. With `replace`, the open budget (`openFile`) is
- * deleted once the restored one is open. If that fails, `openFile` is opened again.
+ * deleted once the restored one is open, and kept as a copy of it so the replace can be undone.
+ * If opening the restored one fails, `openFile` is opened again.
  */
 export async function restoreBudget(
 	api: SessionApi,
@@ -206,7 +207,7 @@ export async function restoreBudget(
 	endDemo(store);
 	let registry = upsertBudget(loadRegistry(store), { file, name: meta.name });
 	if (replace && openFile) {
-		await api.system.deleteFile(openFile);
+		await api.system.replaceFile(openFile, file);
 		registry = removeBudget(registry, openFile);
 		forgetBudget(store, openFile);
 	}

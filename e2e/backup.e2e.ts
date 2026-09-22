@@ -29,10 +29,14 @@ test('backs up, then restores over the budget or as a new one', async ({ page },
 	await page.getByLabel('Restore from a backup').setInputFiles(backup);
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Replace Changed' }).click();
-	await dialog.getByRole('button', { name: 'Tap again to replace' }).click();
+	await expect(dialog.getByRole('status')).toContainText('replaces everything in Changed');
+	await expect(dialog.getByRole('button', { name: /^Replace in \ds$/ })).toBeDisabled();
+	await dialog.getByRole('button', { name: 'Tap again to replace' }).click({ timeout: 10_000 });
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await openSettings(page);
 	await expect(files.getByRole('listitem')).toHaveText([/Home/]);
+	// The replaced budget is kept as a copy of the restored one.
+	await expect(page.getByTestId('budget-copies').getByRole('listitem')).toHaveCount(1);
 
 	await page.getByLabel('Restore from a backup').setInputFiles(backup);
 	await dialog.getByRole('button', { name: 'Add as a new budget' }).click();

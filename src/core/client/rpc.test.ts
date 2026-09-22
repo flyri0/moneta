@@ -24,6 +24,7 @@ function connect(db: Db | null) {
 			close: () => {},
 			listFiles: () => [],
 			deleteFile: () => {},
+			replaceFile: async () => {},
 			release: () => {},
 			listCopies: () => [],
 			readCopy: () => new Uint8Array(),

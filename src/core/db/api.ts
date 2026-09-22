@@ -102,7 +102,12 @@ export interface SystemApi {
 	listFiles(): string[];
 	/** Deletes a budget file and its pre-migration copies. */
 	deleteFile(fileName: string): void;
-	/** A budget's pre-migration copies, newest first. */
+	/**
+	 * Deletes `oldFile` and its copies, keeping `oldFile` itself as a copy of `newFile`, so a
+	 * restore that replaced a budget can be undone from `newFile`'s copies.
+	 */
+	replaceFile(oldFile: string, newFile: string): Promise<void>;
+	/** A budget's saved copies (before a migration or a replacing restore), newest first. */
 	listCopies(fileName: string): BudgetCopy[];
 	/** A pre-migration copy as the bytes of a `.sqlite` file, to restore or download as a backup. */
 	readCopy(copyName: string): Uint8Array<ArrayBuffer>;

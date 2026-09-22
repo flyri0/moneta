@@ -206,3 +206,46 @@ describe('exportFile / importFile', () => {
 		expect(system.listFiles()).toEqual([FILE]);
 	});
 });
+
+describe('replaceFile', () => {
+	it('deletes the old budget but keeps it as a copy of the new one', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const { system, getDb } = createSystem({ ...deps, now: ticking() });
+		await system.open(OTHER);
+		initBudget(getDb()!, { name: 'Restored', currency: 'BRL', locale: 'pt-BR', groups: [] });
+		await system.replaceFile(FILE, OTHER);
+		expect([...deps.store.files.keys()].filter((n) => n.startsWith('budget-'))).toEqual([OTHER]);
+		expect(getMeta(getDb()!).name).toBe('Restored');
+		const [copy, ...rest] = system.listCopies(OTHER);
+		expect(rest).toEqual([]);
+		system.close();
+		await system.importFile(FILE, system.readCopy(copy.name));
+		await system.open(FILE);
+		expect(getMeta(getDb()!).name).toBe('Home');
+	});
+
+	it("drops the old budget's own copies", async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const upgraded = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
+		await upgraded.system.open(FILE);
+		upgraded.system.close();
+		const { system } = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
+		await system.open(OTHER);
+		await system.replaceFile(FILE, OTHER);
+		expect(system.listCopies(FILE)).toEqual([]);
+		expect(system.listCopies(OTHER)).toHaveLength(1);
+		expect([...deps.store.files.keys()].filter((n) => n.startsWith(COPY_PREFIX))).toEqual([]);
+	});
+
+	it('refuses bad names and files that do not exist, changing nothing', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const { system } = createSystem(deps);
+		await expect(system.replaceFile('x.db', FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+		await expect(system.replaceFile(OTHER, FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+		await expect(system.replaceFile(FILE, FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+		expect([...deps.store.files.keys()]).toEqual([FILE]);
+	});
+});

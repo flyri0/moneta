@@ -20,6 +20,7 @@ const SYSTEM_CHANGES = {
 	close: ALL_TABLES,
 	listFiles: [],
 	deleteFile: [],
+	replaceFile: [],
 	release: [],
 	listCopies: [],
 	readCopy: [],
