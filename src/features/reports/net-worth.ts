@@ -1,11 +1,11 @@
-import { compareMonths, currentMonth, monthOf, type Month } from '$domain/month';
+import { compareMonths, monthOf, type Month } from '$domain/month';
 import type { NetWorthPoint } from '$domain/net-worth';
 import { formatMonthName } from '$i18n/formats';
 import type { DateRange } from './range';
 
 /** The month to ask the repo for: the range's last month, never past the current one. */
 export function netWorthThrough(range: DateRange, today: string): Month {
-	const now = currentMonth(new Date(`${today}T00:00:00Z`));
+	const now = monthOf(today);
 	const last = monthOf(range.to);
 	return compareMonths(last, now) > 0 ? now : last;
 }

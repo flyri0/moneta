@@ -147,3 +147,20 @@ test.describe('on a phone', () => {
 		});
 	}
 });
+
+test.describe('in negative timezone on day 1 of month', () => {
+	test.use({ timezoneId: 'America/Sao_Paulo' });
+
+	test('shows current month in net worth report on day 1', async ({ page }) => {
+		await page.clock.setFixedTime(new Date('2026-10-01T12:00:00-03:00'));
+		await onboard(page);
+		await page.getByRole('link', { name: 'Reports' }).first().click();
+		await expect(page.getByRole('heading', { name: 'Reports' })).toBeVisible();
+
+		await expect(page.getByTestId('net-worth-current')).toHaveText('$1,000.00');
+		const table = page.getByTestId('net-worth-table');
+		await expect(table.locator('tbody tr')).toHaveCount(1);
+		await expect(table.locator('tbody tr').first()).toContainText('$1,000.00');
+		await expect(page.getByText('No net worth data in this period.')).toBeHidden();
+	});
+});

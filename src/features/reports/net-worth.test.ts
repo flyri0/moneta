@@ -37,6 +37,13 @@ describe('netWorthThrough', () => {
 		expect(netWorthThrough(presetRange('last_month', TODAY), TODAY)).toBe('2026-08');
 		expect(netWorthThrough({ from: '2026-07-01', to: '2026-07-31' }, TODAY)).toBe('2026-07');
 	});
+
+	it('resolves the current month correctly on the first and last day of the month', () => {
+		expect(netWorthThrough({ from: '2026-10-01', to: '2026-10-31' }, '2026-10-01')).toBe('2026-10');
+		expect(netWorthThrough(presetRange('this_month', '2026-10-01'), '2026-10-01')).toBe('2026-10');
+		expect(netWorthThrough({ from: '2026-09-01', to: '2026-09-30' }, '2026-09-30')).toBe('2026-09');
+		expect(netWorthThrough(presetRange('this_month', '2026-09-30'), '2026-09-30')).toBe('2026-09');
+	});
 });
 
 describe('pointsInRange', () => {
@@ -60,6 +67,12 @@ describe('pointsInRange', () => {
 	it('is empty when the range holds no month with data', () => {
 		expect(pointsInRange(SERIES, { from: '2025-01-01', to: '2025-03-31' }, TODAY)).toEqual([]);
 		expect(pointsInRange([], presetRange('all', TODAY), TODAY)).toEqual([]);
+	});
+
+	it('includes the current month when today is the first day of the month', () => {
+		const series = [point('2026-09', 400), point('2026-10', 500)];
+		const range = presetRange('this_month', '2026-10-01');
+		expect(pointsInRange(series, range, '2026-10-01').map((p) => p.month)).toEqual(['2026-10']);
 	});
 });
 
