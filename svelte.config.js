@@ -8,6 +8,24 @@ const config = {
 	},
 	kit: {
 		adapter: adapter({ fallback: 'index.html' }),
+		// Shipped as a <meta> tag in the static build, so it needs nothing from the host.
+		csp: {
+			mode: 'hash',
+			directives: {
+				'default-src': ['self'],
+				// sqlite-wasm compiles its WebAssembly at runtime.
+				'script-src': ['self', 'wasm-unsafe-eval'],
+				'style-src': ['self', 'unsafe-inline'],
+				'img-src': ['self', 'data:'],
+				'font-src': ['self'],
+				'connect-src': ['self'],
+				'worker-src': ['self'],
+				'manifest-src': ['self'],
+				'object-src': ['none'],
+				'base-uri': ['none'],
+				'form-action': ['none']
+			}
+		},
 		alias: {
 			$domain: 'src/core/domain',
 			'$domain/*': 'src/core/domain/*',

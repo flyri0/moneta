@@ -49,6 +49,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - IDs are UUIDv7 (`uuidv7`). Dates are `'YYYY-MM-DD'` and months `'YYYY-MM'`. Booleans are 0/1 in SQL and `boolean` in repo results.
 - Schema changes are new numbered files in `src/core/db/migrations/`, added to `MIGRATIONS` and tracked by `PRAGMA user_version`. Never edit an applied migration. Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean; opening an older budget saves a copy first.
 - No COOP/COEP headers or server code: the OPFS SAH-pool VFS doesn't need them, and the build must work on any static host.
+- The Content-Security-Policy lives in `svelte.config.js` (`kit.csp`, hash mode, emitted as a `<meta>` tag). New external origins, inline scripts or `{@html}` must fit it; `e2e/csp.e2e.ts` fails on any violation.
 - Svelte 5 runes only (`$props`, `$state`, `$derived`, `$effect`).
 - UI text is in English and Brazilian Portuguese: every user-facing string comes from Paraglide (`m.<key>()` from `$i18n/paraglide/messages`), and both catalogs keep identical keys and placeholders (a test checks). System rows stored in English are shown through `$i18n/labels`.
 - Display money with `session.format(minor)`, parse typed amounts with `session.parse(text)`, and prefill inputs with `formatAmountInput`.

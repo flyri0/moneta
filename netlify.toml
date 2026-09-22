@@ -2,3 +2,12 @@
     command = "pnpm run build"
     publish = "build"
     ignore = "exit 0"
+
+# Optional hardening: the Content-Security-Policy ships in the HTML as a <meta> tag. These cover
+# what a meta tag can't (framing) and add the usual safe defaults.
+[[headers]]
+    for = "/*"
+    [headers.values]
+        Content-Security-Policy = "frame-ancestors 'none'"
+        X-Content-Type-Options = "nosniff"
+        Referrer-Policy = "no-referrer"

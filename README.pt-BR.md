@@ -105,6 +105,12 @@ caminhos desconhecidos — sem código de servidor e sem precisar de cabeçalhos
 Sirva a partir da raiz do domínio: o service worker que faz o app funcionar offline é
 registrado em `/`.
 
+A Content-Security-Policy vai dentro do `index.html` como uma tag `<meta>`, então o app fica
+protegido em qualquer host. Se o seu permitir configurar cabeçalhos, envie também
+`Content-Security-Policy: frame-ancestors 'none'` (uma tag meta não consegue proibir que o app
+seja embutido em frames), `X-Content-Type-Options: nosniff` e `Referrer-Policy: no-referrer`.
+O `netlify.toml` tem um exemplo.
+
 ## Onde ficam seus dados
 
 Cada orçamento é um único arquivo SQLite no armazenamento privado do navegador (OPFS).

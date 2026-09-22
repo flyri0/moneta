@@ -103,6 +103,11 @@ pnpm preview        # serve that build at http://localhost:4173
 paths — no server code, and no COOP/COEP headers needed. Serve it from the root of a
 domain: the service worker that makes the app work offline is registered at `/`.
 
+The Content-Security-Policy ships inside `index.html` as a `<meta>` tag, so the app is locked
+down on any host. If yours lets you set headers, also send `Content-Security-Policy:
+frame-ancestors 'none'` (a meta tag can't forbid framing), `X-Content-Type-Options: nosniff`
+and `Referrer-Policy: no-referrer`. `netlify.toml` has an example.
+
 ## Where your data lives
 
 Each budget is a single SQLite file in your browser's private storage (OPFS). Nothing
