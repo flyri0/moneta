@@ -40,6 +40,15 @@ function fakeBus(): () => ChannelLike {
 			},
 			addEventListener(_type, listener) {
 				listeners.push(listener);
+			},
+			removeEventListener(_type, listener) {
+				const idx = listeners.indexOf(listener);
+				if (idx !== -1) listeners.splice(idx, 1);
+			},
+			close() {
+				const idx = members.indexOf(deliver);
+				if (idx !== -1) members.splice(idx, 1);
+				listeners.length = 0;
 			}
 		};
 	};
@@ -95,5 +104,42 @@ describe('createTabLock', () => {
 		first.onLost(() => Promise.reject(new Error('close failed')));
 		await first.tryAcquire();
 		await expect(second.takeOver()).resolves.toBeUndefined();
+	});
+
+	it('releases the lock so another lock can acquire it', async () => {
+		const locks = fakeLocks();
+		const channel = fakeBus();
+		const first = createTabLock({ locks, channel: channel() });
+		const second = createTabLock({ locks, channel: channel() });
+		expect(await first.tryAcquire()).toBe(true);
+		expect(await second.tryAcquire()).toBe(false);
+
+		await first.release();
+		expect(await second.tryAcquire()).toBe(true);
+	});
+
+	it('safely releases when the lock was never acquired', async () => {
+		const locks = fakeLocks();
+		const channel = fakeBus();
+		const lock = createTabLock({ locks, channel: channel() });
+		await expect(lock.release()).resolves.toBeUndefined();
+	});
+
+	it('stops responding to takeover messages after release', async () => {
+		const locks = fakeLocks();
+		const channel = fakeBus();
+		const firstChannel = channel();
+		const first = createTabLock({ locks, channel: firstChannel });
+		let lostCalled = false;
+		first.onLost(async () => {
+			lostCalled = true;
+		});
+		await first.tryAcquire();
+		await first.release();
+
+		const secondChannel = channel();
+		secondChannel.postMessage({ type: 'moneta:takeover' });
+		await new Promise((r) => setTimeout(r, 10));
+		expect(lostCalled).toBe(false);
 	});
 });

@@ -18,6 +18,8 @@ export interface LockManagerLike {
 export interface ChannelLike {
 	postMessage(message: unknown): void;
 	addEventListener(type: 'message', listener: (event: MessageEvent) => void): void;
+	removeEventListener?(type: 'message', listener: (event: MessageEvent) => void): void;
+	close?(): void;
 }
 
 export interface TabLock {
@@ -27,6 +29,8 @@ export interface TabLock {
 	takeOver(): Promise<void>;
 	/** Runs when another tab takes over. The lock is released after `handler` settles. */
 	onLost(handler: () => Promise<void>): void;
+	/** Releases the lock if held and tears down channel listeners. */
+	release(): Promise<void>;
 }
 
 export const TAB_LOCK_NAME = 'moneta-db';
@@ -38,27 +42,30 @@ export function createTabLock(deps: {
 	name?: string;
 }): TabLock {
 	const name = deps.name ?? TAB_LOCK_NAME;
-	let release: (() => void) | null = null;
+	let releaseHold: (() => void) | null = null;
 	let lostHandler: () => Promise<void> = async () => {};
+	let lockPromise: Promise<unknown> | null = null;
 
-	/** Holds the lock until `release` is called. */
+	/** Holds the lock until `releaseHold` is called. */
 	const hold = () =>
 		new Promise<void>((resolve) => {
-			release = resolve;
+			releaseHold = resolve;
 		});
 
-	deps.channel.addEventListener('message', (event) => {
-		if ((event.data as { type?: unknown } | null)?.type !== TAKEOVER || !release) return;
-		const letGo = release;
-		release = null;
+	const onMessage = (event: MessageEvent) => {
+		if ((event.data as { type?: unknown } | null)?.type !== TAKEOVER || !releaseHold) return;
+		const letGo = releaseHold;
+		releaseHold = null;
 		// Release the lock even if shutting down fails, or the other tab would wait forever.
 		void lostHandler().then(letGo, letGo);
-	});
+	};
+
+	deps.channel.addEventListener('message', onMessage);
 
 	return {
 		tryAcquire() {
 			return new Promise<boolean>((resolve) => {
-				void deps.locks.request(name, { ifAvailable: true }, (lock) => {
+				lockPromise = deps.locks.request(name, { ifAvailable: true }, (lock) => {
 					resolve(lock !== null);
 					return lock !== null ? hold() : undefined;
 				});
@@ -66,7 +73,7 @@ export function createTabLock(deps: {
 		},
 		takeOver() {
 			return new Promise<void>((resolve) => {
-				void deps.locks.request(name, {}, () => {
+				lockPromise = deps.locks.request(name, {}, () => {
 					resolve();
 					return hold();
 				});
@@ -75,6 +82,16 @@ export function createTabLock(deps: {
 		},
 		onLost(handler) {
 			lostHandler = handler;
+		},
+		async release() {
+			deps.channel.removeEventListener?.('message', onMessage);
+			deps.channel.close?.();
+			if (releaseHold) {
+				const letGo = releaseHold;
+				releaseHold = null;
+				letGo();
+				await lockPromise?.catch(() => {});
+			}
 		}
 	};
 }

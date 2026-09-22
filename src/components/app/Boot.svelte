@@ -1,5 +1,9 @@
+<script module lang="ts">
+	let teardown: Promise<void> | null = null;
+</script>
+
 <script lang="ts">
-	import { onMount, type Snippet } from 'svelte';
+	import { onDestroy, onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -21,6 +25,7 @@
 	const app = new AppState();
 	setApp(app);
 
+	let mounted = true;
 	let worker: DbWorker | null = $state.raw(null);
 	// Without Web Locks (very old browsers) there is no way to coordinate tabs; run unguarded.
 	const lock: TabLock | null =
@@ -28,9 +33,19 @@
 			? createTabLock({ locks: navigator.locks, channel: new BroadcastChannel('moneta-tab') })
 			: null;
 
+	onDestroy(() => {
+		mounted = false;
+		const prevTeardown = teardown;
+		teardown = (async () => {
+			await prevTeardown?.catch(() => {});
+			await stopWorker();
+			await lock?.release();
+		})();
+	});
+
 	lock?.onLost(async () => {
 		await stopWorker();
-		app.boot = { kind: 'blocked' };
+		if (mounted) app.boot = { kind: 'blocked' };
 	});
 
 	async function stopWorker() {
@@ -43,6 +58,7 @@
 	}
 
 	async function start() {
+		if (!mounted) return;
 		app.boot = { kind: 'loading' };
 		const started = startDbWorker();
 		worker = started;
@@ -52,10 +68,16 @@
 		});
 		try {
 			const result = await openLastBudget(started.api, localStorage);
-			if (started !== worker) return;
+			if (started !== worker || !mounted) {
+				if (started === worker) await stopWorker();
+				return;
+			}
 			apply(started, result);
 		} catch (err) {
-			if (started !== worker) return;
+			if (started !== worker || !mounted) {
+				if (started === worker) await stopWorker();
+				return;
+			}
 			app.boot = { kind: 'error', ...startupError(err) };
 		}
 	}
@@ -107,8 +129,21 @@
 			});
 		});
 		void (async () => {
-			if (!lock || (await lock.tryAcquire())) await start();
-			else app.boot = { kind: 'blocked' };
+			if (teardown) {
+				await teardown.catch(() => {});
+				teardown = null;
+			}
+			if (!mounted) return;
+			if (!lock || (await lock.tryAcquire())) {
+				if (!mounted) {
+					await lock?.release();
+					return;
+				}
+				await start();
+			} else {
+				if (!mounted) return;
+				app.boot = { kind: 'blocked' };
+			}
 		})();
 	});
 

@@ -37,10 +37,21 @@ test('fills a throwaway budget with data and says so', async ({ page }) => {
 test('vanishes on the way back to the welcome page', async ({ page }) => {
 	await tryDemo(page);
 
-	await page.goto('/');
+	await page.goBack();
 	await expect(page.getByRole('button', { name: 'Try the demo' })).toBeVisible();
 
 	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
+});
+
+test('client-side navigation to / and back does not block the app (MON-002)', async ({ page }) => {
+	await tryDemo(page);
+
+	await page.goBack();
+	await expect(page.getByRole('button', { name: 'Try the demo' })).toBeVisible();
+
+	await page.goForward();
+	await expect(page.getByText('Moneta is open in another tab')).toBeHidden();
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 
