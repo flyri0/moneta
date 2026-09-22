@@ -14,6 +14,8 @@
 	"delete": "Excluir",
 	"confirm_delete": "Toque de novo para excluir",
 	"copy_details": "Copiar detalhes",
+	"copy_details_done": "Detalhes copiados.",
+	"copy_details_failed": "Não foi possível copiar os detalhes.",
 	"startup_loading": "Abrindo seu orçamento…",
 	"startup_blocked_title": "O Moneta está aberto em outra aba",
 	"startup_blocked_body": "Seu orçamento só pode ficar aberto em uma aba por vez.",

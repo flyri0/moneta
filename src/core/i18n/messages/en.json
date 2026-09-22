@@ -14,6 +14,8 @@
 	"delete": "Delete",
 	"confirm_delete": "Tap again to delete",
 	"copy_details": "Copy details",
+	"copy_details_done": "Details copied.",
+	"copy_details_failed": "Couldn't copy the details.",
 	"startup_loading": "Opening your budget…",
 	"startup_blocked_title": "Moneta is open in another tab",
 	"startup_blocked_body": "Your budget can only be open in one tab at a time.",
