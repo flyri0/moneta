@@ -11,7 +11,11 @@ export const WELCOME_KEY = 'moneta.welcome';
 export function shouldShowWelcome(store: KeyValueStore, standalone: boolean): boolean {
 	if (standalone) return false;
 	if (loadRegistry(store).budgets.length > 0) return false;
-	return store.getItem(WELCOME_KEY) !== 'done';
+	try {
+		return store.getItem(WELCOME_KEY) !== 'done';
+	} catch {
+		return true;
+	}
 }
 
 export function dismissWelcome(store: KeyValueStore): void {

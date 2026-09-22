@@ -17,6 +17,14 @@ export function memoryStore(registry?: string): KeyValueStore & { data: Map<stri
 	};
 }
 
+/** A KeyValueStore that throws on every call, like blocked or broken storage. Test-only. */
+export function brokenStore(): KeyValueStore {
+	const fail = (): never => {
+		throw new DOMException('The operation is insecure.', 'SecurityError');
+	};
+	return { getItem: fail, setItem: fail, removeItem: fail };
+}
+
 /**
  * An RPC client talking to the worker's real dispatcher and system calls over a MessageChannel,
  * like the app talks to the worker. Budget "files" are in-memory databases kept in `files`.

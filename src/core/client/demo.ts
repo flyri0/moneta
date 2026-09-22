@@ -21,7 +21,11 @@ export function isDemoFile(file: string): boolean {
 }
 
 export function isDemoOpen(store: KeyValueStore): boolean {
-	return store.getItem(DEMO_KEY) === 'on';
+	try {
+		return store.getItem(DEMO_KEY) === 'on';
+	} catch {
+		return false;
+	}
 }
 
 /** Asks the next start to open the demo. Called before entering the app, which has no worker yet. */
