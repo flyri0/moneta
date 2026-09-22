@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -49,13 +50,17 @@
 	);
 	const progress = $derived(categoryProgress(category));
 
-	// Reset the form each time the sheet opens for a category.
+	// Reset the form when the sheet opens or switches category. Only `open` and the category's id
+	// are tracked: a live-query refresh of the month must not wipe what is being typed.
 	$effect(() => {
 		if (!open) return;
-		assignedText = formatAmountInput(category.assigned, session.money);
-		moveAmount = '';
-		otherId = '';
-		error = null;
+		void category.id;
+		untrack(() => {
+			assignedText = formatAmountInput(category.assigned, session.money);
+			moveAmount = '';
+			otherId = '';
+			error = null;
+		});
 	});
 
 	async function saveAssigned(event: SubmitEvent) {
