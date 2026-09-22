@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { m } from '$i18n/paraglide/messages';
 import { defaultCategoryGroups } from './defaults';
 import {
+	accountOptionLabel,
 	accountTypeDescription,
 	accountTypeLabel,
 	categoryLabel,
@@ -25,6 +26,33 @@ describe('labels', () => {
 	it('describes account types', () => {
 		expect(accountTypeDescription('checking')).toBe(m.account_type_checking_desc());
 		expect(accountTypeDescription('credit_card')).toBe(m.account_type_credit_card_desc());
+	});
+
+	it('formats account option labels with disambiguation when needed', () => {
+		const checking = { id: 'c1', name: 'Checking', type: 'checking' as const };
+		const savings = { id: 's1', name: 'Savings', type: 'savings' as const };
+		const poupChecking = { id: 'p1', name: 'Poupança', type: 'checking' as const };
+		const poupSavings = { id: 'p2', name: 'Poupança', type: 'savings' as const };
+		const poupSavings2 = { id: 'p3', name: 'Poupança', type: 'savings' as const };
+
+		// Unique names keep plain name
+		expect(accountOptionLabel(checking, [checking, savings])).toBe('Checking');
+
+		// Same name, different types include type label
+		expect(accountOptionLabel(poupChecking, [poupChecking, poupSavings])).toBe(
+			`Poupança (${accountTypeLabel('checking')})`
+		);
+		expect(accountOptionLabel(poupSavings, [poupChecking, poupSavings])).toBe(
+			`Poupança (${accountTypeLabel('savings')})`
+		);
+
+		// Same name and same type include index
+		expect(accountOptionLabel(poupSavings, [poupSavings, poupSavings2])).toBe(
+			`Poupança (${accountTypeLabel('savings')} 1)`
+		);
+		expect(accountOptionLabel(poupSavings2, [poupSavings, poupSavings2])).toBe(
+			`Poupança (${accountTypeLabel('savings')} 2)`
+		);
 	});
 });
 

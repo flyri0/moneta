@@ -17,7 +17,8 @@ export interface SplitDraft {
 export interface TransactionDraft {
 	accountId: string;
 	date: string;
-	payee: string; // a payee name, or a transfer label from FormContext.transferLabel
+	payee: string; // a payee name, or '' when transferAccountId is set
+	transferAccountId: string | null;
 	categoryId: string; // '' when none
 	amount: string; // unsigned, as typed
 	direction: Direction;
@@ -34,7 +35,7 @@ export interface FormContext {
 	tree: GroupNode[];
 	money: MoneyFormat;
 	/** How a transfer to or from an account appears in the payee field, e.g. "Transfer: Savings". */
-	transferLabel: (accountName: string) => string;
+	transferLabel?: (accountName: string) => string;
 }
 
 export function newDraft(accountId: string, date: string): TransactionDraft {
@@ -42,6 +43,7 @@ export function newDraft(accountId: string, date: string): TransactionDraft {
 		accountId,
 		date,
 		payee: '',
+		transferAccountId: null,
 		categoryId: '',
 		amount: '',
 		direction: 'outflow',
@@ -60,10 +62,10 @@ export function transferTargets(draft: TransactionDraft, ctx: FormContext): Form
 	return ctx.accounts.filter((a) => !a.closed && a.id !== draft.accountId);
 }
 
-/** The account that the payee field's transfer label points at, if it holds one. */
+/** The account that draft.transferAccountId points at, if it holds one. */
 export function transferTarget(draft: TransactionDraft, ctx: FormContext): FormAccount | null {
-	const payee = draft.payee.trim();
-	return transferTargets(draft, ctx).find((a) => ctx.transferLabel(a.name) === payee) ?? null;
+	if (!draft.transferAccountId) return null;
+	return transferTargets(draft, ctx).find((a) => a.id === draft.transferAccountId) ?? null;
 }
 
 /**
@@ -230,9 +232,8 @@ export function draftFromTransaction(
 	return {
 		accountId: row.accountId,
 		date: row.date,
-		payee: row.transferAccountName
-			? ctx.transferLabel(row.transferAccountName)
-			: (row.payeeName ?? ''),
+		payee: row.transferAccountId ? '' : (row.payeeName ?? ''),
+		transferAccountId: row.transferAccountId ?? null,
 		categoryId: row.categoryId ?? pair?.categoryId ?? '',
 		amount: relative(row.amount),
 		direction,

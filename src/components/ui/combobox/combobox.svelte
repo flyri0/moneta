@@ -80,11 +80,7 @@
 
 	const trimmedSearch = $derived(search.trim());
 	const hasExactMatch = $derived(
-		allItems.some(
-			(i) =>
-				i.label.toLowerCase() === trimmedSearch.toLowerCase() ||
-				i.value.toLowerCase() === trimmedSearch.toLowerCase()
-		)
+		allItems.some((i) => i.value.toLowerCase() === trimmedSearch.toLowerCase())
 	);
 	const showCreateOption = $derived(allowCustom && trimmedSearch.length > 0 && !hasExactMatch);
 

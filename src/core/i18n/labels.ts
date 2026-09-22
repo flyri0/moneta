@@ -43,3 +43,23 @@ const ACCOUNT_TYPE_DESCRIPTIONS: Record<AccountType, () => string> = {
 export function accountTypeDescription(type: AccountType): string {
 	return ACCOUNT_TYPE_DESCRIPTIONS[type]();
 }
+
+/** Formats an account name for selection lists, disambiguating duplicates with type and index. */
+export function accountOptionLabel(
+	account: { id: string; name: string; type: AccountType },
+	accounts: { id: string; name: string; type: AccountType }[]
+): string {
+	const sameName = accounts.filter(
+		(a) => a.name.trim().toLowerCase() === account.name.trim().toLowerCase()
+	);
+	if (sameName.length <= 1) {
+		return account.name;
+	}
+	const sameNameAndType = sameName.filter((a) => a.type === account.type);
+	const typeName = accountTypeLabel(account.type);
+	if (sameNameAndType.length <= 1) {
+		return `${account.name} (${typeName})`;
+	}
+	const index = sameNameAndType.findIndex((a) => a.id === account.id);
+	return `${account.name} (${typeName} ${index + 1})`;
+}

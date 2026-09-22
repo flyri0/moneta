@@ -9,7 +9,7 @@
 	import { DatePicker } from '$ui/date-picker';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
-	import { groupLabel, categoryLabel } from '$i18n/labels';
+	import { groupLabel, categoryLabel, accountOptionLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import {
 		buildTransactionInput,
@@ -41,12 +41,20 @@
 	// The dialog re-creates this form (with {#key}) for every transaction it opens.
 	// svelte-ignore state_referenced_locally
 	let draft = $state(structuredClone(initial));
+	let payeeValue = $state(draft.transferAccountId ?? draft.payee);
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	let confirmDelete = $state(false);
 
 	const openAccounts = $derived(ctx.accounts.filter((a) => !a.closed || a.id === draft.accountId));
-	const accountItems = $derived(openAccounts.map((a) => ({ value: a.id, label: a.name })));
+	const accountItems = $derived(
+		openAccounts.map((a) => ({ value: a.id, label: accountOptionLabel(a, openAccounts) }))
+	);
+
+	const transferLabelFn = $derived(
+		ctx.transferLabel ?? ((account: string) => m.transfer_payee({ account }))
+	);
+
 	const payeeGroups = $derived.by(() => {
 		const groups: ComboboxGroup[] = [];
 		const targets = transferTargets(draft, ctx);
@@ -54,17 +62,13 @@
 			groups.push({
 				heading: m.transaction_transfers_group(),
 				items: targets.map((a) => {
-					const label = ctx.transferLabel(a.name);
-					return { value: label, label };
+					const label = transferLabelFn(accountOptionLabel(a, ctx.accounts));
+					return { value: a.id, label, keywords: [a.name, label] };
 				})
 			});
 		}
 		const payees = [...ctx.payees];
-		if (
-			draft.payee &&
-			!payees.some((p) => p.name === draft.payee) &&
-			!targets.some((a) => ctx.transferLabel(a.name) === draft.payee)
-		) {
+		if (draft.payee && !payees.some((p) => p.name === draft.payee)) {
 			payees.unshift({ id: 'current', name: draft.payee, lastCategoryId: null });
 		}
 		if (payees.length > 0) {
@@ -96,6 +100,25 @@
 		SPLIT_TOO_FEW_LINES: m.error_split_too_few_lines,
 		SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch
 	};
+
+	function onPayeeSelect(val: string) {
+		const target = ctx.accounts.find((a) => a.id === val);
+		if (target) {
+			draft.transferAccountId = target.id;
+			draft.payee = '';
+		} else {
+			draft.transferAccountId = null;
+			draft.payee = val;
+		}
+		payeeChanged();
+	}
+
+	function accountChanged() {
+		if (draft.transferAccountId && draft.transferAccountId === draft.accountId) {
+			draft.transferAccountId = null;
+			payeeValue = '';
+		}
+	}
 
 	function payeeChanged() {
 		if (mode === 'hidden' || draft.categoryId) return;
@@ -176,6 +199,7 @@
 				ariaLabel={m.transaction_account()}
 				items={accountItems}
 				bind:value={draft.accountId}
+				onSelect={accountChanged}
 				placeholder={m.transaction_account()}
 			/>
 		</div>
@@ -191,9 +215,9 @@
 			id="txn-payee"
 			ariaLabel={m.transaction_payee()}
 			groups={payeeGroups}
-			bind:value={draft.payee}
+			bind:value={payeeValue}
 			allowCustom
-			onSelect={payeeChanged}
+			onSelect={onPayeeSelect}
 			placeholder={m.transaction_payee()}
 			emptyOption={{ value: '', label: m.transaction_no_payee() }}
 		/>

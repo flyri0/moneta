@@ -63,7 +63,10 @@ const ctx: FormContext = {
 		acct('savings', 'savings'),
 		acct('visa', 'credit_card'),
 		acct('broker', 'investment', false),
-		acct('closedbank', 'checking', true, true)
+		acct('closedbank', 'checking', true, true),
+		{ id: 'poup1', name: 'Poupança', type: 'savings', onBudget: true, closed: false },
+		{ id: 'poup2', name: 'Poupança', type: 'savings', onBudget: true, closed: false },
+		{ id: 'mercado_acc', name: 'Mercado', type: 'checking', onBudget: true, closed: false }
 	],
 	payees: [
 		{ id: 'p1', name: 'Mercado', lastCategoryId: 'food' },
@@ -80,11 +83,12 @@ const draft = (p: Partial<TransactionDraft>): TransactionDraft => ({
 });
 
 describe('newDraft', () => {
-	it('starts as an uncleared outflow with no category', () => {
+	it('starts as an uncleared outflow with no category and no transfer account', () => {
 		expect(newDraft('checking', '2026-09-05')).toEqual({
 			accountId: 'checking',
 			date: '2026-09-05',
 			payee: '',
+			transferAccountId: null,
 			categoryId: '',
 			amount: '',
 			direction: 'outflow',
@@ -95,26 +99,58 @@ describe('newDraft', () => {
 	});
 });
 
-describe('transfers in the payee field', () => {
-	it('recognizes transfer labels for other open accounts only', () => {
-		expect(transferTarget(draft({ payee: 'Transfer: Savings' }), ctx)?.id).toBe('savings');
-		expect(transferTarget(draft({ payee: 'Transfer: Checking' }), ctx)).toBeNull();
-		expect(transferTarget(draft({ payee: 'Transfer: Closedbank' }), ctx)).toBeNull();
+describe('transferTarget', () => {
+	it('recognizes transfer targets by id for other open accounts only', () => {
+		expect(transferTarget(draft({ transferAccountId: 'savings' }), ctx)?.id).toBe('savings');
+		expect(transferTarget(draft({ transferAccountId: 'checking' }), ctx)).toBeNull();
+		expect(transferTarget(draft({ transferAccountId: 'closedbank' }), ctx)).toBeNull();
+		expect(transferTarget(draft({ payee: 'Transfer: Savings' }), ctx)).toBeNull();
 		expect(transferTarget(draft({ payee: 'Mercado' }), ctx)).toBeNull();
+	});
+
+	it('targets the exact account by id when accounts have identical names', () => {
+		const d1 = draft({ transferAccountId: 'poup1' });
+		const d2 = draft({ transferAccountId: 'poup2' });
+		expect(transferTarget(d1, ctx)?.id).toBe('poup1');
+		expect(transferTarget(d2, ctx)?.id).toBe('poup2');
+
+		const built1 = buildTransactionInput(draft({ transferAccountId: 'poup1', amount: '10' }), ctx);
+		const built2 = buildTransactionInput(draft({ transferAccountId: 'poup2', amount: '10' }), ctx);
+		expect(built1).toMatchObject({ ok: true, input: { transferAccountId: 'poup1' } });
+		expect(built2).toMatchObject({ ok: true, input: { transferAccountId: 'poup2' } });
+	});
+
+	it('saves payee as common transaction payee when transferAccountId is not set, even if text looks like a transfer', () => {
+		const result = buildTransactionInput(
+			draft({ payee: 'Transferência: Mercado', categoryId: 'food', amount: '50' }),
+			ctx
+		);
+		expect(result).toEqual({
+			ok: true,
+			input: {
+				accountId: 'checking',
+				date: '2026-09-05',
+				amount: -5000,
+				memo: '',
+				cleared: false,
+				payeeName: 'Transferência: Mercado',
+				categoryId: 'food'
+			}
+		});
 	});
 });
 
 describe('categoryMode', () => {
 	it.each([
-		['checking', '', 'required'],
-		['visa', '', 'required'],
-		['broker', '', 'hidden'],
-		['checking', 'Transfer: Savings', 'hidden'],
-		['checking', 'Transfer: Visa', 'hidden'],
-		['checking', 'Transfer: Broker', 'required'],
-		['broker', 'Transfer: Checking', 'required']
-	])('%s with payee "%s" → %s', (accountId, payee, mode) => {
-		expect(categoryMode(draft({ accountId, payee }), ctx)).toBe(mode);
+		['checking', null, 'required'],
+		['visa', null, 'required'],
+		['broker', null, 'hidden'],
+		['checking', 'savings', 'hidden'],
+		['checking', 'visa', 'hidden'],
+		['checking', 'broker', 'required'],
+		['broker', 'checking', 'required']
+	])('%s with transfer target "%s" → %s', (accountId, transferAccountId, mode) => {
+		expect(categoryMode(draft({ accountId, transferAccountId }), ctx)).toBe(mode);
 	});
 
 	it('hides the category while split', () => {
@@ -130,7 +166,7 @@ describe('categoryMode', () => {
 		const draft = {
 			...newDraft('checking', '2026-01-05'),
 			amount: '50',
-			payee: ctx.transferLabel('Visa')
+			transferAccountId: 'visa'
 		};
 		expect(categoryMode(draft, ctx)).toBe('hidden');
 	});
@@ -140,7 +176,7 @@ describe('canSplit', () => {
 	it('allows splits on on-budget accounts, but not on transfers', () => {
 		expect(canSplit(draft({}), ctx)).toBe(true);
 		expect(canSplit(draft({ accountId: 'broker' }), ctx)).toBe(false);
-		expect(canSplit(draft({ payee: 'Transfer: Savings' }), ctx)).toBe(false);
+		expect(canSplit(draft({ transferAccountId: 'savings' }), ctx)).toBe(false);
 	});
 });
 
@@ -223,7 +259,7 @@ describe('buildTransactionInput', () => {
 	it('builds transfers, with a category only across the budget boundary', () => {
 		expect(
 			buildTransactionInput(
-				draft({ payee: 'Transfer: Savings', categoryId: 'food', amount: '5' }),
+				draft({ transferAccountId: 'savings', categoryId: 'food', amount: '5' }),
 				ctx
 			)
 		).toEqual({
@@ -240,7 +276,7 @@ describe('buildTransactionInput', () => {
 		});
 		expect(
 			buildTransactionInput(
-				draft({ payee: 'Transfer: Broker', categoryId: 'food', amount: '5' }),
+				draft({ transferAccountId: 'broker', categoryId: 'food', amount: '5' }),
 				ctx
 			)
 		).toMatchObject({ ok: true, input: { transferAccountId: 'broker', categoryId: 'food' } });
@@ -277,7 +313,7 @@ describe('buildTransactionInput', () => {
 		[{ categoryId: 'food', amount: '-5' }, 'AMOUNT_INVALID'],
 		[{ categoryId: 'food', amount: '1e5' }, 'AMOUNT_INVALID'],
 		[{ amount: '5' }, 'CATEGORY_REQUIRED'],
-		[{ accountId: 'broker', payee: 'Transfer: Checking', amount: '5' }, 'CATEGORY_REQUIRED'],
+		[{ accountId: 'broker', transferAccountId: 'checking', amount: '5' }, 'CATEGORY_REQUIRED'],
 		[
 			{ amount: '5', splits: [{ categoryId: 'food', amount: '5', memo: '' }] },
 			'SPLIT_TOO_FEW_LINES'
@@ -382,7 +418,8 @@ describe('draftFromTransaction', () => {
 		const onLeg = row({ id: 't2', categoryId: 'food' });
 		const d = draftFromTransaction(offLeg, ctx, onLeg);
 		expect(d).toMatchObject({
-			payee: 'Transfer: Checking',
+			payee: '',
+			transferAccountId: 'checking',
 			categoryId: 'food',
 			direction: 'inflow'
 		});
