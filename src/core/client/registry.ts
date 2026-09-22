@@ -22,6 +22,11 @@ export interface KeyValueStore {
 }
 
 export const REGISTRY_KEY = 'moneta.registry';
+
+/** Where a budget file's collapsed groups are stored. */
+export function collapsedKey(file: string): string {
+	return `moneta.collapsed.${file}`;
+}
 const BUDGET_FILE = /^budget-[0-9a-f-]+\.sqlite3$/;
 
 export function newBudgetFile(id: string = uuidv7()): string {

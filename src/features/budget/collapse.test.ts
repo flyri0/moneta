@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { collapsedKey } from '$client/registry';
 import { memoryStore } from '$client/testing';
-import {
-	allCollapsed,
-	collapsedKey,
-	loadCollapsed,
-	saveCollapsed,
-	toggleAll,
-	toggleCollapsed
-} from './collapse';
+import { allCollapsed, loadCollapsed, saveCollapsed, toggleAll, toggleCollapsed } from './collapse';
 
 const A = 'budget-0190a000-0000-7000-8000-000000000001.sqlite3';
 const B = 'budget-0190a000-0000-7000-8000-000000000002.sqlite3';

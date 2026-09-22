@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { createTestDb } from '$db/testing';
 import { DomainError } from '$domain/errors';
 import { DEMO_FILE, isDemoOpen, openDemo, requestDemo } from './demo';
-import { loadRegistry, newBudgetFile } from './registry';
+import { collapsedKey, loadRegistry, newBudgetFile } from './registry';
 import { RpcError } from './rpc';
 import {
 	createBudget,
@@ -174,6 +174,17 @@ describe('deleteBudget', () => {
 		});
 		expect(await deleteBudget(api, store, home.file, home.file)).toEqual({ kind: 'onboarding' });
 	});
+
+	it("forgets the deleted budget's collapsed groups and nothing else", async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		store.setItem(collapsedKey(home.file), '["g1"]');
+		store.setItem(collapsedKey(work.file), '["g2"]');
+		await deleteBudget(api, store, home.file, work.file);
+		expect(store.getItem(collapsedKey(home.file))).toBeNull();
+		expect(store.getItem(collapsedKey(work.file))).toBe('["g2"]');
+	});
 });
 
 describe('restoreBudget', () => {
@@ -182,10 +193,12 @@ describe('restoreBudget', () => {
 		const { file } = await createBudget(api, store, HOME);
 		const backup = await api.system.exportFile();
 		await api.meta.update({ name: 'Changed' });
+		store.setItem(collapsedKey(file), '["g1"]');
 		const restored = await restoreBudget(api, store, backup, file, true);
 		expect(restored.file).not.toBe(file);
 		expect(restored.meta.name).toBe('Home');
 		expect([...files.keys()]).toEqual([restored.file]);
+		expect(store.getItem(collapsedKey(file))).toBeNull();
 		expect(loadRegistry(store)).toEqual({
 			budgets: [{ file: restored.file, name: 'Home' }],
 			lastOpened: restored.file

@@ -3,6 +3,7 @@ import type { CreateAccountInput } from '$db/repos/accounts';
 import type { BudgetMeta, InitBudgetInput, MetaPatch } from '$db/repos/meta';
 import { endDemo, isDemoOpen, openDemo, sweepDemo } from './demo';
 import {
+	collapsedKey,
 	loadRegistry,
 	markOpened,
 	newBudgetFile,
@@ -166,7 +167,17 @@ export async function deleteBudget(
 ): Promise<OpenResult | null> {
 	await api.system.deleteFile(file);
 	saveRegistry(store, removeBudget(loadRegistry(store), file));
+	forgetBudget(store, file);
 	return file === openFile ? openLastBudget(api, store) : null;
+}
+
+/** Drops what this device remembers about a budget file that is gone. Only conveniences. */
+function forgetBudget(store: KeyValueStore, file: string): void {
+	try {
+		store.removeItem(collapsedKey(file));
+	} catch {
+		// Blocked storage has nothing to forget.
+	}
 }
 
 /**
@@ -197,6 +208,7 @@ export async function restoreBudget(
 	if (replace && openFile) {
 		await api.system.deleteFile(openFile);
 		registry = removeBudget(registry, openFile);
+		forgetBudget(store, openFile);
 	}
 	saveRegistry(store, markOpened(registry, file));
 	return { file, meta };

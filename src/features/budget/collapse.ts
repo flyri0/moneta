@@ -1,11 +1,4 @@
-import type { KeyValueStore } from '$client/registry';
-
-const PREFIX = 'moneta.collapsed.';
-
-/** Where a budget file's collapsed groups are stored. */
-export function collapsedKey(file: string): string {
-	return PREFIX + file;
-}
+import { collapsedKey, type KeyValueStore } from '$client/registry';
 
 /** The groups folded shut in `file`'s grid. A convenience, so an unreadable store means none. */
 export function loadCollapsed(store: KeyValueStore, file: string): Set<string> {
