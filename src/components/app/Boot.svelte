@@ -12,6 +12,7 @@
 	import { openLastBudget, startupError, type OpenResult } from '$client/session';
 	import { applyServiceWorkerUpdate, onNeedRefresh } from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
+	import { settleWithin } from '$client/timeout';
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -21,6 +22,9 @@
 	import StartupScreen from './StartupScreen.svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	/** How long shutting down waits on the worker before terminating it anyway. */
+	const SHUTDOWN_TIMEOUT = 3000;
 
 	const app = new AppState();
 	setApp(app);
@@ -53,7 +57,8 @@
 		worker = null;
 		app.session = null;
 		if (!current) return;
-		await current.api.system.release().catch(() => {});
+		// A stuck worker must not keep the page loading: terminating it frees the handles too.
+		await settleWithin(current.api.system.release(), SHUTDOWN_TIMEOUT);
 		current.terminate();
 	}
 
@@ -116,7 +121,7 @@
 	 */
 	async function applyUpdate() {
 		app.boot = { kind: 'loading' };
-		await worker?.idle();
+		if (worker) await settleWithin(worker.idle(), SHUTDOWN_TIMEOUT);
 		await stopWorker();
 		await applyServiceWorkerUpdate();
 	}

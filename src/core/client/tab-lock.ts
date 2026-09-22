@@ -5,6 +5,8 @@
  * releases the lock, and the queued tab gets it.
  */
 
+import { settleWithin } from './timeout';
+
 /** The part of `navigator.locks` this module uses. */
 export interface LockManagerLike {
 	request(
@@ -27,21 +29,28 @@ export interface TabLock {
 	tryAcquire(): Promise<boolean>;
 	/** Asks the owner to hand over and resolves once this tab holds the lock. */
 	takeOver(): Promise<void>;
-	/** Runs when another tab takes over. The lock is released after `handler` settles. */
+	/**
+	 * Runs when another tab takes over. The lock is released after `handler` settles, or after
+	 * a few seconds if it doesn't.
+	 */
 	onLost(handler: () => Promise<void>): void;
 	/** Releases the lock if held and tears down channel listeners. */
 	release(): Promise<void>;
 }
 
 export const TAB_LOCK_NAME = 'moneta-db';
+/** How long a takeover waits for this tab to shut down before the lock is let go anyway. */
+const SHUTDOWN_TIMEOUT = 5000;
 const TAKEOVER = 'moneta:takeover';
 
 export function createTabLock(deps: {
 	locks: LockManagerLike;
 	channel: ChannelLike;
 	name?: string;
+	shutdownTimeout?: number;
 }): TabLock {
 	const name = deps.name ?? TAB_LOCK_NAME;
+	const shutdownTimeout = deps.shutdownTimeout ?? SHUTDOWN_TIMEOUT;
 	let releaseHold: (() => void) | null = null;
 	let lostHandler: () => Promise<void> = async () => {};
 	let lockPromise: Promise<unknown> | null = null;
@@ -56,8 +65,8 @@ export function createTabLock(deps: {
 		if ((event.data as { type?: unknown } | null)?.type !== TAKEOVER || !releaseHold) return;
 		const letGo = releaseHold;
 		releaseHold = null;
-		// Release the lock even if shutting down fails, or the other tab would wait forever.
-		void lostHandler().then(letGo, letGo);
+		// Release the lock even if shutting down fails or hangs, or the other tab would wait forever.
+		void settleWithin(lostHandler(), shutdownTimeout).then(letGo);
 	};
 
 	deps.channel.addEventListener('message', onMessage);

@@ -106,6 +106,16 @@ describe('createTabLock', () => {
 		await expect(second.takeOver()).resolves.toBeUndefined();
 	});
 
+	it('releases the lock even if shutting down never finishes', async () => {
+		const locks = fakeLocks();
+		const channel = fakeBus();
+		const first = createTabLock({ locks, channel: channel(), shutdownTimeout: 10 });
+		const second = createTabLock({ locks, channel: channel() });
+		first.onLost(() => new Promise(() => {}));
+		await first.tryAcquire();
+		await expect(second.takeOver()).resolves.toBeUndefined();
+	});
+
 	it('releases the lock so another lock can acquire it', async () => {
 		const locks = fakeLocks();
 		const channel = fakeBus();
