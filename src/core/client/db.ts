@@ -8,5 +8,13 @@ export interface DbWorker extends RpcClient {
 /** Starts the SQLite worker. Only the tab that holds the tab lock may call this. */
 export function startDbWorker(): DbWorker {
 	const worker = new Worker(new URL('../db/worker.ts', import.meta.url), { type: 'module' });
-	return { ...createRpcClient(worker), terminate: () => worker.terminate() };
+	const client = createRpcClient(worker);
+	return {
+		...client,
+		terminate() {
+			worker.terminate();
+			// A terminated worker never replies: settle what is still waiting.
+			client.close();
+		}
+	};
 }

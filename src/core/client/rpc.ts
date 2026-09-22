@@ -34,6 +34,8 @@ export interface RpcClient {
 	onFatal(listener: FatalListener): () => void;
 	/** Resolves once no call is waiting for its reply. */
 	idle(): Promise<void>;
+	/** Stops the client on purpose: pending and later calls reject, with no fatal report. */
+	close(): void;
 }
 
 export function createRpcClient(endpoint: Endpoint): RpcClient {
@@ -51,13 +53,13 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		if (pending.size === 0) for (const resolve of idleWaiters.splice(0)) resolve();
 	}
 
-	function fail(message: string): void {
+	function fail(message: string, report = true): void {
 		if (fatal) return;
 		fatal = new RpcError('WORKER_FAILED', message);
 		for (const entry of pending.values()) entry.reject(fatal);
 		pending.clear();
 		settle();
-		for (const l of fatalListeners) l(fatal);
+		if (report) for (const l of fatalListeners) l(fatal);
 	}
 
 	endpoint.addEventListener('message', (event: MessageEvent) => {
@@ -125,6 +127,9 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 			return pending.size === 0
 				? Promise.resolve()
 				: new Promise<void>((resolve) => idleWaiters.push(resolve));
+		},
+		close() {
+			fail('The database worker was stopped', false);
 		}
 	};
 }

@@ -134,6 +134,20 @@ describe('createRpcClient failure paths', () => {
 		expect(await client.api.meta.get().catch((e) => e)).toMatchObject({ code: 'WORKER_FAILED' });
 		expect(fatal).toHaveLength(1);
 	});
+
+	it('fails every pending and later call once closed, without reporting a fatal error', async () => {
+		const { endpoint } = silentEndpoint();
+		const client = createRpcClient(endpoint);
+		const fatal: RpcError[] = [];
+		client.onFatal((e) => fatal.push(e));
+		const pending = client.api.meta.get().catch((e) => e);
+		const idle = client.idle();
+		client.close();
+		expect(await pending).toMatchObject({ code: 'WORKER_FAILED' });
+		await expect(idle).resolves.toBeUndefined();
+		expect(await client.api.meta.get().catch((e) => e)).toMatchObject({ code: 'WORKER_FAILED' });
+		expect(fatal).toEqual([]);
+	});
 });
 
 describe('idle', () => {
