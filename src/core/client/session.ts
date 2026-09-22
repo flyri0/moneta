@@ -16,12 +16,35 @@ import {
 
 export type SessionApi = Pick<ClientApi, 'system' | 'meta' | 'accounts' | 'demo'>;
 
-export type OpenResult = { kind: 'onboarding' } | { kind: 'ready'; file: string; meta: BudgetMeta };
+/** A budget file that couldn't be opened, and why. The file itself is left as it was. */
+export interface UnreadableBudget {
+	file: string;
+	/** The budget's name, or the file name when the registry never learned it. */
+	name: string;
+	message: string;
+}
+
+export type OpenResult =
+	| { kind: 'onboarding' }
+	| { kind: 'ready'; file: string; meta: BudgetMeta; skipped?: UnreadableBudget[] }
+	| { kind: 'unreadable'; budgets: UnreadableBudget[] };
+
+/**
+ * Whether a failure to open a file is about that file (damaged, not a database) rather than about
+ * the storage, the worker or the app version, which no other file would fare better against.
+ */
+function isFileFailure(err: unknown): boolean {
+	return startupError(err).code === 'INTERNAL';
+}
 
 /**
  * Opens the budget used last, or the demo when one is running. The registry is repaired from the
  * files that really exist: unknown files get their name from their meta, and files left behind by
  * an interrupted onboarding (never initialized) are deleted.
+ *
+ * A file that can't be read is skipped, never deleted: the next budget is opened and the file is
+ * reported in `skipped`. When none can be opened but some were skipped, the result is
+ * `unreadable` instead of onboarding, so the files can be restored or deleted deliberately.
  */
 export async function openLastBudget(api: SessionApi, store: KeyValueStore): Promise<OpenResult> {
 	const files = await api.system.listFiles();
@@ -30,24 +53,47 @@ export async function openLastBudget(api: SessionApi, store: KeyValueStore): Pro
 	await sweepDemo(api, files);
 	const reconciled = reconcile(loadRegistry(store), files);
 	let registry = reconciled.registry;
+	const unreadable: UnreadableBudget[] = [];
+	const skip = (file: string, name: string, err: unknown) => {
+		if (!isFileFailure(err)) throw err;
+		console.warn(`Moneta couldn't open ${file}`, err);
+		unreadable.push({ file, name, message: startupError(err).message });
+	};
 	for (const file of reconciled.unnamed) {
-		await api.system.open(file);
-		if (await api.meta.isInitialized()) {
-			registry = upsertBudget(registry, { file, name: (await api.meta.get()).name });
-		} else {
-			await api.system.deleteFile(file);
+		try {
+			await api.system.open(file);
+			if (await api.meta.isInitialized()) {
+				registry = upsertBudget(registry, { file, name: (await api.meta.get()).name });
+			} else {
+				await api.system.deleteFile(file);
+			}
+		} catch (err) {
+			skip(file, file, err);
+			// Listed by file name so that Settings can still delete it.
+			registry = upsertBudget(registry, { file, name: file });
 		}
 	}
-	const file = pickBudget(registry);
-	if (!file) {
-		saveRegistry(store, registry);
-		await api.system.close();
-		return { kind: 'onboarding' };
+	const failed = new Set(unreadable.map((u) => u.file));
+	const remaining = registry.budgets.filter((b) => !failed.has(b.file));
+	const first = pickBudget({ ...registry, budgets: remaining });
+	const candidates = remaining
+		.filter((b) => b.file === first)
+		.concat(remaining.filter((b) => b.file !== first));
+	for (const { file, name } of candidates) {
+		try {
+			await api.system.open(file);
+			const meta = await api.meta.get();
+			saveRegistry(store, markOpened(upsertBudget(registry, { file, name: meta.name }), file));
+			return { kind: 'ready', file, meta, ...(unreadable.length > 0 && { skipped: unreadable }) };
+		} catch (err) {
+			skip(file, name, err);
+		}
 	}
-	await api.system.open(file);
-	const meta = await api.meta.get();
-	saveRegistry(store, markOpened(upsertBudget(registry, { file, name: meta.name }), file));
-	return { kind: 'ready', file, meta };
+	saveRegistry(store, registry);
+	await api.system.close();
+	return unreadable.length > 0
+		? { kind: 'unreadable', budgets: unreadable }
+		: { kind: 'onboarding' };
 }
 
 export interface NewBudget extends InitBudgetInput {
@@ -109,7 +155,8 @@ export async function updateBudget(
 
 /**
  * Deletes a budget file. Deleting the open budget (`openFile`) opens the next one, or returns
- * onboarding when none is left; deleting another budget returns null.
+ * onboarding when none is left; deleting another budget returns null. When no budget is open
+ * because the file couldn't be opened, pass that file as `openFile` to go on to the next one.
  */
 export async function deleteBudget(
 	api: SessionApi,

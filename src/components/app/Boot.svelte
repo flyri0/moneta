@@ -5,7 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { AppState, setApp } from '$client/app-state.svelte';
 	import { startDbWorker, type DbWorker } from '$client/db';
-	import { openLastBudget, startupError } from '$client/session';
+	import { openLastBudget, startupError, type OpenResult } from '$client/session';
 	import { applyServiceWorkerUpdate, onNeedRefresh } from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import type { BudgetMeta } from '$db/repos/meta';
@@ -13,6 +13,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import Onboarding from '$features/onboarding/Onboarding.svelte';
 	import AppShell from './AppShell.svelte';
+	import RecoveryScreen from './RecoveryScreen.svelte';
 	import StartupScreen from './StartupScreen.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -52,12 +53,17 @@
 		try {
 			const result = await openLastBudget(started.api, localStorage);
 			if (started !== worker) return;
-			if (result.kind === 'ready') ready(started, result.file, result.meta);
-			else app.boot = { kind: 'onboarding' };
+			apply(started, result);
 		} catch (err) {
 			if (started !== worker) return;
 			app.boot = { kind: 'error', ...startupError(err) };
 		}
+	}
+
+	function apply(started: DbWorker, result: OpenResult) {
+		app.apply(started, result);
+		if (result.kind === 'ready' && result.skipped)
+			toast.warning(m.startup_skipped({ names: result.skipped.map((b) => b.name).join(', ') }));
 	}
 
 	function ready(started: DbWorker, file: string, meta: BudgetMeta) {
@@ -122,6 +128,14 @@
 			void goto(resolve('/budget/[month]', { month: currentMonth() }));
 		}}
 		onCancel={app.session ? cancelOnboarding : undefined}
+	/>
+{:else if app.boot.kind === 'unreadable' && worker}
+	{@const started = worker}
+	<RecoveryScreen
+		api={started.api}
+		budgets={app.boot.budgets}
+		onResult={(result) => apply(started, result)}
+		onNew={() => (app.boot = { kind: 'onboarding' })}
 	/>
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
 	<StartupScreen boot={app.boot} onTakeOver={takeOver} />

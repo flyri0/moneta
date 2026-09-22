@@ -34,11 +34,7 @@
 		confirming = null;
 		error = await runAction(async () => {
 			const next = await deleteBudget(session.api, localStorage, file, session.file);
-			if (next?.kind === 'ready') app.show(session.client, next.file, next.meta);
-			else if (next?.kind === 'onboarding') {
-				app.session = null;
-				app.boot = { kind: 'onboarding' };
-			}
+			if (next) app.apply(session.client, next);
 			budgets = loadRegistry(localStorage).budgets;
 		});
 	}

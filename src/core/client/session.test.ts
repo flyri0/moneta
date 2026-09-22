@@ -275,6 +275,147 @@ describe('restoreBudget', () => {
 	});
 });
 
+/** An api whose `open` fails like a file that isn't a database, for the files in `damaged`. */
+function withDamaged(api: SessionApi, damaged: Set<string>): SessionApi {
+	return {
+		meta: api.meta,
+		accounts: api.accounts,
+		demo: api.demo,
+		system: {
+			...pick(api.system),
+			open: (name: string) =>
+				damaged.has(name)
+					? Promise.reject(new RpcError('INTERNAL', 'SQLITE_NOTADB: file is not a database'))
+					: api.system.open(name)
+		}
+	};
+}
+
+describe('openLastBudget with damaged files', () => {
+	it('skips a damaged file it does not know and opens the next one', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const fresh = memoryStore();
+
+		const result = await openLastBudget(withDamaged(api, new Set([home.file])), fresh);
+		expect(result).toMatchObject({
+			kind: 'ready',
+			file: work.file,
+			skipped: [{ file: home.file, message: expect.stringContaining('NOTADB') }]
+		});
+		expect(files.has(home.file)).toBe(true);
+		// The damaged file stays listed, under its file name, so Settings can still delete it.
+		expect(loadRegistry(fresh)).toEqual({
+			budgets: [
+				{ file: home.file, name: home.file },
+				{ file: work.file, name: 'Work' }
+			],
+			lastOpened: work.file
+		});
+	});
+
+	it('falls back to another budget when the one used last is damaged', async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+
+		const result = await openLastBudget(withDamaged(api, new Set([work.file])), store);
+		expect(result).toMatchObject({
+			kind: 'ready',
+			file: home.file,
+			skipped: [{ file: work.file, name: 'Work' }]
+		});
+		expect(loadRegistry(store).lastOpened).toBe(home.file);
+		expect(loadRegistry(store).budgets).toContainEqual({ file: work.file, name: 'Work' });
+	});
+
+	it('reports the damaged files, and deletes none, when no budget can be opened', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const damaged = new Set([home.file, work.file]);
+
+		const result = await openLastBudget(withDamaged(api, damaged), store);
+		expect(result).toMatchObject({
+			kind: 'unreadable',
+			budgets: [
+				{ file: work.file, name: 'Work' },
+				{ file: home.file, name: 'Home' }
+			]
+		});
+		expect(files.size).toBe(2);
+	});
+
+	it('never deletes a file it could not read just to tell whether it was initialized', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+
+		const result = await openLastBudget(withDamaged(api, new Set([home.file])), memoryStore());
+		expect(result).toMatchObject({ kind: 'unreadable', budgets: [{ file: home.file }] });
+		expect(files.has(home.file)).toBe(true);
+	});
+
+	it('still stops for failures that are not about one file', async () => {
+		const { api, store } = await setup();
+		await createBudget(api, store, HOME);
+		const failing: SessionApi = {
+			meta: api.meta,
+			accounts: api.accounts,
+			demo: api.demo,
+			system: {
+				...pick(api.system),
+				open: () => Promise.reject(new RpcError('STORAGE_UNAVAILABLE', 'no OPFS'))
+			}
+		};
+		await expect(openLastBudget(failing, store)).rejects.toMatchObject({
+			code: 'STORAGE_UNAVAILABLE'
+		});
+	});
+
+	it('lets damaged files be deleted one by one', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const broken = withDamaged(api, new Set([home.file, work.file]));
+		expect(await openLastBudget(broken, store)).toMatchObject({ kind: 'unreadable' });
+
+		// Nothing is open, so the file being deleted stands in for the open one.
+		expect(await deleteBudget(broken, store, work.file, work.file)).toMatchObject({
+			kind: 'unreadable',
+			budgets: [{ file: home.file }]
+		});
+		expect([...files.keys()]).toEqual([home.file]);
+		expect(await deleteBudget(broken, store, home.file, home.file)).toEqual({ kind: 'onboarding' });
+		expect(files.size).toBe(0);
+	});
+
+	it('opens the next budget once a damaged one is deleted', async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const broken = withDamaged(api, new Set([work.file]));
+
+		expect(await deleteBudget(broken, store, work.file, work.file)).toMatchObject({
+			kind: 'ready',
+			file: home.file
+		});
+	});
+
+	it('restores a backup when every budget is damaged', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const backup = await api.system.exportFile();
+		const broken = withDamaged(api, new Set([home.file]));
+		expect(await openLastBudget(broken, store)).toMatchObject({ kind: 'unreadable' });
+
+		const restored = await restoreBudget(broken, store, backup);
+		expect(restored.meta.name).toBe('Home');
+		expect(files.size).toBe(2);
+		expect(loadRegistry(store).lastOpened).toBe(restored.file);
+	});
+});
+
 /** Copies the system calls off the RPC proxy (a proxy has no own keys to spread). */
 function pick(system: SessionApi['system']): SessionApi['system'] {
 	return {

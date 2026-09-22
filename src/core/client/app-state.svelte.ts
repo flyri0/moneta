@@ -4,13 +4,14 @@ import type { BudgetMeta } from '$db/repos/meta';
 import { formatMoney, formatMoneyCompact, parseAmount, type MoneyFormat } from '$domain/money';
 import { isDemoFile } from './demo';
 import type { RpcClient } from './rpc';
-import type { StartupErrorCode } from './session';
+import type { OpenResult, StartupErrorCode, UnreadableBudget } from './session';
 
 export type BootState =
 	| { kind: 'loading' }
 	| { kind: 'blocked' }
 	| { kind: 'error'; code: StartupErrorCode; message: string }
 	| { kind: 'onboarding' }
+	| { kind: 'unreadable'; budgets: UnreadableBudget[] }
 	| { kind: 'ready' };
 
 /** The open budget: the RPC client, its file, and its meta (kept current by `watchMeta`). */
@@ -61,6 +62,16 @@ export class AppState {
 	show(client: RpcClient, file: string, meta: BudgetMeta): void {
 		this.session = new BudgetSession(client, file, meta);
 		this.boot = { kind: 'ready' };
+	}
+
+	/** Shows what opening a budget led to: the budget, onboarding, or the unreadable files. */
+	apply(client: RpcClient, result: OpenResult): void {
+		if (result.kind === 'ready') return this.show(client, result.file, result.meta);
+		this.session = null;
+		this.boot =
+			result.kind === 'onboarding'
+				? { kind: 'onboarding' }
+				: { kind: 'unreadable', budgets: result.budgets };
 	}
 }
 
