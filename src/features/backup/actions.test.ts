@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { createBudget } from '$client/session';
 import { createTestClient, memoryStore } from '$client/testing';
 import type { BudgetDump } from '$db/repos/dump';
-import { backUp, exportBudgetJson, exportTransactionsCsv } from './actions';
+import { backUp, downloadCopy, exportBudgetJson, exportTransactionsCsv } from './actions';
 import type { BackupTarget } from './target';
 
 const clients: { close(): void }[] = [];
@@ -31,7 +31,7 @@ async function setup() {
 	const target: BackupTarget = {
 		save: async (fileName, data) => void saved.push({ fileName, data })
 	};
-	return { api, session: { api, meta }, saved, target };
+	return { test, api, session: { api, meta }, saved, target };
 }
 
 describe('backUp', () => {
@@ -42,6 +42,20 @@ describe('backUp', () => {
 		const bytes = new Uint8Array(await saved[0].data.arrayBuffer());
 		expect(new TextDecoder().decode(bytes.slice(0, 15))).toBe('SQLite format 3');
 		expect((await api.meta.get()).lastBackupAt).toBe(new Date(2026, 8, 19, 10, 0).toISOString());
+	});
+});
+
+describe('downloadCopy', () => {
+	it('saves a pre-migration copy as a .sqlite backup named for the day it was saved', async () => {
+		const { test, api, saved, target } = await setup();
+		const [file] = await api.system.listFiles();
+		const copy = `premigration-${file.replace('.sqlite3', '')}-20260801120000000.sqlite3`;
+		test.files.set(copy, test.files.get(file)!);
+		const [listed] = await api.system.listCopies(file);
+		await downloadCopy(api, listed, 'Home', target);
+		expect(saved[0].fileName).toBe('moneta-home-2026-08-01.sqlite');
+		const bytes = new Uint8Array(await saved[0].data.arrayBuffer());
+		expect(new TextDecoder().decode(bytes.slice(0, 15))).toBe('SQLite format 3');
 	});
 });
 

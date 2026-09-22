@@ -87,6 +87,13 @@ export const api = {
 
 export type Api = typeof api;
 
+/** A copy of a budget file saved before migrating it. */
+export interface BudgetCopy {
+	name: string;
+	/** ISO date and time the copy was saved. */
+	savedAt: string;
+}
+
 /** Worker-level operations that manage budget files rather than query one. */
 export interface SystemApi {
 	/** Opens a budget file (creating it if needed) and migrates it, saving a copy first. */
@@ -95,6 +102,10 @@ export interface SystemApi {
 	listFiles(): string[];
 	/** Deletes a budget file and its pre-migration copies. */
 	deleteFile(fileName: string): void;
+	/** A budget's pre-migration copies, newest first. */
+	listCopies(fileName: string): BudgetCopy[];
+	/** A pre-migration copy as the bytes of a `.sqlite` file, to restore or download as a backup. */
+	readCopy(copyName: string): Uint8Array<ArrayBuffer>;
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;
 	/** The open budget as the bytes of a `.sqlite` file. */

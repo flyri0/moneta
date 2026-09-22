@@ -2,6 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
+	import CopyList from '$features/backup/CopyList.svelte';
 	import { runAction } from '$client/notify';
 	import {
 		deleteBudget,
@@ -10,11 +11,13 @@
 		type SessionApi,
 		type UnreadableBudget
 	} from '$client/session';
+	import type { BudgetCopy } from '$db/api';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
 	 * Shown when no budget file could be opened. The files are untouched: from here they can be
-	 * deleted one by one, a backup can be restored, or a new budget started.
+	 * deleted one by one, restored from their pre-migration copies, a backup can be restored, or a
+	 * new budget started.
 	 */
 	let {
 		api,
@@ -32,6 +35,17 @@
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let chosen = $state('');
+	let copies = $state<Record<string, BudgetCopy[]>>({});
+
+	$effect(() => {
+		let current = true;
+		for (const { file } of budgets)
+			api.system.listCopies(file).then(
+				(list) => current && (copies[file] = list),
+				() => {}
+			);
+		return () => (current = false);
+	});
 
 	async function remove(file: string) {
 		if (confirming !== file) {
@@ -55,13 +69,16 @@
 		busy = true;
 		error = null;
 		const bytes = new Uint8Array(await picked.arrayBuffer());
-		error = await runAction(async () => {
-			const restored = await restoreBudget(api, localStorage, bytes);
-			void navigator.storage?.persist?.();
-			toast.success(m.backup_restored());
-			onResult({ kind: 'ready', file: restored.file, meta: restored.meta });
-		});
+		error = await runAction(() => open(bytes, m.backup_restored()));
 		busy = false;
+	}
+
+	/** Adds a backup or copy as a new budget and opens it; the unreadable files stay. */
+	async function open(bytes: Uint8Array, message: string) {
+		const restored = await restoreBudget(api, localStorage, bytes);
+		void navigator.storage?.persist?.();
+		toast.success(message);
+		onResult({ kind: 'ready', file: restored.file, meta: restored.meta });
 	}
 </script>
 
@@ -73,22 +90,33 @@
 
 		<ul class="divide-y rounded-xl border bg-card text-card-foreground" data-testid="unreadable">
 			{#each budgets as budget (budget.file)}
-				<li class="flex items-center gap-3 p-3">
-					<div class="grid min-w-0 flex-1 gap-0.5">
-						<span class="truncate text-sm font-medium">{budget.name}</span>
-						<span class="text-xs break-words text-muted-foreground">{budget.message}</span>
+				<li>
+					<div class="flex items-center gap-3 p-3">
+						<div class="grid min-w-0 flex-1 gap-0.5">
+							<span class="truncate text-sm font-medium">{budget.name}</span>
+							<span class="text-xs break-words text-muted-foreground">{budget.message}</span>
+						</div>
+						<Button
+							variant="destructive"
+							size="sm"
+							disabled={busy}
+							aria-label={confirming === budget.file
+								? undefined
+								: m.settings_budget_delete_named({ name: budget.name })}
+							onclick={() => remove(budget.file)}
+						>
+							{confirming === budget.file ? m.confirm_delete() : m.delete()}
+						</Button>
 					</div>
-					<Button
-						variant="destructive"
-						size="sm"
-						disabled={busy}
-						aria-label={confirming === budget.file
-							? undefined
-							: m.settings_budget_delete_named({ name: budget.name })}
-						onclick={() => remove(budget.file)}
-					>
-						{confirming === budget.file ? m.confirm_delete() : m.delete()}
-					</Button>
+					{#if copies[budget.file]?.length}
+						<CopyList
+							{api}
+							copies={copies[budget.file]}
+							name={budget.name}
+							bind:busy
+							onRestore={(bytes) => open(bytes, m.backup_copy_restored())}
+						/>
+					{/if}
 				</li>
 			{/each}
 		</ul>

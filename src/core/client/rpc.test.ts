@@ -25,6 +25,8 @@ function connect(db: Db | null) {
 			listFiles: () => [],
 			deleteFile: () => {},
 			release: () => {},
+			listCopies: () => [],
+			readCopy: () => new Uint8Array(),
 			exportFile: () => new Uint8Array(),
 			importFile: async () => {}
 		}

@@ -39,9 +39,19 @@ function checkFileName(fileName: string): void {
 		throw new DomainError('INVALID_INPUT', `Bad file name ${fileName}`);
 }
 
+/** `premigration-<file>-<stamp>.sqlite3`, the stamp being the UTC time it was saved. */
+const COPY_NAME =
+	/^premigration-[A-Za-z0-9_-]+-(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{3})\.sqlite3$/;
+
 /** `budget-<id>.sqlite3` → `premigration-budget-<id>-`, the prefix of its pre-migration copies. */
 function copyPrefix(fileName: string): string {
 	return `premigration-${fileName.replace(/\.sqlite3$/, '')}-`;
+}
+
+/** When a copy was saved, as an ISO date, from its name. */
+function copySavedAt(name: string): string {
+	const [, y, mo, d, h, mi, s, ms] = COPY_NAME.exec(name)!;
+	return `${y}-${mo}-${d}T${h}:${mi}:${s}.${ms}Z`;
 }
 
 /** The worker's file operations over any FileStore. */
@@ -62,7 +72,7 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 		const prefix = copyPrefix(fileName);
 		return store
 			.list()
-			.filter((n) => n.startsWith(prefix))
+			.filter((n) => n.startsWith(prefix) && COPY_NAME.test(n))
 			.sort();
 	}
 
@@ -100,6 +110,22 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			if (openName === fileName) closeDb();
 			store.remove(fileName);
 			for (const copy of copiesOf(fileName)) store.remove(copy);
+		},
+		listCopies(fileName) {
+			checkFileName(fileName);
+			return copiesOf(fileName)
+				.reverse()
+				.map((name) => ({ name, savedAt: copySavedAt(name) }));
+		},
+		readCopy(copyName) {
+			if (!COPY_NAME.test(copyName) || !store.list().includes(copyName))
+				throw new DomainError('INVALID_INPUT', `No copy named ${copyName}`);
+			const copy = store.open(copyName);
+			try {
+				return toImage(sqlite3, copy);
+			} finally {
+				store.close(copy);
+			}
 		},
 		release() {
 			closeDb();

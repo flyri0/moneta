@@ -21,6 +21,8 @@ const SYSTEM_CHANGES = {
 	listFiles: [],
 	deleteFile: [],
 	release: [],
+	listCopies: [],
+	readCopy: [],
 	exportFile: [],
 	importFile: []
 } as const;

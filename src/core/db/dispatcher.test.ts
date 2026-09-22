@@ -16,6 +16,8 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 			listFiles: () => ['a.sqlite3'],
 			deleteFile: () => {},
 			release: () => {},
+			listCopies: () => [],
+			readCopy: () => new Uint8Array(),
 			exportFile: () => new Uint8Array(),
 			importFile: async () => {}
 		}

@@ -123,6 +123,56 @@ describe('createSystem', () => {
 	});
 });
 
+describe('listCopies / readCopy', () => {
+	/** Opens FILE with one more migration, so a copy is saved, then closes it. */
+	async function upgrade(
+		deps: Awaited<ReturnType<typeof setup>>,
+		extra: string[],
+		now: () => Date
+	) {
+		const { system } = createSystem({ ...deps, migrations: [...MIGRATIONS, ...extra], now });
+		await system.open(FILE);
+		system.close();
+	}
+
+	it('lists the copies of a budget, newest first, with when they were saved', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const now = ticking();
+		await upgrade(deps, ['CREATE TABLE a (x INTEGER)'], now);
+		await upgrade(deps, ['CREATE TABLE a (x INTEGER)', 'CREATE TABLE b (x INTEGER)'], now);
+		const { system } = createSystem(deps);
+		expect(system.listCopies(FILE)).toEqual([
+			{ name: `${COPY_PREFIX}20260919120200000.sqlite3`, savedAt: '2026-09-19T12:02:00.000Z' },
+			{ name: `${COPY_PREFIX}20260919120100000.sqlite3`, savedAt: '2026-09-19T12:01:00.000Z' }
+		]);
+		expect(system.listCopies(OTHER)).toEqual([]);
+	});
+
+	it('reads a copy as a backup that restores the budget as it was', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		await upgrade(deps, ['CREATE TABLE a (x INTEGER)'], ticking());
+		const { system, getDb } = createSystem(deps);
+		const [copy] = system.listCopies(FILE);
+		await system.importFile(OTHER, system.readCopy(copy.name));
+		await system.open(OTHER);
+		expect(getMeta(getDb()!).name).toBe('Home');
+		expect(system.listCopies(FILE)).toHaveLength(1);
+	});
+
+	it('reads only pre-migration copies that exist', async () => {
+		const deps = await setup();
+		await seedBudget(deps);
+		const { system } = createSystem(deps);
+		expect(() => system.readCopy(FILE)).toThrow(expect.objectContaining({ code: 'INVALID_INPUT' }));
+		expect(() => system.readCopy(`${COPY_PREFIX}1.sqlite3`)).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+		expect(system.listFiles()).toEqual([FILE]);
+	});
+});
+
 describe('exportFile / importFile', () => {
 	it('exports the open budget and imports it as a new file', async () => {
 		const deps = await setup();

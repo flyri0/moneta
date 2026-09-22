@@ -424,6 +424,8 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		listFiles: system.listFiles,
 		deleteFile: system.deleteFile,
 		release: system.release,
+		listCopies: system.listCopies,
+		readCopy: system.readCopy,
 		exportFile: system.exportFile,
 		importFile: system.importFile
 	};

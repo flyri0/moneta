@@ -1,4 +1,4 @@
-import type { ClientApi } from '$db/api';
+import type { BudgetCopy, ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
 import { transactionsCsv } from './export-csv';
 import { fileTarget } from './file-target';
@@ -22,6 +22,20 @@ export async function backUp(
 		new Blob([bytes], { type: 'application/vnd.sqlite3' })
 	);
 	await source.api.meta.update({ lastBackupAt: now.toISOString() });
+}
+
+/** Saves a budget's pre-migration copy as a `.sqlite` backup, named for the day it was saved. */
+export async function downloadCopy(
+	api: Pick<ClientApi, 'system'>,
+	copy: BudgetCopy,
+	budgetName: string,
+	target: BackupTarget = fileTarget
+): Promise<void> {
+	const bytes = await api.system.readCopy(copy.name);
+	await target.save(
+		backupFileName(budgetName, 'sqlite', new Date(copy.savedAt)),
+		new Blob([bytes], { type: 'application/vnd.sqlite3' })
+	);
 }
 
 export async function exportTransactionsCsv(
