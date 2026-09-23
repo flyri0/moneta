@@ -3,10 +3,11 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import CopyList from '$features/backup/CopyList.svelte';
+	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { runAction } from '$client/notify';
 	import {
 		deleteBudget,
-		restoreBudget,
+		restoreAll,
 		type OpenResult,
 		type SessionApi,
 		type UnreadableBudget
@@ -73,9 +74,9 @@
 		busy = false;
 	}
 
-	/** Adds a backup or copy as a new budget and opens it; the unreadable files stay. */
+	/** Adds the budgets of a backup, or a copy, and opens one; the unreadable files stay. */
 	async function open(bytes: Uint8Array, message: string) {
-		const restored = await restoreBudget(api, localStorage, bytes);
+		const restored = await restoreAll(api, localStorage, bytes);
 		void navigator.storage?.persist?.();
 		toast.success(message);
 		onResult({ kind: 'ready', file: restored.file, meta: restored.meta });
@@ -128,7 +129,7 @@
 				type="file"
 				bind:value={chosen}
 				disabled={busy}
-				accept=".sqlite,.sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3"
+				accept={BACKUP_ACCEPT}
 				onchange={restore}
 			/>
 		</div>

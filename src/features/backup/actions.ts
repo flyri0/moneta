@@ -2,7 +2,13 @@ import type { BudgetCopy, ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
 import { transactionsCsv } from './export-csv';
 import { fileTarget } from './file-target';
-import { backupFileName, type BackupTarget } from './target';
+import { isBudgetFile } from '$client/registry';
+import {
+	backupFileName,
+	copyBackupFileName,
+	fullBackupFileName,
+	type BackupTarget
+} from './target';
 
 /** What the exports need from the open budget (a BudgetSession in the app). */
 export interface ExportSource {
@@ -10,31 +16,42 @@ export interface ExportSource {
 	meta: BudgetMeta;
 }
 
-/** Saves the open budget as a `.sqlite` file (the backup that can be restored). */
+/** A `.moneta` file is a ZIP, but it is saved as an opaque file so browsers keep its extension. */
+const BACKUP_TYPE = 'application/octet-stream';
+
+/**
+ * Saves every budget on this device as one `.moneta` file (the backup that can be restored) and
+ * records the date in each. Returns the files left out because they couldn't be read.
+ */
 export async function backUp(
-	source: ExportSource,
+	api: Pick<ClientApi, 'system'>,
 	target: BackupTarget = fileTarget,
 	now = new Date()
-): Promise<void> {
-	const bytes = await source.api.system.exportFile();
-	await target.save(
-		backupFileName(source.meta.name, 'sqlite', now),
-		new Blob([bytes], { type: 'application/vnd.sqlite3' })
+): Promise<string[]> {
+	const files = (await api.system.listFiles()).filter(isBudgetFile);
+	const { bytes, skipped } = await api.system.exportBackup(files);
+	await target.save(fullBackupFileName(now), new Blob([bytes], { type: BACKUP_TYPE }));
+	await api.system.markBackedUp(
+		files.filter((f) => !skipped.includes(f)),
+		now.toISOString()
 	);
-	await source.api.meta.update({ lastBackupAt: now.toISOString() });
+	return skipped;
 }
 
-/** Saves a budget's pre-migration copy as a `.sqlite` backup, named for the day it was saved. */
+/**
+ * Saves a budget's saved copy as a `.moneta` backup, named for the day it was saved. Restoring it
+ * replaces that budget.
+ */
 export async function downloadCopy(
 	api: Pick<ClientApi, 'system'>,
 	copy: BudgetCopy,
 	budgetName: string,
 	target: BackupTarget = fileTarget
 ): Promise<void> {
-	const bytes = await api.system.readCopy(copy.name);
+	const { bytes } = await api.system.exportBackup([copy.name]);
 	await target.save(
-		backupFileName(budgetName, 'sqlite', new Date(copy.savedAt)),
-		new Blob([bytes], { type: 'application/vnd.sqlite3' })
+		copyBackupFileName(budgetName, new Date(copy.savedAt)),
+		new Blob([bytes], { type: BACKUP_TYPE })
 	);
 }
 

@@ -7,10 +7,12 @@
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import CopyList from '$features/backup/CopyList.svelte';
-	import { backUp, exportBudgetJson, exportTransactionsCsv } from '$features/backup/actions';
+	import { exportBudgetJson, exportTransactionsCsv } from '$features/backup/actions';
+	import { backUpNow } from '$features/backup/back-up-now';
+	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
-	import { restoreBudget } from '$client/session';
+	import { restoreAll } from '$client/session';
 	import type { BudgetCopy } from '$db/api';
 	import { currentMonth } from '$domain/month';
 	import { formatDateTime } from '$i18n/formats';
@@ -41,7 +43,7 @@
 
 	/** Restores a saved copy next to the open budget, which is left as it is. */
 	async function restoreCopy(bytes: Uint8Array) {
-		const restored = await restoreBudget(session.api, localStorage, bytes, session.file);
+		const restored = await restoreAll(session.api, localStorage, bytes, session.file);
 		app.show(session.client, restored.file, restored.meta);
 		toast.success(m.backup_copy_restored());
 		void goto(resolve('/budget/[month]', { month: currentMonth() }));
@@ -54,14 +56,14 @@
 			? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
 			: m.backup_never()}
 	</p>
-	<SettingsRow label={m.backup_now()} onclick={() => runActionToast(() => backUp(session))} />
+	<SettingsRow label={m.backup_now()} onclick={() => backUpNow(session.api)} />
 	<SettingsRow stacked label={m.backup_restore()} labelFor="restore-file">
 		{#snippet control()}
 			<Input
 				id="restore-file"
 				type="file"
 				bind:value={chosen}
-				accept=".sqlite,.sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3"
+				accept={BACKUP_ACCEPT}
 				onchange={pick}
 			/>
 		{/snippet}

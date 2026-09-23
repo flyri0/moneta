@@ -41,8 +41,9 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - **Seu dinheiro não é da conta de ninguém.** Nada é enviado, porque não há para onde
   enviar.
 - **Não tem cadastro.** É só abrir e começar.
-- **O arquivo é seu.** Um orçamento é um arquivo `.sqlite`. Faça backup quando quiser,
-  restaure em outra máquina, ou exporte para CSV e JSON.
+- **O arquivo é seu.** Um orçamento é um arquivo `.sqlite`, e um backup reúne todos em um
+  arquivo `.moneta` (um ZIP comum). Faça backup quando quiser, restaure em outra máquina,
+  ou exporte para CSV e JSON.
 - **Funciona no avião.** O app inteiro, banco de dados incluído, roda no navegador.
 
 ## O que ele faz
@@ -58,8 +59,8 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Transações divididas e transferências entre contas
 - Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
 - Vários orçamentos lado a lado
-- Backup e restauração em `.sqlite`, além de exportações CSV e JSON, com lembrete quando o
-  último backup tem mais de duas semanas
+- Backup e restauração de todos os orçamentos em um arquivo `.moneta`, além de exportações
+  CSV e JSON, com lembrete quando o último backup tem mais de duas semanas
 - PWA instalável, que funciona offline, com uma página de boas-vindas que oferece a instalação
 - Inglês e português do Brasil
 
@@ -117,8 +118,11 @@ obrigatório. O `netlify.toml` tem um exemplo, junto com a regra que devolve o `
 Cada orçamento é um único arquivo SQLite no armazenamento privado do navegador (OPFS).
 Nada sai do dispositivo por conta própria.
 
-Em **Ajustes → Backup** você salva esse arquivo nos downloads e restaura um backup, e
-o Moneta avisa quando o último backup tem mais de duas semanas. Antes que uma atualização
+Em **Ajustes → Backup** você salva todos os orçamentos nos downloads em um arquivo
+`.moneta` e restaura os que escolher dele, e o Moneta avisa quando o último backup tem mais
+de duas semanas. Um `.moneta` é um ZIP: o `moneta.json` o descreve, e `budgets/` guarda o
+arquivo SQLite de cada orçamento. Restaurar um orçamento que já está no aparelho o substitui
+e guarda o que ele tinha como cópia salva. Backups `.sqlite` antigos continuam restauráveis. Antes que uma atualização
 do app mude o esquema de um orçamento, o Moneta guarda uma cópia do arquivo antigo no mesmo
 armazenamento (as três últimas), para que atualizar nunca seja um caminho sem volta.
 

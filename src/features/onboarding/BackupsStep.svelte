@@ -4,6 +4,7 @@
 	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import FileUpIcon from '@lucide/svelte/icons/file-up';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
 
@@ -88,7 +89,7 @@
 			bind:this={fileInput}
 			type="file"
 			class="sr-only"
-			accept=".sqlite,.sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3"
+			accept={BACKUP_ACCEPT}
 			onchange={onFileChange}
 		/>
 	{/if}

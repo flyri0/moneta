@@ -14,7 +14,8 @@ function looksLikeSqlite(bytes: Uint8Array): boolean {
 	return true;
 }
 
-function isIntact(db: Db): boolean {
+/** Whether `PRAGMA integrity_check` passes. */
+export function isIntact(db: Db): boolean {
 	try {
 		return db.selectValues('PRAGMA integrity_check').join() === 'ok';
 	} catch {
@@ -23,7 +24,7 @@ function isIntact(db: Db): boolean {
 }
 
 /**
- * Checks a `.sqlite` backup before it may replace anything: the SQLite
+ * Checks a budget's SQLite image from a backup before it may replace anything: the SQLite
  * header, `PRAGMA integrity_check`, the `meta` table, and a schema version this app knows.
  * Older budgets are migrated. Returns the checked, migrated file. Works on an in-memory copy.
  */
@@ -32,7 +33,7 @@ export function checkBackup(
 	bytes: Uint8Array,
 	migrations: readonly string[] = MIGRATIONS
 ): Uint8Array {
-	if (!looksLikeSqlite(bytes)) throw new DomainError('BACKUP_NOT_SQLITE');
+	if (!looksLikeSqlite(bytes)) throw new DomainError('BACKUP_DAMAGED');
 	let db: Db;
 	try {
 		db = openImage(sqlite3, bytes);

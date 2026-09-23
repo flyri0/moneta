@@ -2,7 +2,7 @@
 	import { signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
 	import { runAction } from '$client/notify';
-	import { createBudget, restoreBudget, type SessionApi } from '$client/session';
+	import { createBudget, restoreAll, type SessionApi } from '$client/session';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { parseAmount } from '$domain/money';
@@ -115,7 +115,7 @@
 		error = null;
 		const bytes = new Uint8Array(await file.arrayBuffer());
 		error = await runAction(async () => {
-			const restored = await restoreBudget(api, localStorage, bytes);
+			const restored = await restoreAll(api, localStorage, bytes);
 			void navigator.storage?.persist?.();
 			toast.success(m.backup_restored());
 			onCreated(restored.file, restored.meta);

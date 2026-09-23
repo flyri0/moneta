@@ -24,12 +24,13 @@ function connect(db: Db | null) {
 			close: () => {},
 			listFiles: () => [],
 			deleteFile: () => {},
-			replaceFile: async () => {},
 			release: () => {},
 			listCopies: () => [],
 			readCopy: () => new Uint8Array(),
-			exportFile: () => new Uint8Array(),
-			importFile: async () => {}
+			exportBackup: () => ({ bytes: new Uint8Array(), skipped: [] }),
+			markBackedUp: () => {},
+			inspectBackup: () => ({ createdAt: null, budgets: [] }),
+			restoreBackup: async () => {}
 		}
 	});
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));

@@ -45,7 +45,7 @@ async function backUp(page: Page, path: string): Promise<void> {
 test('a damaged budget file leaves a way out: restore a backup', async ({ context }, testInfo) => {
 	const first = await context.newPage();
 	await onboard(first);
-	const backup = testInfo.outputPath('recovery-backup.sqlite');
+	const backup = testInfo.outputPath('recovery-backup.moneta');
 	await backUp(first, backup);
 	await first.close();
 	await damageBudgetFile(context);

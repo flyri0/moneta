@@ -11,11 +11,10 @@
 	import { Button } from '$ui/button';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
-	import { backUp } from '$features/backup/actions';
+	import { backUpNow } from '$features/backup/back-up-now';
 	import { backupDue } from '$features/backup/reminder';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { runActionToast } from '$client/notify';
 	import { persistQuietly } from '$client/persistence';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -67,7 +66,7 @@
 		if (session.isDemo || !backupDue(session.meta)) return;
 		toast(m.backup_reminder(), {
 			duration: 15_000,
-			action: { label: m.backup_now(), onClick: () => void runActionToast(() => backUp(session)) }
+			action: { label: m.backup_now(), onClick: () => void backUpNow(session.api) }
 		});
 	});
 </script>

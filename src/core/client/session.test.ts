@@ -2,13 +2,15 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { createTestDb } from '$db/testing';
 import { DomainError } from '$domain/errors';
 import { DEMO_FILE, isDemoOpen, openDemo, requestDemo } from './demo';
-import { collapsedKey, loadRegistry, newBudgetFile } from './registry';
+import { collapsedKey, isBudgetFile, loadRegistry, newBudgetFile } from './registry';
 import { RpcError } from './rpc';
 import {
 	createBudget,
 	deleteBudget,
 	openLastBudget,
-	restoreBudget,
+	planRestore,
+	restoreAll,
+	restoreBackup,
 	startupError,
 	switchBudget,
 	updateBudget,
@@ -187,60 +189,107 @@ describe('deleteBudget', () => {
 	});
 });
 
-describe('restoreBudget', () => {
-	it('replaces the open budget with a backup', async () => {
-		const { api, store } = await setup();
+/** The open budget file as a `.moneta` backup. */
+async function backUp(api: SessionApi, file: string): Promise<Uint8Array> {
+	return (await api.system.exportBackup([file])).bytes;
+}
+
+describe('planRestore', () => {
+	const ID = '0190a000-0000-7000-8000-00000000000a';
+	const FILE = newBudgetFile(ID);
+
+	it('replaces budgets that exist when asked to, and adds the others under their own ids', () => {
+		const budgets = [
+			{ index: 0, id: ID, name: 'Home' },
+			{ index: 1, id: '0190a000-0000-7000-8000-00000000000b', name: 'Trip' }
+		];
+		expect(planRestore(budgets, [FILE], true)).toEqual([
+			{ index: 0, file: FILE, name: 'Home', replaces: true },
+			{ index: 1, file: newBudgetFile(budgets[1].id), name: 'Trip', replaces: false }
+		]);
+	});
+
+	it('adds budgets that exist as new files when not replacing, and legacy ones always', () => {
+		const [home, legacy] = planRestore(
+			[
+				{ index: 0, id: ID, name: 'Home' },
+				{ index: 1, id: null, name: 'Old' }
+			],
+			[FILE],
+			false
+		);
+		expect(home).toMatchObject({ index: 0, name: 'Home', replaces: false });
+		expect(legacy).toMatchObject({ index: 1, name: 'Old', replaces: false });
+		expect(new Set([home.file, legacy.file, FILE]).size).toBe(3);
+		expect([home.file, legacy.file].every(isBudgetFile)).toBe(true);
+	});
+});
+
+describe('restoreBackup', () => {
+	it('replaces the open budget with its backup, keeping it as a saved copy', async () => {
+		const { api, store, files } = await setup();
 		const { file } = await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
+		const backup = await backUp(api, file);
 		await api.meta.update({ name: 'Changed' });
-		store.setItem(collapsedKey(file), '["g1"]');
-		const restored = await restoreBudget(api, store, backup, file, true);
-		expect(restored.file).not.toBe(file);
-		expect(restored.meta.name).toBe('Home');
-		expect(await api.system.listFiles()).not.toContain(file);
-		expect(store.getItem(collapsedKey(file))).toBeNull();
+		const { budgets } = await api.system.inspectBackup(backup);
+		const plan = planRestore(budgets, await api.system.listFiles(), true);
+		const restored = await restoreBackup(api, store, backup, plan, file);
+		expect(restored).toMatchObject({ file, meta: { name: 'Home' } });
+		expect([...files.keys()].filter(isBudgetFile)).toEqual([file]);
+		expect(loadRegistry(store)).toEqual({ budgets: [{ file, name: 'Home' }], lastOpened: file });
+		const [copy] = await api.system.listCopies(file);
+		const undone = await restoreAll(api, store, await api.system.readCopy(copy.name));
+		expect(undone.meta.name).toBe('Changed');
+		expect(undone.file).not.toBe(file);
+	});
+
+	it('adds budgets and opens the first one', async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const backup = (await api.system.exportBackup([home.file, work.file])).bytes;
+		await deleteBudget(api, store, home.file, work.file);
+		await deleteBudget(api, store, work.file, work.file);
+
+		const restored = await restoreAll(api, store, backup);
+		expect(restored).toMatchObject({ file: home.file, meta: { name: 'Home' } });
 		expect(loadRegistry(store)).toEqual({
-			budgets: [{ file: restored.file, name: 'Home' }],
-			lastOpened: restored.file
+			budgets: [
+				{ file: home.file, name: 'Home' },
+				{ file: work.file, name: 'Work' }
+			],
+			lastOpened: home.file
 		});
 		const [account] = await api.accounts.list();
 		expect(account).toMatchObject({ name: 'Checking', balance: 150000 });
 	});
 
-	it('keeps the replaced budget as a copy of the restored one', async () => {
+	it('restores a legacy .sqlite backup as a new budget', async () => {
 		const { api, store } = await setup();
 		const { file } = await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
-		await api.meta.update({ name: 'Changed' });
-		const restored = await restoreBudget(api, store, backup, file, true);
-		const [copy, ...rest] = await api.system.listCopies(restored.file);
-		expect(rest).toEqual([]);
-		const undone = await restoreBudget(api, store, await api.system.readCopy(copy.name));
-		expect(undone.meta.name).toBe('Changed');
-	});
-
-	it('imports a backup as a new budget', async () => {
-		const { api, store, files } = await setup();
-		const { file } = await createBudget(api, store, HOME);
-		const restored = await restoreBudget(api, store, await api.system.exportFile(), file, false);
-		expect(files.size).toBe(2);
+		// A saved copy is a plain .sqlite file, like a backup made before .moneta.
+		const legacy = await api.system.readCopy((await saveCopyOf(api, store, file)).name);
+		const restored = await restoreAll(api, store, legacy, file);
+		expect(restored.file).not.toBe(file);
 		expect(loadRegistry(store).budgets.map((b) => b.file)).toEqual([file, restored.file]);
-		expect(loadRegistry(store).lastOpened).toBe(restored.file);
 	});
 
-	it('leaves the open budget alone when the backup is invalid', async () => {
+	it('leaves everything alone when the backup is invalid', async () => {
 		const { api, store, files } = await setup();
 		const { file } = await createBudget(api, store, HOME);
-		const err = await restoreBudget(api, store, new Uint8Array(512), file, true).catch((e) => e);
-		expect(err).toMatchObject({ code: 'BACKUP_NOT_SQLITE' });
+		const err = await restoreAll(api, store, new Uint8Array(512), file).catch((e) => e);
+		expect(err).toMatchObject({ code: 'BACKUP_NOT_RECOGNIZED' });
 		expect([...files.keys()]).toEqual([file]);
 		expect((await api.meta.get()).name).toBe('Home');
 	});
 
-	it('reopens the open budget if the restored one cannot be opened', async () => {
+	it('reopens the open budget and removes added files if the restored one cannot be opened', async () => {
 		const { api, store, files } = await setup();
-		const { file } = await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const backup = await backUp(api, work.file);
+		await deleteBudget(api, store, work.file, home.file);
+		await switchBudget(api, store, home.file);
 		const failing: SessionApi = {
 			meta: api.meta,
 			accounts: api.accounts,
@@ -248,57 +297,23 @@ describe('restoreBudget', () => {
 			system: {
 				...pick(api.system),
 				open: (name: string) =>
-					name === file ? api.system.open(name) : Promise.reject(new Error('disk error'))
+					name === home.file ? api.system.open(name) : Promise.reject(new Error('disk error'))
 			}
 		};
-		await expect(restoreBudget(failing, store, backup, file, true)).rejects.toThrow('disk error');
-		expect([...files.keys()]).toEqual([file]);
+		await expect(restoreAll(failing, store, backup, home.file)).rejects.toThrow('disk error');
+		expect([...files.keys()]).toEqual([home.file]);
 		expect((await api.meta.get()).name).toBe('Home');
 	});
-
-	it('restores a backup when no budget is open (onboarding)', async () => {
-		const { api, store, files } = await setup();
-		await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
-		await api.system.close();
-		for (const f of files.keys()) {
-			await api.system.deleteFile(f);
-		}
-		store.setItem('moneta.registry', JSON.stringify({ budgets: [], lastOpened: null }));
-
-		const restored = await restoreBudget(api, store, backup);
-		expect(restored.meta.name).toBe('Home');
-		expect(loadRegistry(store)).toEqual({
-			budgets: [{ file: restored.file, name: 'Home' }],
-			lastOpened: restored.file
-		});
-		const [account] = await api.accounts.list();
-		expect(account).toMatchObject({ name: 'Checking', balance: 150000 });
-	});
-
-	it('cleans up if opening the restored backup fails when no budget is open', async () => {
-		const { api, store, files } = await setup();
-		await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
-		await api.system.close();
-		for (const f of files.keys()) {
-			await api.system.deleteFile(f);
-		}
-		store.setItem('moneta.registry', JSON.stringify({ budgets: [], lastOpened: null }));
-
-		const failing: SessionApi = {
-			meta: api.meta,
-			accounts: api.accounts,
-			demo: api.demo,
-			system: {
-				...pick(api.system),
-				open: () => Promise.reject(new Error('disk error'))
-			}
-		};
-		await expect(restoreBudget(failing, store, backup)).rejects.toThrow('disk error');
-		expect(files.size).toBe(0);
-	});
 });
+
+/** Saves a copy of `file` by replacing it with its own backup, and returns that copy. */
+async function saveCopyOf(api: SessionApi, store: ReturnType<typeof memoryStore>, file: string) {
+	const backup = await backUp(api, file);
+	const { budgets } = await api.system.inspectBackup(backup);
+	await restoreBackup(api, store, backup, planRestore(budgets, [file], true), file);
+	const [copy] = await api.system.listCopies(file);
+	return copy;
+}
 
 /** An api whose `open` fails like a file that isn't a database, for the files in `damaged`. */
 function withDamaged(api: SessionApi, damaged: Set<string>): SessionApi {
@@ -427,14 +442,14 @@ describe('openLastBudget with damaged files', () => {
 		});
 	});
 
-	it('restores a backup when every budget is damaged', async () => {
+	it('restores a backup next to damaged budgets, never over them', async () => {
 		const { api, store, files } = await setup();
 		const home = await createBudget(api, store, HOME);
-		const backup = await api.system.exportFile();
+		const backup = await backUp(api, home.file);
 		const broken = withDamaged(api, new Set([home.file]));
 		expect(await openLastBudget(broken, store)).toMatchObject({ kind: 'unreadable' });
 
-		const restored = await restoreBudget(broken, store, backup);
+		const restored = await restoreAll(broken, store, backup);
 		expect(restored.meta.name).toBe('Home');
 		expect(files.size).toBe(2);
 		expect(loadRegistry(store).lastOpened).toBe(restored.file);
@@ -448,12 +463,13 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		close: system.close,
 		listFiles: system.listFiles,
 		deleteFile: system.deleteFile,
-		replaceFile: system.replaceFile,
 		release: system.release,
 		listCopies: system.listCopies,
 		readCopy: system.readCopy,
-		exportFile: system.exportFile,
-		importFile: system.importFile
+		exportBackup: system.exportBackup,
+		markBackedUp: system.markBackedUp,
+		inspectBackup: system.inspectBackup,
+		restoreBackup: system.restoreBackup
 	};
 }
 

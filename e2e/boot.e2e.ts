@@ -100,7 +100,7 @@ test('restores a backup directly from the onboarding backups step', async ({
 	const page1 = await context.newPage();
 	await onboard(page1);
 	await openSettings(page1);
-	const backup = testInfo.outputPath('backups-step-backup.sqlite');
+	const backup = testInfo.outputPath('backups-step-backup.moneta');
 	const downloading = page1.waitForEvent('download');
 	await page1.getByRole('button', { name: 'Back up now' }).click();
 	const file = await downloading;
@@ -123,7 +123,9 @@ test('restores a backup directly from the onboarding backups step', async ({
 		mimeType: 'application/vnd.sqlite3',
 		buffer: Buffer.from('not a sqlite database')
 	});
-	await expect(page2.getByRole('alert')).toHaveText("That file isn't a Moneta backup (.sqlite).");
+	await expect(page2.getByRole('alert')).toHaveText(
+		"That file isn't a Moneta backup (.moneta or .sqlite)."
+	);
 
 	// Pick valid backup to restore
 	await page2.getByLabel('Restore from a backup').setInputFiles(backup);

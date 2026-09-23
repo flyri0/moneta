@@ -1,4 +1,5 @@
-import type { ClientApi } from '$db/api';
+import type { BackupBudgetInfo, ClientApi, RestorePick } from '$db/api';
+import { DomainError } from '$domain/errors';
 import type { CreateAccountInput } from '$db/repos/accounts';
 import type { BudgetMeta, InitBudgetInput, MetaPatch } from '$db/repos/meta';
 import { endDemo, isDemoOpen, openDemo, sweepDemo } from './demo';
@@ -180,39 +181,80 @@ function forgetBudget(store: KeyValueStore, file: string): void {
 	}
 }
 
+/** A budget of a backup, the file it will be restored into, and whether that file exists. */
+export interface PlannedRestore extends RestorePick {
+	name: string;
+	replaces: boolean;
+}
+
 /**
- * Restores a `.sqlite` backup as a new budget file and opens it. The worker checks the backup
- * first, so an invalid one changes nothing. With `replace`, the open budget (`openFile`) is
- * deleted once the restored one is open, and kept as a copy of it so the replace can be undone.
- * If opening the restored one fails, `openFile` is opened again.
+ * Where each budget of a backup goes. A budget keeps its own file (`budget-<id>.sqlite3`): one
+ * that exists is replaced when `replace` is set, else it is added under a new file, as are
+ * budgets from legacy backups, which have no id.
  */
-export async function restoreBudget(
+export function planRestore(
+	budgets: BackupBudgetInfo[],
+	existing: readonly string[],
+	replace: boolean
+): PlannedRestore[] {
+	return budgets.map(({ index, id, name }) => {
+		const own = id === null ? null : newBudgetFile(id);
+		const exists = own !== null && existing.includes(own);
+		if (own && exists && replace) return { index, file: own, name, replaces: true };
+		return { index, file: own && !exists ? own : newBudgetFile(), name, replaces: false };
+	});
+}
+
+/**
+ * Restores budgets from a backup as `planRestore` planned them, and opens one: `openFile` when it
+ * was replaced, else the first restored. The worker checks the backup first, so an invalid one
+ * changes nothing. If the budget to open can't be opened, the files that were added are deleted
+ * and `openFile` is opened again.
+ */
+export async function restoreBackup(
+	api: SessionApi,
+	store: KeyValueStore,
+	bytes: Uint8Array,
+	plan: PlannedRestore[],
+	openFile?: string
+): Promise<{ file: string; meta: BudgetMeta }> {
+	if (plan.length === 0) throw new DomainError('INVALID_INPUT', 'Nothing to restore');
+	await api.system.restoreBackup(
+		bytes,
+		plan.map(({ index, file }) => ({ index, file }))
+	);
+	const file = plan.find((p) => p.replaces && p.file === openFile)?.file ?? plan[0].file;
+	let meta: BudgetMeta;
+	try {
+		await api.system.open(file);
+		meta = await api.meta.get();
+	} catch (err) {
+		for (const added of plan.filter((p) => !p.replaces))
+			await api.system.deleteFile(added.file).catch(() => {});
+		if (openFile) await api.system.open(openFile).catch(() => {});
+		throw err;
+	}
+	endDemo(store);
+	let registry = loadRegistry(store);
+	for (const p of plan) registry = upsertBudget(registry, { file: p.file, name: p.name });
+	saveRegistry(store, markOpened(upsertBudget(registry, { file, name: meta.name }), file));
+	return { file, meta };
+}
+
+/**
+ * Restores every budget of a backup and opens the first. Budgets that exist are replaced only
+ * with `replace`; otherwise they are added next to the ones there, which stay untouched.
+ */
+export async function restoreAll(
 	api: SessionApi,
 	store: KeyValueStore,
 	bytes: Uint8Array,
 	openFile?: string,
 	replace: boolean = false
 ): Promise<{ file: string; meta: BudgetMeta }> {
-	const file = newBudgetFile();
-	await api.system.importFile(file, bytes);
-	let meta: BudgetMeta;
-	try {
-		await api.system.open(file);
-		meta = await api.meta.get();
-	} catch (err) {
-		await api.system.deleteFile(file).catch(() => {});
-		if (openFile) await api.system.open(openFile).catch(() => {});
-		throw err;
-	}
-	endDemo(store);
-	let registry = upsertBudget(loadRegistry(store), { file, name: meta.name });
-	if (replace && openFile) {
-		await api.system.replaceFile(openFile, file);
-		registry = removeBudget(registry, openFile);
-		forgetBudget(store, openFile);
-	}
-	saveRegistry(store, markOpened(registry, file));
-	return { file, meta };
+	const { budgets } = await api.system.inspectBackup(bytes);
+	const plan = planRestore(budgets, await api.system.listFiles(), replace);
+	return restoreBackup(api, store, bytes, plan, openFile);
 }
 
 export type StartupErrorCode =

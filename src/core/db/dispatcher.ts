@@ -21,12 +21,13 @@ const SYSTEM_CHANGES = {
 	close: ALL_TABLES,
 	listFiles: [],
 	deleteFile: [],
-	replaceFile: [],
 	release: [],
 	listCopies: [],
 	readCopy: [],
-	exportFile: [],
-	importFile: []
+	exportBackup: [],
+	markBackedUp: ['meta'],
+	inspectBackup: [],
+	restoreBackup: ALL_TABLES
 } as const;
 
 const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> } = {
@@ -34,12 +35,13 @@ const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> }
 	close: [],
 	listFiles: [],
 	deleteFile: ['string'],
-	replaceFile: ['string', 'string'],
 	release: [],
 	listCopies: ['string'],
 	readCopy: ['string'],
-	exportFile: [],
-	importFile: ['string', 'bytes']
+	exportBackup: ['array'],
+	markBackedUp: ['array', 'string'],
+	inspectBackup: ['bytes'],
+	restoreBackup: ['bytes', 'array']
 };
 
 /** Turns a CallRequest into a CallResponse. Never throws. */

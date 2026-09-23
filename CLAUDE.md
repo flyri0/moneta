@@ -29,7 +29,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 ## Layout
 
 - `src/core/domain/`: pure TS (money, months, budget engine, quick-assign). No DB, no DOM. Alias: `$domain`.
-- `src/core/db/`: runs only in the worker. Schema and migrations, repos, RPC surface (`api.ts`), dispatcher. `system.ts` holds the budget-file calls (`api.system.*`) over a `FileStore`: the OPFS pool in `worker.ts`, in-memory databases in tests (`memoryFileStore`). `backup.ts` checks restores. Alias: `$db`.
+- `src/core/db/`: runs only in the worker. Schema and migrations, repos, RPC surface (`api.ts`), dispatcher. `system.ts` holds the budget-file calls (`api.system.*`) over a `FileStore`: the OPFS pool in `worker.ts`, in-memory databases in tests (`memoryFileStore`). `backup-file.ts` reads and writes `.moneta` backups (a ZIP via `fflate`, worker-only), and `backup.ts` checks each budget in a restore. Alias: `$db`.
 - `src/core/client/`: main thread. Typed RPC client (`rpc.ts`), worker start (`db.ts`), `liveQuery` (`live.ts`) and `useLive` (`live.svelte.ts`), tab lock, budget registry and session, app state (`app-state.svelte.ts`: `useSession()`), `runAction`/`notifyError` (`notify.ts`), the accent palette (`accent.ts`; mode-watcher stores the choice and writes it as `data-theme`). Alias: `$client`.
 - `src/core/i18n/`: message catalogs (`messages/en.json`, `messages/pt-BR.json`), error messages, labels for system rows, formats. Paraglide compiles them into `src/core/i18n/paraglide/` (generated, not committed). Alias: `$i18n`.
 - `src/features/`: feature modules colocating screen logic and Svelte components by area (`budget/`, `accounts/`, `transactions/`, `reports/`, `settings/`, `onboarding/`, `welcome/`, `backup/`, `demo/`). Alias: `$features`.
@@ -48,6 +48,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Domain failures throw `DomainError` with a typed code from `$domain/errors.ts`; nothing else is thrown on purpose.
 - IDs are UUIDv7 (`uuidv7`). Dates are `'YYYY-MM-DD'` and months `'YYYY-MM'`. Booleans are 0/1 in SQL and `boolean` in repo results.
 - Schema changes are new numbered files in `src/core/db/migrations/`, added to `MIGRATIONS` and tracked by `PRAGMA user_version`. Never edit an applied migration. Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean; opening an older budget saves a copy first.
+- `.moneta` backups carry `BACKUP_VERSION` (`$db/backup-file.ts`), the version of the container, not of the schema. Bump it when an app reading the current version would misread the new files (changed layout, new required field, changed meaning); not for optional fields or migrations. Every earlier version must still restore.
 - No COOP/COEP headers or server code: the OPFS SAH-pool VFS doesn't need them, and the build must work on any static host.
 - The Content-Security-Policy lives in `svelte.config.js` (`kit.csp`, hash mode, emitted as a `<meta>` tag). New external origins, inline scripts or `{@html}` must fit it; `e2e/csp.e2e.ts` fails on any violation.
 - Svelte 5 runes only (`$props`, `$state`, `$derived`, `$effect`).

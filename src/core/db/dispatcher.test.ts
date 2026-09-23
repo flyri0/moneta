@@ -15,12 +15,13 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 			close: () => {},
 			listFiles: () => ['a.sqlite3'],
 			deleteFile: () => {},
-			replaceFile: async () => {},
 			release: () => {},
 			listCopies: () => [],
 			readCopy: () => new Uint8Array(),
-			exportFile: () => new Uint8Array(),
-			importFile: async () => {}
+			exportBackup: () => ({ bytes: new Uint8Array(), skipped: [] }),
+			markBackedUp: () => {},
+			inspectBackup: () => ({ createdAt: null, budgets: [] }),
+			restoreBackup: async () => {}
 		}
 	};
 }
@@ -129,7 +130,8 @@ describe('createDispatcher', () => {
 		for (const [method, args] of [
 			['system.open', [42]],
 			['system.open', []],
-			['system.importFile', ['b.sqlite3', 'not bytes']],
+			['system.inspectBackup', ['not bytes']],
+			['system.restoreBackup', [new Uint8Array(), 'not an array']],
 			['system.listFiles', ['extra']]
 		] as const) {
 			const res = await dispatch({ id: 14, method, args: [...args] });

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MIGRATIONS, SCHEMA_VERSION, schemaVersion } from './migrate';
-import { getMeta, initBudget } from './repos/meta';
+import { readBackup, writeBackup } from './backup-file';
+import { getMeta, initBudget, updateMeta } from './repos/meta';
 import { createSystem } from './system';
 import { loadSqlite, memoryFileStore } from './testing';
 
@@ -155,7 +156,7 @@ describe('listCopies / readCopy', () => {
 		await upgrade(deps, ['CREATE TABLE a (x INTEGER)'], ticking());
 		const { system, getDb } = createSystem(deps);
 		const [copy] = system.listCopies(FILE);
-		await system.importFile(OTHER, system.readCopy(copy.name));
+		await system.restoreBackup(system.readCopy(copy.name), [{ index: 0, file: OTHER }]);
 		await system.open(OTHER);
 		expect(getMeta(getDb()!).name).toBe('Home');
 		expect(system.listCopies(FILE)).toHaveLength(1);
@@ -173,79 +174,197 @@ describe('listCopies / readCopy', () => {
 	});
 });
 
-describe('exportFile / importFile', () => {
-	it('exports the open budget and imports it as a new file', async () => {
+/** Opens `file`, makes it a budget named `name`, and closes it. */
+async function seedNamed(deps: Awaited<ReturnType<typeof setup>>, file: string, name: string) {
+	const { system, getDb } = createSystem(deps);
+	await system.open(file);
+	initBudget(getDb()!, { name, currency: 'BRL', locale: 'pt-BR', groups: [] });
+	system.close();
+}
+
+const ID = '0190a000-0000-7000-8000-000000000001';
+const OTHER_ID = '0190a000-0000-7000-8000-000000000002';
+const THIRD = 'budget-0190a000-0000-7000-8000-000000000003.sqlite3';
+
+describe('exportBackup', () => {
+	it('writes the budgets, open or not, as one .moneta file', async () => {
 		const deps = await setup();
-		await seedBudget(deps);
-		const { system, getDb } = createSystem(deps);
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system } = createSystem({ ...deps, now: () => new Date('2026-09-22T12:00:00Z') });
 		await system.open(FILE);
-		const bytes = system.exportFile();
-		await system.importFile(OTHER, bytes);
-		expect(getDb()).not.toBeNull();
-		await system.open(OTHER);
-		expect(getMeta(getDb()!).name).toBe('Home');
+		const { bytes, skipped } = system.exportBackup([FILE, OTHER]);
+		expect(skipped).toEqual([]);
+		const contents = readBackup(bytes);
+		expect(contents.createdAt).toBe('2026-09-22T12:00:00.000Z');
+		expect(contents.budgets.map(({ id, name }) => ({ id, name }))).toEqual([
+			{ id: ID, name: 'Home' },
+			{ id: OTHER_ID, name: 'Trip' }
+		]);
 	});
 
-	it('needs an open budget to export', async () => {
-		const { system } = createSystem(await setup());
-		expect(() => system.exportFile()).toThrow(
-			expect.objectContaining({ code: 'NO_DATABASE_OPEN' })
-		);
-	});
-
-	it('never overwrites a file, and keeps nothing from an invalid backup', async () => {
+	it('leaves out files it cannot read, and names them', async () => {
 		const deps = await setup();
-		await seedBudget(deps);
+		await seedNamed(deps, FILE, 'Home');
+		// Created but never initialized, as an interrupted onboarding leaves it.
+		await createSystem(deps).system.open(OTHER);
+		const { bytes, skipped } = createSystem(deps).system.exportBackup([FILE, OTHER]);
+		expect(skipped).toEqual([OTHER]);
+		expect(readBackup(bytes).budgets.map((b) => b.name)).toEqual(['Home']);
+	});
+
+	it('exports a saved copy under the id of its budget', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const upgraded = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
+		await upgraded.system.open(FILE);
+		const [copy] = upgraded.system.listCopies(FILE);
+		const { budgets } = readBackup(upgraded.system.exportBackup([copy.name]).bytes);
+		expect(budgets.map(({ id, name }) => ({ id, name }))).toEqual([{ id: ID, name: 'Home' }]);
+	});
+
+	it('refuses files that are not budgets or do not exist', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		await system.open(FILE);
-		const bytes = system.exportFile();
-		await expect(system.importFile(FILE, bytes)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
-		await expect(system.importFile(OTHER, new Uint8Array(4096))).rejects.toMatchObject({
-			code: 'BACKUP_NOT_SQLITE'
-		});
+		for (const name of ['demo.sqlite3', OTHER, '../x'])
+			expect(() => system.exportBackup([name])).toThrow(
+				expect.objectContaining({ code: 'INVALID_INPUT' })
+			);
 		expect(system.listFiles()).toEqual([FILE]);
 	});
 });
 
-describe('replaceFile', () => {
-	it('deletes the old budget but keeps it as a copy of the new one', async () => {
+describe('markBackedUp', () => {
+	it('stamps every budget, open or not, and skips the ones it cannot write', async () => {
 		const deps = await setup();
-		await seedBudget(deps);
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		await createSystem(deps).system.open(THIRD);
+		const { system, getDb } = createSystem(deps);
+		await system.open(FILE);
+		system.markBackedUp([FILE, OTHER, THIRD], '2026-09-22T12:00:00.000Z');
+		expect(getMeta(getDb()!).lastBackupAt).toBe('2026-09-22T12:00:00.000Z');
+		expect(getMeta(deps.store.files.get(OTHER)!).lastBackupAt).toBe('2026-09-22T12:00:00.000Z');
+	});
+});
+
+describe('inspectBackup', () => {
+	it('lists the budgets in a backup without writing anything', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system } = createSystem(deps);
+		const { bytes } = system.exportBackup([FILE, OTHER]);
+		system.deleteFile(OTHER);
+		expect(system.inspectBackup(bytes)).toEqual({
+			createdAt: expect.any(String),
+			budgets: [
+				{ index: 0, id: ID, name: 'Home' },
+				{ index: 1, id: OTHER_ID, name: 'Trip' }
+			]
+		});
+		expect(system.listFiles()).toEqual([FILE]);
+	});
+
+	it('reads a legacy .sqlite backup as one budget without an id', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		expect(system.inspectBackup(budget.image).budgets).toEqual([
+			{ index: 0, id: null, name: 'Home' }
+		]);
+	});
+
+	it('rejects a backup with a damaged budget', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		const damaged = budget.image.slice();
+		damaged.fill(0xff, 4096, 8192);
+		expect(() =>
+			system.inspectBackup(writeBackup([{ ...budget, id: ID, name: 'Home', image: damaged }], 'x'))
+		).toThrow(expect.objectContaining({ code: 'BACKUP_DAMAGED' }));
+	});
+});
+
+describe('restoreBackup', () => {
+	it('adds budgets under the files it is given', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system, getDb } = createSystem(deps);
+		const { bytes } = system.exportBackup([FILE, OTHER]);
+		system.deleteFile(FILE);
+		system.deleteFile(OTHER);
+		await system.restoreBackup(bytes, [{ index: 1, file: THIRD }]);
+		expect(system.listFiles()).toEqual([THIRD]);
+		await system.open(THIRD);
+		expect(getMeta(getDb()!).name).toBe('Trip');
+	});
+
+	it('replaces an existing budget, keeping it as a saved copy, even when it is open', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
 		const { system, getDb } = createSystem({ ...deps, now: ticking() });
-		await system.open(OTHER);
-		initBudget(getDb()!, { name: 'Restored', currency: 'BRL', locale: 'pt-BR', groups: [] });
-		await system.replaceFile(FILE, OTHER);
-		expect([...deps.store.files.keys()].filter((n) => n.startsWith('budget-'))).toEqual([OTHER]);
-		expect(getMeta(getDb()!).name).toBe('Restored');
-		const [copy, ...rest] = system.listCopies(OTHER);
-		expect(rest).toEqual([]);
-		system.close();
-		await system.importFile(FILE, system.readCopy(copy.name));
+		const { bytes } = system.exportBackup([FILE]);
+		await system.open(FILE);
+		updateMeta(getDb()!, { name: 'Changed' });
+		await system.restoreBackup(bytes, [{ index: 0, file: FILE }]);
+		expect(getDb()).toBeNull();
 		await system.open(FILE);
 		expect(getMeta(getDb()!).name).toBe('Home');
+		const [copy] = system.listCopies(FILE);
+		const { budgets } = readBackup(system.exportBackup([copy.name]).bytes);
+		expect(budgets.map((b) => b.name)).toEqual(['Changed']);
 	});
 
-	it("drops the old budget's own copies", async () => {
+	it('checks every budget before writing any', async () => {
 		const deps = await setup();
-		await seedBudget(deps);
-		const upgraded = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
-		await upgraded.system.open(FILE);
-		upgraded.system.close();
-		const { system } = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
-		await system.open(OTHER);
-		await system.replaceFile(FILE, OTHER);
-		expect(system.listCopies(FILE)).toEqual([]);
-		expect(system.listCopies(OTHER)).toHaveLength(1);
-		expect([...deps.store.files.keys()].filter((n) => n.startsWith(COPY_PREFIX))).toEqual([]);
-	});
-
-	it('refuses bad names and files that do not exist, changing nothing', async () => {
-		const deps = await setup();
-		await seedBudget(deps);
+		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		await expect(system.replaceFile('x.db', FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
-		await expect(system.replaceFile(OTHER, FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
-		await expect(system.replaceFile(FILE, FILE)).rejects.toMatchObject({ code: 'INVALID_INPUT' });
-		expect([...deps.store.files.keys()]).toEqual([FILE]);
+		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		const damaged = budget.image.slice();
+		damaged.fill(0xff, 4096, 8192);
+		const bytes = writeBackup(
+			[
+				{ id: OTHER_ID, name: 'Trip', image: budget.image },
+				{ id: ID, name: 'Home', image: damaged }
+			],
+			'x'
+		);
+		const picks = [
+			{ index: 0, file: OTHER },
+			{ index: 1, file: FILE }
+		];
+		await expect(system.restoreBackup(bytes, picks)).rejects.toMatchObject({
+			code: 'BACKUP_DAMAGED'
+		});
+		expect(system.listFiles()).toEqual([FILE]);
+		expect(system.listCopies(FILE)).toEqual([]);
+	});
+
+	it('refuses bad picks, changing nothing', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const { bytes } = system.exportBackup([FILE]);
+		const bad = [
+			[{ index: 1, file: OTHER }],
+			[{ index: 0, file: '../x' }],
+			[{ index: '0', file: OTHER }],
+			[
+				{ index: 0, file: OTHER },
+				{ index: 0, file: OTHER }
+			],
+			['x']
+		];
+		for (const picks of bad)
+			await expect(system.restoreBackup(bytes, picks as never)).rejects.toMatchObject({
+				code: 'INVALID_INPUT'
+			});
+		expect(system.listFiles()).toEqual([FILE]);
 	});
 });

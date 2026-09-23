@@ -42,8 +42,9 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - **Your money is nobody else's business.** Nothing is uploaded, because there is nowhere
   to upload it to.
 - **Nothing to sign up for.** Open it and start budgeting.
-- **You own the file.** One budget is one `.sqlite` file. Back it up whenever you want,
-  restore it on another machine, or export to CSV and JSON.
+- **You own the file.** One budget is one `.sqlite` file, and a backup is all of them in
+  one `.moneta` file (a plain ZIP). Back up whenever you want, restore on another machine,
+  or export to CSV and JSON.
 - **It works on a plane.** The whole app, database and all, runs in the browser.
 
 ## What it does
@@ -58,8 +59,8 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - Split transactions and transfers between accounts
 - Reports: spending by category and net worth over time
 - Several budget files side by side
-- Backup and restore as `.sqlite`, plus CSV and JSON exports, with a reminder when your
-  last backup is more than two weeks old
+- Backup and restore of every budget as one `.moneta` file, plus CSV and JSON exports,
+  with a reminder when your last backup is more than two weeks old
 - Installable, offline-capable PWA, with a welcome page that offers to install it
 - English and Brazilian Portuguese
 
@@ -115,8 +116,11 @@ payment=()`. None of these is required. `netlify.toml` has an example, along wit
 Each budget is a single SQLite file in your browser's private storage (OPFS). Nothing
 leaves the device on its own.
 
-**Settings → Backup** saves that file to your downloads and restores one back, and Moneta
-nudges you when your last backup is more than two weeks old. Before an app update changes
+**Settings → Backup** saves every budget to your downloads as one `.moneta` file and
+restores the ones you pick from it, and Moneta nudges you when your last backup is more than
+two weeks old. A `.moneta` file is a ZIP: `moneta.json` describes it, and `budgets/` holds
+each budget's SQLite file. Restoring a budget that is already on the device replaces it and
+keeps what it held as a saved copy. Older `.sqlite` backups still restore. Before an app update changes
 a budget's schema, Moneta keeps a copy of the old file in the same storage (the last
 three), so an upgrade is never a one-way door.
 

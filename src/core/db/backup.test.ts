@@ -17,15 +17,15 @@ describe('checkBackup', () => {
 		db.close();
 	});
 
-	it('rejects files that are not SQLite databases', async () => {
+	it('rejects images that are not SQLite databases as damaged', async () => {
 		const sqlite3 = await loadSqlite();
 		const text = new TextEncoder().encode('Date,Payee,Amount\n'.repeat(64));
 		expect(() => checkBackup(sqlite3, text)).toThrow(
-			expect.objectContaining({ code: 'BACKUP_NOT_SQLITE' })
+			expect.objectContaining({ code: 'BACKUP_DAMAGED' })
 		);
 		const truncated = (await budgetImage()).slice(0, 1000);
 		expect(() => checkBackup(sqlite3, truncated)).toThrow(
-			expect.objectContaining({ code: 'BACKUP_NOT_SQLITE' })
+			expect.objectContaining({ code: 'BACKUP_DAMAGED' })
 		);
 	});
 

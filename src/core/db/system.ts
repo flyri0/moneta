@@ -1,10 +1,12 @@
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$domain/errors';
-import { checkBackup } from './backup';
+import { checkBackup, isIntact } from './backup';
+import { readBackup, writeBackup, type BackupBudget } from './backup-file';
 import { configure, type Db } from './connection';
-import { toImage } from './image';
+import { openImage, toImage } from './image';
 import { MIGRATIONS, migrate, schemaVersion } from './migrate';
-import type { SystemApi } from './api';
+import { getMeta, updateMeta } from './repos/meta';
+import type { RestorePick, SystemApi } from './api';
 
 /** Where database files live: the OPFS SAH pool in the worker, in-memory databases in tests. */
 export interface FileStore {
@@ -42,6 +44,8 @@ function checkFileName(fileName: string): void {
 /** `premigration-<file>-<stamp>.sqlite3`, the stamp being the UTC time it was saved. */
 const COPY_NAME =
 	/^premigration-[A-Za-z0-9_-]+-(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{3})\.sqlite3$/;
+/** A budget file, `budget-<id>.sqlite3`, or one of its copies. The id is what a backup keeps. */
+const BUDGET_ID = /^(?:premigration-)?budget-([0-9a-f-]+?)(?:-\d{17})?\.sqlite3$/;
 
 /** `budget-<id>.sqlite3` → `premigration-budget-<id>-`, the prefix of its pre-migration copies. */
 function copyPrefix(fileName: string): string {
@@ -92,12 +96,55 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 
 	/** The bytes of a budget file, whether or not it is the open one. */
 	function readImage(fileName: string): Uint8Array {
-		if (db && openName === fileName) return toImage(sqlite3, db);
+		return withFile(fileName, (file) => toImage(sqlite3, file));
+	}
+
+	/** Runs `fn` on a file: the open database when it is that file, else the file opened for it. */
+	function withFile<T>(fileName: string, fn: (file: Db) => T): T {
+		if (db && openName === fileName) return fn(db);
 		const file = store.open(fileName);
 		try {
-			return toImage(sqlite3, file);
+			return fn(file);
 		} finally {
 			store.close(file);
+		}
+	}
+
+	/** The id a backup keeps for a budget file or copy that exists, or INVALID_INPUT. */
+	function backupId(name: string): string {
+		const id = BUDGET_ID.exec(name)?.[1];
+		if (!id || !store.list().includes(name))
+			throw new DomainError('INVALID_INPUT', `No budget file named ${name}`);
+		return id;
+	}
+
+	/** A budget file or copy as it goes into a backup, or null when it can't be read. */
+	function backupBudget(name: string): BackupBudget | null {
+		const id = backupId(name);
+		try {
+			const image = readImage(name);
+			const copy = openImage(sqlite3, image);
+			try {
+				if (!isIntact(copy)) return null;
+				return { id, name: getMeta(copy).name, image };
+			} finally {
+				copy.close();
+			}
+		} catch (err) {
+			console.warn(`Moneta couldn't back up ${name}`, err);
+			return null;
+		}
+	}
+
+	function checkPicks(picks: RestorePick[], count: number): void {
+		const files = new Set<string>();
+		for (const pick of picks) {
+			const { index, file } = (pick ?? {}) as Partial<RestorePick>;
+			if (!Number.isInteger(index) || index! < 0 || index! >= count || typeof file !== 'string')
+				throw new DomainError('INVALID_INPUT', 'Bad restore pick');
+			checkFileName(file);
+			if (files.has(file)) throw new DomainError('INVALID_INPUT', `${file} picked twice`);
+			files.add(file);
 		}
 	}
 
@@ -128,17 +175,6 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			checkFileName(fileName);
 			removeFile(fileName);
 		},
-		async replaceFile(oldFile, newFile) {
-			checkFileName(oldFile);
-			checkFileName(newFile);
-			const files = store.list();
-			if (oldFile === newFile || !files.includes(oldFile) || !files.includes(newFile))
-				throw new DomainError('INVALID_INPUT', `Cannot replace ${oldFile} with ${newFile}`);
-			await store.reserve(SPARE_FILES);
-			// Written before anything is removed, so a failure leaves the old budget in place.
-			await saveCopy(newFile, readImage(oldFile));
-			removeFile(oldFile);
-		},
 		listCopies(fileName) {
 			checkFileName(fileName);
 			return copiesOf(fileName)
@@ -159,17 +195,55 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			closeDb();
 			store.release();
 		},
-		exportFile() {
-			if (!db) throw new DomainError('NO_DATABASE_OPEN');
-			return toImage(sqlite3, db);
+		exportBackup(names) {
+			const budgets: BackupBudget[] = [];
+			const skipped: string[] = [];
+			for (const name of names) {
+				const budget = backupBudget(name);
+				if (budget) budgets.push(budget);
+				else skipped.push(name);
+			}
+			return { bytes: writeBackup(budgets, now().toISOString()), skipped };
 		},
-		async importFile(fileName, bytes) {
-			checkFileName(fileName);
-			if (store.list().includes(fileName))
-				throw new DomainError('INVALID_INPUT', `${fileName} already exists`);
-			const image = checkBackup(sqlite3, bytes, migrations);
-			await store.reserve(SPARE_FILES);
-			await store.write(fileName, image);
+		markBackedUp(fileNames, at) {
+			for (const fileName of fileNames) {
+				backupId(fileName);
+				try {
+					withFile(fileName, (file) => updateMeta(file, { lastBackupAt: at }));
+				} catch (err) {
+					console.warn(`Moneta couldn't mark ${fileName} as backed up`, err);
+				}
+			}
+		},
+		inspectBackup(bytes) {
+			const { createdAt, budgets } = readBackup(bytes);
+			return {
+				createdAt,
+				budgets: budgets.map(({ id, image }, index) => {
+					const db = openImage(sqlite3, checkBackup(sqlite3, image, migrations));
+					try {
+						return { index, id, name: getMeta(db).name };
+					} finally {
+						db.close();
+					}
+				})
+			};
+		},
+		async restoreBackup(bytes, picks) {
+			if (!Array.isArray(picks)) throw new DomainError('INVALID_INPUT', 'Bad restore picks');
+			const { budgets } = readBackup(bytes);
+			checkPicks(picks, budgets.length);
+			// Everything is checked before anything is written, so a bad backup changes nothing.
+			const images = picks.map(({ index }) =>
+				checkBackup(sqlite3, budgets[index].image, migrations)
+			);
+			await store.reserve(SPARE_FILES + 2 * picks.length);
+			const existing = new Set(store.list());
+			for (const { file } of picks) if (existing.has(file)) await saveCopy(file, readImage(file));
+			for (const [i, { file }] of picks.entries()) {
+				if (openName === file) closeDb();
+				await store.write(file, images[i]);
+			}
 		}
 	};
 	return { system, getDb: () => db };

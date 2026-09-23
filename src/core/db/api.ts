@@ -106,29 +106,58 @@ export interface BudgetCopy {
 	savedAt: string;
 }
 
+export interface ExportedBackup {
+	bytes: Uint8Array<ArrayBuffer>;
+	skipped: string[];
+}
+
+/** A budget in a backup. `id` is the uuid of its file name, or null in a legacy `.sqlite` backup. */
+export interface BackupBudgetInfo {
+	index: number;
+	id: string | null;
+	name: string;
+}
+
+export interface BackupInfo {
+	/** When the backup was made, or null for a legacy `.sqlite` backup. */
+	createdAt: string | null;
+	budgets: BackupBudgetInfo[];
+}
+
+/** Which budget of a backup (by index) to restore into which file. */
+export interface RestorePick {
+	index: number;
+	file: string;
+}
+
 /** Worker-level operations that manage budget files rather than query one. */
 export interface SystemApi {
 	/** Opens a budget file (creating it if needed) and migrates it, saving a copy first. */
 	open(fileName: string): Promise<void>;
 	close(): void;
 	listFiles(): string[];
-	/** Deletes a budget file and its pre-migration copies. */
+	/** Deletes a budget file and its saved copies. */
 	deleteFile(fileName: string): void;
-	/**
-	 * Deletes `oldFile` and its copies, keeping `oldFile` itself as a copy of `newFile`, so a
-	 * restore that replaced a budget can be undone from `newFile`'s copies.
-	 */
-	replaceFile(oldFile: string, newFile: string): Promise<void>;
 	/** A budget's saved copies (before a migration or a replacing restore), newest first. */
 	listCopies(fileName: string): BudgetCopy[];
 	/** A pre-migration copy as the bytes of a `.sqlite` file, to restore or download as a backup. */
 	readCopy(copyName: string): Uint8Array<ArrayBuffer>;
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;
-	/** The open budget as the bytes of a `.sqlite` file. */
-	exportFile(): Uint8Array<ArrayBuffer>;
-	/** Checks a `.sqlite` backup, migrates it and saves it as a new file, left closed. */
-	importFile(fileName: string, bytes: Uint8Array): Promise<void>;
+	/**
+	 * Budget files or saved copies as one `.moneta` backup. Files that can't be read are left out
+	 * and listed in `skipped`.
+	 */
+	exportBackup(names: string[]): ExportedBackup;
+	/** Records in each budget file when it was last backed up. Files that can't be written are skipped. */
+	markBackedUp(fileNames: string[], at: string): void;
+	/** Checks a `.moneta` (or legacy `.sqlite`) backup and lists its budgets. Writes nothing. */
+	inspectBackup(bytes: Uint8Array): BackupInfo;
+	/**
+	 * Restores budgets from a backup into the given files, all checked before any is written. A
+	 * file that exists is replaced and kept as a saved copy; the open one is closed first.
+	 */
+	restoreBackup(bytes: Uint8Array, picks: RestorePick[]): Promise<void>;
 }
 
 type Promisify<T> = T extends (...args: infer A) => infer R

@@ -114,7 +114,7 @@ code: short doc comments on exports, and comments only where the code isn't self
 
 Use the [issue templates](https://github.com/flyri0/moneta/issues/new/choose). Moneta holds
 financial data, and issues are public: please reproduce the problem with a throwaway budget
-and never attach a `.sqlite` backup of your real one or screenshots of your real balances.
+and never attach a `.moneta` or `.sqlite` backup of your real one or screenshots of your real balances.
 
 If you believe you have found a security or privacy problem, report it privately through
 GitHub's security advisories rather than in a public issue.
