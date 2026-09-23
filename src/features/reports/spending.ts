@@ -1,5 +1,24 @@
+import type { Table } from '$db/connection';
 import type { SpendingRow } from '$db/repos/reports';
 import type { TransactionRow } from '$db/repos/transactions';
+
+/** What spending and cash flow read: a change to any of these can move a report. */
+export const SPENDING_TABLES: Table[] = [
+	'transactions',
+	'transaction_splits',
+	'categories',
+	'category_groups',
+	'accounts',
+	'payees'
+];
+
+/** The fill for a segment's colour slot, or the muted one for the remainder. */
+export function segmentClass(color: number | null): string {
+	return (
+		['bg-cat-1', 'bg-cat-2', 'bg-cat-3', 'bg-cat-4', 'bg-cat-5'][(color ?? 0) - 1] ??
+		'bg-muted-foreground/40'
+	);
+}
 
 /** How much of a transaction falls in a category: the amount, or its split lines there. */
 export function amountInCategory(row: TransactionRow, categoryId: string): number {
@@ -16,4 +35,54 @@ export function withShares(rows: SpendingRow[]): {
 } {
 	const total = rows.reduce((sum, r) => sum + r.amount, 0);
 	return { total, rows: rows.map((r) => ({ ...r, share: total ? (r.amount / total) * 100 : 0 })) };
+}
+
+/** A slice of the stacked bar. `color` is 1-based, into the `--cat-N` palette. */
+export interface Segment {
+	key: string;
+	label: string;
+	amount: number;
+	share: number;
+	color: number;
+}
+
+/**
+ * The first `n` rows as coloured segments, and everything after them folded into one
+ * remainder, so the bar still adds up to the total. Rows come largest first.
+ */
+export function topSegments(
+	rows: SpendingRow[],
+	n = 5
+): {
+	total: number;
+	segments: Segment[];
+	other: { count: number; amount: number; share: number } | null;
+} {
+	const { total, rows: shared } = withShares(rows);
+	const segments = shared.slice(0, n).map((r, i) => ({
+		key: r.categoryId,
+		label: r.name,
+		amount: r.amount,
+		share: r.share,
+		color: i + 1
+	}));
+	const rest = shared.slice(n);
+	const amount = rest.reduce((sum, r) => sum + r.amount, 0);
+	return {
+		total,
+		segments,
+		other: rest.length ? { count: rest.length, amount, share: (amount / total) * 100 } : null
+	};
+}
+
+/**
+ * Spending summed per category group, in the same shape as a category row (the group's name
+ * stands in for the id), largest first, then by name.
+ */
+export function byGroup(rows: SpendingRow[]): SpendingRow[] {
+	const groups = new Map<string, number>();
+	for (const r of rows) groups.set(r.groupName, (groups.get(r.groupName) ?? 0) + r.amount);
+	return [...groups]
+		.map(([name, amount]) => ({ categoryId: name, name, groupName: '', amount }))
+		.sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
 }

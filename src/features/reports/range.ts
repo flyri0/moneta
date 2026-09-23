@@ -1,9 +1,18 @@
-import { addMonths, MAX_DATE, MIN_DATE, monthOf, type Month } from '$domain/month';
+import {
+	addMonths,
+	compareMonths,
+	MAX_DATE,
+	MIN_DATE,
+	monthOf,
+	monthRange,
+	type Month
+} from '$domain/month';
 
 export const RANGE_PRESETS = [
 	'this_month',
 	'last_month',
 	'last_3_months',
+	'last_6_months',
 	'last_12_months',
 	'this_year',
 	'all'
@@ -22,10 +31,14 @@ function lastDay(month: Month): string {
 	return `${month}-${String(day).padStart(2, '0')}`;
 }
 
+/** The dates from the first day of `first` through the last day of `last`. */
+export function span(first: Month, last: Month): DateRange {
+	return { from: `${first}-01`, to: lastDay(last) };
+}
+
 /** The whole months a preset covers, relative to `today` (YYYY-MM-DD). */
 export function presetRange(preset: RangePreset, today: string): DateRange {
 	const month = monthOf(today);
-	const span = (first: Month, last: Month) => ({ from: `${first}-01`, to: lastDay(last) });
 	switch (preset) {
 		case 'this_month':
 			return span(month, month);
@@ -33,6 +46,8 @@ export function presetRange(preset: RangePreset, today: string): DateRange {
 			return span(addMonths(month, -1), addMonths(month, -1));
 		case 'last_3_months':
 			return span(addMonths(month, -2), month);
+		case 'last_6_months':
+			return span(addMonths(month, -5), month);
 		case 'last_12_months':
 			return span(addMonths(month, -11), month);
 		case 'this_year':
@@ -42,4 +57,16 @@ export function presetRange(preset: RangePreset, today: string): DateRange {
 		case 'all':
 			return { from: MIN_DATE, to: MAX_DATE };
 	}
+}
+
+/**
+ * How many months a range touches, the future left out, or null when that means nothing: all
+ * time has no length to average over, and a range wholly ahead has not started.
+ */
+export function monthsCovered(range: DateRange, today: string): number | null {
+	if (range.from === MIN_DATE) return null;
+	const now = monthOf(today);
+	const last = compareMonths(monthOf(range.to), now) > 0 ? now : monthOf(range.to);
+	const first = monthOf(range.from);
+	return compareMonths(first, last) > 0 ? null : monthRange(first, last).length;
 }

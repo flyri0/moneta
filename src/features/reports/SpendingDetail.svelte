@@ -1,53 +1,64 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
-	import ReportSection from './ReportSection.svelte';
+	import StackedBar from './StackedBar.svelte';
+	import StatTile from './StatTile.svelte';
 	import { payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import type { Table } from '$db/connection';
+	import { todayIso } from '$domain/month';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { errorMessage } from '$i18n/errors';
 	import { formatDate } from '$i18n/formats';
-	import type { DateRange } from '$features/reports/range';
-	import { amountInCategory, withShares } from '$features/reports/spending';
+	import { type DateRange, monthsCovered } from '$features/reports/range';
+	import {
+		amountInCategory,
+		byGroup,
+		SPENDING_TABLES,
+		segmentClass,
+		topSegments,
+		withShares
+	} from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	let { range }: { range: DateRange } = $props();
 
 	const session = useSession();
-	const TABLES: Table[] = [
-		'transactions',
-		'transaction_splits',
-		'categories',
-		'category_groups',
-		'accounts'
-	];
 	/** Rows shown before the list folds. Enough to see the shape of a month's spending. */
 	const ROWS = 8;
+	/** Parts of the bar with a colour of their own; the table's first rows wear the same ones. */
+	const TOP = 5;
 
 	let selected = $state<string | null>(null);
 	let expanded = $state(false);
+	let grouped = $state(false);
 
-	const spending = useLive(session.client, TABLES, () =>
+	const spending = useLive(session.client, SPENDING_TABLES, () =>
 		session.api.reports.spending({ from: range.from, to: range.to })
 	);
-	const report = $derived(withShares(spending.data ?? []));
+	const source = $derived(grouped ? byGroup(spending.data ?? []) : (spending.data ?? []));
+	const report = $derived(withShares(source));
+	const top = $derived(topSegments(source, TOP));
+	const months = $derived(monthsCovered(range, todayIso()));
 	/** Bars are scaled to the biggest row, so the top one fills its track and the rest compare
 	 * against it. The share column carries the percent of the total. */
 	const max = $derived(Math.max(1, ...report.rows.map((r) => r.amount)));
 	const shown = $derived(expanded ? report.rows : report.rows.slice(0, ROWS));
-	const category = $derived(report.rows.find((r) => r.categoryId === selected) ?? null);
-	const transactions = useLive(session.client, [...TABLES, 'payees'], () =>
+	const category = $derived(
+		grouped ? null : (report.rows.find((r) => r.categoryId === selected) ?? null)
+	);
+	const transactions = useLive(session.client, SPENDING_TABLES, () =>
 		selected
 			? session.api.transactions.list({ categoryId: selected, from: range.from, to: range.to })
 			: Promise.resolve<TransactionRow[]>([])
 	);
 
-	// A drilled-in category rarely survives a new period, and a stale one reads as a bug.
+	// A drilled-in category rarely survives a new period or a switch to groups, and a stale one
+	// reads as a bug.
 	$effect(() => {
 		void range;
+		void grouped;
 		untrack(() => {
 			selected = null;
 			expanded = false;
@@ -59,44 +70,82 @@
 	);
 </script>
 
-<ReportSection title={m.reports_spending()}>
+<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
 	{#if spending.error}
 		<p class="text-sm text-destructive" role="alert">{errorMessage(spending.error)}</p>
 	{:else if spending.data && report.rows.length === 0}
 		<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
 	{:else if report.rows.length > 0}
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<StatTile
+				value={session.format(report.total)}
+				caption={months && months > 1
+					? m.reports_average_month({ amount: session.format(Math.round(report.total / months)) })
+					: undefined}
+				testId="spending-total"
+			/>
+			<div class="inline-flex rounded-lg bg-muted p-0.5 text-sm">
+				{#each [false, true] as byGroups (byGroups)}
+					<button
+						type="button"
+						class="rounded-md px-3 py-1 text-muted-foreground transition-colors aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm"
+						aria-pressed={grouped === byGroups}
+						onclick={() => (grouped = byGroups)}
+					>
+						{byGroups ? m.reports_by_group() : m.reports_by_category()}
+					</button>
+				{/each}
+			</div>
+		</div>
+		<StackedBar segments={top.segments} other={top.other} class="h-4" />
+
 		<!-- The drill-down gets its own column on a wide screen; with none open the list keeps the
 		width to itself rather than leaving half the card empty. -->
 		<div class="grid gap-4 {category ? 'lg:grid-cols-2 lg:items-start' : ''}">
 			<table class="w-full text-sm" data-testid="spending-table">
 				<thead class="text-left text-xs text-muted-foreground">
 					<tr>
-						<th scope="col" class="py-1 font-medium">{m.budget_category()}</th>
+						<th scope="col" class="py-1 font-medium">
+							{grouped ? m.reports_group() : m.budget_category()}
+						</th>
 						<th scope="col" class="py-1 text-right font-medium">{m.reports_spent()}</th>
 						<th scope="col" class="py-1 text-right font-medium">{m.reports_share()}</th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each shown as row (row.categoryId)}
+					{#each shown as row, i (row.categoryId)}
+						{@const bar = segmentClass(i < TOP ? i + 1 : null)}
 						<tr class="border-t">
 							<th scope="row" class="py-2 pr-3 text-left font-normal">
-								<button
-									type="button"
-									class="group grid w-full gap-1.5 text-left"
-									aria-pressed={selected === row.categoryId}
-									onclick={() => (selected = selected === row.categoryId ? null : row.categoryId)}
-								>
-									<span class="grid gap-0.5">
-										<span class="font-medium group-aria-pressed:underline">{row.name}</span>
-										<span class="text-xs text-muted-foreground">{row.groupName}</span>
+								{#if grouped}
+									<span class="grid gap-1.5">
+										<span class="font-medium">{row.name}</span>
+										<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
+											<span
+												class="block h-full rounded-full {bar}"
+												style="width: {(row.amount / max) * 100}%"
+											></span>
+										</span>
 									</span>
-									<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
-										<span
-											class="block h-full rounded-full bg-chart-1"
-											style="width: {(row.amount / max) * 100}%"
-										></span>
-									</span>
-								</button>
+								{:else}
+									<button
+										type="button"
+										class="group grid w-full gap-1.5 text-left"
+										aria-pressed={selected === row.categoryId}
+										onclick={() => (selected = selected === row.categoryId ? null : row.categoryId)}
+									>
+										<span class="grid gap-0.5">
+											<span class="font-medium group-aria-pressed:underline">{row.name}</span>
+											<span class="text-xs text-muted-foreground">{row.groupName}</span>
+										</span>
+										<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
+											<span
+												class="block h-full rounded-full {bar}"
+												style="width: {(row.amount / max) * 100}%"
+											></span>
+										</span>
+									</button>
+								{/if}
 							</th>
 							<td class="py-2 text-right align-top whitespace-nowrap tabular-nums">
 								{session.format(row.amount)}
@@ -177,4 +226,4 @@
 			{/if}
 		</div>
 	{/if}
-</ReportSection>
+</div>

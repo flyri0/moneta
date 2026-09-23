@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { isDate, MAX_DATE, MIN_DATE } from '$domain/month';
-import { presetRange, RANGE_PRESETS } from './range';
+import { monthsCovered, presetRange, RANGE_PRESETS } from './range';
 
 describe('presetRange', () => {
 	it.each([
 		['this_month', '2026-09-01', '2026-09-30'],
 		['last_month', '2026-08-01', '2026-08-31'],
 		['last_3_months', '2026-07-01', '2026-09-30'],
+		['last_6_months', '2026-04-01', '2026-09-30'],
 		['last_12_months', '2025-10-01', '2026-09-30'],
 		['this_year', '2026-01-01', '2026-12-31'],
 		['all', MIN_DATE, MAX_DATE]
@@ -22,7 +23,7 @@ describe('presetRange', () => {
 	});
 
 	it('lists every preset', () => {
-		expect(RANGE_PRESETS).toHaveLength(6);
+		expect(RANGE_PRESETS).toHaveLength(7);
 	});
 
 	it('gives every preset a valid, ordered range', () => {
@@ -32,5 +33,21 @@ describe('presetRange', () => {
 			expect(isDate(to)).toBe(true);
 			expect(from <= to).toBe(true);
 		}
+	});
+});
+
+describe('monthsCovered', () => {
+	const TODAY = '2026-09-19';
+
+	it('counts the months a range touches, up to the current one', () => {
+		expect(monthsCovered(presetRange('this_month', TODAY), TODAY)).toBe(1);
+		expect(monthsCovered(presetRange('last_6_months', TODAY), TODAY)).toBe(6);
+		expect(monthsCovered(presetRange('this_year', TODAY), TODAY)).toBe(9);
+		expect(monthsCovered({ from: '2026-07-15', to: '2026-08-02' }, TODAY)).toBe(2);
+	});
+
+	it('is null for all time, which has no length, and for a range wholly in the future', () => {
+		expect(monthsCovered(presetRange('all', TODAY), TODAY)).toBeNull();
+		expect(monthsCovered({ from: '2026-10-01', to: '2026-12-31' }, TODAY)).toBeNull();
 	});
 });

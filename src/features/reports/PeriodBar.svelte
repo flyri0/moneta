@@ -10,7 +10,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	/** The one period control on the page: it scopes every report below it. */
+	/** The period control of a report page: it scopes everything below it. */
 	let {
 		preset = $bindable(),
 		custom = $bindable(),
@@ -25,6 +25,7 @@
 		this_month: m.reports_range_this_month,
 		last_month: m.reports_range_last_month,
 		last_3_months: m.reports_range_last_3_months,
+		last_6_months: m.reports_range_last_6_months,
 		last_12_months: m.reports_range_last_12_months,
 		this_year: m.reports_range_this_year,
 		all: m.reports_range_all

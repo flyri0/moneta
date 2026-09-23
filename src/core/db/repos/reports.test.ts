@@ -3,7 +3,7 @@ import { categoryId, createBudgetDb } from '../testing';
 import type { Db } from '../connection';
 import { createAccount } from './accounts';
 import { defaultIncomeCategoryId } from './meta';
-import { netWorth, spendingByCategory } from './reports';
+import { cashFlow, netWorth, spendingByCategory } from './reports';
 import { createTransaction } from './transactions';
 
 let db: Db;
@@ -116,6 +116,67 @@ describe('netWorth', () => {
 
 	it('rejects an invalid month', () => {
 		expect(() => netWorth(db, '2026-13')).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
+});
+
+describe('cashFlow', () => {
+	beforeEach(() => {
+		const income = defaultIncomeCategoryId(db);
+		const food = categoryId(db, 'Food');
+		const fun = categoryId(db, 'Fun');
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-08-05',
+			amount: 300000,
+			categoryId: income
+		});
+		createTransaction(db, { accountId: bank, date: '2026-08-06', amount: -7000, categoryId: food });
+		createTransaction(db, {
+			accountId: visa,
+			date: '2026-09-05',
+			amount: -9000,
+			splits: [
+				{ categoryId: food, amount: -4000 },
+				{ categoryId: income, amount: -1000 },
+				{ categoryId: fun, amount: -4000 }
+			]
+		});
+		// a refund, a card payment and an off-budget transfer
+		createTransaction(db, { accountId: bank, date: '2026-09-11', amount: 1000, categoryId: fun });
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-15',
+			amount: -8000,
+			transferAccountId: visa
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-16',
+			amount: -10000,
+			transferAccountId: broker,
+			categoryId: fun
+		});
+		createTransaction(db, { accountId: broker, date: '2026-09-20', amount: 5000 });
+	});
+
+	it('sums income and net spending per month, leaving starting balances out', () => {
+		expect(cashFlow(db, { from: '2026-08-01', to: '2026-09-30' })).toEqual([
+			{ month: '2026-08', income: 300000, spending: 7000 },
+			{ month: '2026-09', income: -1000, spending: 17000 }
+		]);
+	});
+
+	it('keeps to the date range and returns only months with data', () => {
+		expect(cashFlow(db, { from: '2026-09-01', to: '2026-12-31' })).toEqual([
+			{ month: '2026-09', income: -1000, spending: 17000 }
+		]);
+		expect(cashFlow(db, { from: '2027-01-01', to: '2027-12-31' })).toEqual([]);
+	});
+
+	it('rejects invalid ranges', () => {
+		expect(() => cashFlow(db, { from: '2026-09-30', to: '2026-09-01' })).toThrow(
 			expect.objectContaining({ code: 'INVALID_INPUT' })
 		);
 	});

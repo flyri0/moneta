@@ -28,6 +28,9 @@ test('runs the app without CSP violations', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Reports' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Reports' })).toBeVisible();
+	// Both charts live on the full net worth report.
+	await page.getByRole('link', { name: 'Net worth' }).click();
+	await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
 	await openSettings(page);
 	const downloading = page.waitForEvent('download');
 	await page.getByRole('button', { name: 'Back up now' }).click();

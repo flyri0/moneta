@@ -29,6 +29,15 @@
 	--chart-3: oklch(0.439 0 0);
 	--chart-4: oklch(0.371 0 0);
 	--chart-5: oklch(0.269 0 0);
+	/* Report categories and cash flow: fixed hues, not tied to the accent, and ordered so
+	   neighbours stay apart under colour blindness (checked in both themes). */
+	--cat-1: #2a78d6;
+	--cat-2: #eb6834;
+	--cat-3: #1baf7a;
+	--cat-4: #eda100;
+	--cat-5: #e87ba4;
+	--income: var(--cat-3);
+	--spending: var(--cat-2);
 	--radius: 0.625rem;
 	--sidebar: oklch(0.985 0 0);
 	--sidebar-foreground: oklch(0.145 0 0);
@@ -64,6 +73,11 @@
 	--chart-3: oklch(0.439 0 0);
 	--chart-4: oklch(0.371 0 0);
 	--chart-5: oklch(0.269 0 0);
+	--cat-1: #3987e5;
+	--cat-2: #d95926;
+	--cat-3: #199e70;
+	--cat-4: #c98500;
+	--cat-5: #d55181;
 	--sidebar: oklch(0.205 0 0);
 	--sidebar-foreground: oklch(0.985 0 0);
 	--sidebar-primary: oklch(0.488 0.243 264.376);
@@ -251,6 +265,13 @@
 	--color-chart-3: var(--chart-3);
 	--color-chart-2: var(--chart-2);
 	--color-chart-1: var(--chart-1);
+	--color-cat-1: var(--cat-1);
+	--color-cat-2: var(--cat-2);
+	--color-cat-3: var(--cat-3);
+	--color-cat-4: var(--cat-4);
+	--color-cat-5: var(--cat-5);
+	--color-income: var(--income);
+	--color-spending: var(--spending);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);

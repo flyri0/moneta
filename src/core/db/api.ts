@@ -88,7 +88,8 @@ export const api = {
 	},
 	reports: {
 		spending: read(reports.spendingByCategory, ['object']),
-		netWorth: read(reports.netWorth, ['string'])
+		netWorth: read(reports.netWorth, ['string']),
+		cashFlow: read(reports.cashFlow, ['object'])
 	},
 	backup: {
 		dump: read((db: Db) => dump.dumpBudget(db), [])
