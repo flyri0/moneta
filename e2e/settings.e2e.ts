@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCombobox, fillNewBudget, onboard, openSettings } from './helpers';
+import { chooseCombobox, deleteBudget, fillNewBudget, onboard, openSettings } from './helpers';
 
 test('creates, switches, renames and deletes budgets', async ({ page }) => {
 	await onboard(page);
@@ -25,8 +25,7 @@ test('creates, switches, renames and deletes budgets', async ({ page }) => {
 	await page.getByRole('button', { name: 'Save' }).click();
 	await expect(files.getByRole('listitem').first()).toContainText('House');
 
-	await page.getByRole('button', { name: 'Delete Work' }).click();
-	await page.getByRole('button', { name: 'Tap again to delete' }).click();
+	await deleteBudget(page, 'Work');
 	await expect(files.getByRole('listitem')).toHaveText([/House/]);
 
 	await page.reload();
@@ -49,10 +48,42 @@ test('keeps the currency once the budget has amounts', async ({ page }) => {
 test('deleting the last budget starts over', async ({ page }) => {
 	await onboard(page);
 	await openSettings(page);
-	await page.getByRole('button', { name: 'Delete Home' }).click();
-	await page.getByRole('button', { name: 'Tap again to delete' }).click();
+	await deleteBudget(page, 'Home');
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Cancel' })).toBeHidden();
+});
+
+test('deleting a budget needs its name and a second tap after a wait', async ({ page }) => {
+	await onboard(page);
+	await openSettings(page);
+	await page.getByRole('button', { name: 'Delete Home' }).click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.getByRole('status')).toContainText('deletes Home and its saved copies');
+	const name = dialog.getByLabel('Type Home to confirm');
+	const confirm = dialog.getByRole('button', { name: 'Delete budget' });
+
+	// Only the exact name unlocks the button.
+	await expect(confirm).toBeDisabled();
+	await name.fill('home');
+	await expect(confirm).toBeDisabled();
+	await name.fill('Home');
+	await expect(confirm).toBeEnabled();
+
+	// The first tap starts a wait; changing the name starts over.
+	await confirm.click();
+	await expect(dialog.getByRole('button', { name: /^Delete in \ds$/ })).toBeDisabled();
+	await name.fill('Hom');
+	await expect(confirm).toBeDisabled();
+	await name.fill('Home');
+	await confirm.click();
+
+	// Closing without the second tap keeps the budget.
+	await page.keyboard.press('Escape');
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('budget-files').getByRole('listitem')).toHaveText([/Home/]);
+
+	await deleteBudget(page, 'Home');
+	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 
 test('picks an accent colour and a theme that outlive a reload', async ({ page }) => {

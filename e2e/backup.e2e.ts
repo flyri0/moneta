@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { fillNewBudget, onboard, openSettings } from './helpers';
+import { deleteBudget, fillNewBudget, onboard, openSettings } from './helpers';
 
 async function download(page: Page, button: string, path: string): Promise<string> {
 	const downloading = page.waitForEvent('download');
@@ -46,8 +46,7 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	await page.getByRole('button', { name: 'Save' }).click();
 	const files = page.getByTestId('budget-files');
 	await expect(files.getByRole('listitem')).toHaveText([/Home/, /Changed/]);
-	await page.getByRole('button', { name: 'Delete Home' }).click();
-	await page.getByRole('button', { name: 'Tap again to delete' }).click();
+	await deleteBudget(page, 'Home');
 	await expect(files.getByRole('listitem')).toHaveText([/Changed/]);
 
 	// Restoring only Home brings it back and leaves Changed alone.

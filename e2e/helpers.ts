@@ -133,3 +133,12 @@ export async function openSettings(page: Page): Promise<void> {
 	await page.getByRole('link', { name: 'Settings' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 }
+
+/** Deletes a budget through its confirmation: type the name, tap, wait, tap again. */
+export async function deleteBudget(page: Page, name: string): Promise<void> {
+	await page.getByRole('button', { name: `Delete ${name}` }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel(`Type ${name} to confirm`).fill(name);
+	await dialog.getByRole('button', { name: 'Delete budget' }).click();
+	await dialog.getByRole('button', { name: 'Tap again to delete' }).click({ timeout: 10_000 });
+}

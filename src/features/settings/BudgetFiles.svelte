@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
+	import DeleteBudgetDialog from './DeleteBudgetDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
@@ -15,7 +16,8 @@
 	const app = getApp();
 	const session = useSession();
 	let budgets = $state(loadRegistry(localStorage).budgets);
-	let confirming = $state<string | null>(null);
+	let deleting = $state<{ file: string; name: string } | null>(null);
+	let confirmingDelete = $state(false);
 	let error = $state<string | null>(null);
 
 	async function open(file: string) {
@@ -26,13 +28,13 @@
 		if (!error) void goto(resolve('/budget/[month]', { month: currentMonth() }));
 	}
 
-	async function remove(file: string) {
-		if (confirming !== file) {
-			confirming = file;
-			return;
-		}
-		confirming = null;
-		error = await runAction(async () => {
+	function askToDelete(file: string, name: string) {
+		deleting = { file, name };
+		confirmingDelete = true;
+	}
+
+	function remove(file: string): Promise<string | null> {
+		return runAction(async () => {
 			const next = await deleteBudget(session.api, localStorage, file, session.file);
 			if (next) app.apply(session.client, next);
 			budgets = loadRegistry(localStorage).budgets;
@@ -63,12 +65,10 @@
 						<Button
 							variant="destructive"
 							size="sm"
-							aria-label={confirming === budget.file
-								? undefined
-								: m.settings_budget_delete_named({ name })}
-							onclick={() => remove(budget.file)}
+							aria-label={m.settings_budget_delete_named({ name })}
+							onclick={() => askToDelete(budget.file, name)}
 						>
-							{confirming === budget.file ? m.confirm_delete() : m.delete()}
+							{m.delete()}
 						</Button>
 					{/snippet}
 				</SettingsRow>
@@ -83,3 +83,12 @@
 		onclick={() => (app.boot = { kind: 'onboarding' })}
 	/>
 </SettingsGroup>
+
+{#if deleting}
+	{@const target = deleting}
+	<DeleteBudgetDialog
+		bind:open={confirmingDelete}
+		name={target.name}
+		ondelete={() => remove(target.file)}
+	/>
+{/if}

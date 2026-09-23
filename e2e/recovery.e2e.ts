@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { onboard, openSettings } from './helpers';
+import { deleteBudget, onboard, openSettings } from './helpers';
 
 /**
  * Overwrites the SQLite header of the budget file in the OPFS pool. It runs on the welcome page,
@@ -78,7 +78,6 @@ test('a damaged budget file can be deleted, then a new budget started', async ({
 	await page.goto('/settings');
 	await expect(page.getByRole('heading', { name: "Your budget couldn't be opened" })).toBeVisible();
 
-	await page.getByRole('button', { name: /^Delete / }).click();
-	await page.getByRole('button', { name: 'Tap again to delete' }).click();
+	await deleteBudget(page, 'Home');
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });

@@ -3,6 +3,7 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import CopyList from '$features/backup/CopyList.svelte';
+	import DeleteBudgetDialog from '$features/settings/DeleteBudgetDialog.svelte';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { runAction } from '$client/notify';
 	import {
@@ -32,7 +33,8 @@
 		onNew: () => void;
 	} = $props();
 
-	let confirming = $state<string | null>(null);
+	let deleting = $state<UnreadableBudget | null>(null);
+	let confirmingDelete = $state(false);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let chosen = $state('');
@@ -48,19 +50,20 @@
 		return () => (current = false);
 	});
 
-	async function remove(file: string) {
-		if (confirming !== file) {
-			confirming = file;
-			return;
-		}
-		confirming = null;
+	function askToDelete(budget: UnreadableBudget) {
+		deleting = budget;
+		confirmingDelete = true;
+	}
+
+	async function remove(file: string): Promise<string | null> {
 		busy = true;
-		error = await runAction(async () => {
+		const message = await runAction(async () => {
 			// No budget is open, so the file stands in for it: what is left opens next.
 			const next = await deleteBudget(api, localStorage, file, file);
 			if (next) onResult(next);
 		});
 		busy = false;
+		return message;
 	}
 
 	async function restore(event: Event & { currentTarget: HTMLInputElement }) {
@@ -101,12 +104,10 @@
 							variant="destructive"
 							size="sm"
 							disabled={busy}
-							aria-label={confirming === budget.file
-								? undefined
-								: m.settings_budget_delete_named({ name: budget.name })}
-							onclick={() => remove(budget.file)}
+							aria-label={m.settings_budget_delete_named({ name: budget.name })}
+							onclick={() => askToDelete(budget)}
 						>
-							{confirming === budget.file ? m.confirm_delete() : m.delete()}
+							{m.delete()}
 						</Button>
 					</div>
 					{#if copies[budget.file]?.length}
@@ -137,3 +138,12 @@
 		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 	</div>
 </main>
+
+{#if deleting}
+	{@const target = deleting}
+	<DeleteBudgetDialog
+		bind:open={confirmingDelete}
+		name={target.name}
+		ondelete={() => remove(target.file)}
+	/>
+{/if}
