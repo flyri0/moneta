@@ -382,5 +382,10 @@
 	"date_picker_placeholder": "Select a date",
 	"date_picker_clear": "Clear date",
 	"date_picker_month": "Month",
-	"date_picker_year": "Year"
+	"date_picker_year": "Year",
+	"not_found_title": "Page not found",
+	"not_found_body": "This address doesn't exist in Moneta.",
+	"not_found_home": "Go to start",
+	"error_page_title": "Something went wrong",
+	"error_page_body": "This page couldn't be shown."
 }

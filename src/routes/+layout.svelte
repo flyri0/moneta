@@ -15,8 +15,8 @@
 	// The app is a client-only SPA, so the document is always there.
 	document.documentElement.lang = getLocale();
 
-	/** The welcome page is not the app: it opens no database and claims no tab lock. */
-	const welcome = $derived(page.route.id === '/');
+	/** The welcome and error pages are not the app: they open no database and claim no tab lock. */
+	const standalone = $derived(page.route.id === '/' || page.error !== null);
 </script>
 
 <svelte:head>
@@ -25,7 +25,7 @@
 
 <ModeWatcher defaultTheme={DEFAULT_ACCENT} />
 <Toaster richColors closeButton />
-{#if welcome}
+{#if standalone}
 	{@render children()}
 {:else}
 	<Boot>{@render children()}</Boot>
