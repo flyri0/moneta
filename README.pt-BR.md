@@ -59,8 +59,9 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Transações divididas e transferências entre contas
 - Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
 - Vários orçamentos lado a lado
-- Backup e restauração de todos os orçamentos em um arquivo `.moneta`, além de exportações
-  CSV e JSON, com lembrete quando o último backup tem mais de duas semanas
+- Backup e restauração de todos os orçamentos em um arquivo `.moneta`, criptografado com
+  senha e chave de recuperação se você quiser, além de exportações CSV e JSON, com lembrete
+  quando o último backup tem mais de duas semanas
 - PWA instalável, que funciona offline, com uma página de boas-vindas que oferece a instalação
 - Inglês e português do Brasil
 
@@ -69,7 +70,7 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de base zero por envelopes. As direções planejadas para as próximas versões incluem:
 
 - **Segurança e soberania de dados**:
-  - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys), além de backups protegidos por criptografia.
+  - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys).
   - **Destinos de backup em nuvem**: Exportação de backups criptografados no próprio dispositivo diretamente para armazenamento do usuário (WebDAV/Nextcloud, Google Drive, Dropbox) e sincronização com pasta local via File System Access API.
 - **Gestão de favorecidos e transações**:
   - **Tela de gerenciamento de favorecidos**: Interface dedicada para listar favorecidos, renomear em todas as transações passadas de uma só vez, mesclar duplicatas, definir categorias padrão e remover registros não utilizados.
@@ -122,7 +123,17 @@ Em **Ajustes → Backup** você salva todos os orçamentos nos downloads em um a
 `.moneta` e restaura os que escolher dele, e o Moneta avisa quando o último backup tem mais
 de duas semanas. Um `.moneta` é um ZIP: o `moneta.json` o descreve, e `budgets/` guarda o
 arquivo SQLite de cada orçamento. Restaurar um orçamento que já está no aparelho o substitui
-e guarda o que ele tinha como cópia salva. Backups `.sqlite` antigos continuam restauráveis. Antes que uma atualização
+e guarda o que ele tinha como cópia salva. Backups `.sqlite` antigos continuam restauráveis.
+
+Ative **Criptografar backups** para proteger os próprios arquivos de backup. Você escolhe uma
+senha e recebe uma chave de recuperação para guardar longe dos backups. O Moneta guarda a
+chave de criptografia no aparelho, então fazer backup não pede nada, e restaurar pede a senha
+ou a chave de recuperação. Um `.moneta` criptografado traz só as configurações da
+criptografia no `moneta.json` e o backup inteiro, criptografado com AES-256-GCM, no
+`payload.bin`. A chave vem da senha por PBKDF2-SHA256, ou da chave de recuperação por HKDF.
+Sem as duas, ninguém abre esses backups, nem o Moneta.
+
+Antes que uma atualização
 do app mude o esquema de um orçamento, o Moneta guarda uma cópia do arquivo antigo no mesmo
 armazenamento (as três últimas), para que atualizar nunca seja um caminho sem volta.
 

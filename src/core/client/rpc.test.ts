@@ -27,10 +27,16 @@ function connect(db: Db | null) {
 			release: () => {},
 			listCopies: () => [],
 			readCopy: () => new Uint8Array(),
-			exportBackup: () => ({ bytes: new Uint8Array(), skipped: [] }),
+			exportBackup: async () => ({ bytes: new Uint8Array(), skipped: [], encrypted: false }),
 			markBackedUp: () => {},
 			inspectBackup: () => ({ createdAt: null, budgets: [] }),
-			restoreBackup: async () => {}
+			restoreBackup: async () => {},
+			backupEncryption: async () => ({ on: false }),
+			setBackupEncryption: async () => {},
+			clearBackupEncryption: async () => {},
+			checkBackupPassword: async () => false,
+			isEncryptedBackup: () => false,
+			unlockBackup: async () => new Uint8Array()
 		}
 	});
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));

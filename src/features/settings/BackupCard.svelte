@@ -3,6 +3,9 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '$ui/input';
+	import { Switch } from '$ui/switch';
+	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
+	import CheckPasswordDialog from './CheckPasswordDialog.svelte';
 	import RestoreDialog from './RestoreDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
@@ -24,6 +27,11 @@
 	let restoring = $state(false);
 	let picked = $state<File | null>(null);
 	let chosen = $state('');
+	/** Whether backups are encrypted; null until the worker says. */
+	let encrypted = $state<boolean | null>(null);
+	let settingUp = $state(false);
+	let changing = $state(false);
+	let checking = $state(false);
 
 	function pick(event: Event & { currentTarget: HTMLInputElement }) {
 		picked = event.currentTarget.files?.[0] ?? null;
@@ -40,6 +48,34 @@
 		);
 		return () => (current = false);
 	});
+
+	$effect(() => {
+		let current = true;
+		session.api.system.backupEncryption().then(
+			({ on }) => current && (encrypted = on),
+			() => {}
+		);
+		return () => (current = false);
+	});
+
+	/** Turning it on goes through the setup; turning it off only drops the key. */
+	function toggleEncryption(on: boolean) {
+		if (on) {
+			changing = false;
+			settingUp = true;
+			return;
+		}
+		void runActionToast(async () => {
+			await session.api.system.clearBackupEncryption();
+			encrypted = false;
+			toast.success(m.backup_encrypted_off());
+		});
+	}
+
+	function encryptionSet() {
+		toast.success(changing ? m.backup_password_changed() : m.backup_encrypted_on());
+		encrypted = true;
+	}
 
 	/** Restores a saved copy next to the open budget, which is left as it is. */
 	async function restoreCopy(bytes: Uint8Array) {
@@ -68,6 +104,29 @@
 			/>
 		{/snippet}
 	</SettingsRow>
+	<SettingsRow
+		label={m.backup_encrypt()}
+		labelFor="encrypt-backups"
+		hint={encrypted ? m.backup_encrypt_on_hint() : m.backup_encrypt_off_hint()}
+	>
+		{#snippet control()}
+			<Switch
+				id="encrypt-backups"
+				disabled={encrypted === null}
+				bind:checked={() => encrypted === true, toggleEncryption}
+			/>
+		{/snippet}
+	</SettingsRow>
+	{#if encrypted}
+		<SettingsRow
+			label={m.backup_change_password()}
+			onclick={() => {
+				changing = true;
+				settingUp = true;
+			}}
+		/>
+		<SettingsRow label={m.backup_check_password()} onclick={() => (checking = true)} />
+	{/if}
 </SettingsGroup>
 
 {#if copies.length > 0}
@@ -88,3 +147,5 @@
 </SettingsGroup>
 
 <RestoreDialog bind:open={restoring} file={picked} />
+<BackupEncryptionSetup bind:open={settingUp} {changing} ondone={encryptionSet} />
+<CheckPasswordDialog bind:open={checking} />

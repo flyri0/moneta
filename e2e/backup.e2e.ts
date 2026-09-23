@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { deleteBudget, fillNewBudget, onboard, openSettings } from './helpers';
+import { deleteBudget, fillNewBudget, nextStep, onboard, openSettings, startApp } from './helpers';
 
 async function download(page: Page, button: string, path: string): Promise<string> {
 	const downloading = page.waitForEvent('download');
@@ -91,6 +91,99 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	await expect(dialog.getByRole('alert')).toHaveText(
 		"That file isn't a Moneta backup (.moneta or .sqlite)."
 	);
+});
+
+test('encrypts backups once set up, and restores them with the password or the recovery key', async ({
+	page,
+	browser
+}, testInfo) => {
+	await onboard(page);
+	await openSettings(page);
+	const encrypt = page.getByRole('switch', { name: 'Encrypt backups' });
+	await expect(encrypt).not.toBeChecked();
+
+	// Setup: a password typed twice, then a recovery key that must be saved first.
+	await encrypt.click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Password', { exact: true }).fill('short');
+	await dialog.getByLabel('Confirm password').fill('short');
+	await dialog.getByRole('button', { name: 'Next' }).click();
+	await expect(dialog.getByRole('alert')).toHaveText('Use at least 8 characters.');
+	await dialog.getByLabel('Password', { exact: true }).fill('correct horse');
+	await dialog.getByLabel('Confirm password').fill('correct horse');
+	await dialog.getByRole('button', { name: 'Next' }).click();
+	const recoveryKey = (await dialog.getByTestId('recovery-key').textContent())!.trim();
+	expect(recoveryKey).toMatch(/^([0-9A-Z]{4}-){7}[0-9A-Z]{4}$/);
+	await expect(dialog.getByRole('button', { name: 'Turn on' })).toBeDisabled();
+	await dialog.getByLabel('I saved my recovery key').click();
+	await dialog.getByRole('button', { name: 'Turn on' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(encrypt).toBeChecked();
+
+	// The key stays on this device.
+	await page.reload();
+	await openSettings(page);
+	await expect(encrypt).toBeChecked();
+
+	await page.getByRole('button', { name: 'Check password' }).click();
+	await dialog.getByLabel('Password').fill('wrong horse');
+	await dialog.getByRole('button', { name: 'Check' }).click();
+	await expect(dialog.getByRole('status')).toHaveText("That's not the password your backups use.");
+	await dialog.getByLabel('Password').fill('correct horse');
+	await dialog.getByRole('button', { name: 'Check' }).click();
+	await expect(dialog.getByRole('status')).toHaveText("That's the right password.");
+	await page.keyboard.press('Escape');
+
+	// Backing up doesn't ask, and the file shows nothing but the encryption settings.
+	const backup = testInfo.outputPath('encrypted.moneta');
+	await download(page, 'Back up now', backup);
+	const bytes = await readFile(backup);
+	const zipped = unzipSync(bytes);
+	expect(Object.keys(zipped)).toEqual(['moneta.json', 'payload.bin']);
+	expect(JSON.parse(strFromU8(zipped['moneta.json']))).toMatchObject({
+		format: 'moneta-backup',
+		version: 1,
+		encryption: { cipher: 'AES-256-GCM', keys: [{ type: 'password' }, { type: 'recovery' }] }
+	});
+	expect(bytes.toString('latin1')).not.toContain('Home');
+
+	// Restoring asks for the password, even on this device.
+	await page.getByLabel('Restore from a backup').setInputFiles(backup);
+	await expect(dialog.getByText('This backup is encrypted')).toBeVisible();
+	await dialog.getByLabel('Password').fill('wrong horse');
+	await dialog.getByRole('button', { name: 'Unlock' }).click();
+	await expect(dialog.getByRole('alert')).toHaveText(
+		"That doesn't open this backup. Check the password or recovery key."
+	);
+	await dialog.getByLabel('Password').fill('correct horse');
+	await dialog.getByRole('button', { name: 'Unlock' }).click();
+	await expect(dialog.getByTestId('restore-budgets').getByRole('listitem')).toHaveText([
+		/Home\s*Replaces Home/
+	]);
+	await page.keyboard.press('Escape');
+
+	// On a new device, the recovery key opens it from onboarding, however it is typed.
+	const clean = await browser.newContext();
+	const fresh = await clean.newPage();
+	await startApp(fresh);
+	await nextStep(fresh).click();
+	await fresh.getByLabel('Restore from a backup').setInputFiles(backup);
+	const unlock = fresh.getByRole('dialog');
+	await unlock.getByRole('button', { name: 'Use the recovery key instead' }).click();
+	await unlock.getByLabel('Recovery key').fill(recoveryKey.toLowerCase().replaceAll('-', ' '));
+	await unlock.getByRole('button', { name: 'Unlock' }).click();
+	await expect(fresh.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await clean.close();
+
+	// Turned off, backups are plain again.
+	await encrypt.click();
+	await expect(encrypt).not.toBeChecked();
+	const plain = testInfo.outputPath('plain.moneta');
+	await download(page, 'Back up now', plain);
+	expect(JSON.parse(strFromU8(unzipSync(await readFile(plain))['moneta.json']))).toMatchObject({
+		encryption: null,
+		budgets: [{ name: 'Home' }]
+	});
 });
 
 test('exports transactions as CSV and the budget as JSON', async ({ page }, testInfo) => {

@@ -3,6 +3,8 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import CopyList from '$features/backup/CopyList.svelte';
+	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
+	import { readBackupFile } from '$features/backup/actions';
 	import DeleteBudgetDialog from '$features/settings/DeleteBudgetDialog.svelte';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { runAction } from '$client/notify';
@@ -38,6 +40,9 @@
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	let chosen = $state('');
+	/** An encrypted backup waiting for its password. */
+	let locked = $state.raw<Uint8Array | null>(null);
+	let unlocking = $state(false);
 	let copies = $state<Record<string, BudgetCopy[]>>({});
 
 	$effect(() => {
@@ -72,7 +77,19 @@
 		if (!picked) return;
 		busy = true;
 		error = null;
-		const bytes = new Uint8Array(await picked.arrayBuffer());
+		const read = await readBackupFile(api, picked);
+		if (read.encrypted) {
+			locked = read.bytes;
+			unlocking = true;
+			busy = false;
+			return;
+		}
+		await restoreBytes(read.bytes);
+	}
+
+	async function restoreBytes(bytes: Uint8Array) {
+		busy = true;
+		error = null;
 		error = await runAction(() => open(bytes, m.backup_restored()));
 		busy = false;
 	}
@@ -147,3 +164,5 @@
 		ondelete={() => remove(target.file)}
 	/>
 {/if}
+
+<UnlockBackupDialog bind:open={unlocking} {api} bytes={locked} onunlock={restoreBytes} />

@@ -1,7 +1,15 @@
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$domain/errors';
 import { checkBackup, isIntact } from './backup';
-import { readBackup, writeBackup, type BackupBudget } from './backup-file';
+import { createKeys, openKey, type BackupKeys } from './backup-crypto';
+import {
+	isSealed,
+	openSealed,
+	readBackup,
+	sealBackup,
+	writeBackup,
+	type BackupBudget
+} from './backup-file';
 import { configure, type Db } from './connection';
 import { openImage, toImage } from './image';
 import { MIGRATIONS, migrate, schemaVersion } from './migrate';
@@ -24,11 +32,24 @@ export interface FileStore {
 	release(): void;
 }
 
+/**
+ * Where the backup key of this device lives: IndexedDB in the worker, memory in tests. Null
+ * means backups aren't encrypted.
+ */
+export interface KeyStore {
+	get(): Promise<BackupKeys | null>;
+	set(keys: BackupKeys): Promise<void>;
+	clear(): Promise<void>;
+}
+
 export interface SystemDeps {
 	sqlite3: Sqlite3Static;
 	store: FileStore;
+	keys: KeyStore;
 	migrations?: readonly string[];
 	now?: () => Date;
+	/** PBKDF2 iterations for a new backup password; tests use fewer. */
+	kdfIterations?: number;
 }
 
 const FILE_NAME = /^[A-Za-z0-9_-]+\.sqlite3$/;
@@ -60,7 +81,7 @@ function copySavedAt(name: string): string {
 
 /** The worker's file operations over any FileStore. */
 export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () => Db | null } {
-	const { sqlite3, store } = deps;
+	const { sqlite3, store, keys } = deps;
 	const migrations = deps.migrations ?? MIGRATIONS;
 	const now = deps.now ?? (() => new Date());
 	let db: Db | null = null;
@@ -195,7 +216,7 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			closeDb();
 			store.release();
 		},
-		exportBackup(names) {
+		async exportBackup(names) {
 			const budgets: BackupBudget[] = [];
 			const skipped: string[] = [];
 			for (const name of names) {
@@ -203,7 +224,36 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 				if (budget) budgets.push(budget);
 				else skipped.push(name);
 			}
-			return { bytes: writeBackup(budgets, now().toISOString()), skipped };
+			const bytes = writeBackup(budgets, now().toISOString());
+			const key = await keys.get();
+			if (!key) return { bytes, skipped, encrypted: false };
+			return { bytes: await sealBackup(bytes, key), skipped, encrypted: true };
+		},
+		async backupEncryption() {
+			return { on: (await keys.get()) !== null };
+		},
+		async setBackupEncryption(password, recoveryKey) {
+			await keys.set(await createKeys(password, recoveryKey, deps.kdfIterations));
+		},
+		clearBackupEncryption() {
+			return keys.clear();
+		},
+		async checkBackupPassword(password) {
+			const current = await keys.get();
+			if (!current) return false;
+			try {
+				await openKey(current.slots, { password });
+				return true;
+			} catch (err) {
+				if (err instanceof DomainError && err.code === 'BACKUP_WRONG_KEY') return false;
+				throw err;
+			}
+		},
+		isEncryptedBackup(bytes) {
+			return isSealed(bytes);
+		},
+		unlockBackup(bytes, secret) {
+			return openSealed(bytes, secret);
 		},
 		markBackedUp(fileNames, at) {
 			for (const fileName of fileNames) {

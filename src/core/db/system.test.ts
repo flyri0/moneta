@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MIGRATIONS, SCHEMA_VERSION, schemaVersion } from './migrate';
+import { newRecoveryKey } from '$domain/recovery-key';
 import { readBackup, writeBackup } from './backup-file';
 import { getMeta, initBudget, updateMeta } from './repos/meta';
 import { createSystem } from './system';
-import { loadSqlite, memoryFileStore } from './testing';
+import { loadSqlite, memoryFileStore, memoryKeyStore } from './testing';
 
 const FILE = 'budget-0190a000-0000-7000-8000-000000000001.sqlite3';
 const OTHER = 'budget-0190a000-0000-7000-8000-000000000002.sqlite3';
@@ -12,7 +13,7 @@ const COPY_PREFIX = 'premigration-budget-0190a000-0000-7000-8000-000000000001-';
 async function setup() {
 	const sqlite3 = await loadSqlite();
 	const store = memoryFileStore(sqlite3);
-	return { sqlite3, store };
+	return { sqlite3, store, keys: memoryKeyStore(), kdfIterations: 1000 };
 }
 
 /** Creates FILE as a budget at the current schema version, then closes it. */
@@ -193,7 +194,7 @@ describe('exportBackup', () => {
 		await seedNamed(deps, OTHER, 'Trip');
 		const { system } = createSystem({ ...deps, now: () => new Date('2026-09-22T12:00:00Z') });
 		await system.open(FILE);
-		const { bytes, skipped } = system.exportBackup([FILE, OTHER]);
+		const { bytes, skipped } = await system.exportBackup([FILE, OTHER]);
 		expect(skipped).toEqual([]);
 		const contents = readBackup(bytes);
 		expect(contents.createdAt).toBe('2026-09-22T12:00:00.000Z');
@@ -208,7 +209,7 @@ describe('exportBackup', () => {
 		await seedNamed(deps, FILE, 'Home');
 		// Created but never initialized, as an interrupted onboarding leaves it.
 		await createSystem(deps).system.open(OTHER);
-		const { bytes, skipped } = createSystem(deps).system.exportBackup([FILE, OTHER]);
+		const { bytes, skipped } = await createSystem(deps).system.exportBackup([FILE, OTHER]);
 		expect(skipped).toEqual([OTHER]);
 		expect(readBackup(bytes).budgets.map((b) => b.name)).toEqual(['Home']);
 	});
@@ -219,7 +220,7 @@ describe('exportBackup', () => {
 		const upgraded = createSystem({ ...deps, migrations: [...MIGRATIONS, 'SELECT 1'] });
 		await upgraded.system.open(FILE);
 		const [copy] = upgraded.system.listCopies(FILE);
-		const { budgets } = readBackup(upgraded.system.exportBackup([copy.name]).bytes);
+		const { budgets } = readBackup((await upgraded.system.exportBackup([copy.name])).bytes);
 		expect(budgets.map(({ id, name }) => ({ id, name }))).toEqual([{ id: ID, name: 'Home' }]);
 	});
 
@@ -228,9 +229,7 @@ describe('exportBackup', () => {
 		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
 		for (const name of ['demo.sqlite3', OTHER, '../x'])
-			expect(() => system.exportBackup([name])).toThrow(
-				expect.objectContaining({ code: 'INVALID_INPUT' })
-			);
+			await expect(system.exportBackup([name])).rejects.toMatchObject({ code: 'INVALID_INPUT' });
 		expect(system.listFiles()).toEqual([FILE]);
 	});
 });
@@ -255,7 +254,7 @@ describe('inspectBackup', () => {
 		await seedNamed(deps, FILE, 'Home');
 		await seedNamed(deps, OTHER, 'Trip');
 		const { system } = createSystem(deps);
-		const { bytes } = system.exportBackup([FILE, OTHER]);
+		const { bytes } = await system.exportBackup([FILE, OTHER]);
 		system.deleteFile(OTHER);
 		expect(system.inspectBackup(bytes)).toEqual({
 			createdAt: expect.any(String),
@@ -271,7 +270,7 @@ describe('inspectBackup', () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		const [budget] = readBackup((await system.exportBackup([FILE])).bytes).budgets;
 		expect(system.inspectBackup(budget.image).budgets).toEqual([
 			{ index: 0, id: null, name: 'Home' }
 		]);
@@ -281,7 +280,7 @@ describe('inspectBackup', () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		const [budget] = readBackup((await system.exportBackup([FILE])).bytes).budgets;
 		const damaged = budget.image.slice();
 		damaged.fill(0xff, 4096, 8192);
 		expect(() =>
@@ -296,7 +295,7 @@ describe('restoreBackup', () => {
 		await seedNamed(deps, FILE, 'Home');
 		await seedNamed(deps, OTHER, 'Trip');
 		const { system, getDb } = createSystem(deps);
-		const { bytes } = system.exportBackup([FILE, OTHER]);
+		const { bytes } = await system.exportBackup([FILE, OTHER]);
 		system.deleteFile(FILE);
 		system.deleteFile(OTHER);
 		await system.restoreBackup(bytes, [{ index: 1, file: THIRD }]);
@@ -309,7 +308,7 @@ describe('restoreBackup', () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
 		const { system, getDb } = createSystem({ ...deps, now: ticking() });
-		const { bytes } = system.exportBackup([FILE]);
+		const { bytes } = await system.exportBackup([FILE]);
 		await system.open(FILE);
 		updateMeta(getDb()!, { name: 'Changed' });
 		await system.restoreBackup(bytes, [{ index: 0, file: FILE }]);
@@ -317,7 +316,7 @@ describe('restoreBackup', () => {
 		await system.open(FILE);
 		expect(getMeta(getDb()!).name).toBe('Home');
 		const [copy] = system.listCopies(FILE);
-		const { budgets } = readBackup(system.exportBackup([copy.name]).bytes);
+		const { budgets } = readBackup((await system.exportBackup([copy.name])).bytes);
 		expect(budgets.map((b) => b.name)).toEqual(['Changed']);
 	});
 
@@ -325,7 +324,7 @@ describe('restoreBackup', () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		const [budget] = readBackup(system.exportBackup([FILE]).bytes).budgets;
+		const [budget] = readBackup((await system.exportBackup([FILE])).bytes).budgets;
 		const damaged = budget.image.slice();
 		damaged.fill(0xff, 4096, 8192);
 		const bytes = writeBackup(
@@ -350,7 +349,7 @@ describe('restoreBackup', () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
 		const { system } = createSystem(deps);
-		const { bytes } = system.exportBackup([FILE]);
+		const { bytes } = await system.exportBackup([FILE]);
 		const bad = [
 			[{ index: 1, file: OTHER }],
 			[{ index: 0, file: '../x' }],
@@ -366,5 +365,117 @@ describe('restoreBackup', () => {
 				code: 'INVALID_INPUT'
 			});
 		expect(system.listFiles()).toEqual([FILE]);
+	});
+});
+
+describe('backup encryption', () => {
+	const PASSWORD = 'correct horse';
+	const RECOVERY = newRecoveryKey();
+
+	async function encrypted() {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		await system.setBackupEncryption(PASSWORD, RECOVERY);
+		return { deps, system };
+	}
+
+	it('is off until a password is set', async () => {
+		const { system } = createSystem(await setup());
+		expect(await system.backupEncryption()).toEqual({ on: false });
+		await system.setBackupEncryption(PASSWORD, RECOVERY);
+		expect(await system.backupEncryption()).toEqual({ on: true });
+	});
+
+	it('encrypts every backup once it is on, without asking for the password', async () => {
+		const { system } = await encrypted();
+		const { bytes, encrypted: sealed } = await system.exportBackup([FILE]);
+		expect(sealed).toBe(true);
+		expect(system.isEncryptedBackup(bytes)).toBe(true);
+		expect(() => system.inspectBackup(bytes)).toThrow(
+			expect.objectContaining({ code: 'BACKUP_ENCRYPTED' })
+		);
+	});
+
+	it('unlocks a backup with the password or the recovery key, then restores it', async () => {
+		const { system } = await encrypted();
+		const { bytes } = await system.exportBackup([FILE]);
+		for (const secret of [{ password: PASSWORD }, { recoveryKey: RECOVERY }]) {
+			const plain = await system.unlockBackup(bytes, secret);
+			expect(system.isEncryptedBackup(plain)).toBe(false);
+			expect(system.inspectBackup(plain).budgets).toEqual([{ index: 0, id: ID, name: 'Home' }]);
+		}
+		const plain = await system.unlockBackup(bytes, { password: PASSWORD });
+		await system.restoreBackup(plain, [{ index: 0, file: OTHER }]);
+		expect(system.listFiles()).toContain(OTHER);
+	});
+
+	it('rejects a wrong password or recovery key', async () => {
+		const { system } = await encrypted();
+		const { bytes } = await system.exportBackup([FILE]);
+		await expect(system.unlockBackup(bytes, { password: 'wrong horse' })).rejects.toMatchObject({
+			code: 'BACKUP_WRONG_KEY'
+		});
+		await expect(
+			system.unlockBackup(bytes, { recoveryKey: newRecoveryKey() })
+		).rejects.toMatchObject({ code: 'BACKUP_WRONG_KEY' });
+	});
+
+	it('keeps older backups on the password and recovery key they were made with', async () => {
+		const { system } = await encrypted();
+		const { bytes: before } = await system.exportBackup([FILE]);
+		const newRecovery = newRecoveryKey();
+		await system.setBackupEncryption('battery staple', newRecovery);
+		const { bytes: after } = await system.exportBackup([FILE]);
+		await expect(system.unlockBackup(before, { password: PASSWORD })).resolves.toBeInstanceOf(
+			Uint8Array
+		);
+		await expect(system.unlockBackup(before, { recoveryKey: RECOVERY })).resolves.toBeInstanceOf(
+			Uint8Array
+		);
+		await expect(system.unlockBackup(before, { password: 'battery staple' })).rejects.toMatchObject(
+			{ code: 'BACKUP_WRONG_KEY' }
+		);
+		await expect(system.unlockBackup(after, { password: PASSWORD })).rejects.toMatchObject({
+			code: 'BACKUP_WRONG_KEY'
+		});
+		await expect(system.unlockBackup(after, { recoveryKey: newRecovery })).resolves.toBeInstanceOf(
+			Uint8Array
+		);
+	});
+
+	it('writes plain backups again once it is turned off', async () => {
+		const { system } = await encrypted();
+		await system.clearBackupEncryption();
+		expect(await system.backupEncryption()).toEqual({ on: false });
+		const { bytes, encrypted: sealed } = await system.exportBackup([FILE]);
+		expect(sealed).toBe(false);
+		expect(system.inspectBackup(bytes).budgets).toHaveLength(1);
+	});
+
+	it('checks a typed password against the one set on this device', async () => {
+		const { system } = await encrypted();
+		expect(await system.checkBackupPassword(PASSWORD)).toBe(true);
+		expect(await system.checkBackupPassword('wrong horse')).toBe(false);
+		await system.clearBackupEncryption();
+		expect(await system.checkBackupPassword(PASSWORD)).toBe(false);
+	});
+
+	it('refuses a short password or a malformed recovery key, and keeps the old setup', async () => {
+		const { system } = await encrypted();
+		await expect(system.setBackupEncryption('short', RECOVERY)).rejects.toMatchObject({
+			code: 'INVALID_INPUT'
+		});
+		await expect(system.setBackupEncryption(PASSWORD, 'nope')).rejects.toMatchObject({
+			code: 'INVALID_INPUT'
+		});
+		expect(await system.checkBackupPassword(PASSWORD)).toBe(true);
+	});
+
+	it('rejects files that are not backups in unlockBackup', async () => {
+		const { system } = createSystem(await setup());
+		await expect(
+			system.unlockBackup(new Uint8Array(), { password: PASSWORD })
+		).rejects.toMatchObject({ code: 'BACKUP_NOT_RECOGNIZED' });
 	});
 });

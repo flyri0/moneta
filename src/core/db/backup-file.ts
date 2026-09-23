@@ -1,12 +1,23 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Unzipped, type Zippable } from 'fflate';
 import { DomainError } from '$domain/errors';
+import {
+	decrypt,
+	encrypt,
+	newIv,
+	openKey,
+	readIv,
+	toBase64,
+	type BackupKeys,
+	type BackupSecret
+} from './backup-crypto';
 
 /**
  * A `.moneta` backup is a ZIP file: `moneta.json` (the manifest) first, then one SQLite image per
- * budget under `budgets/`. `encryption` is always null for now. An encrypted backup will keep
- * `moneta.json` (with the key derivation and cipher parameters, but no budget names) next to a
- * `payload.bin` holding the encrypted inner ZIP, laid out as below: reading one decrypts between
- * `readZip` and `unpack`.
+ * budget under `budgets/`, with `encryption: null`. An encrypted backup is a ZIP too: its
+ * `moneta.json` holds only the cipher, the IV and the key slots (no dates, no budget names), and
+ * `payload.bin` holds a whole plain backup, encrypted with AES-256-GCM. The exact bytes of that
+ * `moneta.json` are the associated data, so changing it breaks decryption. Apps without
+ * encryption refuse it (BACKUP_ENCRYPTED), so it needs no new version.
  */
 export const BACKUP_FORMAT = 'moneta-backup';
 /**
@@ -20,6 +31,8 @@ export const BACKUP_FORMAT = 'moneta-backup';
 export const BACKUP_VERSION = 1;
 
 const MANIFEST = 'moneta.json';
+const PAYLOAD = 'payload.bin';
+const CIPHER = 'AES-256-GCM';
 /** Most a backup may unpack to, against ZIP bombs. */
 const MAX_UNPACKED = 1 << 30;
 const ID = /^[0-9a-f-]{1,64}$/;
@@ -124,13 +137,8 @@ function unpack(manifest: Record<string, unknown>, files: Unzipped): BackupConte
 	};
 }
 
-/**
- * Reads a `.moneta` backup, or a legacy `.sqlite` one. Only the container is checked here: each
- * budget's image still goes through `checkBackup`.
- */
-export function readBackup(bytes: Uint8Array): BackupContents {
-	if (startsWith(bytes, SQLITE_HEADER))
-		return { createdAt: null, budgets: [{ id: null, name: null, image: bytes }] };
+/** The manifest and files of a `.moneta` ZIP, checked up to its version. */
+function readContainer(bytes: Uint8Array): { manifest: Record<string, unknown>; files: Unzipped } {
 	if (!startsWith(bytes, ZIP_HEADER)) throw new DomainError('BACKUP_NOT_RECOGNIZED');
 	const { manifest, files } = readZip(bytes);
 	if (manifest.format !== BACKUP_FORMAT)
@@ -139,6 +147,76 @@ export function readBackup(bytes: Uint8Array): BackupContents {
 	if (typeof version !== 'number' || !Number.isInteger(version) || version < 1)
 		throw new DomainError('BACKUP_DAMAGED', `Bad version in ${MANIFEST}`);
 	if (version > BACKUP_VERSION) throw new DomainError('BACKUP_TOO_NEW', `Version ${version}`);
+	return { manifest, files };
+}
+
+/**
+ * Reads a `.moneta` backup, or a legacy `.sqlite` one. Only the container is checked here: each
+ * budget's image still goes through `checkBackup`. An encrypted backup is BACKUP_ENCRYPTED:
+ * `openSealed` turns it into a plain one first.
+ */
+export function readBackup(bytes: Uint8Array): BackupContents {
+	if (startsWith(bytes, SQLITE_HEADER))
+		return { createdAt: null, budgets: [{ id: null, name: null, image: bytes }] };
+	const { manifest, files } = readContainer(bytes);
 	if (manifest.encryption != null) throw new DomainError('BACKUP_ENCRYPTED');
 	return unpack(manifest, files);
+}
+
+/** A plain backup (from `writeBackup`) encrypted with the backup key of a setup. */
+export async function sealBackup(
+	inner: Uint8Array<ArrayBuffer>,
+	{ key, slots }: BackupKeys
+): Promise<Uint8Array<ArrayBuffer>> {
+	const iv = newIv();
+	const manifest = strToU8(
+		JSON.stringify(
+			{
+				format: BACKUP_FORMAT,
+				version: BACKUP_VERSION,
+				encryption: { cipher: CIPHER, iv: toBase64(iv), keys: slots }
+			},
+			null,
+			'\t'
+		)
+	);
+	const payload = await encrypt(key, iv, inner, manifest);
+	// The payload is random bytes: compressing it would only waste time.
+	return zipSync({ [MANIFEST]: manifest, [PAYLOAD]: [payload, { level: 0 }] });
+}
+
+/** Whether `bytes` are an encrypted `.moneta` backup. */
+export function isSealed(bytes: Uint8Array): boolean {
+	try {
+		return readContainer(bytes).manifest.encryption != null;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * The plain backup inside an encrypted one, opened with its password or recovery key.
+ * BACKUP_WRONG_KEY when `secret` doesn't open it (or the payload was changed).
+ */
+export async function openSealed(
+	bytes: Uint8Array,
+	secret: BackupSecret
+): Promise<Uint8Array<ArrayBuffer>> {
+	const { manifest, files } = readContainer(bytes);
+	const { encryption } = manifest;
+	if (encryption == null) throw new DomainError('INVALID_INPUT', 'Backup not encrypted');
+	if (typeof encryption !== 'object' || Array.isArray(encryption))
+		throw new DomainError('BACKUP_DAMAGED', `Bad encryption in ${MANIFEST}`);
+	const { cipher, iv: ivText, keys } = encryption as Record<string, unknown>;
+	if (cipher !== CIPHER) throw new DomainError('BACKUP_TOO_NEW', `Cipher ${cipher}`);
+	const iv = readIv(ivText);
+	const payload = files[PAYLOAD];
+	if (!iv || !payload) throw new DomainError('BACKUP_DAMAGED', `Bad encryption in ${MANIFEST}`);
+	const key = await openKey(keys, secret);
+	return decrypt(
+		key,
+		iv,
+		payload as Uint8Array<ArrayBuffer>,
+		files[MANIFEST] as Uint8Array<ArrayBuffer>
+	);
 }

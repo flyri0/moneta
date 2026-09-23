@@ -3,7 +3,14 @@ import { createBudget, type NewBudget } from '$client/session';
 import { createTestClient, memoryStore } from '$client/testing';
 import type { BudgetDump } from '$db/repos/dump';
 import { todayIso } from '$domain/month';
-import { backUp, downloadCopy, exportBudgetJson, exportTransactionsCsv } from './actions';
+import { newRecoveryKey } from '$domain/recovery-key';
+import {
+	backUp,
+	downloadCopy,
+	exportBudgetJson,
+	exportTransactionsCsv,
+	readBackupFile
+} from './actions';
 import type { BackupTarget } from './target';
 
 const HOME: NewBudget = {
@@ -65,6 +72,21 @@ describe('backUp', () => {
 		expect(await backUp(api, target)).toEqual([broken]);
 		const bytes = new Uint8Array(await saved[0].data.arrayBuffer());
 		expect((await api.system.inspectBackup(bytes)).budgets.map((b) => b.name)).toEqual(['Home']);
+	});
+});
+
+describe('readBackupFile', () => {
+	it('reads a picked file, and says whether it needs a password first', async () => {
+		const { api, saved, target } = await setup();
+		await backUp(api, target);
+		await api.system.setBackupEncryption('correct horse', newRecoveryKey());
+		await backUp(api, target);
+		const [plain, encrypted] = await Promise.all(saved.map((s) => readBackupFile(api, s.data)));
+		expect(plain.encrypted).toBe(false);
+		expect((await api.system.inspectBackup(plain.bytes)).budgets).toHaveLength(1);
+		expect(encrypted.encrypted).toBe(true);
+		const unlocked = await api.system.unlockBackup(encrypted.bytes, { password: 'correct horse' });
+		expect((await api.system.inspectBackup(unlocked)).budgets.map((b) => b.name)).toEqual(['Home']);
 	});
 });
 

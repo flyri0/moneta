@@ -78,3 +78,12 @@ export async function exportBudgetJson(
 		new Blob([json], { type: 'application/json' })
 	);
 }
+
+/** A picked backup file, and whether it has to be unlocked (`api.system.unlockBackup`) first. */
+export async function readBackupFile(
+	api: Pick<ClientApi, 'system'>,
+	file: Blob
+): Promise<{ bytes: Uint8Array; encrypted: boolean }> {
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	return { bytes, encrypted: await api.system.isEncryptedBackup(bytes) };
+}

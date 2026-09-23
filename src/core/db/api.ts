@@ -1,5 +1,6 @@
 import type { Db, Table } from './connection';
 import type { ArgSpec } from './args';
+import type { BackupSecret } from './backup-crypto';
 import { ALL_TABLES } from './connection';
 import * as meta from './repos/meta';
 import * as accounts from './repos/accounts';
@@ -109,6 +110,8 @@ export interface BudgetCopy {
 export interface ExportedBackup {
 	bytes: Uint8Array<ArrayBuffer>;
 	skipped: string[];
+	/** Whether the backup was encrypted with this device's backup key. */
+	encrypted: boolean;
 }
 
 /** A budget in a backup. `id` is the uuid of its file name, or null in a legacy `.sqlite` backup. */
@@ -148,7 +151,7 @@ export interface SystemApi {
 	 * Budget files or saved copies as one `.moneta` backup. Files that can't be read are left out
 	 * and listed in `skipped`.
 	 */
-	exportBackup(names: string[]): ExportedBackup;
+	exportBackup(names: string[]): Promise<ExportedBackup>;
 	/** Records in each budget file when it was last backed up. Files that can't be written are skipped. */
 	markBackedUp(fileNames: string[], at: string): void;
 	/** Checks a `.moneta` (or legacy `.sqlite`) backup and lists its budgets. Writes nothing. */
@@ -158,6 +161,21 @@ export interface SystemApi {
 	 * file that exists is replaced and kept as a saved copy; the open one is closed first.
 	 */
 	restoreBackup(bytes: Uint8Array, picks: RestorePick[]): Promise<void>;
+	/** Whether backups made on this device are encrypted. */
+	backupEncryption(): Promise<{ on: boolean }>;
+	/**
+	 * Turns on backup encryption, or replaces its setup: a new key opened by `password` or
+	 * `recoveryKey`. Backups made before keep their own password and recovery key.
+	 */
+	setBackupEncryption(password: string, recoveryKey: string): Promise<void>;
+	/** Turns backup encryption off. Backups made before stay encrypted. */
+	clearBackupEncryption(): Promise<void>;
+	/** Whether `password` is the one set for backups on this device. */
+	checkBackupPassword(password: string): Promise<boolean>;
+	/** Whether `bytes` are an encrypted `.moneta` backup. */
+	isEncryptedBackup(bytes: Uint8Array): boolean;
+	/** The plain backup inside an encrypted one, for `inspectBackup` and `restoreBackup`. */
+	unlockBackup(bytes: Uint8Array, secret: BackupSecret): Promise<Uint8Array<ArrayBuffer>>;
 }
 
 type Promisify<T> = T extends (...args: infer A) => infer R

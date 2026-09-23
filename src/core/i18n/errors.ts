@@ -26,6 +26,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	BACKUP_NOT_MONETA: m.error_backup_not_moneta,
 	BACKUP_TOO_NEW: m.error_backup_too_new,
 	BACKUP_ENCRYPTED: m.error_backup_encrypted,
+	BACKUP_WRONG_KEY: m.error_backup_wrong_key,
 	CURRENCY_LOCKED: m.error_currency_locked,
 	WORKER_FAILED: m.error_worker_failed,
 	INTERNAL: m.error_internal

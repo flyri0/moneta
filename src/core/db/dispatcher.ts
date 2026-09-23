@@ -27,7 +27,13 @@ const SYSTEM_CHANGES = {
 	exportBackup: [],
 	markBackedUp: ['meta'],
 	inspectBackup: [],
-	restoreBackup: ALL_TABLES
+	restoreBackup: ALL_TABLES,
+	backupEncryption: [],
+	setBackupEncryption: [],
+	clearBackupEncryption: [],
+	checkBackupPassword: [],
+	isEncryptedBackup: [],
+	unlockBackup: []
 } as const;
 
 const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> } = {
@@ -41,7 +47,13 @@ const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> }
 	exportBackup: ['array'],
 	markBackedUp: ['array', 'string'],
 	inspectBackup: ['bytes'],
-	restoreBackup: ['bytes', 'array']
+	restoreBackup: ['bytes', 'array'],
+	backupEncryption: [],
+	setBackupEncryption: ['string', 'string'],
+	clearBackupEncryption: [],
+	checkBackupPassword: ['string'],
+	isEncryptedBackup: ['bytes'],
+	unlockBackup: ['bytes', 'object']
 };
 
 /** Turns a CallRequest into a CallResponse. Never throws. */

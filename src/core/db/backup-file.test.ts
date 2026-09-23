@@ -1,6 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { readBackup, writeBackup } from './backup-file';
+import { DomainError } from '$domain/errors';
+import { newRecoveryKey } from '$domain/recovery-key';
+import { createKeys, type BackupKeys } from './backup-crypto';
+import { isSealed, openSealed, readBackup, sealBackup, writeBackup } from './backup-file';
 import { toImage } from './image';
 import { createBudgetDb, loadSqlite } from './testing';
 
@@ -134,5 +137,106 @@ describe('readBackup', () => {
 		];
 		for (const bytes of damaged)
 			expect(() => readBackup(bytes)).toThrow(expect.objectContaining({ code: 'BACKUP_DAMAGED' }));
+	});
+});
+
+describe('sealBackup and openSealed', () => {
+	const PASSWORD = 'correct horse';
+	const RECOVERY = newRecoveryKey();
+	let keys: BackupKeys;
+	let inner: Uint8Array<ArrayBuffer>;
+	let sealed: Uint8Array;
+
+	beforeAll(async () => {
+		keys = await createKeys(PASSWORD, RECOVERY, 1000);
+		inner = writeBackup(
+			[{ id: ID_A, name: 'Home', image: await budgetImage() }],
+			'2026-09-22T12:00:00.000Z'
+		);
+		sealed = await sealBackup(inner, keys);
+	});
+
+	async function codeOf(promise: Promise<unknown>): Promise<string | undefined> {
+		try {
+			await promise;
+		} catch (err) {
+			if (err instanceof DomainError) return err.code;
+			throw err;
+		}
+		return undefined;
+	}
+
+	/** `sealed` with its manifest and files changed. */
+	function resealed(
+		change: (manifest: Record<string, unknown>, files: Record<string, Uint8Array>) => void
+	): Uint8Array {
+		const files = unzipSync(sealed);
+		const json = JSON.parse(strFromU8(files['moneta.json']));
+		change(json, files);
+		return zipSync({ ...files, 'moneta.json': strToU8(JSON.stringify(json)) });
+	}
+
+	it('keeps only the encryption settings and the encrypted payload in the open', () => {
+		const files = unzipSync(sealed);
+		expect(Object.keys(files)).toEqual(['moneta.json', 'payload.bin']);
+		const json = JSON.parse(strFromU8(files['moneta.json']));
+		expect(Object.keys(json)).toEqual(['format', 'version', 'encryption']);
+		expect(json).toMatchObject({
+			format: 'moneta-backup',
+			version: 1,
+			encryption: {
+				cipher: 'AES-256-GCM',
+				keys: [{ type: 'password' }, { type: 'recovery' }]
+			}
+		});
+		expect(strFromU8(sealed, true)).not.toContain('Home');
+	});
+
+	it('opens with the password or the recovery key, giving back the plain backup', async () => {
+		expect(await openSealed(sealed, { password: PASSWORD })).toEqual(inner);
+		expect(await openSealed(sealed, { recoveryKey: RECOVERY })).toEqual(inner);
+	});
+
+	it('uses a new IV for every backup', async () => {
+		const again = await sealBackup(inner, keys);
+		const ivOf = (bytes: Uint8Array) =>
+			JSON.parse(strFromU8(unzipSync(bytes)['moneta.json'])).encryption.iv;
+		expect(ivOf(again)).not.toBe(ivOf(sealed));
+	});
+
+	it('is refused by readBackup, as by apps without encryption', () => {
+		expect(() => readBackup(sealed)).toThrow(expect.objectContaining({ code: 'BACKUP_ENCRYPTED' }));
+	});
+
+	it('tells encrypted backups from the rest', async () => {
+		expect(isSealed(sealed)).toBe(true);
+		expect(isSealed(inner)).toBe(false);
+		expect(isSealed(await budgetImage())).toBe(false);
+		expect(isSealed(strToU8('hello'))).toBe(false);
+		expect(isSealed(sealed.slice(0, 100))).toBe(false);
+	});
+
+	it('rejects a wrong secret, or any change to the manifest', async () => {
+		expect(await codeOf(openSealed(sealed, { password: 'wrong horse' }))).toBe('BACKUP_WRONG_KEY');
+		const changed = resealed((json) => (json.note = 'hi'));
+		expect(await codeOf(openSealed(changed, { password: PASSWORD }))).toBe('BACKUP_WRONG_KEY');
+	});
+
+	it('reports unknown ciphers and newer versions as BACKUP_TOO_NEW', async () => {
+		const cipher = resealed((json) => ((json.encryption as Record<string, unknown>).cipher = 'X'));
+		const version = resealed((json) => (json.version = 2));
+		for (const bytes of [cipher, version])
+			expect(await codeOf(openSealed(bytes, { password: PASSWORD }))).toBe('BACKUP_TOO_NEW');
+	});
+
+	it('reports a bad IV or a missing payload as BACKUP_DAMAGED', async () => {
+		const iv = resealed((json) => ((json.encryption as Record<string, unknown>).iv = 'AAAA'));
+		const payload = resealed((_, files) => delete files['payload.bin']);
+		for (const bytes of [iv, payload])
+			expect(await codeOf(openSealed(bytes, { password: PASSWORD }))).toBe('BACKUP_DAMAGED');
+	});
+
+	it('refuses a backup that is not encrypted', async () => {
+		expect(await codeOf(openSealed(inner, { password: PASSWORD }))).toBe('INVALID_INPUT');
 	});
 });

@@ -21,6 +21,8 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import AccountStep from './AccountStep.svelte';
 	import BackupsStep from './BackupsStep.svelte';
+	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
+	import { readBackupFile } from '$features/backup/actions';
 	import BudgetStep from './BudgetStep.svelte';
 	import CategoriesStep from './CategoriesStep.svelte';
 	import DoneStep from './DoneStep.svelte';
@@ -61,6 +63,9 @@
 
 	let error = $state<string | null>(null);
 	let busy = $state(false);
+	/** An encrypted backup waiting for its password. */
+	let locked = $state.raw<Uint8Array | null>(null);
+	let unlocking = $state(false);
 	let created = $state.raw<{ file: string; meta: BudgetMeta } | null>(null);
 
 	function back() {
@@ -113,7 +118,19 @@
 	async function restore(file: File) {
 		busy = true;
 		error = null;
-		const bytes = new Uint8Array(await file.arrayBuffer());
+		const read = await readBackupFile(api, file);
+		if (read.encrypted) {
+			locked = read.bytes;
+			unlocking = true;
+			busy = false;
+			return;
+		}
+		await restoreBytes(read.bytes);
+	}
+
+	async function restoreBytes(bytes: Uint8Array) {
+		busy = true;
+		error = null;
 		error = await runAction(async () => {
 			const restored = await restoreAll(api, localStorage, bytes);
 			void navigator.storage?.persist?.();
@@ -173,3 +190,5 @@
 {:else if step === 'done'}
 	<DoneStep current={stepNumber(steps, step)} {total} onNext={finish} />
 {/if}
+
+<UnlockBackupDialog bind:open={unlocking} {api} bytes={locked} onunlock={restoreBytes} />

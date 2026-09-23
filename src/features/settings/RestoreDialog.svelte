@@ -7,6 +7,8 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import BackupUnlockForm from '$features/backup/BackupUnlockForm.svelte';
+	import { readBackupFile } from '$features/backup/actions';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
@@ -17,8 +19,9 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/**
-	 * Restores a backup: lists its budgets to pick from. A budget already on this device is
-	 * replaced (and kept as a saved copy), which needs a second tap after a short wait.
+	 * Restores a backup: lists its budgets to pick from, after asking for its password or recovery
+	 * key when it is encrypted. A budget already on this device is replaced (and kept as a saved
+	 * copy), which needs a second tap after a short wait.
 	 */
 	let { open = $bindable(false), file }: { open: boolean; file: File | null } = $props();
 	const app = getApp();
@@ -27,6 +30,8 @@
 	const REPLACE_DELAY = 5;
 
 	let bytes = $state.raw<Uint8Array | null>(null);
+	/** The picked file while it waits to be unlocked. */
+	let locked = $state.raw<Uint8Array | null>(null);
 	let createdAt = $state<string | null>(null);
 	let plan = $state.raw<PlannedRestore[]>([]);
 	let selected = $state<number[]>([]);
@@ -49,6 +54,7 @@
 		const picked = file;
 		let current = true;
 		bytes = null;
+		locked = null;
 		createdAt = null;
 		plan = [];
 		confirmReplace = false;
@@ -56,14 +62,10 @@
 		error = null;
 		busy = true;
 		void runAction(async () => {
-			const data = new Uint8Array(await picked.arrayBuffer());
-			const info = await session.api.system.inspectBackup(data);
-			const existing = await session.api.system.listFiles();
+			const read = await readBackupFile(session.api, picked);
 			if (!current) return;
-			bytes = data;
-			createdAt = info.createdAt;
-			plan = planRestore(info.budgets, existing, true);
-			selected = plan.map((p) => p.index);
+			if (read.encrypted) locked = read.bytes;
+			else await load(read.bytes, () => current);
 		}).then((message) => {
 			if (!current) return;
 			error = message;
@@ -71,6 +73,18 @@
 		});
 		return () => (current = false);
 	});
+
+	/** Lists the budgets of a plain backup, unless the dialog moved on to another file. */
+	async function load(data: Uint8Array, current: () => boolean = () => true) {
+		const info = await session.api.system.inspectBackup(data);
+		const existing = await session.api.system.listFiles();
+		if (!current()) return;
+		locked = null;
+		bytes = data;
+		createdAt = info.createdAt;
+		plan = planRestore(info.budgets, existing, true);
+		selected = plan.map((p) => p.index);
+	}
 
 	$effect(() => {
 		if (countdown <= 0) return;
@@ -162,6 +176,9 @@
 					<p class="text-xs text-muted-foreground">{m.backup_restore_replace_hint()}</p>
 				{/if}
 			</div>
+		{:else if locked}
+			<p class="text-sm font-medium">{m.backup_unlock_title()}</p>
+			<BackupUnlockForm api={session.api} bytes={locked} onunlock={(plain) => load(plain)} />
 		{:else if busy}
 			<p class="text-sm text-muted-foreground" role="status">{m.backup_restore_reading()}</p>
 		{/if}

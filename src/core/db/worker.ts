@@ -2,7 +2,8 @@
 import sqlite3InitModule, { type SAHPoolUtil, type Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$domain/errors';
 import { createDispatcher } from './dispatcher';
-import { createSystem, type FileStore } from './system';
+import type { BackupKeys } from './backup-crypto';
+import { createSystem, type FileStore, type KeyStore } from './system';
 import type { CallRequest } from './protocol';
 
 const POOL_ATTEMPTS = 5;
@@ -53,8 +54,50 @@ function opfsStore(pool: SAHPoolUtil): FileStore {
 	};
 }
 
+/** A request's result as a promise. */
+function done<T>(request: IDBRequest<T>): Promise<T> {
+	return new Promise((resolve, reject) => {
+		request.onsuccess = () => resolve(request.result);
+		request.onerror = () => reject(request.error);
+	});
+}
+
+/**
+ * The backup key in IndexedDB (database `moneta`, store `keys`). A CryptoKey is stored as is, so
+ * the non-extractable key never leaves Web Crypto.
+ */
+function idbKeyStore(): KeyStore {
+	const STORE = 'keys';
+	const RECORD = 'backup';
+	let opened: Promise<IDBDatabase> | null = null;
+	function open(): Promise<IDBDatabase> {
+		if (!opened) {
+			const request = indexedDB.open('moneta', 1);
+			request.onupgradeneeded = () => request.result.createObjectStore(STORE);
+			opened = done(request);
+			opened.catch(() => (opened = null));
+		}
+		return opened;
+	}
+	async function store(mode: IDBTransactionMode): Promise<IDBObjectStore> {
+		return (await open()).transaction(STORE, mode).objectStore(STORE);
+	}
+	return {
+		async get() {
+			const keys = await done((await store('readonly')).get(RECORD));
+			return (keys as BackupKeys | undefined) ?? null;
+		},
+		async set(keys) {
+			await done((await store('readwrite')).put(keys, RECORD));
+		},
+		async clear() {
+			await done((await store('readwrite')).delete(RECORD));
+		}
+	};
+}
+
 const dispatchReady = initPool().then(({ sqlite3, pool }) =>
-	createDispatcher(createSystem({ sqlite3, store: opfsStore(pool) }))
+	createDispatcher(createSystem({ sqlite3, store: opfsStore(pool), keys: idbKeyStore() }))
 );
 
 self.onmessage = async (event: MessageEvent<CallRequest>) => {

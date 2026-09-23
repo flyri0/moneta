@@ -469,7 +469,13 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		exportBackup: system.exportBackup,
 		markBackedUp: system.markBackedUp,
 		inspectBackup: system.inspectBackup,
-		restoreBackup: system.restoreBackup
+		restoreBackup: system.restoreBackup,
+		backupEncryption: system.backupEncryption,
+		setBackupEncryption: system.setBackupEncryption,
+		clearBackupEncryption: system.clearBackupEncryption,
+		checkBackupPassword: system.checkBackupPassword,
+		isEncryptedBackup: system.isEncryptedBackup,
+		unlockBackup: system.unlockBackup
 	};
 }
 

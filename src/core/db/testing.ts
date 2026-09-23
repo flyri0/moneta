@@ -3,7 +3,8 @@ import { configure, one, type Db } from './connection';
 import { openImage } from './image';
 import { migrate } from './migrate';
 import { initBudget } from './repos/meta';
-import type { FileStore } from './system';
+import type { BackupKeys } from './backup-crypto';
+import type { FileStore, KeyStore } from './system';
 
 let sqlite: Promise<Sqlite3Static> | undefined;
 
@@ -75,5 +76,21 @@ export function memoryFileStore(sqlite3: Sqlite3Static): FileStore & { files: Ma
 		},
 		async reserve() {},
 		release() {}
+	};
+}
+
+/** A KeyStore that keeps the backup key in memory. Test-only. */
+export function memoryKeyStore(): KeyStore {
+	let current: BackupKeys | null = null;
+	return {
+		async get() {
+			return current;
+		},
+		async set(keys) {
+			current = keys;
+		},
+		async clear() {
+			current = null;
+		}
 	};
 }

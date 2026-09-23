@@ -59,8 +59,9 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - Split transactions and transfers between accounts
 - Reports: spending by category and net worth over time
 - Several budget files side by side
-- Backup and restore of every budget as one `.moneta` file, plus CSV and JSON exports,
-  with a reminder when your last backup is more than two weeks old
+- Backup and restore of every budget as one `.moneta` file, optionally encrypted with a
+  password and a recovery key, plus CSV and JSON exports, with a reminder when your last
+  backup is more than two weeks old
 - Installable, offline-capable PWA, with a welcome page that offers to install it
 - English and Brazilian Portuguese
 
@@ -69,7 +70,7 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelope budgeting. Planned directions for future releases include:
 
 - **Security & Data Sovereignty**:
-  - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys), plus password-protected backup exports.
+  - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys).
   - **Cloud backup targets**: Direct, client-side encrypted backup export to user-owned storage (WebDAV/Nextcloud, Google Drive, Dropbox) and local directory sync via the File System Access API.
 - **Payee & Transaction Management**:
   - **Payee management screen**: Dedicated interface to view all payees, rename payees across past transactions in one step, merge duplicate payees, assign default categories, and delete unused entries.
@@ -120,7 +121,17 @@ leaves the device on its own.
 restores the ones you pick from it, and Moneta nudges you when your last backup is more than
 two weeks old. A `.moneta` file is a ZIP: `moneta.json` describes it, and `budgets/` holds
 each budget's SQLite file. Restoring a budget that is already on the device replaces it and
-keeps what it held as a saved copy. Older `.sqlite` backups still restore. Before an app update changes
+keeps what it held as a saved copy. Older `.sqlite` backups still restore.
+
+Turn on **Encrypt backups** to protect the backup files themselves. You pick a password and
+get a recovery key to keep apart from your backups. Moneta keeps the encryption key on the
+device, so backing up never asks for anything, and restoring asks for the password or the
+recovery key. An encrypted `.moneta` holds only the encryption settings in `moneta.json` and
+the whole backup, encrypted with AES-256-GCM, in `payload.bin`. The key is derived with
+PBKDF2-SHA256 from the password, or with HKDF from the recovery key. Lose both and nobody can
+open those backups, Moneta included.
+
+Before an app update changes
 a budget's schema, Moneta keeps a copy of the old file in the same storage (the last
 three), so an upgrade is never a one-way door.
 

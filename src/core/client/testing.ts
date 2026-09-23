@@ -1,7 +1,7 @@
 import type { Db } from '$db/connection';
 import { createDispatcher } from '$db/dispatcher';
 import { createSystem } from '$db/system';
-import { loadSqlite, memoryFileStore } from '$db/testing';
+import { loadSqlite, memoryFileStore, memoryKeyStore } from '$db/testing';
 import { REGISTRY_KEY, type KeyValueStore } from './registry';
 import { createRpcClient, type RpcClient } from './rpc';
 
@@ -37,7 +37,9 @@ export async function createTestClient(): Promise<{
 }> {
 	const sqlite3 = await loadSqlite();
 	const store = memoryFileStore(sqlite3);
-	const dispatch = createDispatcher(createSystem({ sqlite3, store }));
+	const dispatch = createDispatcher(
+		createSystem({ sqlite3, store, keys: memoryKeyStore(), kdfIterations: 1000 })
+	);
 	const channel = new MessageChannel();
 	channel.port2.onmessage = async (e) => channel.port2.postMessage(await dispatch(e.data));
 	return {
