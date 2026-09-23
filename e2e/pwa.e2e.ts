@@ -109,9 +109,11 @@ test('closes the database before installing an update, then reopens it', async (
 			.getByRole('button', { name: 'Reload' })
 			.click();
 
-		// The page reloads under the new service worker and opens the budget again.
+		// The page reloads under the new service worker and opens the budget again. A poll that
+		// lands mid-reload throws (the page's context is gone), and expect.poll doesn't retry a
+		// throwing callback: read nothing that time and poll again.
 		await expect
-			.poll(() => page.evaluate(() => sessionStorage.getItem('e2e.log') ?? '[]'))
+			.poll(() => page.evaluate(() => sessionStorage.getItem('e2e.log') ?? '[]').catch(() => '[]'))
 			.toContain('SKIP_WAITING');
 		await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 		const log = JSON.parse(

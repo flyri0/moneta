@@ -76,14 +76,27 @@ jobs:
         env:
           OUTPUT: release-notes.md
 
-      # Before the deploy, so the app's link to these notes never leads nowhere.
+      # Before the deploy, so the app's link to these notes never leads nowhere. A re-run after a
+      # failed deploy finds the release already there and goes on.
       - name: Create the GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "Moneta $GITHUB_REF_NAME" --notes-file release-notes.md
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "The release $GITHUB_REF_NAME already exists."
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Moneta $GITHUB_REF_NAME" --notes-file release-notes.md
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
 
       # netlify.toml skips every Git-triggered build; a build hook build always runs.
       - name: Deploy to Netlify
-        run: curl --fail --silent --show-error -X POST -d '{}' "$NETLIFY_BUILD_HOOK?trigger_title=Release+$GITHUB_REF_NAME"
+        run: |
+          # A pasted secret easily ends in a newline, which curl rejects as a malformed URL.
+          hook="$(printf '%s' "$NETLIFY_BUILD_HOOK" | tr -d '[:space:]')"
+          if [[ "$hook" != https://api.netlify.com/build_hooks/* ]]; then
+            echo "::error::NETLIFY_BUILD_HOOK (Moneta Environment) is missing or is not a Netlify build hook URL."
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST -d '{}' "$hook?trigger_title=Release+$GITHUB_REF_NAME"
         env:
           NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
