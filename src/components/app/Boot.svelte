@@ -13,6 +13,7 @@
 	import { applyServiceWorkerUpdate, onNeedRefresh } from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import { settleWithin } from '$client/timeout';
+	import { APP_VERSION, releaseUrl, takeUpdatedVersion } from '$client/version';
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -133,6 +134,16 @@
 				action: { label: m.startup_reload(), onClick: () => void applyUpdate() }
 			});
 		});
+		// Just updated: offer the release notes, which live on GitHub.
+		const updated = takeUpdatedVersion(localStorage, APP_VERSION);
+		if (updated) {
+			toast(m.update_installed({ version: updated }), {
+				action: {
+					label: m.update_whats_new(),
+					onClick: () => void window.open(releaseUrl(updated), '_blank', 'noopener,noreferrer')
+				}
+			});
+		}
 		void (async () => {
 			if (teardown) {
 				await teardown.catch(() => {});

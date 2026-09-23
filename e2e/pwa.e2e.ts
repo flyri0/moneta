@@ -135,6 +135,30 @@ test('closes the database before installing an update, then reopens it', async (
 	}
 });
 
+test('looks for a new version when the connection comes back', async ({ browser }) => {
+	const server = await serveBuild();
+	const context = await browser.newContext({ baseURL: server.url });
+	const page = await context.newPage();
+	try {
+		await onboard(page);
+		await page.evaluate(async () => {
+			await navigator.serviceWorker.ready;
+		});
+		await page.reload();
+		await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+
+		// Deploy a new version; nothing asks the registration to update but the app itself.
+		server.nextVersion();
+		await page.evaluate(() => window.dispatchEvent(new Event('online')));
+		await expect(
+			page.locator('[data-sonner-toast]', { hasText: 'A new version of Moneta is available.' })
+		).toBeVisible();
+	} finally {
+		await context.close();
+		await server.close();
+	}
+});
+
 test('can be installed', async ({ page }) => {
 	await page.goto('/');
 	const href = await page.locator('link[rel="manifest"]').getAttribute('href');

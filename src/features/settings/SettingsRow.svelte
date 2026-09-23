@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import { Label } from '$ui/label';
 	import { cn } from '$utils';
 
 	/**
 	 * One setting: its name on the left, its value or control on the right. With `onclick` the
-	 * whole row is the button that opens the choice; otherwise `control` sits inside the row.
+	 * whole row is the button that opens the choice, and with `href` it is a link to another site
+	 * that opens in a new tab; otherwise `control` sits inside the row.
 	 */
 	let {
 		label,
@@ -15,6 +17,7 @@
 		value,
 		control,
 		onclick,
+		href,
 		stacked = false,
 		class: className
 	}: {
@@ -25,6 +28,8 @@
 		value?: string;
 		control?: Snippet;
 		onclick?: () => void;
+		/** An external URL. */
+		href?: string;
 		/** Puts the control under the name instead of beside it, for wide controls. */
 		stacked?: boolean;
 		class?: string;
@@ -57,6 +62,22 @@
 			<ChevronRightIcon class="size-4" />
 		</span>
 	</button>
+{:else if href}
+	<!-- An external page: resolve() only applies to the app's own routes. -->
+	<!-- eslint-disable svelte/no-navigation-without-resolve -->
+	<a
+		{href}
+		target="_blank"
+		rel="noopener noreferrer"
+		class={cn(row, 'justify-between hover:bg-accent focus-visible:bg-accent', className)}
+	>
+		{@render name()}
+		<span class="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+			{#if value}{value}{/if}
+			<ExternalLinkIcon class="size-4" />
+		</span>
+	</a>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 {:else if stacked}
 	<div class={cn('grid gap-2 px-4 py-3', className)}>
 		{@render name()}

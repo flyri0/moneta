@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { chooseCombobox, fillNewBudget, onboard, openSettings } from './helpers';
 
@@ -73,6 +74,19 @@ test('picks an accent colour and a theme that outlive a reload', async ({ page }
 		'aria-pressed',
 		'true'
 	);
+});
+
+test('shows the version and links to its release notes', async ({ page }) => {
+	const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+	await onboard(page);
+	await openSettings(page);
+	await expect(page.getByTestId('app-version')).toContainText(version);
+	const notes = page.getByRole('link', { name: 'Release notes' });
+	await expect(notes).toHaveAttribute(
+		'href',
+		`https://github.com/flyri0/moneta/releases/tag/v${version}`
+	);
+	await expect(notes).toHaveAttribute('target', '_blank');
 });
 
 test.describe('on a phone', () => {

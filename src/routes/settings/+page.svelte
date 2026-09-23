@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AboutGroup from '$features/settings/AboutGroup.svelte';
 	import BackupCard from '$features/settings/BackupCard.svelte';
 	import BudgetDetails from '$features/settings/BudgetDetails.svelte';
 	import BudgetFiles from '$features/settings/BudgetFiles.svelte';
@@ -19,6 +20,7 @@
 		<div class="grid content-start gap-4">
 			<BackupCard />
 			<StorageCard />
+			<AboutGroup />
 		</div>
 	</div>
 </div>

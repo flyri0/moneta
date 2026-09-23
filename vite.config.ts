@@ -1,10 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
+// The app shows its version in Settings and links to that release's notes.
+const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+
 export default defineConfig({
+	define: { __APP_VERSION__: JSON.stringify(pkg.version) },
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 	worker: { format: 'es' },
 	plugins: [

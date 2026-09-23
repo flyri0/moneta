@@ -1,4 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
+import { watchForUpdates } from './update-checks';
 
 type Update = (reload?: boolean) => Promise<void>;
 
@@ -8,10 +9,17 @@ let needRefresh: (() => void) | null = null;
 /**
  * Registers the service worker, once per page load. Both the welcome page and the app call it:
  * the welcome page because Chromium only offers to install a page whose worker is registered,
- * the app because that is how updates are found.
+ * the app because that is how updates are found. It also checks for updates while the page
+ * stays open (`watchForUpdates`), not only on navigations.
  */
 export function ensureServiceWorker(): void {
-	update ??= registerSW({ onNeedRefresh: () => needRefresh?.() });
+	update ??= registerSW({
+		onNeedRefresh: () => needRefresh?.(),
+		onRegisteredSW: (_url, registration) => {
+			if (registration)
+				watchForUpdates(registration, { win: window, doc: document, nav: navigator });
+		}
+	});
 }
 
 /** Runs `fn` whenever a new version is waiting. Only the app asks to be told. */
