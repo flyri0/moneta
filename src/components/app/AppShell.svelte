@@ -16,6 +16,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runActionToast } from '$client/notify';
+	import { persistQuietly } from '$client/persistence';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import DemoBanner from './DemoBanner.svelte';
@@ -61,6 +62,8 @@
 	let adding = $state(false);
 
 	onMount(() => {
+		// Chromium and Safari protect installed or often used apps without a prompt, when asked.
+		void persistQuietly(navigator.storage, navigator.userAgent);
 		if (session.isDemo || !backupDue(session.meta)) return;
 		toast(m.backup_reminder(), {
 			duration: 15_000,

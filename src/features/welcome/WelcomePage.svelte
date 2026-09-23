@@ -16,6 +16,7 @@
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$i18n/paraglide/runtime';
+	import BrowserWarningDialog from './BrowserWarningDialog.svelte';
 	import InstallHelpDialog from './InstallHelpDialog.svelte';
 
 	const REPO = 'https://github.com/flyri0/moneta';
@@ -28,6 +29,7 @@
 	];
 
 	let helping = $state(false);
+	let warning = $state(false);
 	const how = $derived(installHow(navigator.userAgent, install.available));
 
 	// Chromium only offers to install a page whose service worker is registered.
@@ -40,6 +42,24 @@
 	function useInBrowser() {
 		dismissWelcome(localStorage);
 		void goto(resolve('/budget/[month]', { month: currentMonth() }));
+	}
+
+	/** A tab's data can be cleared, so choosing the browser first recommends installing. */
+	async function chooseBrowser() {
+		let persisted = false;
+		try {
+			persisted = (await navigator.storage?.persisted?.()) ?? false;
+		} catch {
+			// Warn, then.
+		}
+		// Already protected (Chromium trusts this site): there is nothing to warn about.
+		if (persisted) useInBrowser();
+		else warning = true;
+	}
+
+	function installInstead() {
+		warning = false;
+		void requestInstall();
 	}
 
 	// The demo is not a budget, so the welcome page stays answerable: it is never dismissed here.
@@ -81,7 +101,7 @@
 
 			<div class="flex w-full max-w-xs flex-col gap-2 sm:max-w-sm">
 				<Button size="lg" onclick={requestInstall}>{m.welcome_install()}</Button>
-				<Button variant="outline" onclick={useInBrowser}>{m.welcome_browser()}</Button>
+				<Button variant="outline" onclick={chooseBrowser}>{m.welcome_browser()}</Button>
 				<Button variant="ghost" size="sm" onclick={tryDemo}>{m.welcome_demo()}</Button>
 			</div>
 		{/if}
@@ -118,3 +138,4 @@
 </div>
 
 <InstallHelpDialog bind:open={helping} {how} />
+<BrowserWarningDialog bind:open={warning} onInstall={installInstead} onContinue={useInBrowser} />

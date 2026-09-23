@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { chooseCombobox, fillNewBudget, onboard, openSettings } from './helpers';
 
 test('creates, switches, renames and deletes budgets', async ({ page }) => {
@@ -88,5 +88,119 @@ test.describe('on a phone', () => {
 		await page.getByRole('button', { name: 'Amber' }).click();
 		await expect(page.locator('html')).toHaveAttribute('data-theme', 'amber');
 		await expect(page.getByRole('button', { name: 'Accent color' })).toContainText('Amber');
+	});
+});
+
+interface PersistenceStub {
+	persisted: boolean;
+	/** The persistent-storage permission; null makes the query reject, as Safari does. */
+	permission: PermissionState | null;
+	/** Whether persist() grants. */
+	grants: boolean;
+}
+
+/** Replaces what the page reads about persistent storage with `window.persistence`. */
+async function stubPersistence(page: Page, stub: PersistenceStub): Promise<void> {
+	await page.addInitScript((initial) => {
+		const s = initial;
+		(window as unknown as { persistence: typeof s }).persistence = s;
+		Object.defineProperty(navigator.storage, 'persisted', {
+			configurable: true,
+			value: async () => s.persisted
+		});
+		Object.defineProperty(navigator.storage, 'persist', {
+			configurable: true,
+			value: async () => {
+				if (s.grants) s.persisted = true;
+				return s.persisted;
+			}
+		});
+		const query = navigator.permissions.query.bind(navigator.permissions);
+		Object.defineProperty(navigator.permissions, 'query', {
+			configurable: true,
+			value: async (descriptor: PermissionDescriptor) => {
+				if (descriptor.name !== 'persistent-storage') return query(descriptor);
+				if (s.permission === null) throw new TypeError('Unknown permission');
+				const status = new EventTarget();
+				Object.defineProperty(status, 'state', { get: () => s.permission });
+				return status;
+			}
+		});
+	}, stub);
+}
+
+async function setPersistence(page: Page, change: Partial<PersistenceStub>): Promise<void> {
+	await page.evaluate((c) => {
+		Object.assign((window as unknown as { persistence: object }).persistence, c);
+	}, change);
+}
+
+test.describe('data protection', () => {
+	test('explains that Chromium decides by itself and offers to install', async ({ page }) => {
+		await onboard(page);
+		await openSettings(page);
+		const row = page.getByTestId('storage-protection');
+		await expect(row.getByText('Off', { exact: true })).toBeVisible();
+		await expect(row).toContainText('decides by itself');
+		await expect(page.getByText('Back up regularly')).toBeVisible();
+
+		await page.getByRole('button', { name: 'Install app' }).click();
+		await expect(page.getByRole('heading', { name: 'Install Moneta' })).toBeVisible();
+	});
+
+	test('asks quietly on start where the browser decides by itself', async ({ page }) => {
+		await stubPersistence(page, { persisted: false, permission: 'prompt', grants: true });
+		await onboard(page);
+		// The reload starts the stub over, unprotected: only the app's own request can protect it.
+		await page.reload();
+		await openSettings(page);
+		const row = page.getByTestId('storage-protection');
+		await expect(row.getByText('On', { exact: true })).toBeVisible();
+	});
+
+	test('checks again when the tab comes back', async ({ page }) => {
+		await stubPersistence(page, { persisted: false, permission: null, grants: false });
+		await onboard(page);
+		await openSettings(page);
+		const row = page.getByTestId('storage-protection');
+		await expect(row.getByText('Off', { exact: true })).toBeVisible();
+
+		const comeBack = () =>
+			page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+		await setPersistence(page, { persisted: true });
+		await comeBack();
+		await expect(row.getByText('On', { exact: true })).toBeVisible();
+		await expect(page.getByText('Back up regularly')).toHaveCount(0);
+
+		await setPersistence(page, { persisted: false });
+		await comeBack();
+		await expect(row.getByText('Off', { exact: true })).toBeVisible();
+	});
+
+	test.describe('in Firefox', () => {
+		test.use({
+			userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0'
+		});
+
+		test('explains how to undo a refusal', async ({ page }) => {
+			await stubPersistence(page, { persisted: false, permission: 'denied', grants: false });
+			await onboard(page);
+			await openSettings(page);
+			await expect(page.getByTestId('storage-protection')).toContainText('You declined');
+			await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+			await expect(page.getByRole('button', { name: 'Install app' })).toHaveCount(0);
+		});
+
+		test('asks the browser to protect the data', async ({ page }) => {
+			await stubPersistence(page, { persisted: false, permission: 'prompt', grants: false });
+			await onboard(page);
+			await openSettings(page);
+			const row = page.getByTestId('storage-protection');
+			await expect(row.getByText('Off', { exact: true })).toBeVisible();
+
+			await setPersistence(page, { grants: true });
+			await page.getByRole('button', { name: 'Protect' }).click();
+			await expect(row.getByText('On', { exact: true })).toBeVisible();
+		});
 	});
 });

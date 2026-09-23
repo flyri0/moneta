@@ -23,6 +23,9 @@ test('welcomes a first-time visitor and lets them into the app', async ({ page }
 	await expect(page.getByText('Free and open source')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	const warning = page.getByRole('dialog');
+	await expect(warning).toContainText('may clear it to free up space');
+	await warning.getByRole('button', { name: 'Continue in the browser' }).click();
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 
 	// The choice sticks, so a reload part-way through onboarding doesn't bounce back.
@@ -50,6 +53,24 @@ test('installs with the browser prompt and then points at the installed app', as
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 
+test('recommends installing to whoever picks the browser', async ({ page }) => {
+	await page.goto('/');
+	await expect(page.getByRole('button', { name: 'Install Moneta' })).toBeVisible();
+	await offerInstall(page, true);
+	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Install Moneta' }).click();
+	await expect(page.getByText('Moneta is installed')).toBeVisible();
+});
+
+test('skips the browser warning when the data is already protected', async ({ page }) => {
+	await page.addInitScript(() => {
+		Object.defineProperty(navigator.storage, 'persisted', { value: async () => true });
+	});
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
+});
+
 test('explains how to install by hand when no prompt is offered', async ({ page }) => {
 	await page.goto('/');
 	await page.getByRole('button', { name: 'Install Moneta' }).click();
@@ -72,5 +93,6 @@ test('offers the welcome page in Portuguese', async ({ page }) => {
 	await chooseSelect(page, 'Language', 'Português (Brasil)');
 	await expect(page.getByRole('button', { name: 'Instalar o Moneta' })).toBeVisible();
 	await page.getByRole('button', { name: 'Usar no navegador' }).click();
+	await page.getByRole('button', { name: 'Continuar no navegador' }).click();
 	await expect(page.getByText('Boas-vindas ao Moneta')).toBeVisible();
 });

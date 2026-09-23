@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow } from './helpers';
+import { categoryRow, useInBrowser } from './helpers';
 
 const BANNER = 'Demo data. Nothing here is saved.';
 
@@ -40,7 +40,7 @@ test('vanishes on the way back to the welcome page', async ({ page }) => {
 	await page.goBack();
 	await expect(page.getByRole('button', { name: 'Try the demo' })).toBeVisible();
 
-	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await useInBrowser(page);
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 

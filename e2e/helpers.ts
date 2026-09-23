@@ -97,10 +97,16 @@ export async function fillNewBudget(page: Page, name: string, balance: string): 
 	await page.getByRole('button', { name: 'Create budget' }).click();
 }
 
+/** Chooses the browser on the welcome page and gets past the warning about it. */
+export async function useInBrowser(page: Page): Promise<void> {
+	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await page.getByRole('button', { name: 'Continue in the browser' }).click();
+}
+
 /** Opens Moneta and leaves the welcome page for the app itself. */
 export async function startApp(page: Page): Promise<void> {
 	await page.goto('/');
-	await page.getByRole('button', { name: 'Use it in the browser' }).click();
+	await useInBrowser(page);
 }
 
 /** Skips the two steps that explain the app, leaving onboarding on the budget step. */
