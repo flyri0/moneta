@@ -12,6 +12,36 @@ test('navigates between screens and switches the language', async ({ page }) => 
 	await expect(page.getByText('Pronto para atribuir').first()).toBeVisible();
 });
 
+test('shows the date picker calendar in the UI language', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Settings' }).first().click();
+	await chooseSelect(page, 'Language', 'Português (Brasil)');
+	await page
+		.getByRole('complementary')
+		.getByRole('button', { name: 'Transação', exact: true })
+		.click();
+	await page.getByRole('dialog').getByLabel('Data').click();
+
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	await expect(popover.locator('[data-calendar-head-cell]')).toHaveText([
+		'dom',
+		'seg',
+		'ter',
+		'qua',
+		'qui',
+		'sex',
+		'sáb'
+	]);
+	const clipped = await popover
+		.locator('[data-calendar-head-cell]')
+		.evaluateAll((els) =>
+			els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent)
+		);
+	expect(clipped).toEqual([]);
+	const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+	await expect(popover.locator('[data-calendar-header]')).toContainText(month);
+});
+
 test('adds, closes and protects accounts', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Accounts' }).first().click();

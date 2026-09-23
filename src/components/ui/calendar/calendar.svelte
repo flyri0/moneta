@@ -66,7 +66,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 			</Calendar.Nav>
 			{#each months as month, monthIndex (month)}
 				<Calendar.Month>
-					<Calendar.Header>
+					<Calendar.Header class="capitalize">
 						<Calendar.Caption
 							{captionLayout}
 							months={monthsProp}
@@ -84,7 +84,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 							<Calendar.GridRow class="select-none">
 								{#each weekdays as weekday, i (i)}
 									<Calendar.HeadCell>
-										{weekday.slice(0, 2)}
+										{weekday.replace(/\.$/, '')}
 									</Calendar.HeadCell>
 								{/each}
 							</Calendar.GridRow>

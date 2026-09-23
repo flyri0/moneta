@@ -196,6 +196,7 @@
 				preventDeselect
 				value={parsedValue}
 				bind:placeholder={placeholderDate}
+				{locale}
 				onValueChange={handleSelect}
 				minValue={min ? parseDate(min) : undefined}
 				maxValue={max ? parseDate(max) : undefined}
