@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { dropCategory, moveCategory, moveGroup, toPayload, type OrderLayout } from './order';
+import {
+	dropCategory,
+	dropGroup,
+	moveCategory,
+	moveGroup,
+	toPayload,
+	type OrderLayout
+} from './order';
 
 const layout: OrderLayout = [
 	{
@@ -24,7 +31,7 @@ const shape = (l: OrderLayout) =>
 	l.map((g) => `${g.id}:${g.categories.map((c) => c.id).join(',')}`);
 
 describe('moveGroup', () => {
-	it('swaps user groups', () => {
+	it('swaps neighbouring groups', () => {
 		expect(shape(moveGroup(layout, 'fun', -1))).toEqual([
 			'income:salary',
 			'fun:games',
@@ -32,10 +39,38 @@ describe('moveGroup', () => {
 		]);
 	});
 
-	it('never moves system groups or moves anything above them', () => {
-		expect(moveGroup(layout, 'income', 1)).toBe(layout);
-		expect(moveGroup(layout, 'bills', -1)).toBe(layout);
+	it('moves the Income group too', () => {
+		expect(shape(moveGroup(layout, 'income', 1))).toEqual([
+			'bills:rent,power',
+			'income:salary',
+			'fun:games'
+		]);
+		expect(shape(moveGroup(layout, 'bills', -1))[0]).toBe('bills:rent,power');
+	});
+
+	it('stops at the ends', () => {
+		expect(moveGroup(layout, 'income', -1)).toBe(layout);
 		expect(moveGroup(layout, 'fun', 1)).toBe(layout);
+	});
+});
+
+describe('dropGroup', () => {
+	const ids = (l: OrderLayout) => l.map((g) => g.id);
+
+	it('places a group at an index', () => {
+		expect(ids(dropGroup(layout, 'fun', 0))).toEqual(['fun', 'income', 'bills']);
+		expect(ids(dropGroup(layout, 'income', 1))).toEqual(['bills', 'income', 'fun']);
+		expect(ids(dropGroup(layout, 'income', 2))).toEqual(['bills', 'fun', 'income']);
+	});
+
+	it('clamps the index', () => {
+		expect(ids(dropGroup(layout, 'income', 99))).toEqual(['bills', 'fun', 'income']);
+		expect(ids(dropGroup(layout, 'fun', -5))).toEqual(['fun', 'income', 'bills']);
+	});
+
+	it('returns the same layout when nothing moves', () => {
+		expect(dropGroup(layout, 'bills', 1)).toBe(layout);
+		expect(dropGroup(layout, 'nope', 0)).toBe(layout);
 	});
 });
 
@@ -64,6 +99,36 @@ describe('moveCategory', () => {
 	it('never crosses into or out of a system group', () => {
 		expect(moveCategory(layout, 'rent', -1)).toBe(layout);
 		expect(moveCategory(layout, 'salary', 1)).toBe(layout);
+	});
+
+	it('skips an Income group placed between user groups', () => {
+		const middle = moveGroup(layout, 'income', 1);
+		expect(shape(moveCategory(middle, 'power', 1))).toEqual([
+			'bills:rent',
+			'income:salary',
+			'fun:power,games'
+		]);
+		expect(shape(moveCategory(middle, 'games', -1))).toEqual([
+			'bills:rent,power,games',
+			'income:salary',
+			'fun:'
+		]);
+	});
+
+	it('reorders Income categories only within Income', () => {
+		const income: OrderLayout = [
+			{ ...layout[1] },
+			{
+				...layout[0],
+				categories: [
+					{ id: 'salary', name: 'Salary' },
+					{ id: 'bonus', name: 'Bonus' }
+				]
+			}
+		];
+		expect(shape(moveCategory(income, 'bonus', -1))[1]).toBe('income:bonus,salary');
+		expect(moveCategory(income, 'salary', -1)).toBe(income);
+		expect(moveCategory(income, 'bonus', 1)).toBe(income);
 	});
 });
 

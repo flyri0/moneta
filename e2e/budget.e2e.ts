@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { categoryRow, chooseCombobox, chooseSelect, onboard } from './helpers';
 
 test('shows the month with Ready to Assign and the starter categories', async ({ page }) => {
@@ -243,6 +243,97 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 	const names = everyday.getByTestId('category-row').locator(':scope > button');
 	await expect(names.nth(2)).toHaveText('Household');
 	await expect(names.nth(3)).toHaveText('Dining Out');
+});
+
+/** Drags a grip with the mouse (the same Pointer Events path as touch) to `y`, in steps. */
+async function dragTo(page: Page, handle: Locator, y: number) {
+	await handle.scrollIntoViewIfNeeded();
+	const box = (await handle.boundingBox())!;
+	const x = box.x + box.width / 2;
+	await page.mouse.move(x, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(x, y, { steps: 20 });
+	await page.mouse.up();
+}
+
+function orderSection(page: Page, name: string) {
+	return page.locator('section[data-order-group]').filter({
+		has: page.locator('[data-order-header]', { hasText: name })
+	});
+}
+
+function orderCategory(page: Page, name: string) {
+	return page.getByTestId('order-category').filter({ hasText: name });
+}
+
+test('drags a category into another group', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	const target = (await orderCategory(page, 'Rent').boundingBox())!;
+	await dragTo(
+		page,
+		orderCategory(page, 'Groceries').getByTestId('drag-handle'),
+		target.y + target.height * 0.25
+	);
+	await expect(orderSection(page, 'Bills').getByTestId('order-category').first()).toHaveText(
+		'Groceries'
+	);
+	await page.getByRole('button', { name: 'Save' }).click();
+	const bills = page.getByTestId('group-card').filter({ hasText: 'Bills' });
+	await expect(bills.getByTestId('category-row').filter({ hasText: 'Groceries' })).toBeVisible();
+});
+
+test('drags the Income group below the others and keeps it there', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	const sections = page.locator('section[data-order-group]');
+	const last = sections.last();
+	await dragTo(
+		page,
+		orderSection(page, 'Income').getByTestId('drag-handle').first(),
+		(await last.boundingBox())!.y + 1000
+	);
+	await expect(sections.last()).toHaveAttribute('aria-label', 'Income');
+	await expect(orderSection(page, 'Income').getByTestId('order-category')).toHaveText([
+		'Salary',
+		'Other Income'
+	]);
+	await page.getByRole('button', { name: 'Save' }).click();
+	await expect(page.getByTestId('group-card').last()).toContainText('Income');
+	await page.reload();
+	await expect(page.getByTestId('group-card').last()).toContainText('Income');
+	await expect(page.getByTestId('group-card').first()).not.toContainText('Income');
+});
+
+test('moves the Income group with its arrows', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	await page.getByRole('button', { name: 'Move Income down' }).click();
+	await expect(page.locator('section[data-order-group]').nth(1)).toHaveAttribute(
+		'aria-label',
+		'Income'
+	);
+	await page.getByRole('button', { name: 'Save' }).click();
+	await expect(page.getByTestId('group-card').nth(1)).toContainText('Income');
+});
+
+test('scrolls while a drag holds at the bottom edge, and Escape undoes it', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 500 });
+	await onboard(page);
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	const first = page.getByTestId('order-category').first();
+	const name = (await first.innerText()).trim();
+	const handle = first.getByTestId('drag-handle');
+	await handle.scrollIntoViewIfNeeded();
+	const box = (await handle.boundingBox())!;
+	const start = await page.evaluate(() => window.scrollY);
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width / 2, 430, { steps: 10 });
+	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(start + 100);
+	await page.keyboard.press('Escape');
+	await page.mouse.up();
+	await expect(page.getByTestId('order-category').first()).toHaveText(name);
 });
 
 test('picks month and year from the month reader date picker', async ({ page }) => {

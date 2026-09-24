@@ -250,7 +250,7 @@ describe('categories', () => {
 		expect(after[1].categories.map((c) => c.name)).toEqual(['Fun', 'Rent', 'Food']);
 	});
 
-	it('keeps the system groups first whatever order is saved', async () => {
+	it('saves the Income group wherever it is placed', async () => {
 		const db = await createBudgetDb();
 		const [income, bills, everyday] = listCategoryTree(db);
 		saveCategoryOrder(
@@ -260,7 +260,7 @@ describe('categories', () => {
 				categoryIds: g.categories.map((c) => c.id)
 			}))
 		);
-		expect(listCategoryTree(db).map((g) => g.name)).toEqual(['Income', 'Everyday', 'Bills']);
+		expect(listCategoryTree(db).map((g) => g.name)).toEqual(['Everyday', 'Bills', 'Income']);
 	});
 
 	it('allows reordering categories within the Income group', async () => {

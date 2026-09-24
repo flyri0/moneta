@@ -267,7 +267,7 @@
 	"group_delete_move_to": "Move its categories to",
 	"group_delete_choose": "Choose a group",
 	"group_system_note": "This group is managed by Moneta.",
-	"order_hint": "Use the arrows, or drag categories on a computer.",
+	"order_hint": "Drag by the handles or use the arrows.",
 	"order_move_up": "Move {name} up",
 	"order_move_down": "Move {name} down",
 	"register_search": "Search payee, category or memo",

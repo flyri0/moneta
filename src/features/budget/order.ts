@@ -1,6 +1,6 @@
 import type { BudgetGroupView } from '$db/repos/budget';
 
-/** The category order being edited: groups (system ones pinned first) and their categories. */
+/** The category order being edited: groups (the Income group included) and their categories. */
 export interface OrderGroup {
 	id: string;
 	name: string;
@@ -24,14 +24,22 @@ export function toPayload(layout: OrderLayout): { groupId: string; categoryIds: 
 	return layout.map((g) => ({ groupId: g.id, categoryIds: g.categories.map((c) => c.id) }));
 }
 
-/** Moves a user group up or down among user groups. System groups never move. */
+/** Places a group at `index` (clamped). Any group moves, the Income group included. */
+export function dropGroup(layout: OrderLayout, groupId: string, index: number): OrderLayout {
+	const from = layout.findIndex((g) => g.id === groupId);
+	const to = Math.max(0, Math.min(index, layout.length - 1));
+	if (from === -1 || from === to) return layout;
+	const next = [...layout];
+	const [moved] = next.splice(from, 1);
+	next.splice(to, 0, moved);
+	return next;
+}
+
+/** Moves a group one step up or down. */
 export function moveGroup(layout: OrderLayout, groupId: string, delta: -1 | 1): OrderLayout {
 	const from = layout.findIndex((g) => g.id === groupId);
-	const to = from + delta;
-	if (from === -1 || layout[from].system || !layout[to] || layout[to].system) return layout;
-	const next = [...layout];
-	[next[from], next[to]] = [next[to], next[from]];
-	return next;
+	if (from === -1 || !layout[from + delta]) return layout;
+	return dropGroup(layout, groupId, from + delta);
 }
 
 function locate(layout: OrderLayout, categoryId: string): [number, number] {
@@ -65,7 +73,8 @@ export function dropCategory(
 
 /**
  * Moves a category one step. Past the top or bottom of its group it goes to the end of the
- * previous user group or the start of the next one.
+ * previous user group or the start of the next one, skipping system groups. Categories of a
+ * system group stay in it.
  */
 export function moveCategory(layout: OrderLayout, categoryId: string, delta: -1 | 1): OrderLayout {
 	const [gi, ci] = locate(layout, categoryId);
@@ -74,8 +83,11 @@ export function moveCategory(layout: OrderLayout, categoryId: string, delta: -1 
 	const index = ci + delta;
 	if (index >= 0 && index < group.categories.length)
 		return dropCategory(layout, categoryId, group.id, index);
-	const neighbor = layout[gi + delta];
-	if (!neighbor || neighbor.system || group.system) return layout;
+	if (group.system) return layout;
+	let ni = gi + delta;
+	while (layout[ni]?.system) ni += delta;
+	const neighbor = layout[ni];
+	if (!neighbor) return layout;
 	return dropCategory(
 		layout,
 		categoryId,

@@ -267,7 +267,7 @@
 	"group_delete_move_to": "Mover as categorias para",
 	"group_delete_choose": "Escolha um grupo",
 	"group_system_note": "Este grupo é gerenciado pelo Moneta.",
-	"order_hint": "Use as setas ou, no computador, arraste as categorias.",
+	"order_hint": "Arraste pelas alças ou use as setas.",
 	"order_move_up": "Mover {name} para cima",
 	"order_move_down": "Mover {name} para baixo",
 	"register_search": "Buscar favorecido, categoria ou memorando",

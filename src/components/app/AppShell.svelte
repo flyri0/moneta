@@ -122,6 +122,7 @@
 	<nav
 		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
 		aria-label={m.nav_label()}
+		data-scroll-inset="bottom"
 	>
 		{#each nav.slice(0, 2) as item (item.label)}
 			{@render bottomLink(item)}
