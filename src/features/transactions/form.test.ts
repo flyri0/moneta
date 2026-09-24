@@ -69,8 +69,10 @@ const ctx: FormContext = {
 		{ id: 'mercado_acc', name: 'Mercado', type: 'checking', onBudget: true, closed: false }
 	],
 	payees: [
-		{ id: 'p1', name: 'Mercado', lastCategoryId: 'food' },
-		{ id: 'p2', name: 'Oldshop', lastCategoryId: 'old' }
+		{ id: 'p1', name: 'Mercado', defaultCategoryId: null, lastCategoryId: 'food' },
+		{ id: 'p2', name: 'Oldshop', defaultCategoryId: null, lastCategoryId: 'old' },
+		{ id: 'p3', name: 'Salary Inc', defaultCategoryId: 'rta', lastCategoryId: 'food' },
+		{ id: 'p4', name: 'Oldfav', defaultCategoryId: 'old', lastCategoryId: 'food' }
 	],
 	tree,
 	money: { currency: 'BRL', locale: 'pt-BR' },
@@ -205,6 +207,11 @@ describe('suggestCategory', () => {
 		expect(suggestCategory(draft({ payee: 'mercado' }), ctx)).toBe('food');
 		expect(suggestCategory(draft({ payee: 'Oldshop' }), ctx)).toBeNull();
 		expect(suggestCategory(draft({ payee: 'Someone new' }), ctx)).toBeNull();
+	});
+
+	it("prefers the payee's default category, falling back to the last one", () => {
+		expect(suggestCategory(draft({ payee: 'Salary Inc' }), ctx)).toBe('rta');
+		expect(suggestCategory(draft({ payee: 'Oldfav' }), ctx)).toBe('food');
 	});
 });
 

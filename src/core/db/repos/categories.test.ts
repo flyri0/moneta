@@ -199,6 +199,33 @@ describe('categories', () => {
 		]);
 	});
 
+	it('moves payee defaults with a reassignment and clears them otherwise', async () => {
+		const db = await createBudgetDb();
+		const food = categoryId(db, 'Food');
+		const fun = categoryId(db, 'Fun');
+		const rent = categoryId(db, 'Rent');
+		run(
+			db,
+			"INSERT INTO accounts (id, name, type, on_budget, sort_order, created_at) VALUES ('acc1', 'Bank', 'checking', 1, 0, '2026-01-01T00:00:00Z')"
+		);
+		run(
+			db,
+			'INSERT INTO transactions (id, account_id, date, amount, category_id) VALUES (?, ?, ?, ?, ?)',
+			['tx1', 'acc1', '2026-01-05', -1000, fun]
+		);
+		const payee = 'INSERT INTO payees (id, name, default_category_id) VALUES (?, ?, ?)';
+		run(db, payee, ['p1', 'Cinema', fun]);
+		run(db, payee, ['p2', 'Landlord', rent]);
+
+		deleteCategory(db, fun, food);
+		deleteCategory(db, rent);
+
+		expect(all(db, 'SELECT id, default_category_id AS c FROM payees ORDER BY id')).toEqual([
+			{ id: 'p1', c: food },
+			{ id: 'p2', c: null }
+		]);
+	});
+
 	it('requires reassignment category to be of the same kind when category is in use', async () => {
 		const db = await createBudgetDb();
 		const income = listCategoryTree(db).find((g) => g.system === 'income')!;

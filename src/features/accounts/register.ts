@@ -1,14 +1,9 @@
 import type { Account } from '$db/repos/accounts';
 import type { TransactionRow } from '$db/repos/transactions';
+import { isStartingBalance } from '$domain/payees';
 
 /** The payee the repos write for starting balances (stored in English, shown translated). */
 export const STARTING_BALANCE_PAYEE = 'Starting Balance';
-
-export function isStartingBalance(payeeName: string | null | undefined): boolean {
-	if (!payeeName) return false;
-	const lower = payeeName.trim().toLowerCase();
-	return lower === 'starting balance' || lower === 'saldo inicial';
-}
 
 export type PayeeDisplay =
 	| { kind: 'transfer'; direction: 'to' | 'from'; accountId: string; accountName: string }

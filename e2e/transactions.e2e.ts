@@ -9,6 +9,7 @@ test('lists the transactions of every account', async ({ page }) => {
 		'Transactions',
 		'Accounts',
 		'Reports',
+		'Payees',
 		'Settings'
 	]);
 
@@ -43,7 +44,7 @@ test('lists the transactions of every account', async ({ page }) => {
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('keeps Settings in the More menu', async ({ page }) => {
+	test('keeps Payees and Settings in the More menu', async ({ page }) => {
 		await onboard(page);
 		const bar = page.getByRole('navigation', { name: 'Main' });
 		await expect(bar.locator('[data-nav-label]')).toHaveText([
@@ -58,6 +59,7 @@ test.describe('on a phone', () => {
 		await expect(page.getByRole('heading', { name: 'Transactions' })).toBeVisible();
 
 		await bar.getByRole('button', { name: 'More' }).click();
+		await expect(page.getByRole('dialog').getByRole('link')).toHaveText(['Payees', 'Settings']);
 		await page.getByRole('dialog').getByRole('link', { name: 'Settings' }).click();
 		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 		await expect(page.getByRole('dialog')).toBeHidden();

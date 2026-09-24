@@ -29,9 +29,12 @@ export interface TransactionDraft {
 
 export type FormAccount = Pick<Account, 'id' | 'name' | 'type' | 'onBudget' | 'closed'>;
 
+/** What the form needs of a payee: its name and the categories it suggests. */
+export type FormPayee = Pick<Payee, 'id' | 'name' | 'defaultCategoryId' | 'lastCategoryId'>;
+
 export interface FormContext {
 	accounts: FormAccount[];
-	payees: Payee[];
+	payees: FormPayee[];
 	tree: GroupNode[];
 	money: MoneyFormat;
 	/** How a transfer to or from an account appears in the payee field, e.g. "Transfer: Savings". */
@@ -128,15 +131,20 @@ export function categoryOptions(draft: TransactionDraft, ctx: FormContext): Cate
 		.filter((g) => g.categories.length > 0);
 }
 
-/** The category to preselect for an existing payee: its most recent one, if the form offers it. */
+/**
+ * The category to preselect for an existing payee: its default one, else its most recent one,
+ * whichever the form offers first.
+ */
 export function suggestCategory(draft: TransactionDraft, ctx: FormContext): string | null {
 	const name = draft.payee.trim().toLocaleLowerCase();
 	const payee = ctx.payees.find((p) => p.name.toLocaleLowerCase() === name);
-	if (!payee?.lastCategoryId) return null;
-	const offered = categoryOptions(draft, ctx).some((g) =>
-		g.categories.some((c) => c.id === payee.lastCategoryId)
+	if (!payee) return null;
+	const offered = new Set(
+		categoryOptions(draft, ctx).flatMap((g) => g.categories.map((c) => c.id))
 	);
-	return offered ? payee.lastCategoryId : null;
+	return (
+		[payee.defaultCategoryId, payee.lastCategoryId].find((id) => id && offered.has(id)) ?? null
+	);
 }
 
 function signed(value: number, direction: Direction): number {

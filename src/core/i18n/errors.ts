@@ -21,6 +21,8 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	SPLIT_TOO_FEW_LINES: m.error_split_too_few_lines,
 	SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch,
 	TRANSFER_INVALID: m.error_transfer_invalid,
+	PAYEE_EXISTS: m.error_payee_exists,
+	PAYEE_IN_USE: m.error_payee_in_use,
 	BACKUP_NOT_RECOGNIZED: m.error_backup_not_recognized,
 	BACKUP_DAMAGED: m.error_backup_damaged,
 	BACKUP_NOT_MONETA: m.error_backup_not_moneta,

@@ -57,6 +57,8 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Categorias de receitas personalizáveis em um grupo de sistema dedicado que alimentam o Pronto
   para atribuir
 - Transações divididas e transferências entre contas
+- Gestão de favorecidos: renomear um favorecido em todas as transações passadas, mesclar
+  duplicatas, definir uma categoria padrão e remover favorecidos sem uso
 - Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
 - Vários orçamentos lado a lado
 - Backup e restauração de todos os orçamentos em um arquivo `.moneta`, criptografado com
@@ -72,8 +74,7 @@ O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de
 - **Segurança e soberania de dados**:
   - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys).
   - **Destinos de backup em nuvem**: Exportação de backups criptografados no próprio dispositivo diretamente para armazenamento do usuário (WebDAV/Nextcloud, Google Drive, Dropbox) e sincronização com pasta local via File System Access API.
-- **Gestão de favorecidos e transações**:
-  - **Tela de gerenciamento de favorecidos**: Interface dedicada para listar favorecidos, renomear em todas as transações passadas de uma só vez, mesclar duplicatas, definir categorias padrão e remover registros não utilizados.
+- **Gestão de transações**:
   - **Transações recorrentes e agendadas**: Agendamento de despesas fixas e receitas com previsão visual de lançamentos futuros no extrato.
 - **Importação e conciliação**:
   - **Importação de extratos bancários**: Suporte a arquivos OFX, QFX, QIF e CSV com mapeamento inteligente de colunas e detecção de duplicatas.

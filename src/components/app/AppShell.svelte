@@ -10,6 +10,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ReceiptTextIcon from '@lucide/svelte/icons/receipt-text';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import UsersIcon from '@lucide/svelte/icons/users';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
@@ -59,6 +60,12 @@
 			label: m.nav_reports(),
 			icon: ChartColumnIcon,
 			active: path.startsWith('/reports')
+		},
+		{
+			href: resolve('/payees'),
+			label: m.nav_payees(),
+			icon: UsersIcon,
+			active: path.startsWith('/payees')
 		},
 		{
 			href: resolve('/settings'),

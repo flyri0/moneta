@@ -74,7 +74,12 @@ export const api = {
 		saveOrder: write(['category_groups', 'categories'], categories.saveCategoryOrder, ['array'])
 	},
 	payees: {
-		list: read(payees.listPayees, [])
+		list: read(payees.listPayees, []),
+		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
+		merge: write(['payees', 'transactions'], payees.mergePayee, ['string', 'string']),
+		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
+		delete: write(['payees'], payees.deletePayee, ['string']),
+		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
 	},
 	transactions: {
 		list: read(transactions.listTransactions, ['object?']),

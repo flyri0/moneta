@@ -69,7 +69,12 @@
 		}
 		const payees = [...ctx.payees];
 		if (draft.payee && !payees.some((p) => p.name === draft.payee)) {
-			payees.unshift({ id: 'current', name: draft.payee, lastCategoryId: null });
+			payees.unshift({
+				id: 'current',
+				name: draft.payee,
+				defaultCategoryId: null,
+				lastCategoryId: null
+			});
 		}
 		if (payees.length > 0) {
 			groups.push({

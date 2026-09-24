@@ -252,6 +252,10 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 				 ON CONFLICT (category_id, month) DO UPDATE SET assigned = assigned + excluded.assigned`,
 				[reassignTo, id]
 			);
+			run(db, 'UPDATE payees SET default_category_id = ? WHERE default_category_id = ?', [
+				reassignTo,
+				id
+			]);
 		}
 		run(db, 'DELETE FROM categories WHERE id = ?', [id]);
 	});
