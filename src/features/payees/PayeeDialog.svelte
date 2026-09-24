@@ -96,7 +96,12 @@
 			<Alert.Root>
 				<Alert.Description class="grid gap-2">
 					<p>{m.payee_exists({ name: conflict.name })}</p>
-					<Button variant="outline" size="sm" class="w-fit" onclick={() => merge(conflict.id)}>
+					<Button
+						variant="outline"
+						size="sm"
+						class="h-auto min-h-8 max-w-full justify-self-start py-1.5 text-left whitespace-normal"
+						onclick={() => merge(conflict.id)}
+					>
 						{m.payee_merge_into({ name: conflict.name })}
 					</Button>
 				</Alert.Description>
@@ -124,10 +129,10 @@
 		{#if targets.length > 0}
 			<div class="grid gap-2">
 				<Label for="payee-merge">{m.payee_merge()}</Label>
-				<div class="flex gap-2">
+				<div class="grid gap-2 md:flex">
 					<Combobox
 						id="payee-merge"
-						class="min-w-0 flex-1"
+						class="md:min-w-0 md:flex-1"
 						ariaLabel={m.payee_merge()}
 						items={targets}
 						bind:value={mergeTo}
