@@ -185,7 +185,8 @@ export function buildDemo(input: DemoInput): DemoSeed {
 			}
 		],
 		transactions: [],
-		assignments: []
+		assignments: [],
+		schedules: []
 	};
 
 	const add = (t: DemoTransactionSeed) => {
@@ -244,6 +245,34 @@ export function buildDemo(input: DemoInput): DemoSeed {
 			});
 		}
 	});
+
+	// The next paycheck, rent and card payment as schedules, on their first date after today.
+	const upcoming = (day: number) => dayOf(day > lastDay ? current : addMonths(current, 1), day);
+	seed.schedules.push(
+		{
+			accountKey: CHECKING,
+			amount: money(SALARY),
+			payeeName: payees.salary,
+			categoryName: categories.salary,
+			startDate: upcoming(1),
+			autoEnter: true
+		},
+		{
+			accountKey: CHECKING,
+			amount: -money(ASSIGNED.rent),
+			payeeName: payees.landlord,
+			categoryName: categories.rent,
+			startDate: upcoming(3),
+			autoEnter: false
+		},
+		{
+			accountKey: CHECKING,
+			amount: -money(CARD_BILL),
+			transferAccountKey: CARD,
+			startDate: upcoming(5),
+			autoEnter: false
+		}
+	);
 
 	return seed;
 }

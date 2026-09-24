@@ -29,6 +29,17 @@ export interface DemoTransactionSeed {
 	transferAccountKey?: string | null;
 }
 
+/** A monthly schedule in the demo, starting on its first date after today. */
+export interface DemoScheduleSeed {
+	accountKey: string;
+	amount: number;
+	payeeName?: string | null;
+	categoryName?: string | null;
+	transferAccountKey?: string | null;
+	startDate: string;
+	autoEnter: boolean;
+}
+
 export interface DemoAssignmentSeed {
 	categoryName: string;
 	month: Month;
@@ -39,6 +50,7 @@ export interface DemoSeed {
 	accounts: DemoAccountSeed[];
 	transactions: DemoTransactionSeed[];
 	assignments: DemoAssignmentSeed[];
+	schedules: DemoScheduleSeed[];
 }
 
 /** A demo budget from nothing: what any budget starts with, plus what fills this one in. */

@@ -4,6 +4,7 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
@@ -21,6 +22,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { persistQuietly } from '$client/persistence';
+	import { enterAndReport, scheduleRunner } from '$client/schedules';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import DemoBanner from './DemoBanner.svelte';
@@ -31,6 +33,12 @@
 	const APP_TOP = '--app-top: calc(4rem + 1px + env(safe-area-inset-top))';
 
 	const session = useSession();
+	const runSchedules = scheduleRunner(session.api);
+
+	/** Enters what automatic schedules have due. The demo keeps its seeded history as is. */
+	async function enterSchedules() {
+		if (!session.isDemo) await enterAndReport(runSchedules);
+	}
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
 		session.api.accounts.list()
 	);
@@ -68,6 +76,12 @@
 			active: path.startsWith('/payees')
 		},
 		{
+			href: resolve('/schedules'),
+			label: m.nav_schedules(),
+			icon: CalendarClockIcon,
+			active: path.startsWith('/schedules')
+		},
+		{
 			href: resolve('/settings'),
 			label: m.nav_settings(),
 			icon: SettingsIcon,
@@ -93,6 +107,7 @@
 	afterNavigate(trackScroll);
 
 	onMount(() => {
+		void enterSchedules();
 		// Chromium and Safari protect installed or often used apps without a prompt, when asked.
 		void persistQuietly(navigator.storage, navigator.userAgent);
 		if (session.isDemo || !backupDue(session.meta)) return;
@@ -213,3 +228,8 @@
 
 <TransactionDialog bind:open={adding} accountId={page.params.id} />
 <svelte:window onscroll={trackScroll} />
+<svelte:document
+	onvisibilitychange={() => {
+		if (document.visibilityState === 'visible') void enterSchedules();
+	}}
+/>

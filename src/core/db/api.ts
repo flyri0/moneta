@@ -7,6 +7,7 @@ import * as accounts from './repos/accounts';
 import * as categories from './repos/categories';
 import * as payees from './repos/payees';
 import * as transactions from './repos/transactions';
+import * as schedules from './repos/schedules';
 import * as budget from './repos/budget';
 import * as dump from './repos/dump';
 import * as reports from './repos/reports';
@@ -36,6 +37,7 @@ function write<A extends unknown[], R>(
 }
 
 const TXN: readonly Table[] = ['transactions', 'transaction_splits', 'payees'];
+const SCHED: readonly Table[] = ['schedules', 'schedule_splits'];
 
 /** Every operation the UI can call. Writes declare the tables they change. */
 export const api = {
@@ -52,9 +54,11 @@ export const api = {
 		rename: write(['accounts', 'categories'], accounts.renameAccount, ['string', 'string']),
 		close: write(['accounts', 'categories'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts', 'categories'], accounts.reopenAccount, ['string']),
-		delete: write(['accounts', 'categories', 'budget_assignments'], accounts.deleteAccount, [
-			'string'
-		])
+		delete: write(
+			['accounts', 'categories', 'budget_assignments', ...SCHED],
+			accounts.deleteAccount,
+			['string']
+		)
 	},
 	categories: {
 		tree: read(categories.listCategoryTree, []),
@@ -67,16 +71,17 @@ export const api = {
 		usage: read(categories.categoryUsage, ['string']),
 		create: write(['categories'], categories.createCategory, ['object']),
 		update: write(['categories'], categories.updateCategory, ['string', 'object']),
-		delete: write(['categories', 'budget_assignments', ...TXN], categories.deleteCategory, [
-			'string',
-			'string?'
-		]),
+		delete: write(
+			['categories', 'budget_assignments', ...TXN, ...SCHED],
+			categories.deleteCategory,
+			['string', 'string?']
+		),
 		saveOrder: write(['category_groups', 'categories'], categories.saveCategoryOrder, ['array'])
 	},
 	payees: {
 		list: read(payees.listPayees, []),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
-		merge: write(['payees', 'transactions'], payees.mergePayee, ['string', 'string']),
+		merge: write(['payees', 'transactions', ...SCHED], payees.mergePayee, ['string', 'string']),
 		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
 		delete: write(['payees'], payees.deletePayee, ['string']),
 		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
@@ -88,6 +93,17 @@ export const api = {
 		update: write(TXN, transactions.updateTransaction, ['string', 'object']),
 		delete: write(TXN, transactions.deleteTransaction, ['string']),
 		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
+	},
+	schedules: {
+		list: read(schedules.listSchedules, ['string']),
+		get: read(schedules.getSchedule, ['string', 'string']),
+		upcoming: read(schedules.upcomingOccurrences, ['object']),
+		create: write([...SCHED, 'payees'], schedules.createSchedule, ['object']),
+		update: write([...SCHED, 'payees'], schedules.updateSchedule, ['string', 'object']),
+		delete: write(SCHED, schedules.deleteSchedule, ['string']),
+		enter: write([...SCHED, ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),
+		skip: write(SCHED, schedules.skipOccurrence, ['string', 'number']),
+		enterDue: write([...SCHED, ...TXN], schedules.enterDueOccurrences, ['string'])
 	},
 	budget: {
 		month: read(budget.getBudgetMonth, ['string']),

@@ -27,6 +27,8 @@ describe('dumpBudget', () => {
 			'categories',
 			'category_groups',
 			'payees',
+			'schedule_splits',
+			'schedules',
 			'transaction_splits',
 			'transactions'
 		]);

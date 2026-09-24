@@ -60,6 +60,15 @@ export function daysBetween(from: string, to: string): number {
 	return dayNumber(to) - dayNumber(from);
 }
 
+/** `date` (YYYY-MM-DD) moved by `days`, negative going back. */
+export function addDays(date: string, days: number): string {
+	const [y, m, d] = date.split('-').map(Number);
+	const t = new Date(Date.UTC(y, m - 1, d + days));
+	const mm = String(t.getUTCMonth() + 1).padStart(2, '0');
+	const dd = String(t.getUTCDate()).padStart(2, '0');
+	return `${String(t.getUTCFullYear()).padStart(4, '0')}-${mm}-${dd}`;
+}
+
 export function todayIso(now: Date = new Date()): string {
 	const y = now.getFullYear();
 	const m = String(now.getMonth() + 1).padStart(2, '0');

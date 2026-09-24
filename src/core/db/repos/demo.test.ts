@@ -8,6 +8,7 @@ import { createTestDb } from '../testing';
 import { listAccounts } from './accounts';
 import { getBudgetMonth } from './budget';
 import { createDemo } from './demo';
+import { listSchedules } from './schedules';
 import { listTransactions } from './transactions';
 
 const [bills, everyday, goals, fun] = defaultCategoryGroups('en');
@@ -65,6 +66,14 @@ describe('seedDemo', () => {
 	let db: Db;
 	beforeAll(async () => {
 		db = await demoDb();
+	});
+
+	it('adds the schedules, none of them due yet', () => {
+		expect(listSchedules(db, todayIso()).map((s) => s.status)).toEqual([
+			'active',
+			'active',
+			'active'
+		]);
 	});
 
 	it('opens the three accounts with money in them', () => {

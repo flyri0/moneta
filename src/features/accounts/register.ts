@@ -1,6 +1,8 @@
 import type { Account } from '$db/repos/accounts';
+import type { UpcomingOccurrence } from '$db/repos/schedules';
 import type { TransactionRow } from '$db/repos/transactions';
 import { isStartingBalance } from '$domain/payees';
+import { m } from '$i18n/paraglide/messages';
 
 /** The payee the repos write for starting balances (stored in English, shown translated). */
 export const STARTING_BALANCE_PAYEE = 'Starting Balance';
@@ -26,6 +28,22 @@ export function payeeDisplay(
 	return row.payeeName ? { kind: 'payee', name: row.payeeName } : { kind: 'none' };
 }
 
+/** A payee display as plain text, for rows that show it without a link. */
+export function payeeText(display: PayeeDisplay): string {
+	switch (display.kind) {
+		case 'transfer':
+			return display.direction === 'to'
+				? m.register_transfer_to({ account: display.accountName })
+				: m.register_transfer_from({ account: display.accountName });
+		case 'starting-balance':
+			return m.register_starting_balance();
+		case 'payee':
+			return display.name;
+		case 'none':
+			return m.register_no_payee();
+	}
+}
+
 export interface RegisterBalances {
 	cleared: number;
 	uncleared: number;
@@ -44,3 +62,15 @@ export function registerBalances(
 
 /** How many rows the register loads at a time. */
 export const PAGE_SIZE = 100;
+
+/** How many days ahead an account register forecasts its schedules. */
+export const FORECAST_DAYS = 30;
+
+/** The balance after each occurrence, in order, starting from `balance`. */
+export function projectBalances(
+	balance: number,
+	occurrences: Pick<UpcomingOccurrence, 'amount'>[]
+): number[] {
+	let running = balance;
+	return occurrences.map((o) => (running += o.amount));
+}

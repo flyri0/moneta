@@ -99,6 +99,22 @@ describe('buildDemo', () => {
 		}
 	});
 
+	it('schedules the next paycheck, rent and card payment, after today', () => {
+		expect(
+			seed.schedules.map((s) => [s.startDate, s.autoEnter, s.transferAccountKey ?? null])
+		).toEqual([
+			['2026-10-01', true, null],
+			['2026-10-03', false, null],
+			['2026-10-05', false, 'card']
+		]);
+		const early = buildDemo(input('2026-09-02'));
+		expect(early.schedules.map((s) => s.startDate)).toEqual([
+			'2026-10-01',
+			'2026-09-03',
+			'2026-09-05'
+		]);
+	});
+
 	it('pays the card with a transfer, never a plain outflow', () => {
 		const payments = seed.transactions.filter((t) => t.transferAccountKey === 'card');
 		expect(payments.length).toBe(2); // nothing was charged before the first month

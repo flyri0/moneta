@@ -23,6 +23,8 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	TRANSFER_INVALID: m.error_transfer_invalid,
 	PAYEE_EXISTS: m.error_payee_exists,
 	PAYEE_IN_USE: m.error_payee_in_use,
+	SCHEDULE_STALE: m.error_schedule_stale,
+	SCHEDULE_ENDED: m.error_schedule_ended,
 	BACKUP_NOT_RECOGNIZED: m.error_backup_not_recognized,
 	BACKUP_DAMAGED: m.error_backup_damaged,
 	BACKUP_NOT_MONETA: m.error_backup_not_moneta,

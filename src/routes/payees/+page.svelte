@@ -14,7 +14,7 @@
 	import { m } from '$i18n/paraglide/messages';
 
 	const session = useSession();
-	const payees = useLive(session.client, ['payees', 'transactions'], () =>
+	const payees = useLive(session.client, ['payees', 'transactions', 'schedules'], () =>
 		session.api.payees.list()
 	);
 	const tree = useLive(session.client, ['category_groups', 'categories'], () =>

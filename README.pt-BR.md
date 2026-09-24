@@ -57,6 +57,8 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Categorias de receitas personalizáveis em um grupo de sistema dedicado que alimentam o Pronto
   para atribuir
 - Transações divididas e transferências entre contas
+- Transações agendadas e recorrentes, lançadas automaticamente ou com um toque, com a previsão
+  dos próximos 30 dias em cada conta
 - Gestão de favorecidos: renomear um favorecido em todas as transações passadas, mesclar
   duplicatas, definir uma categoria padrão e remover favorecidos sem uso
 - Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
@@ -74,8 +76,6 @@ O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de
 - **Segurança e soberania de dados**:
   - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys).
   - **Destinos de backup em nuvem**: Exportação de backups criptografados no próprio dispositivo diretamente para armazenamento do usuário (WebDAV/Nextcloud, Google Drive, Dropbox) e sincronização com pasta local via File System Access API.
-- **Gestão de transações**:
-  - **Transações recorrentes e agendadas**: Agendamento de despesas fixas e receitas com previsão visual de lançamentos futuros no extrato.
 - **Importação e conciliação**:
   - **Importação de extratos bancários**: Suporte a arquivos OFX, QFX, QIF e CSV com mapeamento inteligente de colunas e detecção de duplicatas.
   - **Conciliação de contas**: Fluxo assistido de conciliação com o extrato do banco e travamento de transações já conferidas.
@@ -186,6 +186,7 @@ src/features/          módulos de funcionalidades (lógica de tela + componente
   budget/              grade do orçamento, painéis de categoria/grupo, ordem, progresso, visualização
   accounts/            lista de contas, extrato, diálogos de criação de contas
   transactions/        diálogo de transação, validação de formulário
+  schedules/           tela de agendamentos, formulário, resumo da repetição
   reports/             patrimônio líquido, gastos por categoria, intervalos de datas
   settings/            backup e restauração, armazenamento, tema, arquivos de orçamento
   onboarding/          passos iniciais, categorias de início

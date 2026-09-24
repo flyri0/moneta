@@ -146,6 +146,11 @@ function validate(db: Db, input: TransactionInput): Plan {
 	return { mainCategoryId: categoryId, pair: null, splits: [] };
 }
 
+/** Checks a transaction against the domain rules without writing it. */
+export function validateTransaction(db: Db, input: TransactionInput): void {
+	validate(db, input);
+}
+
 const INSERT_SQL = `INSERT INTO transactions
 	(id, account_id, date, amount, payee_id, category_id, memo, cleared, transfer_id, is_split)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
