@@ -57,6 +57,8 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
   budget-neutral payment transfers
 - Customizable income categories in a dedicated system group feeding Ready to Assign
 - Split transactions and transfers between accounts
+- Scheduled and recurring transactions, entered automatically or with a tap, with the next 30
+  days forecast in each account
 - Payee management: rename a payee on every past transaction, merge duplicates, set a
   default category, and remove unused payees
 - Reports: spending by category and net worth over time
@@ -74,8 +76,6 @@ Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelop
 - **Security & Data Sovereignty**:
   - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys).
   - **Cloud backup targets**: Direct, client-side encrypted backup export to user-owned storage (WebDAV/Nextcloud, Google Drive, Dropbox) and local directory sync via the File System Access API.
-- **Transaction Management**:
-  - **Scheduled & recurring transactions**: Automated recurring bills and income with upcoming cash-flow forecasts in account registers.
 - **Import & Reconciliation**:
   - **Bank file import**: Drag-and-drop import for OFX, QFX, QIF, and CSV with smart column mapping and duplicate detection.
   - **Account reconciliation**: Guided register reconciliation against bank statements, with locking for reconciled transactions.
@@ -183,6 +183,7 @@ src/features/          feature modules (colocated screen logic + Svelte componen
   budget/              budget grid, category & group sheets, order, progress, view
   accounts/            account list, register, account creation dialogs
   transactions/        transaction entry dialog, form validation
+  schedules/           schedules screen, schedule form, rule summaries
   reports/             net worth, spending breakdown, date ranges
   settings/            backup & restore, storage, theme, budget files
   onboarding/          first-run steps, starter categories

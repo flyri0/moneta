@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { createTestDb } from './testing';
+import { createTestDb, loadSqlite } from './testing';
 import { MIGRATIONS, migrate, schemaVersion, SCHEMA_VERSION } from './migrate';
-import { all, run } from './connection';
+import { all, configure, run } from './connection';
 
 /** Rebuilds `categories` (the SQLite way to change a column), which other tables reference. */
 const REBUILD_CATEGORIES = `
@@ -35,9 +35,31 @@ describe('migrate', () => {
 			'category_groups',
 			'meta',
 			'payees',
+			'schedule_splits',
+			'schedules',
 			'transaction_splits',
 			'transactions'
 		]);
+	});
+
+	it('adds the schedule tables to a schema 2 budget without touching its data', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 2));
+		run(
+			db,
+			"INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES ('a1', 'Bank', 'checking', 1, '2026-01-01')"
+		);
+		run(
+			db,
+			"INSERT INTO transactions (id, account_id, date, amount) VALUES ('t1', 'a1', '2026-01-02', -500)"
+		);
+		migrate(db);
+		expect(schemaVersion(db)).toBe(3);
+		expect(all(db, 'SELECT id, amount FROM transactions')).toEqual([{ id: 't1', amount: -500 }]);
+		expect(all(db, 'SELECT * FROM schedules')).toEqual([]);
+		expect(all(db, 'PRAGMA foreign_key_check')).toEqual([]);
 	});
 
 	it('is idempotent', async () => {

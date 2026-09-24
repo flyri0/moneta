@@ -3,7 +3,7 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError } from '$client/notify';
-	import type { TransactionRow } from '$db/repos/transactions';
+	import type { TransactionInput, TransactionRow } from '$db/repos/transactions';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import {
@@ -12,17 +12,25 @@
 		type FormContext,
 		type TransactionDraft
 	} from '$features/transactions/form';
+	import { loadFormContext } from '$features/transactions/context';
+	import { draftFromSchedule, type OccurrenceToEnter } from '$features/schedules/form';
 	import TransactionForm from './TransactionForm.svelte';
 
 	/**
-	 * Adds a transaction, or edits `transaction`. The accounts, payees and categories it offers are
-	 * loaded each time it opens.
+	 * Adds a transaction, or edits `transaction`. With `occurrence`, it enters that scheduled
+	 * occurrence instead. The accounts, payees and categories it offers are loaded each time it opens.
 	 */
 	let {
 		open = $bindable(false),
 		accountId,
-		transaction = null
-	}: { open: boolean; accountId?: string; transaction?: TransactionRow | null } = $props();
+		transaction = null,
+		occurrence = null
+	}: {
+		open: boolean;
+		accountId?: string;
+		transaction?: TransactionRow | null;
+		occurrence?: OccurrenceToEnter | null;
+	} = $props();
 
 	const session = useSession();
 	const LAST_ACCOUNT_KEY = 'moneta.lastAccount';
@@ -46,30 +54,25 @@
 		}
 	}
 
-	async function load(editing: TransactionRow | null, preferredAccount: string | undefined) {
+	async function load(
+		editing: TransactionRow | null,
+		preferredAccount: string | undefined,
+		entering: OccurrenceToEnter | null
+	) {
 		ctx = null;
 		initial = null;
 		try {
-			const [accounts, payees, tree] = await Promise.all([
-				session.api.accounts.list(),
-				session.api.payees.list(),
-				session.api.categories.tree()
-			]);
-			const context: FormContext = {
-				accounts,
-				payees,
-				tree,
-				money: session.money,
-				transferLabel: (account) => m.transfer_payee({ account })
-			};
-			if (editing) {
+			const context = await loadFormContext(session.api, session.money);
+			if (entering) {
+				initial = { ...draftFromSchedule(entering.schedule, context).txn, date: entering.date };
+			} else if (editing) {
 				const pair =
 					editing.transferId && editing.categoryId === null
 						? await session.api.transactions.get(editing.transferId)
 						: null;
 				initial = draftFromTransaction(editing, context, pair);
 			} else {
-				const open = accounts.filter((a) => !a.closed);
+				const open = context.accounts.filter((a) => !a.closed);
 				const pick =
 					[preferredAccount, readLastAccount()].find((id) => open.some((a) => a.id === id)) ??
 					open[0]?.id ??
@@ -84,13 +87,26 @@
 	}
 
 	$effect(() => {
-		if (open) void load(transaction, accountId);
+		if (open) void load(transaction, accountId, occurrence);
+	});
+
+	/** Entering an occurrence saves through the schedule, so it moves on to the next one. */
+	const onSave = $derived.by(() => {
+		const entering = occurrence;
+		return entering
+			? (input: TransactionInput) =>
+					session.api.schedules.enter(entering.schedule.id, entering.index, input)
+			: undefined;
 	});
 </script>
 
 <ResponsiveDialog
 	bind:open
-	title={transaction ? m.transaction_edit_title() : m.transaction_add_title()}
+	title={occurrence
+		? m.schedule_enter_title()
+		: transaction
+			? m.transaction_edit_title()
+			: m.transaction_add_title()}
 >
 	{#if ctx && initial}
 		{#if ctx.accounts.some((a) => !a.closed)}
@@ -98,7 +114,8 @@
 				<TransactionForm
 					{ctx}
 					{initial}
-					editingId={transaction?.id ?? null}
+					editingId={occurrence ? null : (transaction?.id ?? null)}
+					{onSave}
 					onDone={(savedAccountId) => {
 						if (savedAccountId) rememberAccount(savedAccountId);
 						open = false;

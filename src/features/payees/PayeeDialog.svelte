@@ -6,7 +6,7 @@
 	import { Label } from '$ui/label';
 	import { Separator } from '$ui/separator';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import { mergeTargets, nameConflict } from '$features/payees/payees';
+	import { inUse, mergeTargets, nameConflict } from '$features/payees/payees';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import type { GroupNode } from '$db/repos/categories';
@@ -147,7 +147,7 @@
 			</div>
 		{/if}
 
-		{#if current.transactions === 0}
+		{#if !inUse(current)}
 			<div class="grid gap-1">
 				<Button variant="destructive" onclick={remove}>
 					{confirmDelete ? m.confirm_delete() : m.payee_delete()}

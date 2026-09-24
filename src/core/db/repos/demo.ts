@@ -5,6 +5,7 @@ import { createAccount } from './accounts';
 import { setAssigned } from './budget';
 import { listCategoryTree } from './categories';
 import { initBudget } from './meta';
+import { createSchedule } from './schedules';
 import { createTransaction } from './transactions';
 
 function lookup(map: Map<string, string>, key: string, what: string): string {
@@ -49,6 +50,25 @@ export function createDemo(db: Db, budget: DemoBudgetSeed): void {
 				transferAccountId: t.transferAccountKey
 					? lookup(accounts, t.transferAccountKey, 'account')
 					: null
+			});
+		}
+
+		for (const s of seed.schedules) {
+			createSchedule(db, {
+				accountId: lookup(accounts, s.accountKey, 'account'),
+				amount: s.amount,
+				payeeName: s.payeeName,
+				categoryId: s.categoryName ? lookup(categories, s.categoryName, 'category') : null,
+				transferAccountId: s.transferAccountKey
+					? lookup(accounts, s.transferAccountKey, 'account')
+					: null,
+				startDate: s.startDate,
+				frequency: 'monthly',
+				interval: 1,
+				endDate: null,
+				endCount: null,
+				weekend: 'keep',
+				autoEnter: s.autoEnter
 			});
 		}
 

@@ -12,7 +12,8 @@ import {
 	lastBudgetMonth,
 	MIN_DATE,
 	MAX_DATE,
-	daysBetween
+	daysBetween,
+	addDays
 } from './month';
 
 describe('month helpers', () => {
@@ -96,5 +97,13 @@ describe('month helpers', () => {
 		const d = new Date(2026, 8, 5, 23, 30);
 		expect(todayIso(d)).toBe('2026-09-05');
 		expect(currentMonth(d)).toBe('2026-09');
+	});
+});
+
+describe('addDays', () => {
+	it('moves across months and years, both ways', () => {
+		expect(addDays('2026-02-27', 2)).toBe('2026-03-01');
+		expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
+		expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
 	});
 });

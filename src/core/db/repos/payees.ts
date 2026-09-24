@@ -11,6 +11,8 @@ export interface Payee {
 	lastCategoryId: string | null; // category of the most recent non-split, non-transfer transaction
 	/** How many transactions use this payee. */
 	transactions: number;
+	/** How many schedules use this payee. */
+	schedules: number;
 	/** The date of its most recent transaction. */
 	lastUsed: string | null;
 }
@@ -22,7 +24,8 @@ export function listPayees(db: Db): Payee[] {
 			(SELECT t.category_id FROM transactions t
 			 WHERE t.payee_id = p.id AND t.is_split = 0 AND t.transfer_id IS NULL AND t.category_id IS NOT NULL
 			 ORDER BY t.date DESC, t.id DESC LIMIT 1) AS lastCategoryId,
-			COALESCE(u.n, 0) AS transactions, u.lastUsed
+			COALESCE(u.n, 0) AS transactions, u.lastUsed,
+			(SELECT COUNT(*) FROM schedules s WHERE s.payee_id = p.id) AS schedules
 		 FROM payees p
 		 LEFT JOIN (SELECT payee_id, COUNT(*) AS n, MAX(date) AS lastUsed
 			FROM transactions WHERE payee_id IS NOT NULL GROUP BY payee_id) u ON u.payee_id = p.id
@@ -60,7 +63,14 @@ function editablePayee(db: Db, id: string): PayeeRow {
 }
 
 function isUsed(db: Db, id: string): boolean {
-	return one(db, 'SELECT 1 AS x FROM transactions WHERE payee_id = ? LIMIT 1', [id]) !== undefined;
+	return (
+		one(
+			db,
+			`SELECT 1 AS x FROM transactions WHERE payee_id = ?
+			 UNION ALL SELECT 1 FROM schedules WHERE payee_id = ? LIMIT 1`,
+			[id, id]
+		) !== undefined
+	);
 }
 
 /** Renames a payee, and so every transaction that uses it. */
@@ -85,6 +95,7 @@ export function mergePayee(db: Db, sourceId: string, targetId: string): void {
 		const source = editablePayee(db, sourceId);
 		const target = editablePayee(db, targetId);
 		run(db, 'UPDATE transactions SET payee_id = ? WHERE payee_id = ?', [targetId, sourceId]);
+		run(db, 'UPDATE schedules SET payee_id = ? WHERE payee_id = ?', [targetId, sourceId]);
 		if (!target.defaultCategoryId && source.defaultCategoryId)
 			run(db, 'UPDATE payees SET default_category_id = ? WHERE id = ?', [
 				source.defaultCategoryId,
@@ -109,13 +120,14 @@ export function deletePayee(db: Db, id: string): void {
 	run(db, 'DELETE FROM payees WHERE id = ?', [id]);
 }
 
-/** Deletes every payee no transaction uses, except starting balance ones. Returns how many. */
+/** Deletes every payee no transaction or schedule uses, except starting balance ones. Returns how many. */
 export function deleteUnusedPayees(db: Db): number {
 	return tx(db, () => {
 		const unused = all<{ id: string; name: string }>(
 			db,
 			`SELECT id, name FROM payees p
-			 WHERE NOT EXISTS (SELECT 1 FROM transactions t WHERE t.payee_id = p.id)`
+			 WHERE NOT EXISTS (SELECT 1 FROM transactions t WHERE t.payee_id = p.id)
+			   AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.payee_id = p.id)`
 		).filter((p) => !isStartingBalance(p.name));
 		for (const p of unused) run(db, 'DELETE FROM payees WHERE id = ?', [p.id]);
 		return unused.length;

@@ -1,7 +1,12 @@
 import type { Account } from '$db/repos/accounts';
 import type { GroupNode } from '$db/repos/categories';
 import type { Payee } from '$db/repos/payees';
-import type { SplitInput, TransactionInput, TransactionRow } from '$db/repos/transactions';
+import type {
+	SplitInput,
+	SplitRow,
+	TransactionInput,
+	TransactionRow
+} from '$db/repos/transactions';
 import { formatAmountInput, parseAmount, type MoneyFormat } from '$domain/money';
 import { isDate } from '$domain/month';
 
@@ -229,10 +234,24 @@ export function buildTransactionInput(draft: TransactionDraft, ctx: FormContext)
  * A draft that edits `row`. For a transfer seen from its off-budget leg, pass the other leg as
  * `pair`: the category lives on the on-budget side.
  */
+/** What a draft can start from: a transaction, or a schedule's template on one of its dates. */
+export type DraftSource = Pick<
+	TransactionRow,
+	| 'accountId'
+	| 'date'
+	| 'amount'
+	| 'payeeName'
+	| 'categoryId'
+	| 'memo'
+	| 'cleared'
+	| 'transferAccountId'
+	| 'isSplit'
+> & { splits: Pick<SplitRow, 'categoryId' | 'amount' | 'memo'>[] };
+
 export function draftFromTransaction(
-	row: TransactionRow,
+	row: DraftSource,
 	ctx: FormContext,
-	pair?: TransactionRow | null
+	pair?: Pick<TransactionRow, 'categoryId'> | null
 ): TransactionDraft {
 	const direction: Direction = row.amount < 0 ? 'outflow' : 'inflow';
 	const relative = (amount: number) =>

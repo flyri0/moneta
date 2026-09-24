@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest';
 import type { Payee } from '$db/repos/payees';
 import { editable, filterPayees, mergeTargets, nameConflict, unusedCount } from './payees';
 
-const payee = (id: string, name: string, transactions = 1): Payee => ({
+const payee = (id: string, name: string, transactions = 1, schedules = 0): Payee => ({
 	id,
 	name,
 	defaultCategoryId: null,
 	lastCategoryId: null,
 	transactions,
+	schedules,
 	lastUsed: transactions ? '2026-01-01' : null
 });
 
@@ -58,5 +59,11 @@ describe('mergeTargets', () => {
 describe('unusedCount', () => {
 	it('counts editable payees without transactions', () => {
 		expect(unusedCount(list)).toBe(2);
+	});
+});
+
+describe('unusedCount with schedules', () => {
+	it('does not count a payee that a schedule uses', () => {
+		expect(unusedCount([payee('a', 'Rent', 0, 1), payee('b', 'Old', 0)])).toBe(1);
 	});
 });

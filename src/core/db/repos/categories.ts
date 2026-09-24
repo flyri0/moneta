@@ -204,7 +204,10 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 export interface CategoryUsage {
 	/** Transactions filed under the category, directly or through a split. */
 	transactions: number;
-	/** Whether a transaction, a split or an assignment uses it: deleting it then needs a target. */
+	/**
+	 * Whether a transaction, a split, an assignment or a schedule uses it: deleting it then needs a
+	 * target.
+	 */
 	used: boolean;
 }
 
@@ -219,7 +222,16 @@ export function categoryUsage(db: Db, id: string): CategoryUsage {
 			[id, id]
 		)?.n ?? 0;
 	const assigned = one(db, 'SELECT 1 AS x FROM budget_assignments WHERE category_id = ?', [id]);
-	return { transactions, used: transactions > 0 || assigned !== undefined };
+	const scheduled = one(
+		db,
+		`SELECT 1 AS x FROM schedules WHERE category_id = ?
+		 UNION ALL SELECT 1 FROM schedule_splits WHERE category_id = ? LIMIT 1`,
+		[id, id]
+	);
+	return {
+		transactions,
+		used: transactions > 0 || assigned !== undefined || scheduled !== undefined
+	};
 }
 
 /**
@@ -245,6 +257,8 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 				reassignTo,
 				id
 			]);
+			run(db, 'UPDATE schedules SET category_id = ? WHERE category_id = ?', [reassignTo, id]);
+			run(db, 'UPDATE schedule_splits SET category_id = ? WHERE category_id = ?', [reassignTo, id]);
 			run(
 				db,
 				`INSERT INTO budget_assignments (category_id, month, assigned)

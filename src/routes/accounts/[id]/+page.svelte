@@ -9,7 +9,9 @@
 	import { accountTypeIcon } from '$features/accounts/account-icons';
 	import Register from '$features/accounts/Register.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
-	import { registerBalances } from '$features/accounts/register';
+	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
+	import { FORECAST_DAYS, projectBalances, registerBalances } from '$features/accounts/register';
+	import { addDays, todayIso } from '$domain/month';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { errorMessage } from '$i18n/errors';
@@ -24,6 +26,16 @@
 	);
 	const balances = $derived(account.data ? registerBalances(account.data) : null);
 	const AccountIcon = $derived(account.data ? accountTypeIcon(account.data.type) : null);
+
+	const today = todayIso();
+	const upcoming = useLive(
+		session.client,
+		['schedules', 'schedule_splits', 'accounts', 'payees', 'categories'],
+		() => session.api.schedules.upcoming({ accountId, today, to: addDays(today, FORECAST_DAYS) })
+	);
+	const projected = $derived(
+		account.data && upcoming.data ? projectBalances(account.data.balance, upcoming.data) : []
+	);
 
 	let adding = $state(false);
 	let settingsOpen = $state(false);
@@ -108,7 +120,19 @@
 					<span class="font-medium tabular-nums">{session.format(balances.uncleared)}</span>
 				</div>
 			</div>
+			{#if projected.length > 0}
+				<div class="flex items-center justify-between gap-3 border-t pt-3">
+					<span class="text-xs text-muted-foreground">{m.register_projected_balance()}</span>
+					<span class="font-medium tabular-nums" data-testid="register-projected">
+						{session.format(projected[projected.length - 1])}
+					</span>
+				</div>
+			{/if}
 		</section>
+
+		{#if upcoming.data && upcoming.data.length > 0}
+			<UpcomingSection occurrences={upcoming.data} balances={projected} />
+		{/if}
 
 		<!-- Keyed so that switching accounts (e.g. the transfer link) clears the filters and paging. -->
 		{#key accountId}
