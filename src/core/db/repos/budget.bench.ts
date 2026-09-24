@@ -8,6 +8,7 @@ import { loadEngineInput } from './aggregates';
 import { createCategory, createGroup } from './categories';
 import { getBudgetMonth, setAssigned } from './budget';
 import { defaultIncomeCategoryId } from './meta';
+import { ageOfMoney, ageOfMoneyFlows } from './reports';
 import { createTransaction } from './transactions';
 
 const YEARS = 5;
@@ -69,5 +70,19 @@ test('budget recompute', async ({ bench }) => {
 	);
 	expect(result.get('computeBudget (engine only)')).toBeFasterThan(
 		result.get('getBudgetMonth, 5 years of history')
+	);
+});
+
+test('age of money', async ({ bench }) => {
+	const result = await bench.compare(
+		bench('ageOfMoney, 5 years of history', () => {
+			ageOfMoney(db, `${LAST}-30`);
+		}),
+		bench('ageOfMoneyFlows (SQL only)', () => {
+			ageOfMoneyFlows(db, `${LAST}-30`);
+		})
+	);
+	expect(result.get('ageOfMoneyFlows (SQL only)')).toBeFasterThan(
+		result.get('ageOfMoney, 5 years of history')
 	);
 });

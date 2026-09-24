@@ -16,7 +16,7 @@
 	}: {
 		title: string;
 		/** The full report this card opens. */
-		route: '/reports/spending' | '/reports/net-worth';
+		route: '/reports/spending' | '/reports/net-worth' | '/reports/age-of-money';
 		testId?: string;
 		children: Snippet;
 	} = $props();

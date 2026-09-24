@@ -11,11 +11,11 @@ export function netWorthThrough(range: DateRange, today: string): Month {
 }
 
 /** The points a range covers: whole months from its first month through `netWorthThrough`. */
-export function pointsInRange(
-	points: NetWorthPoint[],
+export function pointsInRange<T extends { month: Month }>(
+	points: T[],
 	range: DateRange,
 	today: string
-): NetWorthPoint[] {
+): T[] {
 	const first = monthOf(range.from);
 	const last = netWorthThrough(range, today);
 	return points.filter((p) => p.month >= first && p.month <= last);

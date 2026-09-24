@@ -1,3 +1,4 @@
+import { ageOfMoneySeries, type AgeOfMoneyPoint, type CashFlowEntry } from '$domain/age-of-money';
 import { DomainError } from '$domain/errors';
 import { isDate, isMonth, type Month } from '$domain/month';
 import { netWorthSeries, type AccountMonthChange, type NetWorthPoint } from '$domain/net-worth';
@@ -97,4 +98,32 @@ export function netWorth(db: Db, through: Month): NetWorthPoint[] {
 		 FROM transactions GROUP BY account_id, month`
 	);
 	return netWorthSeries(changes, through);
+}
+
+/**
+ * The money moving in and out of the cash accounts (on-budget, not credit cards) through `today`,
+ * which is what Age of Money follows. Moves between two cash accounts cancel out and are left out.
+ * Card purchases are too: as in YNAB, card spending counts when the card is paid. Starting balances
+ * are matched by payee, like the register.
+ */
+export function ageOfMoneyFlows(db: Db, today: string): CashFlowEntry[] {
+	if (!isDate(today)) throw new DomainError('INVALID_INPUT', `Invalid date ${today}`);
+	return all<Omit<CashFlowEntry, 'opening'> & { opening: number }>(
+		db,
+		`SELECT t.date, t.id, t.amount,
+			COALESCE(lower(trim(p.name)) IN ('starting balance', 'saldo inicial'), 0) AS opening
+		 FROM transactions t
+		 JOIN accounts a ON a.id = t.account_id
+		 LEFT JOIN transactions o ON o.id = t.transfer_id
+		 LEFT JOIN accounts oa ON oa.id = o.account_id
+		 LEFT JOIN payees p ON p.id = t.payee_id
+		 WHERE a.on_budget = 1 AND a.type <> 'credit_card' AND t.amount <> 0 AND t.date <= :today
+		   AND NOT COALESCE(oa.on_budget = 1 AND oa.type <> 'credit_card', 0)`,
+		{ ':today': today }
+	).map((r) => ({ ...r, opening: r.opening === 1 }));
+}
+
+/** Age of Money at the end of each month through `today` (YYYY-MM-DD). */
+export function ageOfMoney(db: Db, today: string): AgeOfMoneyPoint[] {
+	return ageOfMoneySeries(ageOfMoneyFlows(db, today), today);
 }

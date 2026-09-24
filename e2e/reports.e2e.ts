@@ -11,6 +11,37 @@ async function spend(page: Page, payee: string, amount: string, category: string
 	await expect(dialog).toBeHidden();
 }
 
+/** Fails unless every cell and axis label stays inside the card around each of `ids`. */
+async function expectInsideCards(page: Page, ids: string[]) {
+	// The charts lay themselves out after they mount, so wait for them to settle.
+	await expect
+		.poll(
+			() =>
+				page.evaluate(
+					(ids) =>
+						ids.flatMap((id) => {
+							const card = document.querySelector(`[data-testid="${id}"]`)!.closest('.rounded-xl')!;
+							const bounds = card.getBoundingClientRect();
+							return [...card.querySelectorAll('.lc-axis-tick-label, td, th, dd')]
+								.filter((el) => {
+									const box = el.getBoundingClientRect();
+									if (box.width === 0) return false; // hidden on a phone
+									return (
+										box.left < bounds.left ||
+										box.right > bounds.right ||
+										// SVG text reports meaningless scroll sizes, so only cells are clipped-checked.
+										(el instanceof HTMLElement && el.scrollWidth > el.clientWidth + 1)
+									);
+								})
+								.map((el) => el.textContent?.trim());
+						}),
+					ids
+				),
+			{ message: 'cells or axis labels outside their card' }
+		)
+		.toEqual([]);
+}
+
 test('shows each report as a card that opens the full report', async ({ page }) => {
 	await onboard(page);
 	await spend(page, 'Market', '60', 'Groceries');
@@ -118,6 +149,20 @@ test('scopes the full reports with a period, a custom one too', async ({ page })
 	await expect(page.getByTestId('spending-table').locator('tfoot')).toContainText('$60.00');
 });
 
+test('opens Age of Money from its card, which waits for ten payments', async ({ page }) => {
+	await onboard(page);
+	await spend(page, 'Market', '60', 'Groceries');
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	const card = page.getByTestId('age-of-money-card');
+	await expect(card).toContainText('It shows up after 10 payments');
+
+	await card.click();
+	await expect(page).toHaveURL(/\/reports\/age-of-money$/);
+	await expect(page.getByRole('heading', { name: 'Age of Money', level: 1 })).toBeVisible();
+	await expect(page.getByText('It shows up after 10 payments')).toBeVisible();
+});
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
@@ -148,6 +193,7 @@ test.describe('on a phone', () => {
 			await page.goto('/reports');
 			await expect(page.getByTestId('net-worth-card-value')).toBeVisible();
 			await expect(page.getByTestId('spending-card-legend')).toBeVisible();
+			await expect(page.getByTestId('age-of-money-card-value')).toBeVisible();
 			expect(
 				await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
 				'the cards push the page sideways'
@@ -167,35 +213,17 @@ test.describe('on a phone', () => {
 			// Income and expenses move under the month, so the row has room for the net worth.
 			await expect(table.getByRole('columnheader')).toHaveCount(2);
 
-			// The charts lay themselves out after they mount, so wait for them to settle.
-			await expect
-				.poll(
-					() =>
-						page.evaluate(() =>
-							['net-worth-chart', 'cash-flow-chart', 'net-worth-table', 'net-worth-tiles'].flatMap(
-								(id) => {
-									const card = document
-										.querySelector(`[data-testid="${id}"]`)!
-										.closest('.rounded-xl')!;
-									const bounds = card.getBoundingClientRect();
-									return [...card.querySelectorAll('.lc-axis-tick-label, td, th, dd')]
-										.filter((el) => {
-											const box = el.getBoundingClientRect();
-											if (box.width === 0) return false; // hidden on a phone
-											return (
-												box.left < bounds.left ||
-												box.right > bounds.right ||
-												// SVG text reports meaningless scroll sizes, so only cells are clipped-checked.
-												(el instanceof HTMLElement && el.scrollWidth > el.clientWidth + 1)
-											);
-										})
-										.map((el) => el.textContent?.trim());
-								}
-							)
-						),
-					{ message: 'cells or axis labels outside their card' }
-				)
-				.toEqual([]);
+			await expectInsideCards(page, [
+				'net-worth-chart',
+				'cash-flow-chart',
+				'net-worth-table',
+				'net-worth-tiles'
+			]);
+
+			// The demo's history gives Age of Money two months to draw.
+			await page.goto('/reports/age-of-money');
+			await expect(page.getByTestId('age-of-money-current')).toBeVisible();
+			await expectInsideCards(page, ['age-of-money-chart', 'age-of-money-current']);
 		});
 	}
 });

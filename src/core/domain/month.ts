@@ -50,6 +50,16 @@ export function monthRange(from: Month, to: Month): Month[] {
 	return out;
 }
 
+function dayNumber(date: string): number {
+	const [y, m, d] = date.split('-').map(Number);
+	return Date.UTC(y, m - 1, d) / 86_400_000;
+}
+
+/** Whole days from `from` to `to` (both YYYY-MM-DD); negative when `to` comes first. */
+export function daysBetween(from: string, to: string): number {
+	return dayNumber(to) - dayNumber(from);
+}
+
 export function todayIso(now: Date = new Date()): string {
 	const y = now.getFullYear();
 	const m = String(now.getMonth() + 1).padStart(2, '0');

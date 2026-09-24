@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AgeOfMoneyCard from '$features/reports/AgeOfMoneyCard.svelte';
 	import NetWorthCard from '$features/reports/NetWorthCard.svelte';
 	import SpendingCard from '$features/reports/SpendingCard.svelte';
 	import { m } from '$i18n/paraglide/messages';
@@ -9,6 +10,7 @@
 	<div class="grid gap-4 lg:grid-cols-2">
 		<SpendingCard />
 		<NetWorthCard />
+		<AgeOfMoneyCard />
 	</div>
 </div>
 <svelte:head><title>{m.nav_reports()} · {m.app_name()}</title></svelte:head>

@@ -11,10 +11,20 @@ import {
 	isBudgetMonth,
 	lastBudgetMonth,
 	MIN_DATE,
-	MAX_DATE
+	MAX_DATE,
+	daysBetween
 } from './month';
 
 describe('month helpers', () => {
+	it('counts the days between two dates', () => {
+		expect(daysBetween('2026-09-01', '2026-09-01')).toBe(0);
+		expect(daysBetween('2026-09-01', '2026-09-23')).toBe(22);
+		expect(daysBetween('2026-02-20', '2026-03-02')).toBe(10);
+		expect(daysBetween('2024-02-28', '2024-03-01')).toBe(2);
+		expect(daysBetween('2025-12-31', '2026-01-01')).toBe(1);
+		expect(daysBetween('2026-09-23', '2026-09-01')).toBe(-22);
+	});
+
 	it('validates months', () => {
 		expect(isMonth('2026-09')).toBe(true);
 		expect(isMonth('2026-13')).toBe(false);
