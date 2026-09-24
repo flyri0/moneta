@@ -23,7 +23,7 @@
 </script>
 
 <section
-	class="group relative grid content-start gap-4 rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
+	class="group relative flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
 	data-testid={testId}
 >
 	<h2 class="flex items-center justify-between gap-3">

@@ -14,7 +14,7 @@
 </script>
 
 <section class="grid gap-1.5">
-	<div class="flex items-center justify-between gap-3 px-1">
+	<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
 		<h2 class="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</h2>
 		{@render actions?.()}
 	</div>

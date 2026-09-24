@@ -43,7 +43,7 @@
 			testId="net-worth-card-value"
 		/>
 		{#if flow.data}
-			<div class="grid gap-2">
+			<div class="flex flex-1 flex-col gap-2">
 				<h3 class="text-xs text-muted-foreground">
 					{m.reports_income_vs_expenses()} · {m.reports_range_last_6_months()}
 				</h3>

@@ -2,6 +2,7 @@
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
 	import CashFlowChart from './CashFlowChart.svelte';
+	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import StatTile from './StatTile.svelte';
@@ -174,6 +175,7 @@
 		</ReportSection>
 
 		<ReportSection title={m.reports_income_vs_expenses()}>
+			{#snippet actions()}<CashFlowLegend />{/snippet}
 			<CashFlowChart rows={flows} />
 		</ReportSection>
 	</div>
