@@ -11,7 +11,16 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { row, onEdit }: { row: TransactionRow; onEdit?: (row: TransactionRow) => void } = $props();
+	/** `showAccount` adds the row's account, for lists that span every account. */
+	let {
+		row,
+		showAccount = false,
+		onEdit
+	}: {
+		row: TransactionRow;
+		showAccount?: boolean;
+		onEdit?: (row: TransactionRow) => void;
+	} = $props();
 
 	const session = useSession();
 	const payee = $derived(payeeDisplay(row));
@@ -23,12 +32,20 @@
 </script>
 
 <div
-	class="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40 md:grid-cols-[6.5rem_1fr_1fr_1fr_7.5rem_auto]"
+	class="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40 {showAccount
+		? 'md:grid-cols-[6.5rem_1fr_1fr_1fr_1fr_7.5rem_auto]'
+		: 'md:grid-cols-[6.5rem_1fr_1fr_1fr_7.5rem_auto]'}"
 	data-testid="register-row"
 >
 	<span class="hidden text-sm text-muted-foreground tabular-nums md:block">
 		{formatDate(row.date, getLocale())}
 	</span>
+
+	{#if showAccount}
+		<span class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">
+			{row.accountName}
+		</span>
+	{/if}
 
 	{#snippet payeeText()}
 		{#if payee.kind === 'transfer'}
@@ -76,6 +93,10 @@
 		class="order-2 col-span-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground md:hidden"
 	>
 		<span class="tabular-nums">{formatDate(row.date, getLocale())}</span>
+		{#if showAccount}
+			<span>·</span>
+			<span class="truncate">{row.accountName}</span>
+		{/if}
 		{#if row.isSplit || row.categoryName || row.memo}
 			<span>·</span>
 		{/if}
@@ -121,7 +142,9 @@
 
 	{#if payee.kind === 'transfer'}
 		<a
-			class="order-5 col-span-full mt-1 text-xs text-primary underline md:col-span-2 md:col-start-2"
+			class="order-5 col-span-full mt-1 text-xs text-primary underline md:col-span-2 {showAccount
+				? 'md:col-start-3'
+				: 'md:col-start-2'}"
 			href={resolve('/accounts/[id]', { id: payee.accountId })}
 		>
 			{m.register_open_account({ account: payee.accountName })}
@@ -130,7 +153,9 @@
 
 	{#if row.isSplit && expanded}
 		<div
-			class="order-6 col-span-full mt-2 rounded-lg bg-muted/40 p-2.5 text-xs md:col-span-3 md:col-start-3"
+			class="order-6 col-span-full mt-2 rounded-lg bg-muted/40 p-2.5 text-xs md:col-span-3 {showAccount
+				? 'md:col-start-4'
+				: 'md:col-start-3'}"
 		>
 			<ul class="grid gap-1.5">
 				{#each row.splits as split (split.id)}

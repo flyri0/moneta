@@ -75,16 +75,17 @@ test('puts the add-transaction button in the sidebar on desktop', async ({ page 
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('puts the add-transaction button in the bottom navigation bar', async ({ page }) => {
+	test('floats the add-transaction button above the bottom navigation bar', async ({ page }) => {
 		await onboard(page);
 		const bar = page.getByRole('navigation', { name: 'Main' });
-		const add = bar.getByRole('button', { name: 'Transaction', exact: true });
+		await expect(bar.getByRole('button', { name: 'Transaction', exact: true })).toHaveCount(0);
+		const add = page.getByRole('button', { name: 'Transaction', exact: true });
 		await expect(add).toBeVisible();
 
 		const bounds = (await bar.boundingBox())!;
 		const button = (await add.boundingBox())!;
-		const centre = button.x + button.width / 2;
-		expect(Math.abs(centre - (bounds.x + bounds.width / 2))).toBeLessThan(4);
+		expect(button.y + button.height).toBeLessThan(bounds.y);
+		expect(button.x + button.width).toBeGreaterThan(bounds.x + bounds.width * 0.75);
 
 		await add.click();
 		await expect(page.getByRole('dialog')).toBeVisible();
@@ -94,8 +95,9 @@ test.describe('on a phone', () => {
 		await onboard(page);
 		await page
 			.getByRole('navigation', { name: 'Main' })
-			.getByRole('link', { name: 'Settings' })
+			.getByRole('button', { name: 'More' })
 			.click();
+		await page.getByRole('dialog').getByRole('link', { name: 'Settings' }).click();
 		await chooseSelect(page, 'Language', 'Português (Brasil)');
 		const bar = page.getByRole('navigation', { name: 'Principal' });
 		// The active item is bolder, so measure with the longest label active.

@@ -130,7 +130,16 @@ export function categoryRow(page: Page, name: string) {
 }
 
 export async function openSettings(page: Page): Promise<void> {
-	await page.getByRole('link', { name: 'Settings' }).first().click();
+	// Phones keep Settings in the bottom bar's More sheet.
+	if (page.viewportSize()!.width < 768) {
+		await page
+			.getByRole('navigation', { name: 'Main' })
+			.getByRole('button', { name: 'More' })
+			.click();
+		await page.getByRole('dialog').getByRole('link', { name: 'Settings' }).click();
+	} else {
+		await page.getByRole('link', { name: 'Settings' }).first().click();
+	}
 	await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 }
 

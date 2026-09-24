@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import ReceiptTextIcon from '@lucide/svelte/icons/receipt-text';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
+	import * as Sheet from '$ui/sheet';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
@@ -39,6 +43,12 @@
 			active: path.startsWith('/budget')
 		},
 		{
+			href: resolve('/transactions'),
+			label: m.nav_transactions(),
+			icon: ReceiptTextIcon,
+			active: path.startsWith('/transactions')
+		},
+		{
 			href: resolve('/accounts'),
 			label: m.nav_accounts(),
 			icon: LandmarkIcon,
@@ -58,7 +68,22 @@
 		}
 	]);
 
+	/** On phones, the items after the first four live in the "More" sheet. */
+	const barItems = $derived(nav.slice(0, 4));
+	const moreItems = $derived(nav.slice(4));
+	const moreActive = $derived(moreItems.some((item) => item.active));
+
 	let adding = $state(false);
+	let moreOpen = $state(false);
+	/** The floating add button shows its label only at the top of the page. */
+	let compact = $state(false);
+
+	function trackScroll() {
+		compact = window.scrollY > 8;
+	}
+
+	// A shorter page can reset the scroll without a scroll event.
+	afterNavigate(trackScroll);
 
 	onMount(() => {
 		// Chromium and Safari protect installed or often used apps without a prompt, when asked.
@@ -116,34 +141,68 @@
 			<AccountList accounts={accounts.data ?? []} variant="compact" />
 		</aside>
 
-		<main class="min-w-0 flex-1 pb-24 md:pb-0">{@render children()}</main>
+		<main class="min-w-0 flex-1 pb-36 md:pb-0">{@render children()}</main>
 	</div>
+
+	<button
+		type="button"
+		onclick={() => (adding = true)}
+		aria-label={m.add_transaction()}
+		data-compact={compact}
+		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-14 items-center rounded-full bg-primary pr-[1.125rem] pl-4 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-4 md:hidden"
+	>
+		<PlusIcon class="size-6 shrink-0" />
+		<span
+			data-fab-label
+			class="overflow-hidden text-sm font-medium whitespace-nowrap transition-[max-width,padding,opacity] duration-200 {compact
+				? 'max-w-0 pl-0 opacity-0'
+				: 'max-w-40 pl-2'}"
+		>
+			{m.add_transaction()}
+		</span>
+	</button>
 
 	<nav
 		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
 		aria-label={m.nav_label()}
 		data-scroll-inset="bottom"
 	>
-		{#each nav.slice(0, 2) as item (item.label)}
+		{#each barItems as item (item.label)}
 			{@render bottomLink(item)}
 		{/each}
 		<button
 			type="button"
-			onclick={() => (adding = true)}
-			class="relative flex min-w-0 flex-col items-center justify-end px-0.5 py-2 text-[0.6875rem] text-muted-foreground"
+			onclick={() => (moreOpen = true)}
+			aria-current={moreActive ? 'page' : undefined}
+			aria-haspopup="dialog"
+			class="flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
 		>
-			<!-- Lifted out of the bar without moving the label off the other labels' baseline. -->
-			<span
-				class="absolute -top-7 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background"
-			>
-				<PlusIcon class="size-6" />
-			</span>
-			<span data-nav-label class="max-w-full truncate">{m.add_transaction()}</span>
+			<EllipsisIcon class="size-5" />
+			<span data-nav-label class="max-w-full truncate">{m.nav_more()}</span>
 		</button>
-		{#each nav.slice(2) as item (item.label)}
-			{@render bottomLink(item)}
-		{/each}
 	</nav>
 </div>
 
+<Sheet.Root bind:open={moreOpen}>
+	<Sheet.Content side="bottom" class="pb-[env(safe-area-inset-bottom)]">
+		<Sheet.Header>
+			<Sheet.Title>{m.nav_more()}</Sheet.Title>
+		</Sheet.Header>
+		<nav class="grid gap-1 px-2 pb-4" aria-label={m.nav_more()}>
+			{#each moreItems as item (item.label)}
+				<a
+					href={item.href}
+					aria-current={item.active ? 'page' : undefined}
+					onclick={() => (moreOpen = false)}
+					class="flex items-center gap-3 rounded-md px-3 py-3 text-sm hover:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-primary"
+				>
+					<item.icon class="size-5" />
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+	</Sheet.Content>
+</Sheet.Root>
+
 <TransactionDialog bind:open={adding} accountId={page.params.id} />
+<svelte:window onscroll={trackScroll} />
