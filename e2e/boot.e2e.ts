@@ -42,6 +42,23 @@ test('onboarding seeds only the categories that were picked', async ({ page }) =
 	await expect(categoryRow(page, 'Hobbies')).toHaveCount(0);
 });
 
+test('onboarding can start with no account', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Home');
+	await chooseCombobox(page, 'Number and date format', 'en-US', 'en-US');
+	await chooseCombobox(page, 'Currency', 'USD', 'USD');
+	await nextStep(page).click();
+	await nextStep(page).click();
+
+	await page.getByRole('button', { name: 'Start with no account' }).click();
+	await page.getByRole('button', { name: 'Start budgeting' }).click();
+
+	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await expect(page.getByText('No accounts yet.')).toBeVisible();
+});
+
 test('a second tab waits until it takes over', async ({ context }) => {
 	const first = await context.newPage();
 	await onboard(first);

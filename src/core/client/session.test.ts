@@ -114,6 +114,13 @@ describe('leaving the demo', () => {
 });
 
 describe('createBudget', () => {
+	it('creates a budget without an account', async () => {
+		const { api, store } = await setup();
+		const { file } = await createBudget(api, store, { ...HOME, account: undefined });
+		expect(await api.accounts.list()).toEqual([]);
+		expect(loadRegistry(store).budgets).toEqual([{ file, name: 'Home' }]);
+	});
+
 	it('creates the budget, its categories and its first account', async () => {
 		const { api, store } = await setup();
 		const { file, meta } = await createBudget(api, store, HOME);

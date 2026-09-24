@@ -99,10 +99,11 @@ export async function openLastBudget(api: SessionApi, store: KeyValueStore): Pro
 }
 
 export interface NewBudget extends InitBudgetInput {
-	account: CreateAccountInput;
+	/** Left out to start with no account. */
+	account?: CreateAccountInput;
 }
 
-/** Creates a budget file with its categories and first account, and leaves it open. */
+/** Creates a budget file with its categories and, optionally, a first account, and leaves it open. */
 export async function createBudget(
 	api: SessionApi,
 	store: KeyValueStore,
@@ -113,7 +114,7 @@ export async function createBudget(
 	try {
 		const { account, ...init } = input;
 		await api.meta.init(init);
-		await api.accounts.create(account);
+		if (account) await api.accounts.create(account);
 	} catch (err) {
 		await api.system.deleteFile(file).catch(() => {});
 		throw err;

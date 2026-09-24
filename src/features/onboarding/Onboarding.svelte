@@ -85,8 +85,10 @@
 		if (created) onCreated(created.file, created.meta);
 	}
 
-	async function create() {
-		const typed = balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
+	/** Creates the budget, with the account from the account step unless `withAccount` is false. */
+	async function create(withAccount = true) {
+		const typed =
+			!withAccount || balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
 		if (typed === null) {
 			error = m.form_error_amount_invalid();
 			return;
@@ -98,14 +100,16 @@
 				currency,
 				locale,
 				groups: toGroupsInput(selection),
-				account: {
-					name: accountName,
-					type: accountType,
-					onBudget,
-					startingBalance: signedStartingBalance(accountType, typed),
-					startingDate: date,
-					startingBalancePayee: m.demo_payee_starting_balance()
-				}
+				account: withAccount
+					? {
+							name: accountName,
+							type: accountType,
+							onBudget,
+							startingBalance: signedStartingBalance(accountType, typed),
+							startingDate: date,
+							startingBalancePayee: m.demo_payee_starting_balance()
+						}
+					: undefined
 			});
 		});
 		busy = false;
@@ -177,8 +181,9 @@
 	<AccountStep
 		current={stepNumber(steps, step)}
 		{total}
-		onNext={create}
+		onNext={() => create()}
 		onBack={back}
+		onSkip={() => create(false)}
 		{busy}
 		{error}
 		bind:name={accountName}

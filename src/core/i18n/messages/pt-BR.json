@@ -139,6 +139,8 @@
 	"onboarding_categories_clear": "Começar sem categorias",
 	"onboarding_categories_selected": "{count} escolhidas",
 	"onboarding_account_section": "Sua primeira conta",
+	"onboarding_account_intro": "Você também pode começar sem nenhuma e adicionar contas depois.",
+	"onboarding_account_skip": "Começar sem conta",
 	"onboarding_default_account_name": "Conta corrente",
 	"onboarding_new_title": "Novo orçamento",
 	"onboarding_create": "Criar orçamento",

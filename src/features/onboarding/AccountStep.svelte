@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Button } from '$ui/button';
 	import AccountFields from '$features/accounts/AccountFields.svelte';
 	import AccountTypePicker from '$features/accounts/AccountTypePicker.svelte';
 	import { defaultOnBudget } from '$features/accounts/account-form';
@@ -11,6 +12,7 @@
 		total,
 		onNext,
 		onBack,
+		onSkip,
 		busy,
 		error,
 		name = $bindable(),
@@ -23,6 +25,8 @@
 		total: number;
 		onNext: () => void;
 		onBack: () => void;
+		/** Creates the budget with no account. */
+		onSkip: () => void;
 		busy: boolean;
 		error: string | null;
 		name: string;
@@ -59,6 +63,7 @@
 
 <StepLayout
 	title={m.onboarding_account_section()}
+	description={m.onboarding_account_intro()}
 	{current}
 	{total}
 	nextLabel={step === 1 ? m.onboarding_next() : m.onboarding_create()}
@@ -82,5 +87,10 @@
 				onChangeType={() => (step = 1)}
 			/>
 		{/if}
+	</div>
+	<div class="flex justify-end">
+		<Button type="button" variant="ghost" size="sm" disabled={busy} onclick={onSkip}>
+			{m.onboarding_account_skip()}
+		</Button>
 	</div>
 </StepLayout>

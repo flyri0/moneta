@@ -139,6 +139,8 @@
 	"onboarding_categories_clear": "Start with no categories",
 	"onboarding_categories_selected": "{count} selected",
 	"onboarding_account_section": "Your first account",
+	"onboarding_account_intro": "You can also start without one and add accounts later.",
+	"onboarding_account_skip": "Start with no account",
 	"onboarding_default_account_name": "Checking",
 	"onboarding_create": "Create budget",
 	"onboarding_new_title": "New budget",
