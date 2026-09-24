@@ -112,23 +112,9 @@ code: short doc comments on exports, and comments only where the code isn't self
 
 ## Releasing
 
-Maintainers only. Pushes to `main` never deploy (`netlify.toml` skips every Git-triggered
-build); a version tag does. Release from the tip of `main`:
-
-```sh
-# 1. Set "version" in package.json, e.g. 1.2.0 (semver: fixes → patch, features → minor,
-#    changes that break things for users, like a backup older versions can't read → major).
-git commit -am "chore(release): v1.2.0"
-git tag v1.2.0
-git push --atomic origin main v1.2.0
-```
-
-`.github/workflows/release.yml` then checks that the tag matches `package.json` and is the tip
-of `main`, runs the whole CI (e2e included), creates the GitHub release with notes written by
-[git-cliff](https://git-cliff.org) from the `feat:`, `fix:` and `perf:` commits since the last
-tag (`cliff.toml`), and calls the Netlify build hook (the `NETLIFY_BUILD_HOOK` secret of the
-`Moneta Environment` environment). The app shows its version in Settings, linked to that release.
-Preview the notes with `pnpm dlx git-cliff --unreleased --strip header`.
+Maintainers only. Netlify builds and deploys every push to `main`; other branches and pull
+requests get deploy previews. Work on a branch and merge it into `main` to ship it. An open app
+finds the new service worker on its own and offers to reload.
 
 ## Reporting bugs
 

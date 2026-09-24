@@ -1,9 +1,6 @@
 [build]
     command = "pnpm run build"
     publish = "build"
-    # Git-triggered builds are always skipped: only a version tag deploys, through the build hook
-    # that .github/workflows/release.yml calls (a build hook build ignores this command).
-    ignore = "exit 0"
 
 # The app is a single-page app: every route that isn't a file gets index.html. A 200 rule without
 # `force` only applies when no file matches, so assets and the service worker are served as is.

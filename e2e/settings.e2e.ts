@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { chooseCombobox, deleteBudget, fillNewBudget, onboard, openSettings } from './helpers';
 
@@ -107,17 +106,12 @@ test('picks an accent colour and a theme that outlive a reload', async ({ page }
 	);
 });
 
-test('shows the version and links to its release notes', async ({ page }) => {
-	const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+test('links to the source code', async ({ page }) => {
 	await onboard(page);
 	await openSettings(page);
-	await expect(page.getByTestId('app-version')).toContainText(version);
-	const notes = page.getByRole('link', { name: 'Release notes' });
-	await expect(notes).toHaveAttribute(
-		'href',
-		`https://github.com/flyri0/moneta/releases/tag/v${version}`
-	);
-	await expect(notes).toHaveAttribute('target', '_blank');
+	const source = page.getByRole('link', { name: 'Source code' });
+	await expect(source).toHaveAttribute('href', 'https://github.com/flyri0/moneta');
+	await expect(source).toHaveAttribute('target', '_blank');
 });
 
 test.describe('on a phone', () => {

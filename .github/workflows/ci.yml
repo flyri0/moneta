@@ -1,14 +1,11 @@
 name: CI
 
 on:
-  # Branches only: a tag push runs this workflow through release.yml instead.
   push:
     branches: ['**']
   pull_request:
     branches: [main]
   workflow_dispatch:
-  # release.yml runs the same checks before it publishes a release.
-  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -45,9 +42,8 @@ jobs:
 
   e2e:
     name: Browser tests
-    # Pull requests, manual runs and releases only: too slow for every push. When release.yml
-    # calls this workflow, `github` is the caller's context: a push of a tag.
-    if: github.event_name != 'push' || github.ref_type == 'tag'
+    # Pull requests and manual runs only: too slow for every push.
+    if: github.event_name != 'push'
     needs: check
     runs-on: ubuntu-latest
     steps:
