@@ -273,7 +273,7 @@
 	"order_hint": "Arraste pelas alças ou use as setas.",
 	"order_move_up": "Mover {name} para cima",
 	"order_move_down": "Mover {name} para baixo",
-	"register_search": "Buscar favorecido, categoria ou memorando",
+	"register_search": "Buscar nome, categoria, memorando ou valor",
 	"register_from": "De",
 	"register_to": "Até",
 	"register_transactions": "Transações",

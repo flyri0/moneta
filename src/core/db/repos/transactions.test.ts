@@ -444,12 +444,59 @@ describe('listTransactions', () => {
 		).toEqual([-300, -200]);
 	});
 
-	it('searches payee, memo, category, transfer account and split lines', () => {
+	it('searches payee, memo, category, account, transfer account and split lines', () => {
 		expect(listTransactions(db, { search: 'padaria' }).map((t) => t.amount)).toEqual([-100]);
 		expect(listTransactions(db, { search: '50%' }).map((t) => t.amount)).toEqual([-200]);
 		expect(listTransactions(db, { search: 'toys' }).map((t) => t.amount)).toEqual([-300]);
-		expect(listTransactions(db, { search: 'savings' }).map((t) => t.amount)).toEqual([-400]);
 		expect(listTransactions(db, { search: 'Fun' }).map((t) => t.amount)).toEqual([-300, -200]);
+		expect(listTransactions(db, { search: 'visa' }).map((t) => t.amount)).toEqual([-300]);
+		// both legs: one is in Savings, the other transfers to it
+		expect(listTransactions(db, { search: 'savings' }).map((t) => t.amount)).toEqual([400, -400]);
+	});
+
+	it('needs every word of the search to match, each in any field', () => {
+		expect(listTransactions(db, { search: 'bank fun' }).map((t) => t.amount)).toEqual([-200]);
+		expect(listTransactions(db, { search: 'loja  toys' }).map((t) => t.amount)).toEqual([-300]);
+		expect(listTransactions(db, { search: 'visa padaria' })).toEqual([]);
+	});
+
+	it('ignores case and accents on both sides', () => {
+		const poupanca = createAccount(db, {
+			name: 'Poupança',
+			type: 'savings',
+			onBudget: true,
+			startingBalance: 0,
+			startingDate: '2026-01-01'
+		});
+		createTransaction(db, {
+			accountId: poupanca,
+			date: '2026-04-01',
+			amount: -500,
+			payeeName: 'Açougue',
+			memo: 'PÃO de queijo',
+			categoryId: food
+		});
+		for (const search of ['acougue', 'ACOUGUE', 'Açougue', 'pao', 'poupanca', 'POUPANÇA'])
+			expect(listTransactions(db, { search }).map((t) => t.amount)).toEqual([-500]);
+		expect(listTransactions(db, { search: 'OFF' }).map((t) => t.amount)).toEqual([-200]);
+		expect(listTransactions(db, { search: 'Toys' }).map((t) => t.amount)).toEqual([-300]);
+	});
+
+	it('matches an amount, either sign, on the transaction or a split line', () => {
+		expect(listTransactions(db, { search: '4,00' }).map((t) => t.amount)).toEqual([400, -400]);
+		expect(listTransactions(db, { search: '-2' }).map((t) => t.amount)).toEqual([-200]);
+		expect(listTransactions(db, { search: '1.50' }).map((t) => t.amount)).toEqual([-300]);
+		expect(listTransactions(db, { search: 'visa 1,50' }).map((t) => t.amount)).toEqual([-300]);
+		expect(listTransactions(db, { search: 'cinema 1' })).toEqual([]);
+	});
+
+	it('combines the search with the other filters', () => {
+		expect(listTransactions(db, { search: 'fun', accountId: bank }).map((t) => t.amount)).toEqual([
+			-200
+		]);
+		expect(
+			listTransactions(db, { search: 'food', from: '2026-02-01' }).map((t) => t.amount)
+		).toEqual([-300]);
 	});
 
 	it('filters by category, including split lines', () => {

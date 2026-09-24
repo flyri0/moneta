@@ -83,6 +83,18 @@ describe('seedDemo', () => {
 		expect(rows.some((r) => r.transferAccountName === 'Credit Card')).toBe(true);
 	});
 
+	it("finds the card's own transactions, not only the transfers to it, by its name", () => {
+		const rows = listTransactions(db, { search: 'credit card' });
+		const card = rows.filter((r) => r.accountName === 'Credit Card');
+		expect(card.some((r) => r.transferId === null)).toBe(true);
+		expect(rows.some((r) => r.transferAccountName === 'Credit Card')).toBe(true);
+		expect(rows).toEqual(
+			listTransactions(db).filter(
+				(r) => r.accountName === 'Credit Card' || r.transferAccountName === 'Credit Card'
+			)
+		);
+	});
+
 	it('names its payees', () => {
 		const payees = new Set(listTransactions(db).map((r) => r.payeeName));
 		expect(payees).toContain('Corner Market');
