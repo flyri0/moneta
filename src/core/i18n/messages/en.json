@@ -273,7 +273,7 @@
 	"order_hint": "Drag by the handles or use the arrows.",
 	"order_move_up": "Move {name} up",
 	"order_move_down": "Move {name} down",
-	"register_search": "Search payee, category or memo",
+	"register_search": "Search name, category, memo or amount",
 	"register_from": "From",
 	"register_to": "To",
 	"register_transactions": "Transactions",

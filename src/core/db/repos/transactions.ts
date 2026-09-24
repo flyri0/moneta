@@ -1,7 +1,9 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
 import { isDate } from '$domain/month';
+import { foldText, searchTerms, type SearchTerm } from '$domain/search';
 import { all, one, run, tx, type Db } from '../connection';
+import { getMeta } from './meta';
 import { getOrCreatePayee } from './payees';
 
 export interface SplitInput {
@@ -308,12 +310,109 @@ export function getTransaction(db: Db, id: string): TransactionRow {
 	return attachSplits(db, [row])[0];
 }
 
-function likePattern(search: string): string {
-	return `%${search.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+const MATCH_SETS = ['accounts', 'payees', 'categories', 'memos'] as const;
+
+/** The ids and memos that contain a search term, found once per query, before the scan. */
+type TermMatches = { amount: number | null } & Record<(typeof MATCH_SETS)[number], string[]>;
+
+/** Runs a query that returns one JSON array, in one step: much faster than reading many rows. */
+function jsonValue<T>(db: Db, sql: string): T {
+	return JSON.parse(db.selectValue(sql) as string) as T;
 }
 
+/**
+ * Finds, for each term, the names and memos that contain it, ignoring case and accents. Folding
+ * happens here, in JS, over distinct values: calling a JS function from SQL costs more per row
+ * than folding a whole budget's names and memos at once.
+ */
+function matchTerms(db: Db, terms: SearchTerm[]): TermMatches[] {
+	if (terms.length === 0) return [];
+	const names = (table: string) =>
+		jsonValue<[string, string][]>(
+			db,
+			`SELECT json_group_array(json_array(id, name)) FROM ${table}`
+		).map(([id, name]) => ({ id, text: foldText(name) }));
+	const accounts = names('accounts');
+	const payees = names('payees');
+	const categories = names('categories');
+	const memos = jsonValue<string[]>(
+		db,
+		`SELECT json_group_array(memo) FROM (SELECT memo FROM transactions WHERE memo <> ''
+		 UNION SELECT memo FROM transaction_splits WHERE memo <> '')`
+	).map((memo) => ({ memo, text: foldText(memo) }));
+	return terms.map(({ text, amount }) => {
+		const ids = (rows: { id: string; text: string }[]) =>
+			rows.filter((r) => r.text.includes(text)).map((r) => r.id);
+		return {
+			amount,
+			accounts: ids(accounts),
+			payees: ids(payees),
+			categories: ids(categories),
+			memos: memos.filter((r) => r.text.includes(text)).map((r) => r.memo)
+		};
+	});
+}
+
+/**
+ * The WHERE clause for search term `i`: the account, transfer account, payee or category, the
+ * memo, a split line's category or memo, or the amount of the transaction or a split line (either
+ * sign). It reads only `t`, so rows that fail it are dropped before the joins, and it leaves out
+ * the sets that are empty. Null when the term can match nothing.
+ */
+function termCondition(match: TermMatches, i: number): string | null {
+	const set = (key: (typeof MATCH_SETS)[number]) => `(SELECT value FROM json_each(:${key}${i}))`;
+	const has = (key: (typeof MATCH_SETS)[number]) => match[key].length > 0;
+	const own: string[] = [];
+	const split: string[] = [];
+	if (match.amount !== null) {
+		own.push(`abs(t.amount) = :amount${i}`);
+		split.push(`abs(s.amount) = :amount${i}`);
+	}
+	if (has('accounts'))
+		own.push(
+			`t.account_id IN ${set('accounts')}`,
+			`(t.transfer_id IS NOT NULL
+			  AND (SELECT account_id FROM transactions WHERE id = t.transfer_id) IN ${set('accounts')})`
+		);
+	if (has('payees')) own.push(`t.payee_id IN ${set('payees')}`);
+	if (has('categories')) {
+		own.push(`t.category_id IN ${set('categories')}`);
+		split.push(`s.category_id IN ${set('categories')}`);
+	}
+	if (has('memos')) {
+		own.push(`t.memo IN ${set('memos')}`);
+		split.push(`s.memo IN ${set('memos')}`);
+	}
+	if (split.length > 0)
+		own.push(`(t.is_split = 1 AND EXISTS (SELECT 1 FROM transaction_splits s
+			WHERE s.transaction_id = t.id AND (${split.join(' OR ')})))`);
+	return own.length > 0 ? `(${own.join('\n\t\tOR ')})` : null;
+}
+
+/**
+ * Transactions newest first. `search` splits into words that must all match, each in any field
+ * (see `termCondition`), ignoring case and accents; a word that reads as an amount in the budget's
+ * format also matches that amount.
+ */
 export function listTransactions(db: Db, query: TransactionQuery = {}): TransactionRow[] {
-	const search = query.search?.trim() ? likePattern(query.search.trim()) : null;
+	const terms = query.search ? searchTerms(query.search, getMeta(db)) : [];
+	const bind: Record<string, string | number | null> = {
+		':accountId': query.accountId ?? null,
+		':categoryId': query.categoryId ?? null,
+		':from': query.from ?? null,
+		':to': query.to ?? null,
+		':limit': query.limit ?? -1,
+		':offset': query.offset ?? 0
+	};
+	const conditions: string[] = [];
+	for (const [i, match] of matchTerms(db, terms).entries()) {
+		const condition = termCondition(match, i);
+		if (condition === null) return [];
+		conditions.push(`AND ${condition}`);
+		if (match.amount !== null) bind[`:amount${i}`] = match.amount;
+		for (const key of MATCH_SETS)
+			if (match[key].length > 0) bind[`:${key}${i}`] = JSON.stringify(match[key]);
+	}
 	const rows = all<Row>(
 		db,
 		`${SELECT_SQL}
@@ -323,23 +422,10 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		                WHERE s.transaction_id = t.id AND s.category_id = :categoryId))
 		   AND (:from IS NULL OR t.date >= :from)
 		   AND (:to IS NULL OR t.date <= :to)
-		   AND (:search IS NULL
-		     OR p.name LIKE :search ESCAPE '\\' OR t.memo LIKE :search ESCAPE '\\'
-		     OR c.name LIKE :search ESCAPE '\\' OR pa.name LIKE :search ESCAPE '\\'
-		     OR EXISTS (SELECT 1 FROM transaction_splits s JOIN categories sc ON sc.id = s.category_id
-		                WHERE s.transaction_id = t.id
-		                  AND (sc.name LIKE :search ESCAPE '\\' OR s.memo LIKE :search ESCAPE '\\')))
+		   ${conditions.join('\n')}
 		 ORDER BY t.date DESC, t.id DESC
 		 LIMIT :limit OFFSET :offset`,
-		{
-			':accountId': query.accountId ?? null,
-			':categoryId': query.categoryId ?? null,
-			':from': query.from ?? null,
-			':to': query.to ?? null,
-			':search': search,
-			':limit': query.limit ?? -1,
-			':offset': query.offset ?? 0
-		}
+		bind
 	);
 	return attachSplits(db, rows);
 }

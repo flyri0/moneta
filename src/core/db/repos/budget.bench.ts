@@ -9,18 +9,20 @@ import { createCategory, createGroup } from './categories';
 import { getBudgetMonth, setAssigned } from './budget';
 import { defaultIncomeCategoryId } from './meta';
 import { ageOfMoney, ageOfMoneyFlows } from './reports';
-import { createTransaction } from './transactions';
+import { createTransaction, listTransactions } from './transactions';
 
 const YEARS = 5;
 const CATEGORIES = 40;
 const SPENDING_PER_MONTH = 150;
+const PAYEES = 120;
 const LAST = '2026-09';
 
 /**
  * A heavy personal budget: 5 years, 40 categories, a checking account and a card,
- * 150 purchases a month (about 9,000 transactions) and an assignment per category and month.
+ * 150 purchases a month (about 9,000 transactions, among 120 payees, a quarter with a memo) and
+ * an assignment per category and month. `analyze` runs ANALYZE, which the app itself never does.
  */
-async function bigBudget(): Promise<Db> {
+async function bigBudget({ analyze = true } = {}): Promise<Db> {
 	const db = await createBudgetDb();
 	const base = { onBudget: true, startingBalance: 0, startingDate: '2021-10-01' };
 	const bank = createAccount(db, { ...base, name: 'Bank', type: 'checking' });
@@ -44,12 +46,14 @@ async function bigBudget(): Promise<Db> {
 					accountId: i % 3 === 0 ? card : bank,
 					date: `${month}-${String((i % 28) + 1).padStart(2, '0')}`,
 					amount: -(1_000 + ((i * 37) % 5_000)),
-					categoryId: categories[i % CATEGORIES]
+					categoryId: categories[i % CATEGORIES],
+					payeeName: `Payee ${i % PAYEES}`,
+					memo: i % 4 === 0 ? `Nota número ${month}-${i}` : ''
 				});
 			}
 		}
 	});
-	run(db, 'ANALYZE');
+	if (analyze) run(db, 'ANALYZE');
 	return db;
 }
 
@@ -84,5 +88,28 @@ test('age of money', async ({ bench }) => {
 	);
 	expect(result.get('ageOfMoneyFlows (SQL only)')).toBeFasterThan(
 		result.get('ageOfMoney, 5 years of history')
+	);
+});
+
+test('transaction search', async ({ bench }) => {
+	// Without ANALYZE, like the app: its statistics would change the plans measured here.
+	const db = await bigBudget({ analyze: false });
+	const page = { limit: 50 };
+	const result = await bench.compare(
+		bench('first page, no search', () => {
+			listTransactions(db, page);
+		}),
+		bench('first page, a common word', () => {
+			listTransactions(db, { ...page, search: 'card' });
+		}),
+		bench('a word nothing contains', () => {
+			listTransactions(db, { ...page, search: 'zzz' });
+		}),
+		bench('three words no row has together (scans everything)', () => {
+			listTransactions(db, { ...page, search: 'numero Payee 10,37' });
+		})
+	);
+	expect(result.get('first page, no search')).toBeFasterThan(
+		result.get('three words no row has together (scans everything)')
 	);
 });
