@@ -1,28 +1,18 @@
 <script lang="ts">
-	import { Button } from '$ui/button';
+	import { untrack } from 'svelte';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import { Combobox } from '$ui/combobox';
 	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
-	import { moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
+	import type { CategoryPatch } from '$db/repos/categories';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
-	let {
-		category,
-		groups,
-		model,
-		onDone
-	}: {
-		category: BudgetCategoryView;
-		groups: BudgetGroupView[];
-		model: GridModel;
-		onDone: () => void;
-	} = $props();
+	/** A category's settings. Each field saves on its own: switches when flipped, the name on change. */
+	let { category, groups }: { category: BudgetCategoryView; groups: BudgetGroupView[] } = $props();
 
 	const session = useSession();
 	const userGroups = $derived(groups.filter((g) => !g.system));
@@ -30,110 +20,98 @@
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.id ?? ''
 	);
 	const isIncome = $derived(groups.find((g) => g.id === currentGroupId)?.system === 'income');
-	const incomeGroup = $derived(groups.find((g) => g.system === 'income'));
-	const reassignTargets = $derived(
-		isIncome
-			? (incomeGroup?.categories
-					.filter((c) => c.id !== category.id)
-					.map((c) => ({ value: c.id, label: c.name })) ?? [])
-			: moveTargets(model, category.id)
-					.filter((t) => !t.group.system)
-					.map((t) => ({ value: t.id, label: `${t.group.name} · ${t.name}` }))
-	);
+	const selectedGroup = $derived(userGroups.find((g) => g.id === groupId));
 
 	let name = $state('');
 	let groupId = $state('');
 	let hidden = $state(false);
 	let carryover = $state(false);
-	let reassignTo = $state('');
-	let confirmDelete = $state(false);
 	let error = $state<string | null>(null);
 
-	$effect(() => {
+	/** Shows the saved values again, dropping edits. */
+	function reset() {
 		name = category.name;
 		groupId = currentGroupId;
 		hidden = category.hidden;
 		carryover = category.carryoverOverspending;
-		reassignTo = '';
-		confirmDelete = false;
-		error = null;
-	});
-
-	async function save(event: SubmitEvent) {
-		event.preventDefault();
-		const patch = isIncome
-			? { name, hidden }
-			: { name, groupId, hidden, carryoverOverspending: carryover };
-		error = await runAction(() => session.api.categories.update(category.id, patch));
-		if (!error) onDone();
 	}
 
-	async function remove() {
-		if (!confirmDelete) {
-			confirmDelete = true;
+	// A derived id changes only when the category does, not on every refresh of the same category.
+	const categoryId = $derived(category.id);
+
+	// Only the category's id is tracked: a live refresh must not wipe a name being typed.
+	$effect(() => {
+		void categoryId;
+		untrack(() => {
+			reset();
+			error = null;
+		});
+	});
+
+	async function save(patch: CategoryPatch) {
+		error = await runAction(() => session.api.categories.update(category.id, patch));
+		if (error) reset();
+	}
+
+	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
+	function saveName() {
+		if (name.trim() === '' || name.trim() === category.name) {
+			name = category.name;
 			return;
 		}
-		error = await runAction(() =>
-			session.api.categories.delete(category.id, reassignTo || undefined)
-		);
-		if (!error) onDone();
+		void save({ name });
 	}
 </script>
 
-<form class="grid gap-3" onsubmit={save}>
-	<h3 class="text-sm font-medium">{m.category_settings()}</h3>
-	<div class="grid gap-2">
-		<Label for="category-name">{m.category_name()}</Label>
-		<Input id="category-name" bind:value={name} required autocomplete="off" />
-	</div>
-	{#if !isIncome}
-		<div class="grid gap-2">
-			<Label for="category-group">{m.category_group()}</Label>
-			<Select.Root type="single" bind:value={groupId}>
-				<Select.Trigger id="category-group" class="w-full">
-					{userGroups.find((g) => g.id === groupId)
-						? groupLabel(userGroups.find((g) => g.id === groupId)!)
-						: ''}
-				</Select.Trigger>
-				<Select.Content>
-					{#each userGroups as group (group.id)}
-						<Select.Item value={group.id} label={groupLabel(group)}>
-							{groupLabel(group)}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-	{/if}
-	<div class="flex items-center justify-between gap-4">
-		<Label for="category-hidden">{m.category_hidden()}</Label>
-		<Switch id="category-hidden" bind:checked={hidden} />
-	</div>
-	{#if !isIncome}
-		<div class="flex items-center justify-between gap-4">
-			<div class="grid gap-1">
-				<Label for="category-carryover">{m.category_carryover()}</Label>
-				<p class="text-xs text-muted-foreground">{m.category_carryover_hint()}</p>
+<div class="grid gap-3">
+	<div class="grid divide-y rounded-lg border">
+		<!-- Enter fires `change` itself; the form only makes the phone keyboard offer to submit. -->
+		<form class="grid gap-2 p-3" onsubmit={(e) => e.preventDefault()}>
+			<Label for="category-name">{m.category_name()}</Label>
+			<Input id="category-name" bind:value={name} onchange={saveName} required autocomplete="off" />
+		</form>
+		{#if !isIncome}
+			<div class="grid gap-2 p-3">
+				<Label for="category-group">{m.category_group()}</Label>
+				<Select.Root
+					type="single"
+					bind:value={groupId}
+					onValueChange={(value) => value !== currentGroupId && save({ groupId: value })}
+				>
+					<Select.Trigger id="category-group" class="w-full">
+						{selectedGroup ? groupLabel(selectedGroup) : ''}
+					</Select.Trigger>
+					<Select.Content>
+						{#each userGroups as group (group.id)}
+							<Select.Item value={group.id} label={groupLabel(group)}>
+								{groupLabel(group)}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
 			</div>
-			<Switch id="category-carryover" bind:checked={carryover} />
+		{/if}
+		<div class="flex min-h-12 items-center justify-between gap-4 p-3">
+			<Label for="category-hidden">{m.category_hidden()}</Label>
+			<Switch
+				id="category-hidden"
+				bind:checked={hidden}
+				onCheckedChange={(checked) => save({ hidden: checked })}
+			/>
 		</div>
-	{/if}
-	<Button type="submit" variant="outline">{m.save()}</Button>
-</form>
-
-<div class="grid gap-2">
-	<Label for="category-reassign">{m.category_delete_reassign()}</Label>
-	<Combobox
-		id="category-reassign"
-		ariaLabel={m.category_delete_reassign()}
-		items={reassignTargets}
-		emptyOption={{ value: '', label: m.category_delete_no_reassign() }}
-		bind:value={reassignTo}
-		placeholder={m.category_delete_no_reassign()}
-	/>
-	<Button variant="destructive" onclick={remove}>
-		{confirmDelete ? m.confirm_delete() : m.category_delete()}
-	</Button>
+		{#if !isIncome}
+			<div class="flex items-center justify-between gap-4 p-3">
+				<div class="grid gap-1">
+					<Label for="category-carryover">{m.category_carryover()}</Label>
+					<p class="text-xs text-muted-foreground">{m.category_carryover_hint()}</p>
+				</div>
+				<Switch
+					id="category-carryover"
+					bind:checked={carryover}
+					onCheckedChange={(checked) => save({ carryoverOverspending: checked })}
+				/>
+			</div>
+		{/if}
+	</div>
+	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 </div>
-
-{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}

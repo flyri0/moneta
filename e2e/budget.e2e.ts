@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, chooseCombobox, onboard } from './helpers';
+import { categoryRow, chooseCombobox, chooseSelect, onboard } from './helpers';
 
 test('shows the month with Ready to Assign and the starter categories', async ({ page }) => {
 	await onboard(page);
@@ -53,8 +53,11 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 
 	await groceries.getByRole('button', { name: 'Groceries' }).click();
 	const categorySheet = page.getByRole('dialog');
+	await categorySheet.getByRole('button', { name: 'Category settings' }).click();
+	// Settings save on their own: flipping the switch is enough.
 	await categorySheet.getByLabel('Hidden').click();
-	await categorySheet.getByRole('button', { name: 'Save' }).last().click();
+	await expect(categorySheet.getByLabel('Hidden')).toBeChecked();
+	await page.keyboard.press('Escape');
 	await expect(categorySheet).toBeHidden();
 
 	await page.getByRole('button', { name: /Hidden categories/ }).click();
@@ -97,6 +100,7 @@ test.describe('on a phone', () => {
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$155.00');
 
 		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+		await sheet.getByRole('button', { name: 'Move money' }).click();
 		await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
 		await sheet.getByLabel('Amount to move').fill('55');
 		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
@@ -164,6 +168,60 @@ test.describe('on a phone', () => {
 			);
 		}
 	});
+});
+
+test('renames a category from its settings and goes back', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await expect(sheet.getByRole('heading', { name: 'Category settings' })).toBeVisible();
+	await sheet.getByLabel('Name').fill('Food');
+	await sheet.getByLabel('Name').press('Enter');
+	await expect(categoryRow(page, 'Food')).toBeVisible();
+
+	await sheet.getByRole('button', { name: 'Back' }).click();
+	await expect(sheet.getByRole('heading', { name: 'Food' })).toBeVisible();
+	await expect(sheet.getByLabel('Assigned this month')).toBeVisible();
+});
+
+test('deletes a category in use after choosing where its money goes', async ({ page }) => {
+	await onboard(page);
+	const groceries = categoryRow(page, 'Groceries');
+	await groceries.getByTestId('assigned').fill('100');
+	await groceries.getByTestId('assigned').press('Enter');
+	await expect(groceries.getByTestId('available')).toHaveText('$100.00');
+
+	await groceries.getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Delete category' }).click();
+	await expect(sheet.getByRole('heading', { name: 'Delete Groceries?' })).toBeVisible();
+	await expect(sheet.getByText('This category is in use')).toBeVisible();
+	const remove = sheet.getByRole('button', { name: 'Delete category' });
+	await expect(remove).toBeDisabled();
+
+	await chooseCombobox(sheet, 'Move everything to', 'Everyday · Household', 'Household');
+	await remove.click();
+	await expect(sheet).toBeHidden();
+	await expect(categoryRow(page, 'Groceries')).toHaveCount(0);
+	await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$100.00');
+});
+
+test('deletes a group after moving its categories to another group', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Delete group' }).click();
+	await expect(sheet.getByText('This group has categories (4)')).toBeVisible();
+	const remove = sheet.getByRole('button', { name: 'Delete group' });
+	await expect(remove).toBeDisabled();
+
+	await chooseSelect(sheet, 'Move its categories to', 'Bills');
+	await remove.click();
+	await expect(sheet).toBeHidden();
+	await expect(page.getByRole('button', { name: 'Everyday', exact: true })).toHaveCount(0);
+	const bills = page.getByTestId('group-card').filter({ hasText: 'Bills' });
+	await expect(bills.getByTestId('category-row').filter({ hasText: 'Groceries' })).toBeVisible();
 });
 
 test('adds a group and a category, and reorders categories', async ({ page }) => {

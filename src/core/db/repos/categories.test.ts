@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, run } from '../connection';
 import {
+	categoryUsage,
 	createCategory,
 	createGroup,
 	deleteCategory,
@@ -36,6 +37,32 @@ describe('category groups', () => {
 		expect(() => updateGroup(db, tree[0].id, { name: 'x' })).toThrow(
 			code('SYSTEM_ENTITY_READONLY')
 		);
+	});
+
+	it('moves the categories of a deleted group to the end of another group', async () => {
+		const db = await createBudgetDb();
+		const tree = listCategoryTree(db);
+		const bills = tree.find((g) => g.name === 'Bills')!;
+		const everyday = tree.find((g) => g.name === 'Everyday')!;
+		deleteGroup(db, bills.id, everyday.id);
+		const after = listCategoryTree(db);
+		expect(after.some((g) => g.id === bills.id)).toBe(false);
+		expect(after.find((g) => g.id === everyday.id)!.categories.map((c) => c.name)).toEqual([
+			'Food',
+			'Fun',
+			'Rent',
+			'Utilities'
+		]);
+	});
+
+	it('refuses to move a deleted group’s categories into a system group or itself', async () => {
+		const db = await createBudgetDb();
+		const tree = listCategoryTree(db);
+		const bills = tree.find((g) => g.name === 'Bills')!;
+		const income = tree.find((g) => g.system === 'income')!;
+		expect(() => deleteGroup(db, bills.id, income.id)).toThrow(code('SYSTEM_ENTITY_READONLY'));
+		expect(() => deleteGroup(db, bills.id, bills.id)).toThrow(code('GROUP_NOT_EMPTY'));
+		expect(listCategoryTree(db).find((g) => g.id === bills.id)!.categories).toHaveLength(2);
 	});
 });
 
@@ -108,6 +135,34 @@ describe('categories', () => {
 		expect(() => updateCategory(db, salary, { carryoverOverspending: true })).toThrow(
 			code('CATEGORY_NOT_ALLOWED')
 		);
+	});
+
+	it('reports how a category is used', async () => {
+		const db = await createBudgetDb();
+		const fun = categoryId(db, 'Fun');
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, used: false });
+
+		run(db, 'INSERT INTO budget_assignments (category_id, month, assigned) VALUES (?, ?, ?)', [
+			fun,
+			'2026-01',
+			3000
+		]);
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, used: true });
+
+		run(
+			db,
+			"INSERT INTO accounts (id, name, type, on_budget, sort_order, created_at) VALUES ('acc1', 'Bank', 'checking', 1, 0, '2026-01-01T00:00:00Z')"
+		);
+		const txn =
+			'INSERT INTO transactions (id, account_id, date, amount, category_id) VALUES (?, ?, ?, ?, ?)';
+		run(db, txn, ['tx1', 'acc1', '2026-01-05', -1000, fun]);
+		run(db, txn, ['tx2', 'acc1', '2026-01-06', -900, null]);
+		const split =
+			'INSERT INTO transaction_splits (id, transaction_id, category_id, amount) VALUES (?, ?, ?, ?)';
+		// Two splits of one transaction count once.
+		run(db, split, ['s1', 'tx2', fun, -400]);
+		run(db, split, ['s2', 'tx2', fun, -500]);
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 2, used: true });
 	});
 
 	it('deletes an unused category directly', async () => {

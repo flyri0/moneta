@@ -60,7 +60,11 @@ export const api = {
 		tree: read(categories.listCategoryTree, []),
 		createGroup: write(['category_groups'], categories.createGroup, ['object']),
 		updateGroup: write(['category_groups'], categories.updateGroup, ['string', 'object']),
-		deleteGroup: write(['category_groups'], categories.deleteGroup, ['string']),
+		deleteGroup: write(['category_groups', 'categories'], categories.deleteGroup, [
+			'string',
+			'string?'
+		]),
+		usage: read(categories.categoryUsage, ['string']),
 		create: write(['categories'], categories.createCategory, ['object']),
 		update: write(['categories'], categories.updateCategory, ['string', 'object']),
 		delete: write(['categories', 'budget_assignments', ...TXN], categories.deleteCategory, [

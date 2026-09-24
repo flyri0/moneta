@@ -149,7 +149,7 @@
 			/>
 		{/if}
 		{#if group}
-			<GroupSheet bind:open={groupOpen} {group} month={data.month} />
+			<GroupSheet bind:open={groupOpen} {group} groups={view.data.groups} month={data.month} />
 		{/if}
 	{/if}
 </div>

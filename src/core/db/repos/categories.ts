@@ -115,12 +115,28 @@ export function updateGroup(db: Db, id: string, patch: { name?: string; hidden?:
 	});
 }
 
-export function deleteGroup(db: Db, id: string): void {
+/**
+ * Deletes a user group. A group with categories needs `moveTo`, another user group: its
+ * categories move to the end of that group, in their order.
+ */
+export function deleteGroup(db: Db, id: string, moveTo?: string): void {
 	tx(db, () => {
 		const group = getGroup(db, id);
 		if (group.system) throw new DomainError('SYSTEM_ENTITY_READONLY');
-		if (one(db, 'SELECT 1 AS x FROM categories WHERE group_id = ?', [id]))
-			throw new DomainError('GROUP_NOT_EMPTY');
+		if (one(db, 'SELECT 1 AS x FROM categories WHERE group_id = ?', [id])) {
+			if (!moveTo || moveTo === id) throw new DomainError('GROUP_NOT_EMPTY');
+			if (getGroup(db, moveTo).system) throw new DomainError('SYSTEM_ENTITY_READONLY');
+			const base = one<{ next: number }>(
+				db,
+				'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM categories WHERE group_id = ?',
+				[moveTo]
+			)!.next;
+			run(
+				db,
+				'UPDATE categories SET group_id = ?, sort_order = sort_order + ? WHERE group_id = ?',
+				[moveTo, base, id]
+			);
+		}
 		run(db, 'DELETE FROM category_groups WHERE id = ?', [id]);
 	});
 }
@@ -185,6 +201,27 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 	});
 }
 
+export interface CategoryUsage {
+	/** Transactions filed under the category, directly or through a split. */
+	transactions: number;
+	/** Whether a transaction, a split or an assignment uses it: deleting it then needs a target. */
+	used: boolean;
+}
+
+/** How a category is used, shown before deleting it. */
+export function categoryUsage(db: Db, id: string): CategoryUsage {
+	const transactions =
+		one<{ n: number }>(
+			db,
+			`SELECT COUNT(*) AS n FROM transactions t
+			 WHERE t.category_id = ?
+			    OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transaction_id = t.id AND s.category_id = ?)`,
+			[id, id]
+		)?.n ?? 0;
+	const assigned = one(db, 'SELECT 1 AS x FROM budget_assignments WHERE category_id = ?', [id]);
+	return { transactions, used: transactions > 0 || assigned !== undefined };
+}
+
 /**
  * Deletes a category. If transactions, splits, or assignments use it,
  * `reassignTo` (a category of the same kind) must be given; everything moves there.
@@ -193,11 +230,7 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 	tx(db, () => {
 		const category = getCategory(db, id);
 		const group = getGroup(db, category.groupId);
-		const used =
-			one(db, 'SELECT 1 AS x FROM transactions WHERE category_id = ?', [id]) ||
-			one(db, 'SELECT 1 AS x FROM transaction_splits WHERE category_id = ?', [id]) ||
-			one(db, 'SELECT 1 AS x FROM budget_assignments WHERE category_id = ?', [id]);
-		if (used) {
+		if (categoryUsage(db, id).used) {
 			if (!reassignTo || reassignTo === id) throw new DomainError('REASSIGN_REQUIRED');
 			const target = getCategory(db, reassignTo);
 			const targetGroup = getGroup(db, target.groupId);
