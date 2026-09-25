@@ -100,6 +100,9 @@ export function checkInvariants(db: Db): void {
 	}
 	const meta = getMeta(db);
 	if (typeof meta.name !== 'string' || !meta.name.trim()) throw damaged('no name');
+	// Settings shows these dates: one that doesn't parse would take the page down.
+	for (const at of [meta.createdAt, meta.lastBackupAt ?? meta.createdAt])
+		if (typeof at !== 'string' || Number.isNaN(Date.parse(at))) throw damaged(`a bad date (${at})`);
 	try {
 		validateCurrency(meta.currency);
 		validateLocale(meta.locale);

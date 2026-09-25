@@ -237,6 +237,11 @@ describe('checkBackup rebuilds the budget', () => {
 		['an unknown currency', "UPDATE meta SET value = 'ZZZ' WHERE key = 'currency'"],
 		['an invalid locale', "UPDATE meta SET value = 'not a locale!!' WHERE key = 'locale'"],
 		['an empty name', "UPDATE meta SET value = '  ' WHERE key = 'name'"],
+		['a creation date that is not a date', "UPDATE meta SET value = 'x' WHERE key = 'created_at'"],
+		[
+			'a last backup that is not a date',
+			"INSERT INTO meta (key, value) VALUES ('last_backup_at', 'not a date')"
+		],
 		['a boolean that is not 0 or 1', "UPDATE transactions SET cleared = 7 WHERE memo = 'plain'"]
 	];
 	for (const [what, sql] of broken) {
