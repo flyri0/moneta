@@ -1,7 +1,15 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { deleteBudget, fillNewBudget, nextStep, onboard, openSettings, startApp } from './helpers';
+import {
+	confirmBackupSaved,
+	deleteBudget,
+	fillNewBudget,
+	nextStep,
+	onboard,
+	openSettings,
+	startApp
+} from './helpers';
 
 async function download(page: Page, button: string, path: string): Promise<string> {
 	const downloading = page.waitForEvent('download');
@@ -26,6 +34,9 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	expect(await download(page, 'Back up now', backup)).toMatch(
 		/^moneta-backup-\d{4}-\d{2}-\d{2}-\d{6}\.moneta$/
 	);
+	// A plain download can't tell whether the file was saved: the app asks first.
+	await expect(page.getByTestId('last-backup')).toHaveText('Last backup: never');
+	await confirmBackupSaved(page);
 	await expect(page.getByTestId('last-backup')).not.toHaveText('Last backup: never');
 	// A plain ZIP: the manifest, then one SQLite file per budget.
 	const zipped = unzipSync(await readFile(backup));
@@ -43,7 +54,7 @@ test('backs up every budget in one file, then restores some or all of them', asy
 
 	// Work is open: rename it, then delete Home.
 	await page.getByLabel('Budget name').fill('Changed');
-	await page.getByRole('button', { name: 'Save' }).click();
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	const files = page.getByTestId('budget-files');
 	await expect(files.getByRole('listitem')).toHaveText([/Home/, /Changed/]);
 	await deleteBudget(page, 'Home');
@@ -225,4 +236,28 @@ test('follows a budget restored over the open one, and its renames after', async
 	await page.getByLabel('Budget name').fill('Renamed');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(sidebar).toContainText('Renamed');
+});
+
+test('records the backup at once when the browser saves it through a file picker', async ({
+	page
+}) => {
+	await onboard(page);
+	// A save picker that says where the file went, unlike a download.
+	await page.evaluate(() => {
+		const written: number[] = [];
+		(window as unknown as { written: number[] }).written = written;
+		(window as unknown as { showSaveFilePicker: unknown }).showSaveFilePicker = async () => ({
+			createWritable: async () => ({
+				write: async (data: Blob) => void written.push(data.size),
+				close: async () => {}
+			})
+		});
+	});
+	await openSettings(page);
+	await page.getByRole('button', { name: 'Back up now' }).click();
+	await expect(page.getByTestId('last-backup')).not.toHaveText('Last backup: never');
+	expect(await page.evaluate(() => (window as unknown as { written: number[] }).written)).toEqual([
+		expect.any(Number)
+	]);
+	await expect(page.getByRole('button', { name: 'It was saved' })).toHaveCount(0);
 });

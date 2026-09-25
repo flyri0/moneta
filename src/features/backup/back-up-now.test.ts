@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 
-const { errorMock, warningMock } = vi.hoisted(() => ({ errorMock: vi.fn(), warningMock: vi.fn() }));
-vi.mock('svelte-sonner', () => ({ toast: { error: errorMock, warning: warningMock } }));
+const { errorMock, warningMock, infoMock } = vi.hoisted(() => ({
+	errorMock: vi.fn(),
+	warningMock: vi.fn(),
+	infoMock: vi.fn()
+}));
+vi.mock('svelte-sonner', () => ({
+	toast: { error: errorMock, warning: warningMock, info: infoMock }
+}));
 
 import { RpcError } from '$client/rpc';
 import type { ClientApi } from '$db/api';
@@ -23,7 +29,13 @@ describe('backUpNow', () => {
 			}
 		} as unknown as Pick<ClientApi, 'system'>;
 		const saved: string[] = [];
-		const target: BackupTarget = { save: async (name) => void saved.push(name) };
+		const target: BackupTarget = {
+			save: async (name, data) => {
+				await data;
+				saved.push(name);
+				return 'saved';
+			}
+		};
 
 		await backUpNow(api, target);
 		expect(saved).toEqual([]);
@@ -34,5 +46,29 @@ describe('backUpNow', () => {
 		action.onClick();
 		await vi.waitFor(() => expect(saved).toHaveLength(1));
 		expect(calls).toEqual([undefined, { plain: true }]);
+	});
+
+	it('asks whether a download was saved before recording the backup', async () => {
+		const marked: string[] = [];
+		const api = {
+			system: {
+				listFiles: async () => ['budget-0190a000-0000-7000-8000-000000000001.sqlite3'],
+				exportBackup: async () => ({ bytes: new Uint8Array(4), skipped: [], encrypted: false }),
+				markBackedUp: async (files: string[]) => void marked.push(...files)
+			}
+		} as unknown as Pick<ClientApi, 'system'>;
+		const target: BackupTarget = {
+			save: async (_name, data) => {
+				await data;
+				return 'unknown';
+			}
+		};
+
+		await backUpNow(api, target);
+		expect(marked).toEqual([]);
+		const { action } = infoMock.mock.calls[0][1] as { action: { label: string; onClick(): void } };
+		expect(action.label).toBe('It was saved');
+		action.onClick();
+		await vi.waitFor(() => expect(marked).toHaveLength(1));
 	});
 });

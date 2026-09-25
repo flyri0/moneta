@@ -103,8 +103,24 @@ export async function useInBrowser(page: Page): Promise<void> {
 	await page.getByRole('button', { name: 'Continue in the browser' }).click();
 }
 
+/**
+ * Makes backups and exports plain downloads, as in browsers without a save picker: Chromium's
+ * picker is a native dialog that tests can't answer.
+ */
+export async function useDownloads(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker;
+	});
+}
+
+/** Answers "Did the backup file download?" after a backup made as a plain download. */
+export async function confirmBackupSaved(page: Page): Promise<void> {
+	await page.getByRole('button', { name: 'It was saved' }).click();
+}
+
 /** Opens Moneta and leaves the welcome page for the app itself. */
 export async function startApp(page: Page): Promise<void> {
+	await useDownloads(page);
 	await page.goto('/');
 	await useInBrowser(page);
 }

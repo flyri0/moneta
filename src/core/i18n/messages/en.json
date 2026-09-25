@@ -407,6 +407,8 @@
 	"backup_restore_replace_warning": "This replaces everything in {names} with the backup. Make sure it is the right file.",
 	"backup_restore_replace_hint": "Budgets already on this device are replaced by the backup. What they hold now is kept under Saved copies, in Settings.",
 	"backup_restored": "Backup restored.",
+	"backup_saved_question": "Did the backup file download?",
+	"backup_saved_yes": "It was saved",
 	"backup_plain_anyway": "Back up without encryption",
 	"backup_restore_partial": "The restore stopped partway. Restored: {names}. The others were left as they were.",
 	"backup_copies": "Saved copies",

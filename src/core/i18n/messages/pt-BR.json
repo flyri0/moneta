@@ -407,6 +407,8 @@
 	"backup_restore_replace_warning": "Isso substitui tudo em {names} pelo backup. Confira se é o arquivo certo.",
 	"backup_restore_replace_hint": "Os orçamentos que já estão neste aparelho são substituídos pelo backup. O que eles têm agora fica guardado em Cópias salvas, nos Ajustes.",
 	"backup_restored": "Backup restaurado.",
+	"backup_saved_question": "O arquivo de backup foi baixado?",
+	"backup_saved_yes": "Foi salvo",
 	"backup_plain_anyway": "Fazer backup sem criptografia",
 	"backup_restore_partial": "A restauração parou no meio. Restaurados: {names}. Os outros ficaram como estavam.",
 	"backup_copies": "Cópias salvas",

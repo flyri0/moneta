@@ -6,7 +6,8 @@ import {
 	backupFileName,
 	copyBackupFileName,
 	fullBackupFileName,
-	type BackupTarget
+	type BackupTarget,
+	type SaveResult
 } from './target';
 
 /** What the exports need from the open budget (a BudgetSession in the app). */
@@ -18,27 +19,50 @@ export interface ExportSource {
 /** A `.moneta` file is a ZIP, but it is saved as an opaque file so browsers keep its extension. */
 const BACKUP_TYPE = 'application/octet-stream';
 
+/** What a backup did: the files it left out, and whether the target knows the file was saved. */
+export interface BackupDone {
+	skipped: string[];
+	result: SaveResult;
+	/** The budget files it holds, and when it was made: what `markBackedUp` records. */
+	files: string[];
+	at: string;
+}
+
 /**
- * Saves every budget on this device as one `.moneta` file (the backup that can be restored) and
- * records the date in each. `plain` skips encryption (see BACKUP_KEYS_UNAVAILABLE). Returns the files left out because they couldn't be read.
+ * Saves every budget on this device as one `.moneta` file (the backup that can be restored).
+ * The date is recorded in each budget only when the target says the file was saved; when it
+ * can't tell (`unknown`), the caller asks the user and calls `markBackedUp`. `plain` skips
+ * encryption (see BACKUP_KEYS_UNAVAILABLE).
  */
 export async function backUp(
 	api: Pick<ClientApi, 'system'>,
 	target: BackupTarget = fileTarget,
 	now = new Date(),
 	options: { plain?: boolean } = {}
-): Promise<string[]> {
+): Promise<BackupDone> {
 	const files = (await api.system.listFiles()).filter(isBudgetFile);
-	const { bytes, skipped } = await api.system.exportBackup(
-		files,
-		options.plain ? options : undefined
+	const exported = api.system.exportBackup(files, options.plain ? options : undefined);
+	const result = await target.save(
+		fullBackupFileName(now),
+		exported.then(({ bytes }) => new Blob([bytes], { type: BACKUP_TYPE }))
 	);
-	await target.save(fullBackupFileName(now), new Blob([bytes], { type: BACKUP_TYPE }));
-	await api.system.markBackedUp(
-		files.filter((f) => !skipped.includes(f)),
-		now.toISOString()
-	);
-	return skipped;
+	const { skipped } = await exported;
+	const done = {
+		skipped,
+		result,
+		files: files.filter((f) => !skipped.includes(f)),
+		at: now.toISOString()
+	};
+	if (result === 'saved') await markBackedUp(api, done);
+	return done;
+}
+
+/** Records a backup's date in each budget it holds. */
+export async function markBackedUp(
+	api: Pick<ClientApi, 'system'>,
+	done: Pick<BackupDone, 'files' | 'at'>
+): Promise<void> {
+	await api.system.markBackedUp(done.files, done.at);
 }
 
 /**

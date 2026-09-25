@@ -6,12 +6,16 @@ export const BACKUP_EXTENSION = 'moneta';
 export const BACKUP_ACCEPT =
 	'.moneta,.sqlite,.sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3';
 
+/** Whether a file was saved: known to be, cancelled by the user, or unknown (a plain download). */
+export type SaveResult = 'saved' | 'cancelled' | 'unknown';
+
 /**
- * Where backups and exports go. v1 has one target that downloads files (`file-target.ts`);
- * cloud targets would implement the same interface.
+ * Where backups and exports go. v1 has one target that saves files (`file-target.ts`); cloud
+ * targets would implement the same interface. `data` may still be in the making: a target that
+ * asks where to save asks first, while the tap still counts as the user's, then waits for it.
  */
 export interface BackupTarget {
-	save(fileName: string, data: Blob): Promise<void>;
+	save(fileName: string, data: Blob | Promise<Blob>): Promise<SaveResult>;
 }
 
 /** A budget name as ASCII only, safe on any file system: `Casa & Família` → `casa-familia`. */

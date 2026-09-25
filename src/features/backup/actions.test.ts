@@ -9,9 +9,10 @@ import {
 	downloadCopy,
 	exportBudgetJson,
 	exportTransactionsCsv,
+	markBackedUp,
 	readBackupFile
 } from './actions';
-import type { BackupTarget } from './target';
+import type { BackupTarget, SaveResult } from './target';
 
 const HOME: NewBudget = {
 	name: 'Home',
@@ -38,8 +39,12 @@ async function setup() {
 	const api = test.client.api;
 	const { meta } = await createBudget(api, memoryStore(), HOME);
 	const saved: { fileName: string; data: Blob }[] = [];
-	const target: BackupTarget = {
-		save: async (fileName, data) => void saved.push({ fileName, data })
+	const target: BackupTarget & { result: SaveResult } = {
+		result: 'saved',
+		async save(fileName, data) {
+			saved.push({ fileName, data: await data });
+			return this.result;
+		}
 	};
 	return { test, api, session: { api, meta }, saved, target };
 }
@@ -53,7 +58,7 @@ describe('backUp', () => {
 		await api.system.open('demo.sqlite3');
 		await api.system.open(home);
 		const now = new Date(2026, 8, 19, 10, 0);
-		expect(await backUp(api, target, now)).toEqual([]);
+		expect((await backUp(api, target, now)).skipped).toEqual([]);
 		expect(saved[0].fileName).toBe('moneta-backup-2026-09-19-100000.moneta');
 		const bytes = new Uint8Array(await saved[0].data.arrayBuffer());
 		const { budgets } = await api.system.inspectBackup(bytes);
@@ -69,9 +74,29 @@ describe('backUp', () => {
 		// Created but never initialized, as an interrupted onboarding leaves it.
 		await api.system.open(broken);
 		await api.system.open(home);
-		expect(await backUp(api, target)).toEqual([broken]);
+		expect((await backUp(api, target)).skipped).toEqual([broken]);
 		const bytes = new Uint8Array(await saved[0].data.arrayBuffer());
 		expect((await api.system.inspectBackup(bytes)).budgets.map((b) => b.name)).toEqual(['Home']);
+	});
+});
+
+describe('backUp, depending on whether the file was saved', () => {
+	it('records nothing when saving was cancelled', async () => {
+		const { api, target } = await setup();
+		target.result = 'cancelled';
+		expect((await backUp(api, target)).result).toBe('cancelled');
+		expect((await api.meta.get()).lastBackupAt).toBeNull();
+	});
+
+	it('leaves recording to the caller when the browser does not say', async () => {
+		const { api, target } = await setup();
+		target.result = 'unknown';
+		const now = new Date(2026, 8, 19, 10, 0);
+		const done = await backUp(api, target, now);
+		expect(done.result).toBe('unknown');
+		expect((await api.meta.get()).lastBackupAt).toBeNull();
+		await markBackedUp(api, done);
+		expect((await api.meta.get()).lastBackupAt).toBe(now.toISOString());
 	});
 });
 
