@@ -224,7 +224,7 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			closeDb();
 			store.release();
 		},
-		async exportBackup(names) {
+		async exportBackup(names, options = {}) {
 			const budgets: BackupBudget[] = [];
 			const skipped: string[] = [];
 			for (const name of names) {
@@ -233,7 +233,14 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 				else skipped.push(name);
 			}
 			const bytes = writeBackup(budgets, now().toISOString());
-			const key = await keys.get();
+			if (options.plain) return { bytes, skipped, encrypted: false };
+			let key: BackupKeys | null;
+			try {
+				key = await keys.get();
+			} catch (err) {
+				// Not knowing whether backups are encrypted, never write a plain one unasked.
+				throw new DomainError('BACKUP_KEYS_UNAVAILABLE', String(err));
+			}
 			if (!key) return { bytes, skipped, encrypted: false };
 			return { bytes: await sealBackup(bytes, key), skipped, encrypted: true };
 		},

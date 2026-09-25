@@ -191,6 +191,19 @@ const THIRD = 'budget-0190a000-0000-7000-8000-000000000003.sqlite3';
 const FOURTH = 'budget-0190a000-0000-7000-8000-000000000004.sqlite3';
 
 describe('exportBackup', () => {
+	it('refuses to back up when the backup key cannot be read, unless asked for a plain one', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		deps.keys.get = () => Promise.reject(new DOMException('Internal error opening backing store'));
+		const { system } = createSystem(deps);
+		await expect(system.exportBackup([FILE])).rejects.toMatchObject({
+			code: 'BACKUP_KEYS_UNAVAILABLE'
+		});
+		const plain = await system.exportBackup([FILE], { plain: true });
+		expect(plain.encrypted).toBe(false);
+		expect(readBackup(plain.bytes).budgets.map((b) => b.name)).toEqual(['Home']);
+	});
+
 	it('writes the budgets, open or not, as one .moneta file', async () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');

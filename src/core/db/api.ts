@@ -184,10 +184,11 @@ export interface SystemApi {
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;
 	/**
-	 * Budget files or saved copies as one `.moneta` backup. Files that can't be read are left out
-	 * and listed in `skipped`.
+	 * Budget files or saved copies as one `.moneta` backup, encrypted when this device has a backup
+	 * key. Files that can't be read are left out and listed in `skipped`. BACKUP_KEYS_UNAVAILABLE
+	 * when the key can't be read; `plain` then backs up without encryption, when the user says so.
 	 */
-	exportBackup(names: string[]): Promise<ExportedBackup>;
+	exportBackup(names: string[], options?: { plain?: boolean }): Promise<ExportedBackup>;
 	/** Records in each budget file when it was last backed up. Files that can't be written are skipped. */
 	markBackedUp(fileNames: string[], at: string): void;
 	/**

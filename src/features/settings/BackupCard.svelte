@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { Input } from '$ui/input';
 	import { Switch } from '$ui/switch';
 	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
@@ -14,7 +15,7 @@
 	import { backUpNow } from '$features/backup/back-up-now';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { getApp, useSession } from '$client/app-state.svelte';
-	import { runActionToast } from '$client/notify';
+	import { actionError, runActionToast, type ActionError } from '$client/notify';
 	import { restoreAll } from '$client/session';
 	import type { BudgetCopy } from '$db/api';
 	import { currentMonth } from '$domain/month';
@@ -32,6 +33,9 @@
 	let settingUp = $state(false);
 	let changing = $state(false);
 	let checking = $state(false);
+	/** Why the saved copies or the encryption setting couldn't be loaded, shown in the section. */
+	let copiesError = $state<ActionError | null>(null);
+	let encryptionError = $state<ActionError | null>(null);
 
 	function pick(event: Event & { currentTarget: HTMLInputElement }) {
 		picked = event.currentTarget.files?.[0] ?? null;
@@ -42,18 +46,20 @@
 
 	$effect(() => {
 		let current = true;
+		copiesError = null;
 		session.api.system.listCopies(session.file).then(
 			(list) => current && (copies = list),
-			() => {}
+			(err: unknown) => current && (copiesError = actionError(err))
 		);
 		return () => (current = false);
 	});
 
 	$effect(() => {
 		let current = true;
+		encryptionError = null;
 		session.api.system.backupEncryption().then(
 			({ on }) => current && (encrypted = on),
-			() => {}
+			(err: unknown) => current && (encryptionError = actionError(err))
 		);
 		return () => (current = false);
 	});
@@ -126,6 +132,12 @@
 			}}
 		/>
 		<SettingsRow label={m.backup_check_password()} onclick={() => (checking = true)} />
+	{/if}
+	{#if encryptionError || copiesError}
+		<div class="grid gap-2 px-4 py-3">
+			<FormMessage error={encryptionError} />
+			<FormMessage error={copiesError} />
+		</div>
 	{/if}
 </SettingsGroup>
 

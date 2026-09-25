@@ -20,15 +20,19 @@ const BACKUP_TYPE = 'application/octet-stream';
 
 /**
  * Saves every budget on this device as one `.moneta` file (the backup that can be restored) and
- * records the date in each. Returns the files left out because they couldn't be read.
+ * records the date in each. `plain` skips encryption (see BACKUP_KEYS_UNAVAILABLE). Returns the files left out because they couldn't be read.
  */
 export async function backUp(
 	api: Pick<ClientApi, 'system'>,
 	target: BackupTarget = fileTarget,
-	now = new Date()
+	now = new Date(),
+	options: { plain?: boolean } = {}
 ): Promise<string[]> {
 	const files = (await api.system.listFiles()).filter(isBudgetFile);
-	const { bytes, skipped } = await api.system.exportBackup(files);
+	const { bytes, skipped } = await api.system.exportBackup(
+		files,
+		options.plain ? options : undefined
+	);
 	await target.save(fullBackupFileName(now), new Blob([bytes], { type: BACKUP_TYPE }));
 	await api.system.markBackedUp(
 		files.filter((f) => !skipped.includes(f)),

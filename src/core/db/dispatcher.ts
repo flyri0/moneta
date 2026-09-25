@@ -45,7 +45,7 @@ const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> }
 	release: [],
 	listCopies: ['string'],
 	readCopy: ['string'],
-	exportBackup: ['array'],
+	exportBackup: ['array', 'object?'],
 	markBackedUp: ['array', 'string'],
 	inspectBackup: ['bytes'],
 	restoreBackup: ['bytes', 'array'],
