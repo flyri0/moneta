@@ -104,18 +104,19 @@
 				onDone={() => (open = false)}
 			/>
 
+			<form class="grid gap-2" onsubmit={addCategory}>
+				<Label for="group-new-category">{m.group_add_category()}</Label>
+				<div class="flex gap-2">
+					<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
+					<Button type="submit" variant="outline">{m.add()}</Button>
+				</div>
+				{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+			</form>
+
+			<!-- A system group takes new categories but can't be renamed, hidden or deleted. -->
 			{#if group.system}
 				<p class="text-xs text-muted-foreground">{m.group_system_note()}</p>
 			{:else}
-				<form class="grid gap-2" onsubmit={addCategory}>
-					<Label for="group-new-category">{m.group_add_category()}</Label>
-					<div class="flex gap-2">
-						<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
-						<Button type="submit" variant="outline">{m.add()}</Button>
-					</div>
-					{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-				</form>
-
 				<Separator />
 
 				<nav class="-mx-2 grid gap-0.5">

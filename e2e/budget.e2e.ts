@@ -224,6 +224,18 @@ test('deletes a group after moving its categories to another group', async ({ pa
 	await expect(bills.getByTestId('category-row').filter({ hasText: 'Groceries' })).toBeVisible();
 });
 
+test('adds a category to the Income group, which stays undeletable', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Income', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await expect(sheet.getByRole('button', { name: 'Delete group' })).toHaveCount(0);
+	await sheet.getByLabel('New category').fill('Freelance');
+	await sheet.getByRole('button', { name: 'Add', exact: true }).click();
+	await page.keyboard.press('Escape');
+	const income = page.getByTestId('group-card').filter({ hasText: 'Income' });
+	await expect(income.getByTestId('category-row').filter({ hasText: 'Freelance' })).toBeVisible();
+});
+
 test('adds a group and a category, and reorders categories', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('button', { name: 'Add group' }).click();
