@@ -18,6 +18,7 @@ import {
 	openLastBudget,
 	planRestore,
 	restoreAll,
+	reopenedByPartialRestore,
 	restoreBackup,
 	startupError,
 	switchBudget,
@@ -414,6 +415,40 @@ describe('a restore that stops partway', () => {
 		});
 		expect(loadRegistry(store).budgets.map((b) => b.file)).toContain(plan[0].file);
 		expect((await api.meta.get()).name).toBe('Home');
+	});
+
+	it('gives the open budget as restored when the restore replaced it before failing', async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const backup = await backUp(api, home.file, work.file);
+		await switchBudget(api, store, home.file);
+		await updateBudget(api, store, home.file, { name: 'Home edited' });
+		const plan = planRestore(
+			(await api.system.inspectBackup(backup)).budgets,
+			[home.file, work.file],
+			true
+		);
+		const partial: SessionApi = {
+			meta: api.meta,
+			accounts: api.accounts,
+			demo: api.demo,
+			system: {
+				...pick(api.system),
+				restoreBackup: async (bytes, picks) => {
+					await api.system.restoreBackup(bytes, picks.slice(0, 1));
+					// As the worker does after a failed write: the open budget is open again.
+					await api.system.open(picks[0].file);
+					throw new RpcError('RESTORE_PARTIAL', 'disk full', { restored: [picks[0].file] });
+				}
+			}
+		};
+		const err = await restoreBackup(partial, store, backup, plan, home.file).catch((e) => e);
+		expect(await reopenedByPartialRestore(api, err, home.file)).toMatchObject({
+			file: home.file,
+			meta: { name: 'Home' }
+		});
+		expect(await reopenedByPartialRestore(api, err, work.file)).toBeNull();
 	});
 });
 

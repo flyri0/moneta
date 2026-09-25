@@ -13,7 +13,13 @@
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
-	import { partlyRestored, planRestore, restoreBackup, type PlannedRestore } from '$client/session';
+	import {
+		partlyRestored,
+		planRestore,
+		reopenedByPartialRestore,
+		restoreBackup,
+		type PlannedRestore
+	} from '$client/session';
 	import { currentMonth } from '$domain/month';
 	import { formatDateTime } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -122,6 +128,11 @@
 		});
 		busy = false;
 		const partly = partlyRestored(failure);
+		// The open budget was already replaced: show it as it now is.
+		const reopened = await reopenedByPartialRestore(session.api, failure, session.file).catch(
+			() => null
+		);
+		if (reopened) app.show(session.client, reopened.file, reopened.meta);
 		if (partly.length > 0) {
 			const names = chosen.filter((p) => partly.includes(p.file)).map((p) => p.name);
 			error = { message: m.backup_restore_partial({ names: names.join(', ') }) };

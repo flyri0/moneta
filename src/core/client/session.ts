@@ -243,6 +243,20 @@ export function partlyRestored(err: unknown): string[] {
 }
 
 /**
+ * After a restore that stopped partway: the open budget as it is now, when the restore had
+ * already written over it (the worker reopened it with the restored content), else null. The
+ * app shows it as a new session, or it would keep showing what is no longer there.
+ */
+export async function reopenedByPartialRestore(
+	api: Pick<SessionApi, 'meta'>,
+	err: unknown,
+	openFile: string
+): Promise<{ file: string; meta: BudgetMeta } | null> {
+	if (!partlyRestored(err).includes(openFile)) return null;
+	return { file: openFile, meta: await api.meta.get() };
+}
+
+/**
  * Restores budgets from a backup (its bytes, or the token `inspectBackup` gave for it) as
  * `planRestore` planned them, and opens one: `openFile` when it
  * was replaced, else the first restored. The worker checks the backup first, so an invalid one
