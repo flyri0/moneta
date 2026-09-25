@@ -71,6 +71,12 @@ export function validateLocale(locale: string): void {
 	}
 }
 
+/**
+ * The tables whose rows hold amounts in minor units, which a currency with other minor units
+ * would rescale. Splits need their transaction or schedule, so these cover them.
+ */
+const MONEY_TABLES = ['transactions', 'budget_assignments', 'schedules'] as const;
+
 export function updateMeta(db: Db, patch: MetaPatch): void {
 	tx(db, () => {
 		const current = getMeta(db);
@@ -80,9 +86,9 @@ export function updateMeta(db: Db, patch: MetaPatch): void {
 		}
 		if (patch.currency !== undefined && patch.currency !== current.currency) {
 			validateCurrency(patch.currency);
-			const hasData =
-				one(db, 'SELECT 1 AS x FROM transactions LIMIT 1') !== undefined ||
-				one(db, 'SELECT 1 AS x FROM budget_assignments LIMIT 1') !== undefined;
+			const hasData = MONEY_TABLES.some(
+				(table) => one(db, `SELECT 1 AS x FROM ${table} LIMIT 1`) !== undefined
+			);
 			if (hasData && currencyDigits(patch.currency) !== currencyDigits(current.currency)) {
 				throw new DomainError(
 					'CURRENCY_LOCKED',

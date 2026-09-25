@@ -146,6 +146,23 @@ describe('updateMeta', () => {
 		});
 	});
 
+	it('locks the currency once a schedule holds an amount, even with no transaction yet', async () => {
+		const db = await createBudgetDb();
+		run(
+			db,
+			"INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES ('a1', 'Bank', 'checking', 1, '2026-01-01')"
+		);
+		run(
+			db,
+			`INSERT INTO schedules (id, account_id, amount, category_id, start_date, frequency, created_at)
+			 VALUES ('s1', 'a1', -123456, ?, '2026-02-01', 'monthly', '2026-01-01')`,
+			[categoryId(db, 'Rent')]
+		);
+		expect(() => updateMeta(db, { currency: 'JPY' })).toThrow(
+			expect.objectContaining({ code: 'CURRENCY_LOCKED' })
+		);
+	});
+
 	it('allows currencies with the same minor units once data exists', async () => {
 		const db = await createBudgetDb();
 		run(
