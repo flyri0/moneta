@@ -3,7 +3,8 @@ import sqlite3InitModule, { type SAHPoolUtil, type Sqlite3Static } from '@sqlite
 import { DomainError } from '$domain/errors';
 import { createDispatcher } from './dispatcher';
 import type { BackupKeys } from './backup-crypto';
-import { createSystem, type FileStore, type KeyStore } from './system';
+import { opfsStore } from './opfs-store';
+import { createSystem, type KeyStore } from './system';
 import type { CallRequest } from './protocol';
 
 const POOL_ATTEMPTS = 5;
@@ -30,28 +31,6 @@ async function initPool(): Promise<{ sqlite3: Sqlite3Static; pool: SAHPoolUtil }
 		'STORAGE_UNAVAILABLE',
 		lastError instanceof Error ? lastError.message : 'OPFS is not available'
 	);
-}
-
-/** Budget files in the OPFS SAH pool. Pool paths start with a slash; file names don't. */
-function opfsStore(pool: SAHPoolUtil): FileStore {
-	return {
-		list: () => pool.getFileNames().map((n) => n.replace(/^\//, '')),
-		open: (name) => new pool.OpfsSAHPoolDb(`/${name}`),
-		close: (db) => db.close(),
-		async write(name, bytes) {
-			await pool.importDb(`/${name}`, bytes);
-		},
-		remove(name) {
-			pool.unlink(`/${name}`);
-		},
-		async reserve(count) {
-			// The pool only grows on request, and it starts with room for 12 files.
-			await pool.reserveMinimumCapacity(pool.getFileCount() + count);
-		},
-		release() {
-			if (!pool.isPaused()) pool.pauseVfs();
-		}
-	};
 }
 
 /** A request's result as a promise. */
