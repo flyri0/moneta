@@ -1,5 +1,8 @@
-import type { TransactionRow } from '$db/repos/transactions';
 import { currencyDigits } from '$domain/money';
+import type { Db } from './connection';
+import { dumpBudget } from './repos/dump';
+import { getMeta } from './repos/meta';
+import { listTransactions, type TransactionRow } from './repos/transactions';
 
 /** Byte-order mark: tells spreadsheets the file is UTF-8. */
 const BOM = '\uFEFF';
@@ -25,17 +28,14 @@ function text(value: string | null): string {
 }
 
 /**
- * Transactions as CSV for spreadsheets: one row per transaction, and one per line of a split
- * transaction, oldest first. Amounts are plain decimals (negative = outflow), dates ISO, and
+ * Transactions (given oldest first) as CSV for spreadsheets: one row per transaction, and one per
+ * line of a split transaction. Amounts are plain decimals (negative = outflow), dates ISO, and
  * names as stored. Starts with a byte-order mark so spreadsheets read it as UTF-8.
  */
 export function transactionsCsv(rows: TransactionRow[], currency: string): string {
 	const digits = currencyDigits(currency);
-	const sorted = [...rows].sort((a, b) =>
-		a.date === b.date ? (a.id < b.id ? -1 : 1) : a.date < b.date ? -1 : 1
-	);
 	const lines = [HEADER.join(',')];
-	for (const t of sorted) {
+	for (const t of rows) {
 		const parts = t.isSplit
 			? t.splits.map((s) => ({
 					category: s.categoryName,
@@ -59,4 +59,19 @@ export function transactionsCsv(rows: TransactionRow[], currency: string): strin
 		}
 	}
 	return `${BOM}${lines.join('\r\n')}\r\n`;
+}
+
+/**
+ * Every transaction of the budget as a CSV file, oldest first. Built here in the worker, so the
+ * page receives only the bytes.
+ */
+export function exportCsv(db: Db): Uint8Array<ArrayBuffer> {
+	// listTransactions gives newest first (date, then id, descending).
+	const rows = listTransactions(db).reverse();
+	return new TextEncoder().encode(transactionsCsv(rows, getMeta(db).currency));
+}
+
+/** The whole budget (`dumpBudget`) as a JSON file. */
+export function exportJson(db: Db, now: Date = new Date()): Uint8Array<ArrayBuffer> {
+	return new TextEncoder().encode(`${JSON.stringify(dumpBudget(db, now))}\n`);
 }

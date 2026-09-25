@@ -2,6 +2,7 @@ import type { Db, Table } from './connection';
 import type { ArgSpec } from './args';
 import type { BackupSecret } from './backup-crypto';
 import { ALL_TABLES } from './connection';
+import { exportCsv, exportJson } from './export';
 import * as meta from './repos/meta';
 import * as accounts from './repos/accounts';
 import * as categories from './repos/categories';
@@ -9,7 +10,6 @@ import * as payees from './repos/payees';
 import * as transactions from './repos/transactions';
 import * as schedules from './repos/schedules';
 import * as budget from './repos/budget';
-import * as dump from './repos/dump';
 import * as reports from './repos/reports';
 import * as demo from './repos/demo';
 
@@ -121,7 +121,8 @@ export const api = {
 		ageOfMoney: read(reports.ageOfMoney, ['string'])
 	},
 	backup: {
-		dump: read((db: Db) => dump.dumpBudget(db), [])
+		csv: read((db: Db) => exportCsv(db), []),
+		json: read((db: Db) => exportJson(db), [])
 	},
 	demo: {
 		create: write(ALL_TABLES, demo.createDemo, ['object'])

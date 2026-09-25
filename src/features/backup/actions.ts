@@ -1,6 +1,5 @@
 import type { BudgetCopy, ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
-import { transactionsCsv } from './export-csv';
 import { fileTarget } from './file-target';
 import { isBudgetFile } from '$client/registry';
 import {
@@ -60,7 +59,7 @@ export async function exportTransactionsCsv(
 	target: BackupTarget = fileTarget,
 	now = new Date()
 ): Promise<void> {
-	const csv = transactionsCsv(await source.api.transactions.list(), source.meta.currency);
+	const csv = await source.api.backup.csv();
 	await target.save(
 		backupFileName(source.meta.name, 'csv', now),
 		new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -72,7 +71,7 @@ export async function exportBudgetJson(
 	target: BackupTarget = fileTarget,
 	now = new Date()
 ): Promise<void> {
-	const json = `${JSON.stringify(await source.api.backup.dump(), null, '\t')}\n`;
+	const json = await source.api.backup.json();
 	await target.save(
 		backupFileName(source.meta.name, 'json', now),
 		new Blob([json], { type: 'application/json' })

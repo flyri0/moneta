@@ -5,7 +5,7 @@ import { createDispatcher } from './dispatcher';
 import type { BackupKeys } from './backup-crypto';
 import { opfsStore } from './opfs-store';
 import { createSystem, type KeyStore } from './system';
-import type { CallRequest } from './protocol';
+import { transferablesOf, type CallRequest } from './protocol';
 
 const POOL_ATTEMPTS = 5;
 
@@ -83,7 +83,8 @@ self.onmessage = async (event: MessageEvent<CallRequest>) => {
 	const req = event.data;
 	try {
 		const dispatch = await dispatchReady;
-		self.postMessage(await dispatch(req));
+		const res = await dispatch(req);
+		self.postMessage(res, transferablesOf(res));
 	} catch (err) {
 		const e = err instanceof DomainError ? err : new DomainError('INTERNAL', String(err));
 		self.postMessage({ id: req.id, ok: false, error: { code: e.code, message: e.message } });
