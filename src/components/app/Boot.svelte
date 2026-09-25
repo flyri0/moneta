@@ -10,6 +10,7 @@
 	import { AppState, setApp } from '$client/app-state.svelte';
 	import { startDbWorker, type DbWorker } from '$client/db';
 	import { openLastBudget, startupError, type OpenResult } from '$client/session';
+	import { watchUncaught } from '$client/notify';
 	import { applyServiceWorkerUpdate, onNeedRefresh } from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import { settleWithin } from '$client/timeout';
@@ -127,6 +128,7 @@
 	}
 
 	onMount(() => {
+		const stopWatching = watchUncaught(window);
 		onNeedRefresh(() => {
 			toast(m.update_available(), {
 				duration: Number.POSITIVE_INFINITY,
@@ -150,6 +152,7 @@
 				app.boot = { kind: 'blocked' };
 			}
 		})();
+		return stopWatching;
 	});
 
 	$effect(() => app.session?.watchMeta());

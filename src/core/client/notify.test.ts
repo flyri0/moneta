@@ -7,7 +7,7 @@ const { errorMock, successMock } = vi.hoisted(() => ({
 vi.mock('svelte-sonner', () => ({ toast: { error: errorMock, success: successMock } }));
 
 import { DomainError } from '$domain/errors';
-import { copyDetails, runAction, runActionToast } from './notify';
+import { copyDetails, runAction, runActionToast, watchUncaught } from './notify';
 
 describe('runAction', () => {
 	it('returns null on success', async () => {
@@ -96,5 +96,34 @@ describe('copyDetails', () => {
 		await copyDetails(err);
 		vi.unstubAllGlobals();
 		expect(errorMock).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('watchUncaught', () => {
+	function fire(target: EventTarget, type: string, props: Record<string, unknown>) {
+		target.dispatchEvent(Object.assign(new Event(type), props));
+	}
+
+	it('toasts errors and rejections nothing caught, until stopped', () => {
+		errorMock.mockClear();
+		const target = new EventTarget();
+		const stop = watchUncaught(target);
+		fire(target, 'error', { error: new Error('boom'), message: 'boom' });
+		fire(target, 'unhandledrejection', { reason: new DomainError('INTERNAL') });
+		expect(errorMock).toHaveBeenCalledTimes(2);
+		stop();
+		fire(target, 'error', { error: new Error('again'), message: 'again' });
+		expect(errorMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("leaves out the browser's harmless ResizeObserver notices", () => {
+		errorMock.mockClear();
+		const target = new EventTarget();
+		watchUncaught(target);
+		fire(target, 'error', {
+			error: null,
+			message: 'ResizeObserver loop completed with undelivered notifications.'
+		});
+		expect(errorMock).not.toHaveBeenCalled();
 	});
 });

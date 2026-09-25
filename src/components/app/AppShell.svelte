@@ -25,9 +25,17 @@
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
+	import FormMessage from '$components/FormMessage.svelte';
+	import { actionError } from '$client/notify';
+	import CrashScreen from './CrashScreen.svelte';
 	import DemoBanner from './DemoBanner.svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	/** Keeps an error a boundary caught in the console, for anyone debugging. */
+	function logError(error: unknown) {
+		console.error(error);
+	}
 
 	/**
 	 * The banner's own height, so the sidebar, the page header and the toasts can sit below it. Set
@@ -171,10 +179,23 @@
 					</a>
 				{/each}
 			</nav>
-			<AccountList accounts={accounts.data ?? []} variant="compact" />
+			<svelte:boundary onerror={logError}>
+				<AccountList accounts={accounts.data ?? []} variant="compact" />
+				{#snippet failed(error)}
+					<FormMessage error={actionError(error)} class="px-2" />
+				{/snippet}
+			</svelte:boundary>
 		</aside>
 
-		<main class="min-w-0 flex-1 pb-36 md:pb-0">{@render children()}</main>
+		<main class="min-w-0 flex-1 pb-36 md:pb-0">
+			<!-- A screen that throws while rendering shows a way out instead of half a page. -->
+			<svelte:boundary onerror={logError}>
+				{@render children()}
+				{#snippet failed(error, reset)}
+					<CrashScreen {error} {reset} />
+				{/snippet}
+			</svelte:boundary>
+		</main>
 	</div>
 
 	<button
