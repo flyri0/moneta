@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { demoBudget } from '$features/demo/content';
 import { DEMO_FILE, endDemo, isDemoOpen, openDemo, requestDemo, sweepDemo } from './demo';
 import { loadRegistry } from './registry';
@@ -38,6 +38,36 @@ describe('openDemo', () => {
 
 		await openDemo(api, store, BUDGET);
 		expect((await api.transactions.list()).length).toBe(before);
+	});
+
+	it('builds the demo again on a later day, so its history ends today', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] });
+		try {
+			const { api, store } = await setup();
+			vi.setSystemTime(new Date(2026, 8, 20, 23, 30));
+			await openDemo(api, store, BUDGET);
+			const built = (await api.meta.get()).createdAt;
+			await api.accounts.create({
+				name: 'Mine',
+				type: 'cash',
+				onBudget: true,
+				startingBalance: 0,
+				startingDate: '2026-09-20'
+			});
+
+			// Still the same day: the visitor's changes are kept.
+			vi.setSystemTime(new Date(2026, 8, 20, 23, 59));
+			await openDemo(api, store, BUDGET);
+			expect((await api.accounts.list()).length).toBe(4);
+
+			vi.setSystemTime(new Date(2026, 8, 21, 0, 1));
+			await openDemo(api, store, demoBudget('en-US', '2026-09-21'));
+			expect((await api.meta.get()).createdAt).not.toBe(built);
+			expect((await api.accounts.list()).length).toBe(3);
+			expect(isDemoOpen(store)).toBe(true);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it('fills in a file left behind uninitialized', async () => {

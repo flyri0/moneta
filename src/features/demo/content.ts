@@ -17,15 +17,18 @@ export function demoLocale(browser?: string): string {
 
 /**
  * Everything a demo budget is made of, in the UI language: the meta and starter categories any
- * budget starts with, plus the accounts, history and assignments that fill it in.
+ * budget starts with, plus the accounts, a year of history and the assignments that fill it in.
  */
 export function demoBudget(browser?: string, today: string = todayIso()): DemoBudgetSeed {
 	const locale = demoLocale(browser);
 	const currency = suggestCurrency(locale);
 	const groups = defaultCategoryGroups();
 	const [bills, everyday, goals, fun] = groups;
+	// The income categories `initBudget` creates, named by the budget's locale.
+	const pt = locale.startsWith('pt');
 	const categories: DemoCategoryNames = {
-		salary: locale.startsWith('pt') ? 'Salário' : 'Salary',
+		salary: pt ? 'Salário' : 'Salary',
+		otherIncome: pt ? 'Outras receitas' : 'Other Income',
 		rent: bills.categories[0],
 		utilities: bills.categories[1],
 		phone: bills.categories[2],
@@ -51,6 +54,9 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 			},
 			payees: {
 				salary: m.demo_payee_salary(),
+				newEmployer: m.demo_payee_new_employer(),
+				freelance: m.demo_payee_freelance(),
+				benefits: m.demo_payee_benefits(),
 				landlord: m.demo_payee_landlord(),
 				utility: m.demo_payee_utility(),
 				telecom: m.demo_payee_telecom(),
@@ -61,7 +67,12 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 				restaurant: m.demo_payee_restaurant(),
 				household: m.demo_payee_household(),
 				streaming: m.demo_payee_streaming(),
-				hobby: m.demo_payee_hobby()
+				hobby: m.demo_payee_hobby(),
+				mechanic: m.demo_payee_mechanic(),
+				airline: m.demo_payee_airline(),
+				hotel: m.demo_payee_hotel(),
+				pharmacy: m.demo_payee_pharmacy(),
+				clinic: m.demo_payee_clinic()
 			},
 			categories
 		})

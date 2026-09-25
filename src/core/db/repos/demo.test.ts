@@ -14,6 +14,7 @@ import { listTransactions } from './transactions';
 const [bills, everyday, goals, fun] = defaultCategoryGroups('en');
 const CATEGORIES: DemoCategoryNames = {
 	salary: 'Salary',
+	otherIncome: 'Other Income',
 	rent: bills.categories[0],
 	utilities: bills.categories[1],
 	phone: bills.categories[2],
@@ -43,6 +44,9 @@ async function demoDb(): Promise<Db> {
 			accounts: { checking: 'Checking', savings: 'Savings', card: 'Credit Card' },
 			payees: {
 				salary: 'Paycheck',
+				newEmployer: 'New Job Payroll',
+				freelance: 'Freelance Client',
+				benefits: 'Unemployment Benefits',
 				landlord: 'Landlord',
 				utility: 'City Utilities',
 				telecom: 'Internet Provider',
@@ -53,7 +57,12 @@ async function demoDb(): Promise<Db> {
 				restaurant: 'Restaurant',
 				household: 'Home Store',
 				streaming: 'Streaming Service',
-				hobby: 'Bookshop'
+				hobby: 'Bookshop',
+				mechanic: 'Auto Repair Shop',
+				airline: 'Airline',
+				hotel: 'Hotel',
+				pharmacy: 'Pharmacy',
+				clinic: 'Dental Clinic'
 			},
 			categories: CATEGORIES
 		})
@@ -83,9 +92,9 @@ describe('seedDemo', () => {
 		expect(accounts[2].balance).toBeLessThanOrEqual(0);
 	});
 
-	it('records a few months of history, most of it cleared', () => {
+	it('records a year of history, most of it cleared', () => {
 		const rows = listTransactions(db);
-		expect(rows.length).toBeGreaterThan(40);
+		expect(rows.length).toBeGreaterThan(200);
 		expect(rows.filter((r) => r.cleared).length).toBeGreaterThan(rows.length / 2);
 		expect(rows.some((r) => r.isSplit)).toBe(true);
 		expect(rows.some((r) => r.transferAccountName === 'Credit Card')).toBe(true);

@@ -1,5 +1,6 @@
 import type { ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
+import { todayIso } from '$domain/month';
 import { demoBudget } from '$features/demo/content';
 import type { DemoBudgetSeed } from '$features/demo/seed';
 import { getLocale } from '$i18n/paraglide/runtime';
@@ -47,7 +48,8 @@ export function endDemo(store: KeyValueStore): void {
 
 /**
  * Opens the demo, building it the first time. Seeding is one transaction, so a file that was left
- * behind uninitialized is simply filled in again. The registry is never touched.
+ * behind uninitialized is simply filled in again. A demo built on another day is built again, so
+ * its history always ends today. The registry is never touched.
  */
 export async function openDemo(
 	api: DemoApi,
@@ -55,6 +57,13 @@ export async function openDemo(
 	budget: DemoBudgetSeed = demoBudget(getLocale())
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	await api.system.open(DEMO_FILE);
+	if (
+		(await api.meta.isInitialized()) &&
+		todayIso(new Date((await api.meta.get()).createdAt)) !== todayIso()
+	) {
+		await api.system.deleteFile(DEMO_FILE);
+		await api.system.open(DEMO_FILE);
+	}
 	if (!(await api.meta.isInitialized())) {
 		try {
 			await api.demo.create(budget);

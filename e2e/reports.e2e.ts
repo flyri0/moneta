@@ -369,7 +369,7 @@ test.describe('on a phone', () => {
 			await expect(page.getByTestId('accounts-assets')).toBeVisible();
 			await expectInsideCards(page, ['accounts-assets']);
 
-			// The demo's history gives Age of Money two months to draw.
+			// The demo's year of history gives Age of Money something to draw.
 			await page.goto('/reports/age-of-money');
 			await expect(page.getByTestId('age-of-money-current')).toBeVisible();
 			await expectInsideCards(page, ['age-of-money-chart', 'age-of-money-current']);
