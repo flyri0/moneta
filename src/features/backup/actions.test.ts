@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createBudget, type NewBudget } from '$client/session';
 import { createTestClient, memoryStore } from '$client/testing';
+import type { ClientApi } from '$db/api';
 import type { BudgetDump } from '$db/repos/dump';
 import { todayIso } from '$domain/month';
 import { newRecoveryKey } from '$domain/recovery-key';
@@ -114,6 +115,32 @@ describe('encrypted backups', () => {
 			'moneta-backup-2026-09-19.moneta',
 			`moneta-backup-${todayIso(new Date(listed.savedAt))}.moneta`
 		]);
+	});
+});
+
+describe('backUp when the backup key cannot be read', () => {
+	it('fails before asking where to save, so no empty file is left behind', async () => {
+		const asked: string[] = [];
+		const api = {
+			system: {
+				listFiles: async () => ['budget-0190a000-0000-7000-8000-000000000001.sqlite3'],
+				backupEncryption: async () => {
+					throw new Error('Internal error opening backing store');
+				},
+				exportBackup: async () => {
+					throw new Error('Internal error opening backing store');
+				},
+				markBackedUp: async () => {}
+			}
+		} as unknown as Pick<ClientApi, 'system'>;
+		const target: BackupTarget = {
+			save: async (name) => {
+				asked.push(name);
+				return 'saved';
+			}
+		};
+		await expect(backUp(api, target)).rejects.toMatchObject({ code: 'BACKUP_KEYS_UNAVAILABLE' });
+		expect(asked).toEqual([]);
 	});
 });
 

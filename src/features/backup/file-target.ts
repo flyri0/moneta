@@ -11,6 +11,9 @@ type SaveFilePicker = (options: { suggestedName: string }) => Promise<{
  */
 export const fileTarget: BackupTarget = {
 	async save(fileName, data): Promise<SaveResult> {
+		// The data may fail while the picker is open: it is awaited below, not left unhandled.
+		const pending = Promise.resolve(data);
+		pending.catch(() => {});
 		const pick = (window as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker;
 		if (pick) {
 			let handle: Awaited<ReturnType<SaveFilePicker>>;
@@ -18,17 +21,15 @@ export const fileTarget: BackupTarget = {
 				handle = await pick({ suggestedName: fileName });
 			} catch (err) {
 				if ((err as { name?: unknown } | null)?.name !== 'AbortError') throw err;
-				// Cancelled: the data is no longer wanted, but it may still fail.
-				Promise.resolve(data).catch(() => {});
 				return 'cancelled';
 			}
-			const blob = await data;
+			const blob = await pending;
 			const file = await handle.createWritable();
 			await file.write(blob);
 			await file.close();
 			return 'saved';
 		}
-		const url = URL.createObjectURL(await data);
+		const url = URL.createObjectURL(await pending);
 		const link = document.createElement('a');
 		link.href = url;
 		link.download = fileName;

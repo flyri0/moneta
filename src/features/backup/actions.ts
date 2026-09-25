@@ -1,4 +1,5 @@
 import type { BudgetCopy, ClientApi } from '$db/api';
+import { DomainError } from '$domain/errors';
 import type { BudgetMeta } from '$db/repos/meta';
 import { fileTarget } from './file-target';
 import { isBudgetFile } from '$client/registry';
@@ -89,12 +90,15 @@ export async function downloadCopy(
 
 /**
  * Whether backups will be encrypted, known before the file is named (the name of an encrypted
- * one gives nothing away). If the key can't be read, the export itself reports it.
+ * one gives nothing away). A key that can't be read is BACKUP_KEYS_UNAVAILABLE right away,
+ * before anything asks where to save a file that would stay empty.
  */
 function isEncrypting(api: Pick<ClientApi, 'system'>): Promise<boolean> {
 	return api.system.backupEncryption().then(
 		({ on }) => on,
-		() => false
+		(err: unknown) => {
+			throw new DomainError('BACKUP_KEYS_UNAVAILABLE', String(err));
+		}
 	);
 }
 
