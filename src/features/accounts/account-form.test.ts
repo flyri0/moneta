@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { Account } from '$db/repos/accounts';
+import type { Account, AccountType } from '$db/repos/accounts';
 import {
 	ACCOUNT_CATEGORIES,
-	ACCOUNT_TYPES,
-	accountCategory,
 	accountSections,
 	defaultOnBudget,
 	isDebtType,
@@ -34,6 +32,17 @@ describe('account defaults', () => {
 	});
 });
 
+/** Every account type the schema allows (accounts.type CHECK). */
+const ACCOUNT_TYPES: readonly AccountType[] = [
+	'checking',
+	'savings',
+	'cash',
+	'credit_card',
+	'investment',
+	'loan',
+	'other'
+];
+
 describe('account categories', () => {
 	it('groups every account type into budget or tracking without duplicates', () => {
 		const categoryKeys = ACCOUNT_CATEGORIES.map((c) => c.key);
@@ -42,17 +51,6 @@ describe('account categories', () => {
 		const allTypesInCategories = ACCOUNT_CATEGORIES.flatMap((c) => c.types);
 		expect([...allTypesInCategories].sort()).toEqual([...ACCOUNT_TYPES].sort());
 		expect(allTypesInCategories.length).toBe(ACCOUNT_TYPES.length);
-	});
-
-	it('assigns types to budget or tracking category', () => {
-		expect(accountCategory('checking')).toBe('budget');
-		expect(accountCategory('savings')).toBe('budget');
-		expect(accountCategory('cash')).toBe('budget');
-		expect(accountCategory('credit_card')).toBe('budget');
-
-		expect(accountCategory('investment')).toBe('tracking');
-		expect(accountCategory('loan')).toBe('tracking');
-		expect(accountCategory('other')).toBe('tracking');
 	});
 });
 

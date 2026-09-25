@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { STARTING_BALANCE_PAYEE } from '$domain/payees';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
 import { defaultIncomeCategoryId } from './meta';
 import { createStartingBalance } from './transactions';
@@ -74,7 +75,7 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 				accountId: id,
 				date: input.startingDate,
 				amount: input.startingBalance,
-				payeeName: input.startingBalancePayee?.trim() || 'Starting Balance',
+				payeeName: input.startingBalancePayee?.trim() || STARTING_BALANCE_PAYEE,
 				categoryId: onBudget ? defaultIncomeCategoryId(db) : null,
 				cleared: true
 			});

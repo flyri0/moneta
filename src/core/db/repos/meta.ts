@@ -164,9 +164,3 @@ export function defaultIncomeCategoryId(db: Db): string {
 	if (!row) throw new DomainError('NOT_FOUND', 'No income category found');
 	return row.id;
 }
-
-export function systemGroupId(db: Db, system: 'income'): string {
-	const row = one<{ id: string }>(db, 'SELECT id FROM category_groups WHERE system = ?', [system]);
-	if (!row) throw new DomainError('NOT_FOUND', 'Budget is not initialized');
-	return row.id;
-}

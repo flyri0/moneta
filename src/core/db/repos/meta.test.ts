@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb, createTestDb } from '../testing';
 import { all, run } from '../connection';
-import {
-	defaultIncomeCategoryId,
-	getMeta,
-	initBudget,
-	isInitialized,
-	systemGroupId,
-	updateMeta
-} from './meta';
+import { defaultIncomeCategoryId, getMeta, initBudget, isInitialized, updateMeta } from './meta';
 import { deleteCategory, listCategoryTree } from './categories';
 
 describe('initBudget', () => {
@@ -124,14 +117,6 @@ describe('defaultIncomeCategoryId', () => {
 		expect(() => defaultIncomeCategoryId(db)).toThrow(
 			expect.objectContaining({ code: 'NOT_FOUND' })
 		);
-	});
-});
-
-describe('systemGroupId', () => {
-	it('returns income group id', async () => {
-		const db = await createBudgetDb();
-		const income = listCategoryTree(db).find((g) => g.system === 'income')!;
-		expect(systemGroupId(db, 'income')).toBe(income.id);
 	});
 });
 

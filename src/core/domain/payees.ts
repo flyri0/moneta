@@ -1,3 +1,6 @@
+/** The payee name the repos write for starting balances (stored in English, shown translated). */
+export const STARTING_BALANCE_PAYEE = 'Starting Balance';
+
 /**
  * Whether a payee name is the starting balance one, in either language. Reports and the register
  * recognize starting balances by this name, so these payees can't be renamed, merged or deleted.

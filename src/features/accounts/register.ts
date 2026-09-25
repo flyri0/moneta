@@ -4,9 +4,6 @@ import type { TransactionRow } from '$db/repos/transactions';
 import { isStartingBalance } from '$domain/payees';
 import { m } from '$i18n/paraglide/messages';
 
-/** The payee the repos write for starting balances (stored in English, shown translated). */
-export const STARTING_BALANCE_PAYEE = 'Starting Balance';
-
 export type PayeeDisplay =
 	| { kind: 'transfer'; direction: 'to' | 'from'; accountId: string; accountName: string }
 	| { kind: 'starting-balance' }

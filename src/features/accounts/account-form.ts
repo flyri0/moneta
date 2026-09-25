@@ -1,15 +1,5 @@
 import type { Account, AccountType } from '$db/repos/accounts';
 
-export const ACCOUNT_TYPES: readonly AccountType[] = [
-	'checking',
-	'savings',
-	'cash',
-	'credit_card',
-	'investment',
-	'loan',
-	'other'
-];
-
 export type AccountCategoryKey = 'budget' | 'tracking';
 
 export interface AccountTypeCategory {
@@ -27,10 +17,6 @@ export const ACCOUNT_CATEGORIES: readonly AccountTypeCategory[] = [
 		types: ['investment', 'loan', 'other']
 	}
 ];
-
-export function accountCategory(type: AccountType): AccountCategoryKey {
-	return type === 'investment' || type === 'loan' || type === 'other' ? 'tracking' : 'budget';
-}
 
 /**
  * Loans and investments default to off-budget: their balances aren't spendable cash, and an
