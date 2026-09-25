@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { backupFileName, copyBackupFileName, fullBackupFileName } from './target';
+import {
+	backupFileName,
+	copyBackupFileName,
+	encryptedBackupFileName,
+	fullBackupFileName
+} from './target';
 
 describe('backupFileName', () => {
 	const day = new Date(2026, 8, 19, 23, 30);
@@ -29,6 +34,14 @@ describe('fullBackupFileName / copyBackupFileName', () => {
 	it('names a backup of one budget after the budget too', () => {
 		expect(copyBackupFileName('Casa & Família', new Date(2026, 7, 1, 9, 0, 0))).toBe(
 			'moneta-casa-familia-2026-08-01-090000.moneta'
+		);
+	});
+});
+
+describe('encryptedBackupFileName', () => {
+	it('gives away no budget name and no time of day', () => {
+		expect(encryptedBackupFileName(new Date(2026, 8, 19, 23, 30, 5))).toBe(
+			'moneta-backup-2026-09-19.moneta'
 		);
 	});
 });

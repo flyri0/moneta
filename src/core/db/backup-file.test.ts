@@ -208,6 +208,22 @@ describe('sealBackup and openSealed', () => {
 		expect(() => readBackup(sealed)).toThrow(expect.objectContaining({ code: 'BACKUP_ENCRYPTED' }));
 	});
 
+	it('stamps its entries with a fixed date, not the time it was made', () => {
+		const stamps: [number, number][] = [];
+		for (let i = 0; i + 30 < sealed.length; i++) {
+			const local =
+				sealed[i] === 0x50 && sealed[i + 1] === 0x4b && sealed[i + 2] === 3 && sealed[i + 3] === 4;
+			if (!local) continue;
+			const view = new DataView(sealed.buffer, sealed.byteOffset + i);
+			stamps.push([view.getUint16(10, true), view.getUint16(12, true)]);
+		}
+		// DOS time 00:00:00 and date 1980-01-01.
+		expect(stamps).toEqual([
+			[0, 0x21],
+			[0, 0x21]
+		]);
+	});
+
 	it('tells encrypted backups from the rest', async () => {
 		expect(isSealed(sealed)).toBe(true);
 		expect(isSealed(inner)).toBe(false);

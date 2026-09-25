@@ -5,6 +5,7 @@ import { isBudgetFile } from '$client/registry';
 import {
 	backupFileName,
 	copyBackupFileName,
+	encryptedBackupFileName,
 	fullBackupFileName,
 	type BackupTarget,
 	type SaveResult
@@ -41,9 +42,10 @@ export async function backUp(
 	options: { plain?: boolean } = {}
 ): Promise<BackupDone> {
 	const files = (await api.system.listFiles()).filter(isBudgetFile);
+	const encrypted = !options.plain && (await isEncrypting(api));
 	const exported = api.system.exportBackup(files, options.plain ? options : undefined);
 	const result = await target.save(
-		fullBackupFileName(now),
+		encrypted ? encryptedBackupFileName(now) : fullBackupFileName(now),
 		exported.then(({ bytes }) => new Blob([bytes], { type: BACKUP_TYPE }))
 	);
 	const { skipped } = await exported;
@@ -75,10 +77,24 @@ export async function downloadCopy(
 	budgetName: string,
 	target: BackupTarget = fileTarget
 ): Promise<void> {
-	const { bytes } = await api.system.exportBackup([copy.name]);
+	const savedAt = new Date(copy.savedAt);
+	const encrypted = await isEncrypting(api);
 	await target.save(
-		copyBackupFileName(budgetName, new Date(copy.savedAt)),
-		new Blob([bytes], { type: BACKUP_TYPE })
+		encrypted ? encryptedBackupFileName(savedAt) : copyBackupFileName(budgetName, savedAt),
+		api.system
+			.exportBackup([copy.name])
+			.then(({ bytes }) => new Blob([bytes], { type: BACKUP_TYPE }))
+	);
+}
+
+/**
+ * Whether backups will be encrypted, known before the file is named (the name of an encrypted
+ * one gives nothing away). If the key can't be read, the export itself reports it.
+ */
+function isEncrypting(api: Pick<ClientApi, 'system'>): Promise<boolean> {
+	return api.system.backupEncryption().then(
+		({ on }) => on,
+		() => false
 	);
 }
 

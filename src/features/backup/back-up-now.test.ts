@@ -20,6 +20,7 @@ describe('backUpNow', () => {
 		const api = {
 			system: {
 				listFiles: async () => ['budget-0190a000-0000-7000-8000-000000000001.sqlite3'],
+				backupEncryption: async () => ({ on: false }),
 				exportBackup: async (_names: string[], options?: { plain?: boolean }) => {
 					calls.push(options);
 					if (!options?.plain) throw new RpcError('BACKUP_KEYS_UNAVAILABLE', 'no IndexedDB');
@@ -53,6 +54,7 @@ describe('backUpNow', () => {
 		const api = {
 			system: {
 				listFiles: async () => ['budget-0190a000-0000-7000-8000-000000000001.sqlite3'],
+				backupEncryption: async () => ({ on: false }),
 				exportBackup: async () => ({ bytes: new Uint8Array(4), skipped: [], encrypted: false }),
 				markBackedUp: async (files: string[]) => void marked.push(...files)
 			}

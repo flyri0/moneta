@@ -14,8 +14,10 @@ import {
 /**
  * A `.moneta` backup is a ZIP file: `moneta.json` (the manifest) first, then one SQLite image per
  * budget under `budgets/`, with `encryption: null`. An encrypted backup is a ZIP too: its
- * `moneta.json` holds only the cipher, the IV and the key slots (no dates, no budget names), and
- * `payload.bin` holds a whole plain backup, encrypted with AES-256-GCM. The exact bytes of that
+ * `moneta.json` holds only the cipher, the IV and the key slots (no dates, no budget names), its
+ * entries carry a fixed date, and `payload.bin` holds a whole plain backup, encrypted with
+ * AES-256-GCM. What stays visible without the password is its size and the file's own name,
+ * which the app keeps to the day it was made (`encryptedBackupFileName`). The exact bytes of that
  * `moneta.json` are the associated data, so changing it breaks decryption. Apps without
  * encryption refuse it (BACKUP_ENCRYPTED), so it needs no new version.
  */
@@ -186,8 +188,13 @@ export async function sealBackup(
 		)
 	);
 	const payload = await encrypt(key, iv, inner, manifest);
-	// The payload is random bytes: compressing it would only waste time.
-	return zipSync({ [MANIFEST]: manifest, [PAYLOAD]: [payload, { level: 0 }] });
+	// The payload is random bytes: compressing it would only waste time. Entries carry a fixed
+	// date, or the ZIP would tell when (and, by the local time, where) the backup was made.
+	const mtime = new Date(1980, 0, 1);
+	return zipSync({
+		[MANIFEST]: [manifest, { mtime }],
+		[PAYLOAD]: [payload, { level: 0, mtime }]
+	});
 }
 
 /** Whether `bytes` are an encrypted `.moneta` backup. Only the manifest is unpacked. */

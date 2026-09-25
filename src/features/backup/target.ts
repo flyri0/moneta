@@ -48,6 +48,14 @@ export function fullBackupFileName(now = new Date()): string {
 	return `moneta-backup-${backupStamp(now)}.${BACKUP_EXTENSION}`;
 }
 
+/**
+ * The name of an encrypted backup, e.g. `moneta-backup-2026-09-19.moneta`: the date only, with
+ * no budget name and no time, which anyone holding the file could read without the password.
+ */
+export function encryptedBackupFileName(now = new Date()): string {
+	return `moneta-backup-${todayIso(now)}.${BACKUP_EXTENSION}`;
+}
+
 /** The name of a backup of one budget, e.g. `moneta-casa-familia-2026-08-01-120000.moneta`. */
 export function copyBackupFileName(budgetName: string, savedAt: Date): string {
 	return `moneta-${slugOf(budgetName)}-${backupStamp(savedAt)}.${BACKUP_EXTENSION}`;

@@ -100,6 +100,23 @@ describe('backUp, depending on whether the file was saved', () => {
 	});
 });
 
+describe('encrypted backups', () => {
+	it('are named without the budget name or the time', async () => {
+		const { test, api, saved, target } = await setup();
+		await api.system.setBackupEncryption('correct horse', newRecoveryKey());
+		await backUp(api, target, new Date(2026, 8, 19, 10, 0));
+		const [file] = await api.system.listFiles();
+		const copy = `premigration-${file.replace('.sqlite3', '')}-20260801120000000.sqlite3`;
+		test.files.set(copy, test.files.get(file)!);
+		const [listed] = await api.system.listCopies(file);
+		await downloadCopy(api, listed, 'Home', target);
+		expect(saved.map((s) => s.fileName)).toEqual([
+			'moneta-backup-2026-09-19.moneta',
+			`moneta-backup-${todayIso(new Date(listed.savedAt))}.moneta`
+		]);
+	});
+});
+
 describe('readBackupFile', () => {
 	it('reads a picked file, and says whether it needs a password first', async () => {
 		const { api, saved, target } = await setup();
