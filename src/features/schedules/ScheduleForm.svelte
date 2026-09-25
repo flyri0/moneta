@@ -1,6 +1,7 @@
 <script lang="ts">
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
@@ -14,7 +15,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
-	import { todayIso } from '$domain/month';
+	import { isFarFuture, todayIso } from '$domain/month';
 	import {
 		dueCount,
 		FREQUENCIES,
@@ -22,7 +23,9 @@
 		type Frequency,
 		type WeekendRule
 	} from '$domain/schedule';
+	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import { canSplit, splitRemaining, type FormContext } from '$features/transactions/form';
 	import { FORM_ERRORS } from '$features/transactions/form-errors';
 	import TransactionFields from '$features/transactions/TransactionFields.svelte';
@@ -96,6 +99,9 @@
 
 	/** How many transactions saving enters at once, when that many that it asks first. */
 	let manyDue = $state(0);
+	/** A date years ahead the user was asked about: saving it again goes ahead. */
+	let farDate = $state<string | null>(null);
+	const askingFar = $derived(farDate !== null && farDate === draft.txn.date);
 
 	function save(event: SubmitEvent) {
 		event.preventDefault();
@@ -109,6 +115,11 @@
 			return;
 		}
 		const input = result.input;
+		// A year typed wrong would stretch every budget computation to it: ask once.
+		if (isFarFuture(input.startDate, todayIso()) && farDate !== input.startDate) {
+			farDate = input.startDate;
+			return;
+		}
 		// A start date typed years back would enter years of transactions at once.
 		const due = input.autoEnter ? dueCount(input, todayIso()) : 0;
 		if (due > MANY_DUE && !confirmed) {
@@ -177,11 +188,21 @@
 			{/if}
 		</nav>
 
+		{#if askingFar}
+			<Alert.Root data-testid="far-future">
+				<Alert.Description>
+					{m.date_far_future({ date: formatDate(draft.txn.date, getLocale()) })}
+				</Alert.Description>
+			</Alert.Root>
+		{/if}
+
 		<FormMessage {error} />
 
 		<div class="grid grid-cols-2 gap-2">
 			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
-			<Button type="submit" disabled={busy || blocked}>{m.save()}</Button>
+			<Button type="submit" disabled={busy || blocked}>
+				{askingFar ? m.save_anyway() : m.save()}
+			</Button>
 		</div>
 	{:else if view === 'repeat'}
 		<div class="grid divide-y rounded-lg border">

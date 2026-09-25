@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { onboard } from './helpers';
+import { chooseCombobox, onboard, pickDate } from './helpers';
 
 test('lists the transactions of every account', async ({ page }) => {
 	await onboard(page);
@@ -104,4 +104,20 @@ test.describe('on a phone', () => {
 		await add.click();
 		await expect(page.getByRole('dialog')).toBeVisible();
 	});
+});
+
+test('asks before saving a transaction dated years ahead', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
+	await dialog.getByLabel('Amount', { exact: true }).fill('12');
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+	const ahead = new Date();
+	ahead.setFullYear(ahead.getFullYear() + 3);
+	await pickDate(dialog, 'Date', ahead.toISOString().slice(0, 10));
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog.getByTestId('far-future')).toBeVisible();
+	await dialog.getByRole('button', { name: 'Save anyway' }).click();
+	await expect(dialog).toBeHidden();
 });

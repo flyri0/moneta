@@ -95,3 +95,11 @@ export function lastBudgetMonth(now: Date = new Date()): Month {
 export function isBudgetMonth(value: string, now: Date = new Date()): boolean {
 	return isMonth(value) && value <= lastBudgetMonth(now);
 }
+
+/**
+ * Whether `date` is more than two years after `today`, likely a year typed wrong: every budget
+ * month up to it is computed on each change.
+ */
+export function isFarFuture(date: string, today: string): boolean {
+	return date > `${Number(today.slice(0, 4)) + 2}${today.slice(4)}`;
+}

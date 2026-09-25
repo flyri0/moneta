@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	isFarFuture,
 	isMonth,
 	isDate,
 	monthOf,
@@ -105,5 +106,14 @@ describe('addDays', () => {
 		expect(addDays('2026-02-27', 2)).toBe('2026-03-01');
 		expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
 		expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
+	});
+});
+
+describe('isFarFuture', () => {
+	it('flags dates more than two years after today', () => {
+		expect(isFarFuture('2028-09-25', '2026-09-25')).toBe(false);
+		expect(isFarFuture('2028-09-26', '2026-09-25')).toBe(true);
+		expect(isFarFuture('2199-01-01', '2026-09-25')).toBe(true);
+		expect(isFarFuture('2020-01-01', '2026-09-25')).toBe(false);
 	});
 });

@@ -11,6 +11,8 @@
 	"nav_more": "More",
 	"add_transaction": "Transaction",
 	"save": "Save",
+	"date_far_future": "{date} is more than two years from now. If that's right, save it anyway.",
+	"save_anyway": "Save anyway",
 	"cancel": "Cancel",
 	"close": "Close",
 	"back": "Back",
