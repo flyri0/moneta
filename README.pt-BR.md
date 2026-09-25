@@ -105,14 +105,19 @@ pnpm preview        # serve esse build em http://localhost:4173
 `build/` é um site estático comum. Publique em qualquer host que devolva `index.html` para
 caminhos desconhecidos — sem código de servidor e sem precisar de cabeçalhos COOP/COEP.
 Sirva a partir da raiz do domínio: o service worker que faz o app funcionar offline é
-registrado em `/`.
+registrado em `/`. Dê ao Moneta uma origem só dele: qualquer outro app na mesma origem
+consegue ler o armazenamento dele (OPFS, IndexedDB, localStorage), orçamentos incluídos.
 
-A Content-Security-Policy vai dentro do `index.html` como uma tag `<meta>`, então o app fica
-protegido em qualquer host. Se o seu permitir configurar cabeçalhos, envie também
-`Content-Security-Policy: frame-ancestors 'none'` (uma tag meta não consegue proibir que o app
-seja embutido em frames), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` e
+A Content-Security-Policy vai dentro do `index.html` como uma tag `<meta>`, então a página
+fica restrita em qualquer host. Mas uma tag meta não alcança tudo: os workers seguem os
+cabeçalhos dos próprios scripts, e só um cabeçalho consegue proibir que o app seja embutido em
+frames. Se o seu host permitir configurar cabeçalhos, envie uma Content-Security-Policy para os
+workers (`/_app/immutable/workers/*` e `/sw.js`), `Content-Security-Policy: frame-ancestors
+'none'` para o resto, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` e
 `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`. Nenhum deles é
-obrigatório. O `netlify.toml` tem um exemplo, junto com a regra que devolve o `index.html`.
+obrigatório. O `netlify.toml` tem todos eles, junto com a regra que devolve o `index.html`; a
+política da própria página não pode ser repetida lá, porque os hashes dos scripts mudam a cada
+build.
 
 ## Onde ficam seus dados
 

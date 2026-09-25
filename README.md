@@ -103,14 +103,19 @@ pnpm preview        # serve that build at http://localhost:4173
 
 `build/` is a plain static site. Put it on any host that serves `index.html` for unknown
 paths — no server code, and no COOP/COEP headers needed. Serve it from the root of a
-domain: the service worker that makes the app work offline is registered at `/`.
+domain: the service worker that makes the app work offline is registered at `/`. Give
+Moneta an origin of its own: any other app on the same origin can read its storage (OPFS,
+IndexedDB, localStorage), budgets included.
 
-The Content-Security-Policy ships inside `index.html` as a `<meta>` tag, so the app is locked
-down on any host. If yours lets you set headers, also send `Content-Security-Policy:
-frame-ancestors 'none'` (a meta tag can't forbid framing), `X-Content-Type-Options: nosniff`,
-`Referrer-Policy: no-referrer` and `Permissions-Policy: camera=(), microphone=(), geolocation=(),
-payment=()`. None of these is required. `netlify.toml` has an example, along with the
-`index.html` fallback rule.
+The Content-Security-Policy ships inside `index.html` as a `<meta>` tag, so the page is
+restricted on any host. A meta tag doesn't reach everything, though: workers follow the
+headers of their own scripts, and framing can only be forbidden by a header. If your host
+lets you set headers, send a Content-Security-Policy for the workers
+(`/_app/immutable/workers/*` and `/sw.js`), `Content-Security-Policy: frame-ancestors 'none'`
+for the rest, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and
+`Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`. None of these is
+required. `netlify.toml` has them all, along with the `index.html` fallback rule; the page's
+own policy can't be repeated there, since its script hashes change with every build.
 
 ## Where your data lives
 

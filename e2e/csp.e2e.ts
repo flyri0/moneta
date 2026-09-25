@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { onboard, openSettings, spend } from './helpers';
 
@@ -55,4 +56,28 @@ test('blocks requests to other origins', async ({ page }) => {
 	);
 	expect(sent).toBe(false);
 	await expect.poll(() => violations(page)).toContainEqual(expect.stringMatching(/^connect-src/));
+});
+
+/** The Content-Security-Policy `netlify.toml` sends for the paths `for` names. */
+async function hostPolicy(path: string): Promise<string> {
+	const toml = await readFile('netlify.toml', 'utf8');
+	const block = toml.split('[[headers]]').find((b) => b.includes(`for = "${path}"`));
+	const policy = block?.match(/Content-Security-Policy = "([^"]*)"/)?.[1];
+	if (!policy) throw new Error(`netlify.toml has no Content-Security-Policy for ${path}`);
+	return policy;
+}
+
+test('the header policy recommended for the database worker lets it run', async ({ page }) => {
+	const policy = await hostPolicy('/_app/immutable/workers/*');
+	expect(policy).toContain("connect-src 'self'");
+	// Serve the worker's scripts with that header, as the host would.
+	await page.route('**/_app/immutable/workers/**/*.js', async (route) => {
+		const response = await route.fetch();
+		await route.fulfill({
+			response,
+			headers: { ...response.headers(), 'content-security-policy': policy }
+		});
+	});
+	await onboard(page);
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 });

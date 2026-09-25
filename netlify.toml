@@ -10,7 +10,7 @@
     status = 200
 
 # Optional hardening: the Content-Security-Policy ships in the HTML as a <meta> tag. These cover
-# what a meta tag can't (framing) and add the usual safe defaults.
+# what a meta tag can't (framing, the workers below) and add the usual safe defaults.
 [[headers]]
     for = "/*"
     [headers.values]
@@ -18,3 +18,15 @@
         X-Content-Type-Options = "nosniff"
         Referrer-Policy = "no-referrer"
         Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+
+# A worker doesn't take the page's <meta> policy: it follows the headers of its own script. The
+# database worker (which reads backup files) and the service worker get a policy of their own.
+[[headers]]
+    for = "/_app/immutable/workers/*"
+    [headers.values]
+        Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'"
+
+[[headers]]
+    for = "/sw.js"
+    [headers.values]
+        Content-Security-Policy = "default-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'"
