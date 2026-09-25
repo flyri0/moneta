@@ -2,6 +2,7 @@
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
+	import { collapseOverdue } from '$features/accounts/upcoming';
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import type { OccurrenceToEnter } from '$features/schedules/form';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
@@ -22,6 +23,7 @@
 		$props();
 
 	const session = useSession();
+	const rows = $derived(collapseOverdue(occurrences));
 	let entering = $state<OccurrenceToEnter | null>(null);
 	let enterOpen = $state(false);
 	let editing = $state<ScheduleRow | null>(null);
@@ -64,7 +66,7 @@
 		{m.schedules_upcoming()}
 	</h2>
 	<ul class="divide-y overflow-hidden rounded-xl border border-dashed bg-card text-card-foreground">
-		{#each occurrences as o, i (`${o.scheduleId}:${o.index}`)}
+		{#each rows as { occurrence: o, position: i, moreOverdue } (`${o.scheduleId}:${o.index}`)}
 			<li
 				class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3"
 				data-testid="upcoming-row"
@@ -72,6 +74,11 @@
 				<span class="flex min-w-0 items-center gap-2">
 					<span class="truncate text-sm font-medium">{payeeText(payeeDisplay(o))}</span>
 					{#if o.due}<Badge variant="destructive">{m.upcoming_due()}</Badge>{/if}
+					{#if moreOverdue > 0}
+						<Badge variant="outline" data-testid="upcoming-more-overdue">
+							{m.upcoming_more_overdue({ count: moreOverdue })}
+						</Badge>
+					{/if}
 				</span>
 				<span
 					class="text-right text-sm font-semibold tabular-nums {o.amount < 0

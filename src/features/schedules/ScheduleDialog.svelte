@@ -32,7 +32,8 @@
 		{
 			main: schedule ? m.schedule_edit_title() : m.schedule_add_title(),
 			repeat: m.schedule_frequency(),
-			delete: m.schedule_delete_title()
+			delete: m.schedule_delete_title(),
+			'enter-many': m.schedule_enter_many_title()
 		}[view]
 	);
 

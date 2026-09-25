@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	dueCount,
 	resumeDate,
 	occurrenceDate,
 	occurrencesBetween,
@@ -150,5 +151,16 @@ describe('validateRule', () => {
 		expect(() => validateRule(rule({ endCount: 0 }))).toThrow(invalid);
 		expect(() => validateRule(rule({ frequency: 'hourly' as Rule['frequency'] }))).toThrow(invalid);
 		expect(() => validateRule(rule({ weekend: 'never' as Rule['weekend'] }))).toThrow(invalid);
+	});
+});
+
+describe('dueCount', () => {
+	it('counts the occurrences on or before today', () => {
+		expect(dueCount(rule({ startDate: '2026-01-15' }), '2026-04-15')).toBe(4);
+		expect(dueCount(rule({ startDate: '2026-05-01' }), '2026-04-15')).toBe(0);
+	});
+
+	it('counts years of daily occurrences from a start date typed wrong', () => {
+		expect(dueCount(rule({ startDate: '2000-01-01', frequency: 'daily' }), '2000-12-31')).toBe(366);
 	});
 });

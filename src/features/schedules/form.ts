@@ -14,7 +14,10 @@ import {
 export type Ends = 'never' | 'on' | 'after';
 
 /** The schedule sheet's screens. */
-export type ScheduleView = 'main' | 'repeat' | 'delete';
+export type ScheduleView = 'main' | 'repeat' | 'delete' | 'enter-many';
+
+/** How many due occurrences an automatic schedule may enter at once before saving asks first. */
+export const MANY_DUE = 20;
 
 /** The rule fields as the form edits them. Numbers are text, as typed. */
 export interface RuleDraft {

@@ -139,3 +139,37 @@ test('enters an automatic schedule when the app opens on or after its date', asy
 	await expect(page.getByText('Scheduled transactions entered: 1')).toBeVisible();
 	await expectPaycheckEntered(page);
 });
+
+test('asks before an automatic schedule enters years of transactions, and folds overdue ones', async ({
+	page
+}) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
+	await dialog.getByLabel('Amount', { exact: true }).fill('10');
+	await chooseCombobox(dialog, 'Category', 'Fun', 'Fun');
+	// A year typed wrong: about 30 months back.
+	await pickDate(dialog, 'Next date', daysFromToday(-900));
+	await dialog.getByLabel('Enter automatically').click();
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Enter these now?' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+	await dialog.getByLabel('Enter automatically').click();
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await sidebar.getByRole('link', { name: 'Accounts' }).click();
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Checking' })
+		.getByRole('link')
+		.click();
+	const overdue = page.getByTestId('upcoming-row').filter({ hasText: 'Due' });
+	await expect(overdue).toHaveCount(1);
+	await expect(overdue.getByTestId('upcoming-more-overdue')).toHaveText(/^\+\d\d overdue$/);
+});

@@ -15,7 +15,13 @@
 	import { runAction, type ActionError } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
 	import { todayIso } from '$domain/month';
-	import { FREQUENCIES, WEEKEND_RULES, type Frequency, type WeekendRule } from '$domain/schedule';
+	import {
+		dueCount,
+		FREQUENCIES,
+		WEEKEND_RULES,
+		type Frequency,
+		type WeekendRule
+	} from '$domain/schedule';
 	import { m } from '$i18n/paraglide/messages';
 	import { canSplit, splitRemaining, type FormContext } from '$features/transactions/form';
 	import { FORM_ERRORS } from '$features/transactions/form-errors';
@@ -24,6 +30,7 @@
 		buildScheduleInput,
 		draftRuleSummary,
 		FREQUENCY_LABELS,
+		MANY_DUE,
 		type Ends,
 		type ScheduleDraft,
 		type ScheduleFormError,
@@ -87,14 +94,28 @@
 			splitRemaining(draft.txn, ctx.money) !== 0
 	);
 
-	async function save(event: SubmitEvent) {
+	/** How many transactions saving enters at once, when that many that it asks first. */
+	let manyDue = $state(0);
+
+	function save(event: SubmitEvent) {
 		event.preventDefault();
+		void submit(false);
+	}
+
+	async function submit(confirmed: boolean) {
 		const result = buildScheduleInput(draft, ctx);
 		if (!result.ok) {
 			error = { message: ERRORS[result.error]() };
 			return;
 		}
 		const input = result.input;
+		// A start date typed years back would enter years of transactions at once.
+		const due = input.autoEnter ? dueCount(input, todayIso()) : 0;
+		if (due > MANY_DUE && !confirmed) {
+			manyDue = due;
+			go('enter-many');
+			return;
+		}
 		busy = true;
 		error = await runAction(() =>
 			editingId
@@ -268,6 +289,16 @@
 		</div>
 
 		<FormMessage {error} />
+	{:else if view === 'enter-many'}
+		<ConfirmPanel
+			body={m.schedule_enter_many_body({ count: manyDue })}
+			confirmLabel={m.schedule_enter_many_confirm({ count: manyDue })}
+			destructive={false}
+			{error}
+			{busy}
+			onCancel={() => go('main')}
+			onConfirm={() => void submit(true)}
+		/>
 	{:else}
 		<ConfirmPanel
 			body={m.schedule_delete_body()}

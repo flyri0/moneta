@@ -116,6 +116,11 @@ export function occurrencesBetween(rule: Rule, from: number, until: string): Occ
 	}
 }
 
+/** How many occurrences of a new rule are due on `today`: what an automatic one enters at once. */
+export function dueCount(rule: Rule, today: string): number {
+	return occurrencesBetween(rule, 0, today).length;
+}
+
 /** Throws INVALID_INPUT unless the engine can follow `rule`. */
 export function validateRule(rule: Rule): void {
 	const fail = (message: string): never => {
