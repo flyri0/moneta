@@ -12,9 +12,23 @@ export function schemaVersion(db: Db): number {
 }
 
 /**
+ * How many rows break each foreign key, keyed `table|parent|fk`. Counted rather than listed by
+ * rowid, because rebuilding a table renumbers its rows.
+ */
+function brokenKeys(db: Db): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const [table, , parent, fk] of db.selectArrays('PRAGMA foreign_key_check')) {
+		const key = `${table}|${parent}|${fk}`;
+		counts.set(key, (counts.get(key) ?? 0) + 1);
+	}
+	return counts;
+}
+
+/**
  * Applies pending migrations in order, each in its own transaction. Foreign keys are off while
  * migrating (SQLite only lets that change outside a transaction), so a migration can rebuild a
- * table without cascading deletes. Each migration must leave `PRAGMA foreign_key_check` clean.
+ * table without cascading deletes. A migration must not break any foreign key: rows that were
+ * already broken before it (from an old restore) don't stop it.
  */
 export function migrate(db: Db, migrations: readonly string[] = MIGRATIONS): void {
 	const current = schemaVersion(db);
@@ -30,9 +44,11 @@ export function migrate(db: Db, migrations: readonly string[] = MIGRATIONS): voi
 	try {
 		for (let v = current; v < target; v++) {
 			db.transaction(() => {
+				const before = brokenKeys(db);
 				db.exec(migrations[v]);
-				if (db.selectArrays('PRAGMA foreign_key_check').length > 0)
-					throw new DomainError('INTERNAL', `Migration ${v + 1} left broken foreign keys`);
+				for (const [key, count] of brokenKeys(db))
+					if (count > (before.get(key) ?? 0))
+						throw new DomainError('INTERNAL', `Migration ${v + 1} left broken foreign keys`);
 				db.exec(`PRAGMA user_version = ${v + 1}`);
 			});
 		}

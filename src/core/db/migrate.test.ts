@@ -100,6 +100,34 @@ describe('migrate', () => {
 		expect(db.selectValue('PRAGMA foreign_keys')).toBe(1);
 	});
 
+	/** A budget with a transaction whose account doesn't exist, as an old restore let in. */
+	async function dbWithOrphan() {
+		const db = await createTestDb();
+		db.exec('PRAGMA foreign_keys = OFF');
+		run(
+			db,
+			"INSERT INTO transactions (id, account_id, date, amount) VALUES ('t1', 'gone', '2026-01-02', -500)"
+		);
+		db.exec('PRAGMA foreign_keys = ON');
+		return db;
+	}
+
+	it('applies a migration over foreign keys that were already broken', async () => {
+		const db = await dbWithOrphan();
+		migrate(db, [...MIGRATIONS, 'CREATE TABLE x (y)']);
+		expect(schemaVersion(db)).toBe(SCHEMA_VERSION + 1);
+	});
+
+	it('still rolls back a migration that breaks more foreign keys', async () => {
+		const db = await dbWithOrphan();
+		run(db, "INSERT INTO category_groups (id, name) VALUES ('g1', 'Everyday')");
+		run(db, "INSERT INTO categories (id, group_id, name) VALUES ('c1', 'g1', 'Food')");
+		expect(() => migrate(db, [...MIGRATIONS, 'DELETE FROM category_groups'])).toThrow(
+			expect.objectContaining({ code: 'INTERNAL' })
+		);
+		expect(schemaVersion(db)).toBe(SCHEMA_VERSION);
+	});
+
 	it('enforces foreign keys', async () => {
 		const db = await createTestDb();
 		expect(() =>

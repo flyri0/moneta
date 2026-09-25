@@ -47,7 +47,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Multi-statement writes use `tx(db, fn)` (a nestable SAVEPOINT).
 - Domain failures throw `DomainError` with a typed code from `$domain/errors.ts`; nothing else is thrown on purpose.
 - IDs are UUIDv7 (`uuidv7`). Dates are `'YYYY-MM-DD'` and months `'YYYY-MM'`. Booleans are 0/1 in SQL and `boolean` in repo results.
-- Schema changes are new numbered files in `src/core/db/migrations/`, added to `MIGRATIONS` and tracked by `PRAGMA user_version`. Never edit an applied migration. Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean; opening an older budget saves a copy first.
+- Schema changes are new numbered files in `src/core/db/migrations/`, added to `MIGRATIONS` and tracked by `PRAGMA user_version`. Never edit an applied migration. Migrations run with foreign keys off and must not break any foreign key (`migrate` fails on new `PRAGMA foreign_key_check` rows); opening an older budget saves a copy first.
 - `.moneta` backups carry `BACKUP_VERSION` (`$db/backup-file.ts`), the version of the container, not of the schema. Bump it when an app reading the current version would misread the new files (changed layout, new required field, changed meaning); not for optional fields or migrations. Every earlier version must still restore.
 - No COOP/COEP headers or server code: the OPFS SAH-pool VFS doesn't need them, and the build must work on any static host.
 - The Content-Security-Policy lives in `svelte.config.js` (`kit.csp`, hash mode, emitted as a `<meta>` tag). New external origins, inline scripts or `{@html}` must fit it; `e2e/csp.e2e.ts` fails on any violation.

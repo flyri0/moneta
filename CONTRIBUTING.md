@@ -79,7 +79,8 @@ that is what drives live-query refreshes.
 
 Add a **new** numbered file in `src/core/db/migrations/` and register it in `MIGRATIONS`.
 Never edit a migration that has already shipped — someone's budget has already run it.
-Migrations run with foreign keys off and must leave `PRAGMA foreign_key_check` clean.
+Migrations run with foreign keys off and must not break any foreign key: `migrate` fails when
+`PRAGMA foreign_key_check` shows rows that weren't there before.
 
 ## Tests
 
