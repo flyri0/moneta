@@ -16,7 +16,6 @@
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
 	import AccountList from '$features/accounts/AccountList.svelte';
-	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
 	import { backupDue } from '$features/backup/reminder';
 	import { useSession } from '$client/app-state.svelte';
@@ -114,6 +113,11 @@
 	const moreActive = $derived(moreItems.some((item) => item.active));
 
 	let adding = $state(false);
+	let dialogLoad =
+		$state<Promise<typeof import('$features/transactions/TransactionDialog.svelte')>>();
+	$effect(() => {
+		if (adding) dialogLoad ??= import('$features/transactions/TransactionDialog.svelte');
+	});
 	let moreOpen = $state(false);
 	/** The floating add button shows its label only at the top of the page. */
 	let compact = $state(false);
@@ -258,7 +262,12 @@
 	</Sheet.Content>
 </Sheet.Root>
 
-<TransactionDialog bind:open={adding} accountId={page.params.id} />
+<!-- Loaded the first time it opens: most starts never add a transaction. -->
+{#if dialogLoad}
+	{#await dialogLoad then { default: TransactionDialog }}
+		<TransactionDialog bind:open={adding} accountId={page.params.id} />
+	{/await}
+{/if}
 <svelte:window onscroll={trackScroll} />
 <svelte:document
 	onvisibilitychange={() => {

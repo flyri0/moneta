@@ -17,9 +17,7 @@
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
-	import Onboarding from '$features/onboarding/Onboarding.svelte';
 	import AppShell from './AppShell.svelte';
-	import RecoveryScreen from './RecoveryScreen.svelte';
 	import StartupScreen from './StartupScreen.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -185,23 +183,28 @@
 		<AppShell>{@render children()}</AppShell>
 	{/key}
 {:else if app.boot.kind === 'onboarding' && worker}
-	<Onboarding
-		api={worker.api}
-		onCreated={(file, meta) => {
-			if (!worker) return;
-			ready(worker, file, meta);
-			void goto(resolve('/budget/[month]', { month: currentMonth() }));
-		}}
-		onCancel={app.session ? cancelOnboarding : undefined}
-	/>
+	<!-- Onboarding and recovery are rare: they load when needed, not with every start. -->
+	{#await import('$features/onboarding/Onboarding.svelte') then { default: Onboarding }}
+		<Onboarding
+			api={worker.api}
+			onCreated={(file, meta) => {
+				if (!worker) return;
+				ready(worker, file, meta);
+				void goto(resolve('/budget/[month]', { month: currentMonth() }));
+			}}
+			onCancel={app.session ? cancelOnboarding : undefined}
+		/>
+	{/await}
 {:else if app.boot.kind === 'unreadable' && worker}
 	{@const started = worker}
-	<RecoveryScreen
-		api={started.api}
-		budgets={app.boot.budgets}
-		onResult={(result) => apply(started, result)}
-		onNew={() => (app.boot = { kind: 'onboarding' })}
-	/>
+	{#await import('./RecoveryScreen.svelte') then { default: RecoveryScreen }}
+		<RecoveryScreen
+			api={started.api}
+			budgets={app.boot.budgets}
+			onResult={(result) => apply(started, result)}
+			onNew={() => (app.boot = { kind: 'onboarding' })}
+		/>
+	{/await}
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
 	<StartupScreen boot={app.boot} onTakeOver={takeOver} onForce={forceTakeOver} />
 {/if}
