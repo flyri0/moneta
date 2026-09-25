@@ -2,15 +2,17 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { cn } from '$utils';
 
-	/** A row that opens another screen of a sheet: icon, label and a chevron. */
+	/** A row that opens another screen of a sheet: icon, label, an optional detail and a chevron. */
 	let {
 		icon: Icon,
 		label,
+		detail,
 		destructive = false,
 		onclick
 	}: {
 		icon: typeof ChevronRightIcon;
 		label: string;
+		detail?: string;
 		destructive?: boolean;
 		onclick: () => void;
 	} = $props();
@@ -26,5 +28,6 @@
 >
 	<Icon class="size-4 shrink-0" />
 	<span class="flex-1">{label}</span>
+	{#if detail}<span class="min-w-0 truncate text-muted-foreground">{detail}</span>{/if}
 	<ChevronRightIcon class="size-4 shrink-0 text-muted-foreground" />
 </button>

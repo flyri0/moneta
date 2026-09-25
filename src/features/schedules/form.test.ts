@@ -5,6 +5,7 @@ import type { FormContext } from '$features/transactions/form';
 import {
 	buildScheduleInput,
 	draftFromSchedule,
+	draftRuleSummary,
 	newScheduleDraft,
 	ruleSummary,
 	type ScheduleDraft
@@ -196,5 +197,22 @@ describe('ruleSummary', () => {
 		expect(ruleSummary({ frequency: 'once', interval: 1 })).toBe('Once');
 		expect(ruleSummary({ frequency: 'monthly', interval: 1 })).toBe('Every month');
 		expect(ruleSummary({ frequency: 'weekly', interval: 2 })).toBe('Every 2 weeks');
+	});
+});
+
+describe('draftRuleSummary', () => {
+	const rule = newScheduleDraft('checking', '2026-01-01').rule;
+
+	it('summarizes the rule as typed', () => {
+		expect(draftRuleSummary({ ...rule, frequency: 'monthly', interval: '1' })).toBe('Every month');
+		expect(draftRuleSummary({ ...rule, frequency: 'weekly', interval: ' 2 ' })).toBe(
+			'Every 2 weeks'
+		);
+		expect(draftRuleSummary({ ...rule, frequency: 'once', interval: 'x' })).toBe('Once');
+	});
+
+	it('names only the frequency while the interval is not a whole number', () => {
+		expect(draftRuleSummary({ ...rule, frequency: 'weekly', interval: '' })).toBe('Weekly');
+		expect(draftRuleSummary({ ...rule, frequency: 'yearly', interval: '0' })).toBe('Yearly');
 	});
 });

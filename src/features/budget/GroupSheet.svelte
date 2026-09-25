@@ -8,6 +8,7 @@
 	import { Separator } from '$ui/separator';
 	import { Switch } from '$ui/switch';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import type { BudgetGroupView } from '$db/repos/budget';
@@ -16,7 +17,6 @@
 	import { m } from '$i18n/paraglide/messages';
 	import GroupDelete from './GroupDelete.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
-	import SheetLink from './SheetLink.svelte';
 
 	/** `group` is the grid's (visible categories only); `groups` is every group, in full. */
 	let {

@@ -8,7 +8,12 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { loadFormContext } from '$features/transactions/context';
 	import type { FormContext } from '$features/transactions/form';
-	import { draftFromSchedule, newScheduleDraft, type ScheduleDraft } from './form';
+	import {
+		draftFromSchedule,
+		newScheduleDraft,
+		type ScheduleDraft,
+		type ScheduleView
+	} from './form';
 	import ScheduleForm from './ScheduleForm.svelte';
 
 	/** Adds a schedule (in `accountId` when given), or edits `schedule`. */
@@ -21,10 +26,20 @@
 	const session = useSession();
 	let ctx = $state.raw<FormContext | null>(null);
 	let initial = $state.raw<ScheduleDraft | null>(null);
+	let view = $state<ScheduleView>('main');
+
+	const title = $derived(
+		{
+			main: schedule ? m.schedule_edit_title() : m.schedule_add_title(),
+			repeat: m.schedule_frequency(),
+			delete: m.schedule_delete_title()
+		}[view]
+	);
 
 	async function load(editing: ScheduleRow | null, preferredAccount: string | undefined) {
 		ctx = null;
 		initial = null;
+		view = 'main';
 		try {
 			const context = await loadFormContext(session.api, session.money);
 			if (editing) {
@@ -47,7 +62,7 @@
 	});
 </script>
 
-<ResponsiveDialog bind:open title={schedule ? m.schedule_edit_title() : m.schedule_add_title()}>
+<ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => (view = 'main')}>
 	{#if ctx && initial}
 		{#if ctx.accounts.some((a) => !a.closed)}
 			{#key initial}
@@ -55,6 +70,7 @@
 					{ctx}
 					{initial}
 					editingId={schedule?.id ?? null}
+					bind:view
 					onDone={() => (open = false)}
 				/>
 			{/key}
