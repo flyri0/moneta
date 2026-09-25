@@ -55,7 +55,7 @@ export function getMeta(db: Db): BudgetMeta {
 	};
 }
 
-function validateCurrency(currency: string): void {
+export function validateCurrency(currency: string): void {
 	try {
 		currencyDigits(currency);
 	} catch {
@@ -63,7 +63,7 @@ function validateCurrency(currency: string): void {
 	}
 }
 
-function validateLocale(locale: string): void {
+export function validateLocale(locale: string): void {
 	try {
 		Intl.getCanonicalLocales(locale);
 	} catch {

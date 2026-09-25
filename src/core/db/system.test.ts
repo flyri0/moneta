@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { MIGRATIONS, SCHEMA_VERSION, schemaVersion } from './migrate';
 import { newRecoveryKey } from '$domain/recovery-key';
 import { readBackup, writeBackup } from './backup-file';
+import { openImage, toImage } from './image';
 import { getMeta, initBudget, updateMeta } from './repos/meta';
 import { createSystem } from './system';
 import { loadSqlite, memoryFileStore, memoryKeyStore } from './testing';
@@ -343,6 +344,24 @@ describe('restoreBackup', () => {
 		});
 		expect(system.listFiles()).toEqual([FILE]);
 		expect(system.listCopies(FILE)).toEqual([]);
+	});
+
+	it('refuses a budget that breaks the app rules, writing nothing', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const [budget] = readBackup((await system.exportBackup([FILE])).bytes).budgets;
+		const edited = openImage(deps.sqlite3, budget.image);
+		edited.exec("UPDATE meta SET value = 'ZZZ' WHERE key = 'currency'");
+		const bytes = writeBackup(
+			[{ id: OTHER_ID, name: 'Trip', image: toImage(deps.sqlite3, edited) }],
+			'x'
+		);
+		edited.close();
+		await expect(system.restoreBackup(bytes, [{ index: 0, file: OTHER }])).rejects.toMatchObject({
+			code: 'BACKUP_DAMAGED'
+		});
+		expect(system.listFiles()).toEqual([FILE]);
 	});
 
 	it('refuses bad picks, changing nothing', async () => {
