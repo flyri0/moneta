@@ -84,6 +84,49 @@ describe('migrate', () => {
 		]);
 	});
 
+	it('takes the starting balance payee off openings, keeping it only where something else uses it', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 5));
+		db.exec(`
+			INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+				('a1', 'Bank', 'checking', 1, '2026-01-01'), ('a2', 'Conta', 'checking', 1, '2026-01-01');
+			INSERT INTO payees (id, name) VALUES ('p1', 'Starting Balance'), ('p2', 'Saldo inicial'),
+				('p3', 'Market');
+			INSERT INTO transactions (id, account_id, date, amount, payee_id, is_opening) VALUES
+				('t1', 'a1', '2026-01-01', 1000, 'p1', 1), ('t2', 'a2', '2026-01-01', 2000, 'p2', 1),
+				('t3', 'a2', '2026-01-05', 50, 'p2', 0), ('t4', 'a1', '2026-01-06', -10, 'p3', 0);
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT id, payee_id FROM transactions ORDER BY id')).toEqual([
+			{ id: 't1', payee_id: null },
+			{ id: 't2', payee_id: null },
+			{ id: 't3', payee_id: 'p2' },
+			{ id: 't4', payee_id: 'p3' }
+		]);
+		expect(all(db, 'SELECT id FROM payees ORDER BY id')).toEqual([{ id: 'p2' }, { id: 'p3' }]);
+	});
+
+	it('keeps a starting balance payee that a schedule uses', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 5));
+		db.exec(`
+			INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+				('a1', 'Bank', 'checking', 1, '2026-01-01');
+			INSERT INTO payees (id, name) VALUES ('p1', 'Starting Balance');
+			INSERT INTO transactions (id, account_id, date, amount, payee_id, is_opening) VALUES
+				('t1', 'a1', '2026-01-01', 1000, 'p1', 1);
+			INSERT INTO schedules (id, account_id, amount, payee_id, start_date, frequency, created_at)
+				VALUES ('s1', 'a1', -10, 'p1', '2026-02-01', 'monthly', '2026-01-01');
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT payee_id FROM transactions')).toEqual([{ payee_id: null }]);
+		expect(all(db, 'SELECT id FROM payees')).toEqual([{ id: 'p1' }]);
+	});
+
 	it('is idempotent', async () => {
 		const db = await createTestDb();
 		migrate(db);

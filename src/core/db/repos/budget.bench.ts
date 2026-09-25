@@ -1,13 +1,12 @@
 import { expect, test } from 'vitest';
 import { computeBudget } from '$domain/budget-engine';
 import { addMonths, monthRange } from '$domain/month';
-import { createBudgetDb } from '../testing';
+import { categoryId, createBudgetDb } from '../testing';
 import { run, tx, type Db } from '../connection';
 import { createAccount } from './accounts';
 import { loadEngineInput } from './aggregates';
 import { createCategory, createGroup } from './categories';
 import { getBudgetMonth, setAssigned } from './budget';
-import { defaultIncomeCategoryId } from './meta';
 import { ageOfMoney, ageOfMoneyFlows } from './reports';
 import { createTransaction, listTransactions } from './transactions';
 
@@ -31,7 +30,7 @@ async function bigBudget({ analyze = true } = {}): Promise<Db> {
 	const categories = Array.from({ length: CATEGORIES }, (_, i) =>
 		createCategory(db, { groupId: group, name: `Category ${i + 1}` })
 	);
-	const income = defaultIncomeCategoryId(db);
+	const income = categoryId(db, 'Salário');
 	tx(db, () => {
 		for (const month of monthRange(addMonths(LAST, -12 * YEARS + 1), LAST)) {
 			createTransaction(db, {

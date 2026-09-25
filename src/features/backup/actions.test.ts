@@ -190,7 +190,7 @@ describe('exportTransactionsCsv / exportBudgetJson', () => {
 			'moneta-home-2026-09-19.csv',
 			'moneta-home-2026-09-19.json'
 		]);
-		expect(await saved[0].data.text()).toContain('2026-09-01,Checking,Starting Balance,');
+		expect(await saved[0].data.text()).toContain('2026-09-01,Checking,,,');
 		const dump = JSON.parse(await saved[1].data.text()) as BudgetDump;
 		expect(dump.meta.name).toBe('Home');
 	});

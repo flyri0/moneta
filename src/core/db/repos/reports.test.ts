@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import type { Db } from '../connection';
 import { createAccount } from './accounts';
-import { defaultIncomeCategoryId } from './meta';
 import { listPayees } from './payees';
 import {
 	accountBalances,
@@ -62,7 +61,7 @@ describe('spendingByCategory', () => {
 			accountId: bank,
 			date: '2026-09-12',
 			amount: 300000,
-			categoryId: defaultIncomeCategoryId(db)
+			categoryId: categoryId(db, 'Salário')
 		});
 		createTransaction(db, {
 			accountId: bank,
@@ -133,7 +132,7 @@ describe('netWorth', () => {
 
 describe('cashFlow', () => {
 	beforeEach(() => {
-		const income = defaultIncomeCategoryId(db);
+		const income = categoryId(db, 'Salário');
 		const food = categoryId(db, 'Food');
 		const fun = categoryId(db, 'Fun');
 		createTransaction(db, {
@@ -178,8 +177,8 @@ describe('cashFlow', () => {
 		]);
 	});
 
-	it('counts a transaction that only uses the starting balance payee', () => {
-		const income = defaultIncomeCategoryId(db);
+	it('counts a transaction that only uses a starting balance name as its payee', () => {
+		const income = categoryId(db, 'Salário');
 		for (const payeeName of ['Starting Balance', 'Saldo inicial'])
 			createTransaction(db, {
 				accountId: bank,
@@ -201,8 +200,7 @@ describe('cashFlow', () => {
 			accountId: bank,
 			date: '2026-08-01',
 			amount: 250000,
-			payeeName: 'Starting Balance',
-			categoryId: defaultIncomeCategoryId(db),
+			categoryId: categoryId(db, 'Salário'),
 			cleared: true
 		});
 		expect(cashFlow(db, { from: '2026-08-01', to: '2026-08-31' })).toEqual([
@@ -235,8 +233,7 @@ describe('ageOfMoney', () => {
 			type: 'savings',
 			onBudget: true,
 			startingDate: '2026-08-01',
-			startingBalance: -2000,
-			startingBalancePayee: 'Saldo inicial'
+			startingBalance: -2000
 		});
 		createTransaction(db, { accountId: bank, date: '2026-08-10', amount: -8000, categoryId: food });
 		createTransaction(db, { accountId: visa, date: '2026-08-11', amount: -9000, categoryId: food });
@@ -315,7 +312,7 @@ describe('ageOfMoney', () => {
 describe('categoryMonths and spendingByPayee', () => {
 	let income: string;
 	beforeEach(() => {
-		income = defaultIncomeCategoryId(db);
+		income = categoryId(db, 'Salário');
 		const food = categoryId(db, 'Food');
 		const fun = categoryId(db, 'Fun');
 		createTransaction(db, {

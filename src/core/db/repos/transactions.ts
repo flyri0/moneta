@@ -49,6 +49,8 @@ export interface TransactionRow {
 	transferAccountId: string | null;
 	transferAccountName: string | null;
 	isSplit: boolean;
+	/** An account's starting balance, which reports leave out of income and spending. */
+	isOpening: boolean;
 	splits: SplitRow[];
 }
 
@@ -281,15 +283,16 @@ export function setCleared(db: Db, id: string, cleared: boolean): void {
 	run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [cleared ? 1 : 0, id]);
 }
 
-type Row = Omit<TransactionRow, 'cleared' | 'isSplit' | 'splits'> & {
+type Row = Omit<TransactionRow, 'cleared' | 'isSplit' | 'isOpening' | 'splits'> & {
 	cleared: number;
 	isSplit: number;
+	isOpening: number;
 };
 
 const SELECT_SQL = `SELECT t.id, t.account_id AS accountId, a.name AS accountName, t.date, t.amount,
 	t.payee_id AS payeeId, p.name AS payeeName, t.category_id AS categoryId, c.name AS categoryName,
 	t.memo, t.cleared, t.transfer_id AS transferId, pt.account_id AS transferAccountId,
-	pa.name AS transferAccountName, t.is_split AS isSplit
+	pa.name AS transferAccountName, t.is_split AS isSplit, t.is_opening AS isOpening
 	FROM transactions t
 	JOIN accounts a ON a.id = t.account_id
 	LEFT JOIN payees p ON p.id = t.payee_id
@@ -316,6 +319,7 @@ function attachSplits(db: Db, rows: Row[]): TransactionRow[] {
 		...r,
 		cleared: r.cleared === 1,
 		isSplit: r.isSplit === 1,
+		isOpening: r.isOpening === 1,
 		splits: (byTransaction.get(r.id) ?? []).map((s) => ({
 			id: s.id,
 			categoryId: s.categoryId,

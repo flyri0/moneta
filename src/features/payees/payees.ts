@@ -1,10 +1,4 @@
 import type { Payee } from '$db/repos/payees';
-import { isStartingBalance } from '$domain/payees';
-
-/** Whether the user may rename, merge or delete a payee: starting balance ones stay as they are. */
-export function editable(payee: Pick<Payee, 'name'>): boolean {
-	return !isStartingBalance(payee.name);
-}
 
 /** Lowercase without accents, so "sao joao" finds "São João". */
 function fold(text: string): string {
@@ -15,15 +9,11 @@ function fold(text: string): string {
 		.trim();
 }
 
-/** The payees whose shown name contains `query`, ignoring case and accents. */
-export function filterPayees(
-	payees: Payee[],
-	query: string,
-	label: (payee: Payee) => string
-): Payee[] {
+/** The payees whose name contains `query`, ignoring case and accents. */
+export function filterPayees(payees: Payee[], query: string): Payee[] {
 	const q = fold(query);
 	if (!q) return payees;
-	return payees.filter((p) => fold(label(p)).includes(q));
+	return payees.filter((p) => fold(p.name).includes(q));
 }
 
 /** Lowercase for ASCII letters only, like SQLite's NOCASE, which the payee names are unique under. */
@@ -40,7 +30,7 @@ export function nameConflict(payees: Payee[], id: string, name: string): Payee |
 
 /** The payees `id` can be merged into. */
 export function mergeTargets(payees: Payee[], id: string): Payee[] {
-	return payees.filter((p) => p.id !== id && editable(p));
+	return payees.filter((p) => p.id !== id);
 }
 
 /** Whether any transaction or schedule uses the payee. */
@@ -50,5 +40,5 @@ export function inUse(payee: Pick<Payee, 'transactions' | 'schedules'>): boolean
 
 /** How many payees "Remove unused" would delete. */
 export function unusedCount(payees: Payee[]): number {
-	return payees.filter((p) => !inUse(p) && editable(p)).length;
+	return payees.filter((p) => !inUse(p)).length;
 }

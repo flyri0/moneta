@@ -29,10 +29,9 @@ test('renames, merges, sets defaults for and removes payees', async ({ page }) =
 	await sidebar.getByRole('link', { name: 'Payees' }).click();
 	await expect(page.getByRole('heading', { name: 'Payees' })).toBeVisible();
 	const rows = page.getByTestId('payee-row');
-	await expect(rows).toHaveCount(4);
+	await expect(rows).toHaveCount(3);
 	await expect(rows.filter({ hasText: 'Amazon' })).toContainText('2 transactions');
 	await expect(rows.filter({ hasText: 'Amzn' })).toContainText('1 transaction');
-	await expect(rows.filter({ hasText: 'Starting balance' })).toContainText('Built-in');
 	await expect(rows.filter({ hasText: 'Typo shop' })).toContainText('Unused');
 
 	// Renaming renames every past transaction.

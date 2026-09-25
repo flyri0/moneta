@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { createAccount } from './repos/accounts';
-import { defaultIncomeCategoryId } from './repos/meta';
 import { createTransaction, listTransactions } from './repos/transactions';
 import { categoryId, createBudgetDb } from './testing';
 import { exportCsv, exportJson, minorToDecimal, transactionsCsv } from './export';
@@ -37,7 +36,7 @@ async function sampleBudget() {
 		date: '2026-09-02',
 		amount: 100000,
 		payeeName: '=Employer',
-		categoryId: defaultIncomeCategoryId(db),
+		categoryId: categoryId(db, 'Salário'),
 		cleared: true
 	});
 	createTransaction(db, {

@@ -59,7 +59,6 @@ describe('listPayees', () => {
 				defaultCategoryId: food,
 				lastCategoryId: fun
 			}),
-			expect.objectContaining({ name: 'Starting Balance', transactions: 1 }),
 			expect.objectContaining({
 				name: 'Unused',
 				transactions: 0,
@@ -119,14 +118,11 @@ describe('renamePayee', () => {
 		expect(() => renamePayee(db, 'missing', 'X')).toThrow(code('NOT_FOUND'));
 	});
 
-	it('keeps starting balance payees as they are', () => {
+	it('treats starting balance names like any other', () => {
 		spend('Mercado');
-		expect(() => renamePayee(db, payee('Starting Balance').id, 'Opening')).toThrow(
-			code('SYSTEM_ENTITY_READONLY')
-		);
-		expect(() => renamePayee(db, payee('Mercado').id, 'Saldo inicial')).toThrow(
-			code('SYSTEM_ENTITY_READONLY')
-		);
+		renamePayee(db, payee('Mercado').id, 'Saldo inicial');
+		renamePayee(db, payee('Saldo inicial').id, 'Opening');
+		expect(payee('Opening').transactions).toBe(1);
 	});
 });
 
@@ -154,14 +150,11 @@ describe('mergePayee', () => {
 		expect(payee('C').defaultCategoryId).toBe(food);
 	});
 
-	it('refuses merging into itself, a missing payee or a starting balance', () => {
+	it('refuses merging into itself or a missing payee', () => {
 		spend('Mercado');
 		const id = payee('Mercado').id;
-		const opening = payee('Starting Balance').id;
 		expect(() => mergePayee(db, id, id)).toThrow(code('INVALID_INPUT'));
 		expect(() => mergePayee(db, id, 'missing')).toThrow(code('NOT_FOUND'));
-		expect(() => mergePayee(db, id, opening)).toThrow(code('SYSTEM_ENTITY_READONLY'));
-		expect(() => mergePayee(db, opening, id)).toThrow(code('SYSTEM_ENTITY_READONLY'));
 	});
 });
 
@@ -175,13 +168,10 @@ describe('setPayeeDefaultCategory', () => {
 		expect(payee('Mercado').defaultCategoryId).toBeNull();
 	});
 
-	it('refuses a missing category or a starting balance payee', () => {
+	it('refuses a missing category', () => {
 		spend('Mercado');
 		expect(() => setPayeeDefaultCategory(db, payee('Mercado').id, 'missing')).toThrow(
 			code('NOT_FOUND')
-		);
-		expect(() => setPayeeDefaultCategory(db, payee('Starting Balance').id, food)).toThrow(
-			code('SYSTEM_ENTITY_READONLY')
 		);
 	});
 });
@@ -196,16 +186,12 @@ describe('deleting payees', () => {
 		expect(() => deletePayee(db, 'missing')).toThrow(code('NOT_FOUND'));
 	});
 
-	it('deletes every unused payee except starting balances', () => {
+	it('deletes every unused payee, starting balance names included', () => {
 		spend('Mercado');
 		getOrCreatePayee(db, 'Old');
 		getOrCreatePayee(db, 'Older');
 		getOrCreatePayee(db, 'Saldo inicial');
-		expect(deleteUnusedPayees(db)).toBe(2);
-		expect(listPayees(db).map((p) => p.name)).toEqual([
-			'Mercado',
-			'Saldo inicial',
-			'Starting Balance'
-		]);
+		expect(deleteUnusedPayees(db)).toBe(3);
+		expect(listPayees(db).map((p) => p.name)).toEqual(['Mercado']);
 	});
 });

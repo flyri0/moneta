@@ -24,6 +24,33 @@ test('shows the register with balances, cleared toggles and search', async ({ pa
 	await expect(row).toHaveCount(1);
 });
 
+test('puts a new account starting balance in the chosen category, with no payee', async ({
+	page
+}) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Add account' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Cash' }).click();
+	await dialog.getByLabel('Account name').fill('Wallet');
+	await dialog.getByLabel('Current balance').fill('50');
+	await expect(dialog.getByLabel('Starting balance category')).toContainText('Starting Balance');
+	await chooseCombobox(dialog, 'Starting balance category', 'Salary', 'Salary');
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Wallet' })
+		.getByRole('link')
+		.click();
+	const row = page.getByTestId('register-row');
+	await expect(row).toHaveCount(1);
+	await expect(row).toContainText('Starting balance');
+	await expect(row).toContainText('Salary');
+});
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 

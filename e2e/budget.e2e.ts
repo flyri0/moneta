@@ -314,7 +314,8 @@ test('drags the Income group below the others and keeps it there', async ({ page
 	await expect(sections.last()).toHaveAttribute('aria-label', 'Income');
 	await expect(orderSection(page, 'Income').getByTestId('order-category')).toHaveText([
 		'Salary',
-		'Other Income'
+		'Other Income',
+		'Starting Balance'
 	]);
 	await page.getByRole('button', { name: 'Save' }).click();
 	await expect(page.getByTestId('group-card').last()).toContainText('Income');

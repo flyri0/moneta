@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
 import { createAccount } from './accounts';
-import { defaultIncomeCategoryId } from './meta';
 import { createTransaction } from './transactions';
 import {
 	applyQuickAssign,
@@ -188,7 +187,7 @@ describe('assigning money', () => {
 	});
 
 	it('rejects assigning money directly to an income category', () => {
-		const incomeId = defaultIncomeCategoryId(db);
+		const incomeId = categoryId(db, 'Salário');
 		expect(() => setAssigned(db, incomeId, '2026-01', 5000)).toThrow(code('CATEGORY_NOT_ALLOWED'));
 	});
 

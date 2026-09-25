@@ -209,9 +209,7 @@ test('exports transactions as CSV and the budget as JSON', async ({ page }, test
 	await openSettings(page);
 	const csv = testInfo.outputPath('home.csv');
 	await download(page, 'Transactions (CSV)', csv);
-	expect(await readFile(csv, 'utf8')).toContain(
-		',Checking,Starting Balance,,Salary,,1000.00,cleared'
-	);
+	expect(await readFile(csv, 'utf8')).toContain(',Checking,,,Starting Balance,,1000.00,cleared');
 	const json = testInfo.outputPath('home.json');
 	await download(page, 'Whole budget (JSON)', json);
 	expect(JSON.parse(await readFile(json, 'utf8'))).toMatchObject({

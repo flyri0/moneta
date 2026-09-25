@@ -1,7 +1,6 @@
 import type { Account } from '$db/repos/accounts';
 import type { UpcomingOccurrence } from '$db/repos/schedules';
 import type { TransactionRow } from '$db/repos/transactions';
-import { isStartingBalance } from '$domain/payees';
 import { m } from '$i18n/paraglide/messages';
 
 export type PayeeDisplay =
@@ -10,9 +9,13 @@ export type PayeeDisplay =
 	| { kind: 'payee'; name: string }
 	| { kind: 'none' };
 
-/** Transfers store no payee: they show as "Transfer to/from ‹account›", linking to the other leg. */
+/**
+ * Transfers store no payee: they show as "Transfer to/from ‹account›", linking to the other leg.
+ * A starting balance without a payee shows as one.
+ */
 export function payeeDisplay(
-	row: Pick<TransactionRow, 'amount' | 'payeeName' | 'transferAccountId' | 'transferAccountName'>
+	row: Pick<TransactionRow, 'amount' | 'payeeName' | 'transferAccountId' | 'transferAccountName'> &
+		Partial<Pick<TransactionRow, 'isOpening'>>
 ): PayeeDisplay {
 	if (row.transferAccountId && row.transferAccountName)
 		return {
@@ -21,7 +24,7 @@ export function payeeDisplay(
 			accountId: row.transferAccountId,
 			accountName: row.transferAccountName
 		};
-	if (isStartingBalance(row.payeeName)) return { kind: 'starting-balance' };
+	if (row.isOpening && !row.payeeName) return { kind: 'starting-balance' };
 	return row.payeeName ? { kind: 'payee', name: row.payeeName } : { kind: 'none' };
 }
 

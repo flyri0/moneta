@@ -35,8 +35,7 @@ function input(today: string, scale = 100): DemoInput {
 			restaurant: 'Restaurant',
 			household: 'Home Store',
 			streaming: 'Streaming',
-			hobby: 'Bookshop',
-			startingBalance: 'Starting Balance'
+			hobby: 'Bookshop'
 		},
 		categories: CATEGORIES
 	};
@@ -54,9 +53,6 @@ describe('buildDemo', () => {
 		expect(seed.accounts.map((a) => a.type)).toEqual(['checking', 'savings', 'credit_card']);
 		expect(seed.accounts.every((a) => a.onBudget)).toBe(true);
 		expect(seed.accounts.every((a) => Number.isSafeInteger(a.startingBalance))).toBe(true);
-		expect(seed.accounts.find((a) => a.key === 'checking')?.startingBalancePayee).toBe(
-			'Starting Balance'
-		);
 	});
 
 	it('covers this month and the two before it, never past today', () => {

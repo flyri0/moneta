@@ -25,7 +25,8 @@ const KEYS = {
 	currency: 'currency',
 	locale: 'locale',
 	createdAt: 'created_at',
-	lastBackupAt: 'last_backup_at'
+	lastBackupAt: 'last_backup_at',
+	startingBalanceCategory: 'starting_balance_category'
 } as const;
 
 function setKey(db: Db, key: string, value: string | null): void {
@@ -134,6 +135,7 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 				ci
 			]);
 		});
+		ensureStartingBalanceCategory(db);
 		input.groups.forEach((group, gi) => {
 			const groupId = uuidv7();
 			run(db, 'INSERT INTO category_groups (id, name, sort_order) VALUES (?, ?, ?)', [
@@ -153,14 +155,56 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 	});
 }
 
-export function defaultIncomeCategoryId(db: Db): string {
+/** The category starting balances go to when none is chosen, if it still exists. */
+export function startingBalanceCategoryId(db: Db): string | null {
 	const row = one<{ id: string }>(
 		db,
-		`SELECT c.id FROM categories c
-		 JOIN category_groups g ON g.id = c.group_id
-		 WHERE g.system = 'income'
-		 ORDER BY c.sort_order, c.name LIMIT 1`
+		`SELECT c.id FROM meta m JOIN categories c ON c.id = m.value
+		 WHERE m.key = '${KEYS.startingBalanceCategory}'`
 	);
-	if (!row) throw new DomainError('NOT_FOUND', 'No income category found');
-	return row.id;
+	return row?.id ?? null;
+}
+
+/**
+ * The starting balance category, an ordinary income category the user may rename or delete. Once
+ * deleted, an income category named like it is adopted, or a new one is created in the budget's
+ * language.
+ */
+export function ensureStartingBalanceCategory(db: Db): string {
+	return tx(db, () => {
+		const current = startingBalanceCategoryId(db);
+		if (current) return current;
+		const income = one<{ id: string }>(
+			db,
+			"SELECT id FROM category_groups WHERE system = 'income'"
+		);
+		if (!income) throw new DomainError('NOT_FOUND', 'No income group found');
+		const named = one<{ id: string }>(
+			db,
+			`SELECT id FROM categories
+			 WHERE group_id = ? AND lower(trim(name)) IN ('starting balance', 'saldo inicial')
+			 ORDER BY sort_order LIMIT 1`,
+			[income.id]
+		);
+		let id = named?.id;
+		if (!id) {
+			id = uuidv7();
+			const locale = one<{ value: string }>(db, 'SELECT value FROM meta WHERE key = ?', [
+				KEYS.locale
+			]);
+			run(
+				db,
+				`INSERT INTO categories (id, group_id, name, sort_order)
+				 VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?))`,
+				[
+					id,
+					income.id,
+					locale?.value.startsWith('pt') ? 'Saldo inicial' : 'Starting Balance',
+					income.id
+				]
+			);
+		}
+		setKey(db, KEYS.startingBalanceCategory, id);
+		return id;
+	});
 }

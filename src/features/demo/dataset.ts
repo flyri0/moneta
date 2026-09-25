@@ -22,7 +22,6 @@ export interface DemoPayeeNames {
 	household: string;
 	streaming: string;
 	hobby: string;
-	startingBalance: string;
 }
 
 /** The starter categories the demo spends in, by role rather than by position. */
@@ -163,8 +162,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				type: 'checking',
 				onBudget: true,
 				startingBalance: money(CHECKING_START),
-				startingDate: opened,
-				startingBalancePayee: payees.startingBalance
+				startingDate: opened
 			},
 			{
 				key: SAVINGS,
@@ -172,8 +170,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				type: 'savings',
 				onBudget: true,
 				startingBalance: money(SAVINGS_START),
-				startingDate: opened,
-				startingBalancePayee: payees.startingBalance
+				startingDate: opened
 			},
 			{
 				key: CARD,

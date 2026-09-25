@@ -1,8 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
-import { STARTING_BALANCE_PAYEE } from '$domain/payees';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
-import { defaultIncomeCategoryId } from './meta';
+import { ensureStartingBalanceCategory } from './meta';
 import { createStartingBalance } from './transactions';
 
 export type AccountType =
@@ -25,7 +24,8 @@ export interface CreateAccountInput {
 	onBudget: boolean; // ignored for credit cards (always on-budget)
 	startingBalance: number; // minor units; negative for debt
 	startingDate: string; // YYYY-MM-DD
-	startingBalancePayee?: string;
+	/** Where an on-budget starting balance goes; the starting balance category when left out. */
+	startingBalanceCategoryId?: string | null;
 }
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
@@ -75,8 +75,10 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 				accountId: id,
 				date: input.startingDate,
 				amount: input.startingBalance,
-				payeeName: input.startingBalancePayee?.trim() || STARTING_BALANCE_PAYEE,
-				categoryId: onBudget ? defaultIncomeCategoryId(db) : null,
+				payeeName: null,
+				categoryId: onBudget
+					? (input.startingBalanceCategoryId ?? ensureStartingBalanceCategory(db))
+					: null,
 				cleared: true
 			});
 		}

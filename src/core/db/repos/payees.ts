@@ -1,6 +1,5 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
-import { isStartingBalance } from '$domain/payees';
 import { all, one, run, tx, type Db } from '../connection';
 
 export interface Payee {
@@ -50,15 +49,14 @@ interface PayeeRow {
 	defaultCategoryId: string | null;
 }
 
-/** A payee the user may change: not a starting balance one. */
-function editablePayee(db: Db, id: string): PayeeRow {
+/** The payee `id`, which must exist. */
+function getPayee(db: Db, id: string): PayeeRow {
 	const payee = one<PayeeRow>(
 		db,
 		'SELECT id, name, default_category_id AS defaultCategoryId FROM payees WHERE id = ?',
 		[id]
 	);
 	if (!payee) throw new DomainError('NOT_FOUND', `Payee ${id} not found`);
-	if (isStartingBalance(payee.name)) throw new DomainError('SYSTEM_ENTITY_READONLY');
 	return payee;
 }
 
@@ -77,8 +75,7 @@ function isUsed(db: Db, id: string): boolean {
 export function renamePayee(db: Db, id: string, name: string): void {
 	const trimmed = name.trim();
 	if (!trimmed) throw new DomainError('INVALID_INPUT', 'Payee name is required');
-	editablePayee(db, id);
-	if (isStartingBalance(trimmed)) throw new DomainError('SYSTEM_ENTITY_READONLY');
+	getPayee(db, id);
 	if (one(db, 'SELECT 1 AS x FROM payees WHERE name = ? AND id <> ?', [trimmed, id]))
 		throw new DomainError('PAYEE_EXISTS');
 	run(db, 'UPDATE payees SET name = ? WHERE id = ?', [trimmed, id]);
@@ -92,8 +89,8 @@ export function mergePayee(db: Db, sourceId: string, targetId: string): void {
 	if (sourceId === targetId)
 		throw new DomainError('INVALID_INPUT', 'Cannot merge a payee into itself');
 	tx(db, () => {
-		const source = editablePayee(db, sourceId);
-		const target = editablePayee(db, targetId);
+		const source = getPayee(db, sourceId);
+		const target = getPayee(db, targetId);
 		run(db, 'UPDATE transactions SET payee_id = ? WHERE payee_id = ?', [targetId, sourceId]);
 		run(db, 'UPDATE schedules SET payee_id = ? WHERE payee_id = ?', [targetId, sourceId]);
 		if (!target.defaultCategoryId && source.defaultCategoryId)
@@ -107,7 +104,7 @@ export function mergePayee(db: Db, sourceId: string, targetId: string): void {
 
 /** Sets the category a payee's new transactions start with, or clears it. */
 export function setPayeeDefaultCategory(db: Db, id: string, categoryId?: string): void {
-	editablePayee(db, id);
+	getPayee(db, id);
 	if (categoryId && !one(db, 'SELECT 1 AS x FROM categories WHERE id = ?', [categoryId]))
 		throw new DomainError('NOT_FOUND', `Category ${categoryId} not found`);
 	run(db, 'UPDATE payees SET default_category_id = ? WHERE id = ?', [categoryId || null, id]);
@@ -115,20 +112,20 @@ export function setPayeeDefaultCategory(db: Db, id: string, categoryId?: string)
 
 /** Deletes a payee no transaction uses. */
 export function deletePayee(db: Db, id: string): void {
-	editablePayee(db, id);
+	getPayee(db, id);
 	if (isUsed(db, id)) throw new DomainError('PAYEE_IN_USE');
 	run(db, 'DELETE FROM payees WHERE id = ?', [id]);
 }
 
-/** Deletes every payee no transaction or schedule uses, except starting balance ones. Returns how many. */
+/** Deletes every payee no transaction or schedule uses. Returns how many. */
 export function deleteUnusedPayees(db: Db): number {
 	return tx(db, () => {
-		const unused = all<{ id: string; name: string }>(
+		const unused = all<{ id: string }>(
 			db,
-			`SELECT id, name FROM payees p
+			`SELECT id FROM payees p
 			 WHERE NOT EXISTS (SELECT 1 FROM transactions t WHERE t.payee_id = p.id)
 			   AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.payee_id = p.id)`
-		).filter((p) => !isStartingBalance(p.name));
+		);
 		for (const p of unused) run(db, 'DELETE FROM payees WHERE id = ?', [p.id]);
 		return unused.length;
 	});

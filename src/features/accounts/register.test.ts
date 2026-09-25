@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { payeeDisplay, payeeText, projectBalances, registerBalances } from './register';
 
-const row = { amount: -500, payeeName: null, transferAccountId: null, transferAccountName: null };
+const row = {
+	amount: -500,
+	payeeName: null,
+	isOpening: false,
+	transferAccountId: null,
+	transferAccountName: null
+};
 
 describe('payeeDisplay', () => {
 	it('shows transfers by direction and other account', () => {
@@ -16,14 +22,14 @@ describe('payeeDisplay', () => {
 	});
 
 	it('recognizes starting balances, payees and blanks', () => {
-		expect(payeeDisplay({ ...row, payeeName: 'Starting Balance' })).toEqual({
-			kind: 'starting-balance'
+		expect(payeeDisplay({ ...row, isOpening: true })).toEqual({ kind: 'starting-balance' });
+		expect(payeeDisplay({ ...row, isOpening: true, payeeName: 'Employer' })).toEqual({
+			kind: 'payee',
+			name: 'Employer'
 		});
 		expect(payeeDisplay({ ...row, payeeName: 'Saldo inicial' })).toEqual({
-			kind: 'starting-balance'
-		});
-		expect(payeeDisplay({ ...row, payeeName: 'starting balance' })).toEqual({
-			kind: 'starting-balance'
+			kind: 'payee',
+			name: 'Saldo inicial'
 		});
 		expect(payeeDisplay({ ...row, payeeName: 'Mercado' })).toEqual({
 			kind: 'payee',

@@ -50,8 +50,10 @@ export const api = {
 	accounts: {
 		list: read(accounts.listAccounts, []),
 		get: read(accounts.getAccount, ['string']),
-		// A starting balance is one plain transaction, and its payee may be new.
-		create: write(['accounts', 'transactions', 'payees'], accounts.createAccount, ['object']),
+		// A starting balance is one plain transaction, and its category may be created again.
+		create: write(['accounts', 'transactions', 'categories', 'meta'], accounts.createAccount, [
+			'object'
+		]),
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
@@ -59,6 +61,7 @@ export const api = {
 	},
 	categories: {
 		tree: read(categories.listCategoryTree, []),
+		startingBalanceId: read(meta.startingBalanceCategoryId, []),
 		createGroup: write(['category_groups'], categories.createGroup, ['object']),
 		updateGroup: write(['category_groups'], categories.updateGroup, ['string', 'object']),
 		deleteGroup: write(['category_groups', 'categories'], categories.deleteGroup, [

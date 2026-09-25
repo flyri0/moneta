@@ -12,7 +12,8 @@ import {
 	type CreateAccountInput
 } from './accounts';
 import { createTransaction, listTransactions } from './transactions';
-import { defaultIncomeCategoryId } from './meta';
+import { startingBalanceCategoryId } from './meta';
+import { deleteCategory, listCategoryTree } from './categories';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 const base = { onBudget: true, startingBalance: 0, startingDate: '2026-01-01' } as const;
@@ -22,7 +23,7 @@ const acct = (p: Partial<CreateAccountInput> & Pick<CreateAccountInput, 'name' |
 });
 
 describe('createAccount', () => {
-	it('records an on-budget starting balance as default income category', async () => {
+	it('records an on-budget starting balance in the starting balance category, with no payee', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 150000 }));
 		expect(getAccount(db, id)).toMatchObject({
@@ -34,14 +35,17 @@ describe('createAccount', () => {
 		const [t] = listTransactions(db, { accountId: id });
 		expect(t).toMatchObject({
 			amount: 150000,
-			payeeName: 'Starting Balance',
-			categoryId: defaultIncomeCategoryId(db),
+			payeeId: null,
+			payeeName: null,
+			categoryId: startingBalanceCategoryId(db),
+			isOpening: true,
 			cleared: true,
 			date: '2026-01-01'
 		});
+		expect(all(db, 'SELECT id FROM payees')).toEqual([]);
 	});
 
-	it('uses custom startingBalancePayee when provided', async () => {
+	it('uses the chosen starting balance category', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(
 			db,
@@ -49,15 +53,40 @@ describe('createAccount', () => {
 				name: 'Banco',
 				type: 'checking',
 				startingBalance: 150000,
-				startingBalancePayee: 'Saldo inicial'
+				startingBalanceCategoryId: categoryId(db, 'Salário')
 			})
 		);
+		expect(listTransactions(db, { accountId: id })[0].categoryId).toBe(categoryId(db, 'Salário'));
+	});
+
+	it('creates the starting balance category again when every income category is gone', async () => {
+		const db = await createBudgetDb();
+		const income = listCategoryTree(db).find((g) => g.system === 'income')!;
+		for (const cat of income.categories) deleteCategory(db, cat.id);
+		const id = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 100 }));
 		const [t] = listTransactions(db, { accountId: id });
-		expect(t.payeeName).toBe('Saldo inicial');
+		expect(t.categoryName).toBe('Saldo inicial');
+		expect(t.categoryId).toBe(startingBalanceCategoryId(db));
+	});
+
+	it('refuses a missing starting balance category', async () => {
+		const db = await createBudgetDb();
+		expect(() =>
+			createAccount(
+				db,
+				acct({
+					name: 'Bank',
+					type: 'checking',
+					startingBalance: 100,
+					startingBalanceCategoryId: 'missing'
+				})
+			)
+		).toThrow(code('NOT_FOUND'));
+		expect(listAccounts(db)).toEqual([]);
 	});
 
 	// Review Focus Pin #1: Negative starting balance on credit card
-	it('creates credit card without payment category and assigns starting debt to default income category', async () => {
+	it('creates credit card without payment category and assigns starting debt to the starting balance category', async () => {
 		const db = await createBudgetDb();
 		const cardId = createAccount(db, {
 			name: 'Nubank',
@@ -78,7 +107,7 @@ describe('createAccount', () => {
 		const txns = listTransactions(db, { accountId: cardId });
 		expect(txns.length).toBe(1);
 		expect(txns[0].amount).toBe(-150000);
-		expect(txns[0].categoryId).toBe(defaultIncomeCategoryId(db));
+		expect(txns[0].categoryId).toBe(startingBalanceCategoryId(db));
 	});
 
 	it('coerces credit cards with onBudget: false to onBudget: true', async () => {

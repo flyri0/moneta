@@ -11,7 +11,6 @@ import {
 	updateTransaction
 } from './transactions';
 import { listPayees } from './payees';
-import { defaultIncomeCategoryId } from './meta';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 
@@ -110,7 +109,7 @@ describe('simple transactions', () => {
 			startingBalance: -50000,
 			startingDate: '2026-01-01'
 		});
-		const incomeId = defaultIncomeCategoryId(db);
+		const incomeId = categoryId(db, 'Salário');
 
 		const id = createTransaction(db, {
 			accountId: card,

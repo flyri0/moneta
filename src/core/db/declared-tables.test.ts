@@ -4,7 +4,8 @@ import { api } from './api';
 import { all, ALL_TABLES, tx, type Db, type Table } from './connection';
 import { createAccount, closeAccount } from './repos/accounts';
 import { setAssigned } from './repos/budget';
-import { createGroup, listCategoryTree } from './repos/categories';
+import { createGroup, deleteCategory, listCategoryTree } from './repos/categories';
+import { startingBalanceCategoryId } from './repos/meta';
 import { getOrCreatePayee, setPayeeDefaultCategory } from './repos/payees';
 import { createSchedule, type ScheduleInput } from './repos/schedules';
 import { createTransaction } from './repos/transactions';
@@ -166,7 +167,14 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	],
 	'accounts.create': [
 		{ args: () => [newAccount] },
-		{ args: () => [{ ...newAccount, startingBalance: 5000, startingBalancePayee: 'Opening' }] }
+		{ args: () => [{ ...newAccount, startingBalance: 5000 }] },
+		{ args: (f) => [{ ...newAccount, startingBalance: 5000, startingBalanceCategoryId: f.food }] },
+		{
+			// The starting balance category is gone, so it is created again.
+			prepare: (f) =>
+				deleteCategory(f.db, startingBalanceCategoryId(f.db)!, categoryId(f.db, 'Salário')),
+			args: () => [{ ...newAccount, startingBalance: 5000 }]
+		}
 	],
 	'accounts.rename': [{ args: (f) => [f.bank, 'Main'] }],
 	'accounts.close': [{ args: (f) => [f.spare] }],

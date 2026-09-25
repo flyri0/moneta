@@ -1,8 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb, createTestDb } from '../testing';
-import { all, run } from '../connection';
-import { defaultIncomeCategoryId, getMeta, initBudget, isInitialized, updateMeta } from './meta';
-import { deleteCategory, listCategoryTree } from './categories';
+import { all, run, type Db } from '../connection';
+import {
+	ensureStartingBalanceCategory,
+	getMeta,
+	initBudget,
+	isInitialized,
+	startingBalanceCategoryId,
+	updateMeta
+} from './meta';
+import { createCategory, deleteCategory, listCategoryTree, updateCategory } from './categories';
 
 describe('initBudget', () => {
 	it('creates meta, system groups and the starting categories', async () => {
@@ -38,6 +45,7 @@ describe('initBudget', () => {
 		expect(categories.map((c) => [c.groupName, c.name])).toEqual([
 			['Income', 'Salário'],
 			['Income', 'Outras receitas'],
+			['Income', 'Saldo inicial'],
 			['Everyday', 'Food'],
 			['Everyday', 'Fun']
 		]);
@@ -68,7 +76,7 @@ describe('initBudget', () => {
 			 WHERE g.system = 'income'
 			 ORDER BY c.sort_order`
 		);
-		expect(categories.map((c) => c.name)).toEqual(['Salary', 'Other Income']);
+		expect(categories.map((c) => c.name)).toEqual(['Salary', 'Other Income', 'Starting Balance']);
 	});
 
 	it('refuses to initialize twice', async () => {
@@ -99,24 +107,48 @@ describe('initBudget', () => {
 	});
 });
 
-describe('defaultIncomeCategoryId', () => {
-	it('returns the first income category id', async () => {
+describe('ensureStartingBalanceCategory', () => {
+	const incomeGroupId = (db: Db) => listCategoryTree(db).find((g) => g.system === 'income')!.id;
+
+	it('is created with the budget and recorded', async () => {
 		const db = await createBudgetDb();
-		const defaultId = defaultIncomeCategoryId(db);
-		const tree = listCategoryTree(db);
-		const income = tree.find((g) => g.system === 'income')!;
-		expect(defaultId).toBe(income.categories[0].id);
+		const id = startingBalanceCategoryId(db);
+		expect(id).toBe(categoryId(db, 'Saldo inicial'));
+		expect(ensureStartingBalanceCategory(db)).toBe(id);
 	});
 
-	it('throws NOT_FOUND when no income category exists', async () => {
+	it('keeps following the category after a rename', async () => {
+		const db = await createBudgetDb();
+		const id = ensureStartingBalanceCategory(db);
+		updateCategory(db, id, { name: 'Abertura' });
+		expect(ensureStartingBalanceCategory(db)).toBe(id);
+		expect(startingBalanceCategoryId(db)).toBe(id);
+	});
+
+	it('creates it again once deleted, even with no other income category', async () => {
 		const db = await createBudgetDb();
 		const income = listCategoryTree(db).find((g) => g.system === 'income')!;
-		for (const cat of income.categories) {
-			deleteCategory(db, cat.id);
-		}
-		expect(() => defaultIncomeCategoryId(db)).toThrow(
-			expect.objectContaining({ code: 'NOT_FOUND' })
-		);
+		for (const cat of income.categories) deleteCategory(db, cat.id);
+		expect(startingBalanceCategoryId(db)).toBeNull();
+		const id = ensureStartingBalanceCategory(db);
+		expect(startingBalanceCategoryId(db)).toBe(id);
+		expect(listCategoryTree(db).find((g) => g.system === 'income')!.categories).toEqual([
+			expect.objectContaining({ id, name: 'Saldo inicial' })
+		]);
+	});
+
+	it('adopts an income category with the same name instead of adding another', async () => {
+		const db = await createBudgetDb();
+		deleteCategory(db, ensureStartingBalanceCategory(db));
+		const own = createCategory(db, { groupId: incomeGroupId(db), name: ' starting balance ' });
+		expect(ensureStartingBalanceCategory(db)).toBe(own);
+		expect(startingBalanceCategoryId(db)).toBe(own);
+	});
+
+	it('names it in the budget language', async () => {
+		const db = await createTestDb();
+		initBudget(db, { name: 'Home', currency: 'USD', locale: 'en-US', groups: [] });
+		expect(startingBalanceCategoryId(db)).toBe(categoryId(db, 'Starting Balance'));
 	});
 });
 

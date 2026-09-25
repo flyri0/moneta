@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Payee } from '$db/repos/payees';
-import { editable, filterPayees, mergeTargets, nameConflict, unusedCount } from './payees';
+import { filterPayees, mergeTargets, nameConflict, unusedCount } from './payees';
 
 const payee = (id: string, name: string, transactions = 1, schedules = 0): Payee => ({
 	id,
@@ -20,24 +20,15 @@ const list = [
 	payee('e', 'Saldo inicial', 0)
 ];
 
-describe('editable', () => {
-	it('leaves starting balance payees read-only', () => {
-		expect(editable(payee('a', 'Amazon'))).toBe(true);
-		expect(editable(payee('c', 'Starting Balance'))).toBe(false);
-	});
-});
-
 describe('filterPayees', () => {
-	const label = (p: Payee) => (p.id === 'c' ? 'Saldo inicial' : p.name);
-
-	it('matches the shown name, ignoring case and accents', () => {
-		expect(filterPayees(list, 'sao joao', label).map((p) => p.id)).toEqual(['b']);
-		expect(filterPayees(list, ' AMA ', label).map((p) => p.id)).toEqual(['a']);
-		expect(filterPayees(list, 'saldo', label).map((p) => p.id)).toEqual(['c', 'e']);
+	it('matches the name, ignoring case and accents', () => {
+		expect(filterPayees(list, 'sao joao').map((p) => p.id)).toEqual(['b']);
+		expect(filterPayees(list, ' AMA ').map((p) => p.id)).toEqual(['a']);
+		expect(filterPayees(list, 'saldo').map((p) => p.id)).toEqual(['e']);
 	});
 
 	it('returns everything for an empty query', () => {
-		expect(filterPayees(list, '  ', label)).toBe(list);
+		expect(filterPayees(list, '  ')).toBe(list);
 	});
 });
 
@@ -51,14 +42,14 @@ describe('nameConflict', () => {
 });
 
 describe('mergeTargets', () => {
-	it('offers the other editable payees', () => {
-		expect(mergeTargets(list, 'a').map((p) => p.id)).toEqual(['b', 'd']);
+	it('offers every other payee, starting balance names included', () => {
+		expect(mergeTargets(list, 'a').map((p) => p.id)).toEqual(['b', 'c', 'd', 'e']);
 	});
 });
 
 describe('unusedCount', () => {
-	it('counts editable payees without transactions', () => {
-		expect(unusedCount(list)).toBe(2);
+	it('counts payees without transactions, starting balance names included', () => {
+		expect(unusedCount(list)).toBe(3);
 	});
 });
 

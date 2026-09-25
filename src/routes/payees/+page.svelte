@@ -7,7 +7,7 @@
 	import PageHeader from '$components/PageHeader.svelte';
 	import PayeeDialog from '$features/payees/PayeeDialog.svelte';
 	import PayeeList from '$features/payees/PayeeList.svelte';
-	import { editable, filterPayees, unusedCount } from '$features/payees/payees';
+	import { filterPayees, unusedCount } from '$features/payees/payees';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import type { Payee } from '$db/repos/payees';
@@ -28,9 +28,7 @@
 	let removing = $state(false);
 
 	const all = $derived(payees.data ?? []);
-	const shown = $derived(
-		filterPayees(all, search, (p) => (editable(p) ? p.name : m.register_starting_balance()))
-	);
+	const shown = $derived(filterPayees(all, search));
 	const unused = $derived(unusedCount(all));
 	const categoryNames = $derived(
 		new Map((tree.data ?? []).flatMap((g) => g.categories.map((c) => [c.id, categoryLabel(c)])))

@@ -53,8 +53,7 @@ async function demoDb(): Promise<Db> {
 				restaurant: 'Restaurant',
 				household: 'Home Store',
 				streaming: 'Streaming Service',
-				hobby: 'Bookshop',
-				startingBalance: 'Starting Balance'
+				hobby: 'Bookshop'
 			},
 			categories: CATEGORIES
 		})
@@ -108,7 +107,11 @@ describe('seedDemo', () => {
 		const payees = new Set(listTransactions(db).map((r) => r.payeeName));
 		expect(payees).toContain('Corner Market');
 		expect(payees).toContain('Paycheck');
-		expect(payees).toContain('Starting Balance');
+	});
+
+	it('opens its accounts with starting balances that have no payee', () => {
+		const openings = listTransactions(db).filter((r) => r.isOpening);
+		expect(openings.map((r) => r.payeeName)).toEqual([null, null]);
 	});
 
 	it('leaves nothing to assign and nothing overspent', () => {
