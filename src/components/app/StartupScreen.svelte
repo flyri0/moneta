@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import { Button } from '$ui/button';
 	import type { BootState } from '$client/app-state.svelte';
 	import type { StartupErrorCode } from '$client/session';
@@ -6,11 +7,16 @@
 
 	let {
 		boot,
-		onTakeOver
+		onTakeOver,
+		onForce
 	}: {
 		boot: Extract<BootState, { kind: 'loading' | 'blocked' | 'error' }>;
 		onTakeOver: () => void;
+		/** Takes the database from a tab that didn't hand it over. */
+		onForce: () => Promise<void>;
 	} = $props();
+
+	let forcing = $state(false);
 
 	const ERRORS: Record<StartupErrorCode, { title: () => string; body: () => string }> = {
 		STORAGE_UNAVAILABLE: {
@@ -29,6 +35,15 @@
 		<p class="text-2xl font-semibold">{m.app_name()}</p>
 		{#if boot.kind === 'loading'}
 			<p class="text-muted-foreground" role="status">{m.startup_loading()}</p>
+		{:else if boot.kind === 'blocked' && boot.stuck}
+			<h1 class="text-lg font-medium">{m.startup_blocked_title()}</h1>
+			<p class="text-muted-foreground" role="alert">{m.startup_blocked_stuck()}</p>
+			<div class="flex flex-wrap justify-center gap-2">
+				<Button onclick={onTakeOver}>{m.startup_blocked_try_again()}</Button>
+				<Button variant="outline" onclick={() => (forcing = true)}>
+					{m.startup_blocked_force()}
+				</Button>
+			</div>
 		{:else if boot.kind === 'blocked'}
 			<h1 class="text-lg font-medium">{m.startup_blocked_title()}</h1>
 			<p class="text-muted-foreground">{m.startup_blocked_body()}</p>
@@ -42,3 +57,11 @@
 		{/if}
 	</div>
 </main>
+
+<ConfirmDialog
+	bind:open={forcing}
+	title={m.startup_force_title()}
+	body={m.startup_force_body()}
+	confirmLabel={m.startup_blocked_force()}
+	onConfirm={onForce}
+/>

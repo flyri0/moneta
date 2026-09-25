@@ -11,7 +11,7 @@ import { settleWithin } from './timeout';
 export interface LockManagerLike {
 	request(
 		name: string,
-		options: { ifAvailable?: boolean },
+		options: { ifAvailable?: boolean; steal?: boolean; signal?: AbortSignal },
 		callback: (lock: unknown) => Promise<void> | void
 	): Promise<unknown>;
 }
@@ -27,8 +27,16 @@ export interface ChannelLike {
 export interface TabLock {
 	/** Takes the lock if no other tab holds it. */
 	tryAcquire(): Promise<boolean>;
-	/** Asks the owner to hand over and resolves once this tab holds the lock. */
-	takeOver(): Promise<void>;
+	/**
+	 * Asks the owner to hand over. Resolves true once this tab holds the lock, or false when the
+	 * owner didn't hand over in time (a frozen or stuck tab).
+	 */
+	takeOver(): Promise<boolean>;
+	/**
+	 * Takes the lock whether or not the owner hands over (Web Locks `steal`). The owner is told it
+	 * lost the lock, but a stuck tab can't close its database first.
+	 */
+	forceTakeOver(): Promise<void>;
 	/**
 	 * Runs when another tab takes over. The lock is released after `handler` settles, or after
 	 * a few seconds if it doesn't.
@@ -41,6 +49,8 @@ export interface TabLock {
 export const TAB_LOCK_NAME = 'moneta-db';
 /** How long a takeover waits for this tab to shut down before the lock is let go anyway. */
 const SHUTDOWN_TIMEOUT = 5000;
+/** How long a takeover waits for the owner to hand over before giving up. */
+const TAKEOVER_TIMEOUT = 10_000;
 const TAKEOVER = 'moneta:takeover';
 
 export function createTabLock(deps: {
@@ -48,9 +58,11 @@ export function createTabLock(deps: {
 	channel: ChannelLike;
 	name?: string;
 	shutdownTimeout?: number;
+	takeOverTimeout?: number;
 }): TabLock {
 	const name = deps.name ?? TAB_LOCK_NAME;
 	const shutdownTimeout = deps.shutdownTimeout ?? SHUTDOWN_TIMEOUT;
+	const takeOverTimeout = deps.takeOverTimeout ?? TAKEOVER_TIMEOUT;
 	let releaseHold: (() => void) | null = null;
 	let lostHandler: () => Promise<void> = async () => {};
 	let lockPromise: Promise<unknown> | null = null;
@@ -71,6 +83,15 @@ export function createTabLock(deps: {
 
 	deps.channel.addEventListener('message', onMessage);
 
+	/** A lock held by `request` rejects when another tab steals it: this tab has lost it. */
+	const watch = (request: Promise<unknown>) => {
+		request.catch(() => {
+			if (!releaseHold) return;
+			releaseHold = null;
+			void lostHandler().catch(() => {});
+		});
+	};
+
 	return {
 		tryAcquire() {
 			return new Promise<boolean>((resolve) => {
@@ -78,15 +99,31 @@ export function createTabLock(deps: {
 					resolve(lock !== null);
 					return lock !== null ? hold() : undefined;
 				});
+				watch(lockPromise);
 			});
 		},
 		takeOver() {
+			return new Promise<boolean>((resolve) => {
+				const giveUp = new AbortController();
+				const timer = setTimeout(() => giveUp.abort(), takeOverTimeout);
+				lockPromise = deps.locks.request(name, { signal: giveUp.signal }, () => {
+					clearTimeout(timer);
+					resolve(true);
+					return hold();
+				});
+				// Aborted while waiting: the request rejects and the lock was never held.
+				lockPromise.catch(() => resolve(false));
+				watch(lockPromise);
+				deps.channel.postMessage({ type: TAKEOVER });
+			});
+		},
+		forceTakeOver() {
 			return new Promise<void>((resolve) => {
-				lockPromise = deps.locks.request(name, {}, () => {
+				lockPromise = deps.locks.request(name, { steal: true }, () => {
 					resolve();
 					return hold();
 				});
-				deps.channel.postMessage({ type: TAKEOVER });
+				watch(lockPromise);
 			});
 		},
 		onLost(handler) {

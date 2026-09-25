@@ -8,7 +8,8 @@ import type { OpenResult, StartupErrorCode, UnreadableBudget } from './session';
 
 export type BootState =
 	| { kind: 'loading' }
-	| { kind: 'blocked' }
+	/** Another tab has the database; `stuck` once it didn't hand it over when asked. */
+	| { kind: 'blocked'; stuck?: boolean }
 	| { kind: 'error'; code: StartupErrorCode; message: string }
 	| { kind: 'onboarding' }
 	| { kind: 'unreadable'; budgets: UnreadableBudget[] }

@@ -112,7 +112,17 @@
 
 	async function takeOver() {
 		app.boot = { kind: 'loading' };
-		await lock?.takeOver();
+		if (lock && !(await lock.takeOver())) {
+			if (mounted) app.boot = { kind: 'blocked', stuck: true };
+			return;
+		}
+		await start();
+	}
+
+	/** Opens the database here even though the other tab didn't hand it over. */
+	async function forceTakeOver() {
+		app.boot = { kind: 'loading' };
+		await lock?.forceTakeOver();
 		await start();
 	}
 
@@ -193,5 +203,5 @@
 		onNew={() => (app.boot = { kind: 'onboarding' })}
 	/>
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
-	<StartupScreen boot={app.boot} onTakeOver={takeOver} />
+	<StartupScreen boot={app.boot} onTakeOver={takeOver} onForce={forceTakeOver} />
 {/if}

@@ -1,25 +1,40 @@
 import { describe, it, expect } from 'vitest';
 import { createTabLock, type ChannelLike, type LockManagerLike } from './tab-lock';
 
-/** An in-memory Web Locks manager: one holder per name, FIFO waiters. */
+/** An in-memory Web Locks manager: one holder per name, FIFO waiters, `signal` and `steal`. */
 function fakeLocks(): LockManagerLike {
-	const held = new Set<string>();
+	const holders = new Map<string, { abort(err: unknown): void }>();
 	const waiting = new Map<string, (() => void)[]>();
-	const grant = (name: string, callback: (lock: unknown) => Promise<void> | void) => {
-		held.add(name);
-		return Promise.resolve(callback({ name })).finally(() => {
-			held.delete(name);
-			waiting.get(name)?.shift()?.();
+	const grant = (name: string, callback: (lock: unknown) => Promise<void> | void) =>
+		new Promise((resolve, reject) => {
+			const holder = { abort: reject };
+			holders.set(name, holder);
+			Promise.resolve(callback({ name }))
+				.then(resolve, reject)
+				.finally(() => {
+					if (holders.get(name) !== holder) return;
+					holders.delete(name);
+					waiting.get(name)?.shift()?.();
+				});
 		});
-	};
 	return {
 		request(name, options, callback) {
-			if (!held.has(name)) return grant(name, callback);
+			if (options.steal) {
+				holders.get(name)?.abort(new DOMException('Lock stolen', 'AbortError'));
+				holders.delete(name);
+				return grant(name, callback);
+			}
+			if (!holders.has(name)) return grant(name, callback);
 			if (options.ifAvailable) return Promise.resolve(callback(null));
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				const queue = waiting.get(name) ?? [];
-				queue.push(() => resolve(grant(name, callback)));
+				const go = () => resolve(grant(name, callback));
+				queue.push(go);
 				waiting.set(name, queue);
+				options.signal?.addEventListener('abort', () => {
+					queue.splice(queue.indexOf(go), 1);
+					reject(new DOMException('Request aborted', 'AbortError'));
+				});
 			});
 		}
 	};
@@ -103,7 +118,7 @@ describe('createTabLock', () => {
 		const second = createTabLock({ locks, channel: channel() });
 		first.onLost(() => Promise.reject(new Error('close failed')));
 		await first.tryAcquire();
-		await expect(second.takeOver()).resolves.toBeUndefined();
+		await expect(second.takeOver()).resolves.toBe(true);
 	});
 
 	it('releases the lock even if shutting down never finishes', async () => {
@@ -113,7 +128,30 @@ describe('createTabLock', () => {
 		const second = createTabLock({ locks, channel: channel() });
 		first.onLost(() => new Promise(() => {}));
 		await first.tryAcquire();
-		await expect(second.takeOver()).resolves.toBeUndefined();
+		await expect(second.takeOver()).resolves.toBe(true);
+	});
+
+	it('gives up a takeover the owner never answers', async () => {
+		const locks = fakeLocks();
+		// Separate buses: the owner is frozen and never hears the request.
+		const first = createTabLock({ locks, channel: fakeBus()() });
+		const second = createTabLock({ locks, channel: fakeBus()(), takeOverTimeout: 20 });
+		await first.tryAcquire();
+		expect(await second.takeOver()).toBe(false);
+		expect(await second.tryAcquire()).toBe(false);
+	});
+
+	it('can force a takeover, and tells the old owner it lost the database', async () => {
+		const locks = fakeLocks();
+		const first = createTabLock({ locks, channel: fakeBus()() });
+		const second = createTabLock({ locks, channel: fakeBus()() });
+		let lost = 0;
+		first.onLost(async () => void lost++);
+		await first.tryAcquire();
+		await second.forceTakeOver();
+		await new Promise((r) => setTimeout(r, 0));
+		expect(lost).toBe(1);
+		expect(await first.tryAcquire()).toBe(false);
 	});
 
 	it('releases the lock so another lock can acquire it', async () => {
