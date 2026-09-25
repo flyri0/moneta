@@ -160,14 +160,14 @@
 				{#each shown as row (row.key)}
 					<tr class="border-t">
 						<th scope="row" class="py-1.5 pr-3 text-left font-normal">
-							<span class="flex min-w-0 items-center gap-2">
+							<span class="flex min-w-0 items-start gap-2">
 								<span
-									class="size-2.5 shrink-0 rounded-full {segmentClass(
+									class="mt-1 size-2.5 shrink-0 rounded-full {segmentClass(
 										colorOf.get(row.key) ?? null
 									)}"
 									aria-hidden="true"
 								></span>
-								<span class="truncate">{row.label}</span>
+								<span class="min-w-0 wrap-anywhere">{row.label}</span>
 							</span>
 							<span class="block pl-4.5 text-xs text-muted-foreground sm:hidden">
 								{m.reports_average_before()}
