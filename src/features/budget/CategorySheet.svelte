@@ -9,6 +9,7 @@
 	import { Combobox } from '$ui/combobox';
 	import { Separator } from '$ui/separator';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import { categoryProgress } from '$features/budget/progress';
@@ -22,7 +23,6 @@
 	import CategoryDelete from './CategoryDelete.svelte';
 	import CategorySettings from './CategorySettings.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
-	import SheetLink from './SheetLink.svelte';
 
 	let {
 		open = $bindable(false),

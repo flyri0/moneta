@@ -13,6 +13,9 @@ import {
 
 export type Ends = 'never' | 'on' | 'after';
 
+/** The schedule sheet's screens. */
+export type ScheduleView = 'main' | 'repeat' | 'delete';
+
 /** The rule fields as the form edits them. Numbers are text, as typed. */
 export interface RuleDraft {
 	frequency: Frequency;
@@ -148,4 +151,22 @@ export function ruleSummary(rule: Pick<Rule, 'frequency' | 'interval'>): string 
 	return rule.interval === 1
 		? EVERY[rule.frequency]()
 		: EVERY_N[rule.frequency]({ count: rule.interval });
+}
+
+/** Each frequency's name, as the Repeats picker lists it. */
+export const FREQUENCY_LABELS: Record<Frequency, () => string> = {
+	once: m.schedule_once,
+	daily: m.schedule_frequency_daily,
+	weekly: m.schedule_frequency_weekly,
+	monthly: m.schedule_frequency_monthly,
+	yearly: m.schedule_frequency_yearly
+};
+
+/** The rule being edited, as `ruleSummary` says it; just "Weekly" while the interval is invalid. */
+export function draftRuleSummary(rule: RuleDraft): string {
+	if (rule.frequency === 'once') return m.schedule_once();
+	const interval = wholeNumber(rule.interval);
+	return interval === null
+		? FREQUENCY_LABELS[rule.frequency]()
+		: ruleSummary({ frequency: rule.frequency, interval });
 }

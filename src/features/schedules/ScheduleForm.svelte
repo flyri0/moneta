@@ -1,10 +1,14 @@
 <script lang="ts">
+	import RepeatIcon from '@lucide/svelte/icons/repeat';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
+	import { Separator } from '$ui/separator';
 	import { Switch } from '$ui/switch';
+	import SheetLink from '$components/SheetLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
@@ -16,21 +20,29 @@
 	import TransactionFields from '$features/transactions/TransactionFields.svelte';
 	import {
 		buildScheduleInput,
+		draftRuleSummary,
+		FREQUENCY_LABELS,
 		type Ends,
 		type ScheduleDraft,
-		type ScheduleFormError
+		type ScheduleFormError,
+		type ScheduleView
 	} from './form';
 
-	/** Adds a schedule, or edits the one `editingId` names. */
+	/**
+	 * Adds a schedule, or edits the one `editingId` names. `view` is the screen: the transaction
+	 * first, the repeat rule and delete one tap away. The draft is kept across screens.
+	 */
 	let {
 		ctx,
 		initial,
 		editingId,
+		view = $bindable(),
 		onDone
 	}: {
 		ctx: FormContext;
 		initial: ScheduleDraft;
 		editingId: string | null;
+		view: ScheduleView;
 		onDone: () => void;
 	} = $props();
 
@@ -40,20 +52,12 @@
 	let draft = $state(structuredClone(initial));
 	let error = $state<string | null>(null);
 	let busy = $state(false);
-	let confirmDelete = $state(false);
 
 	const ERRORS: Record<ScheduleFormError, () => string> = {
 		...FORM_ERRORS,
 		INTERVAL_INVALID: m.form_error_interval_invalid,
 		END_DATE_INVALID: m.form_error_end_date_invalid,
 		END_COUNT_INVALID: m.form_error_end_count_invalid
-	};
-	const FREQUENCY_LABELS: Record<Frequency, () => string> = {
-		once: m.schedule_once,
-		daily: m.schedule_frequency_daily,
-		weekly: m.schedule_frequency_weekly,
-		monthly: m.schedule_frequency_monthly,
-		yearly: m.schedule_frequency_yearly
 	};
 	const UNIT_LABELS: Record<Frequency, () => string> = {
 		once: () => '',
@@ -102,24 +106,63 @@
 		if (!error) onDone();
 	}
 
+	function go(next: ScheduleView) {
+		view = next;
+		error = null;
+	}
+
 	async function remove() {
-		if (!editingId) return;
-		if (!confirmDelete) {
-			confirmDelete = true;
-			return;
-		}
+		if (!editingId || busy) return;
 		const id = editingId;
+		busy = true;
 		error = await runAction(() => session.api.schedules.delete(id));
+		busy = false;
 		if (!error) onDone();
 	}
 </script>
 
 <form class="grid gap-4" onsubmit={save}>
-	<TransactionFields {ctx} bind:draft={draft.txn} dateLabel={m.schedule_next_date()} />
+	{#if view === 'main'}
+		<TransactionFields {ctx} bind:draft={draft.txn} dateLabel={m.schedule_next_date()} />
 
-	<div class="grid gap-3 rounded-xl border bg-muted/20 p-3.5">
-		<div class="grid grid-cols-2 gap-3">
-			<div class="grid gap-2">
+		<div class="flex items-center justify-between gap-4 rounded-lg border p-3">
+			<div class="grid gap-1">
+				<Label for="schedule-auto">{m.schedule_auto_enter()}</Label>
+				<p class="text-xs text-muted-foreground">
+					{draft.autoEnter ? m.schedule_auto_enter_hint() : m.schedule_manual_hint()}
+				</p>
+			</div>
+			<Switch id="schedule-auto" bind:checked={draft.autoEnter} />
+		</div>
+
+		<Separator />
+
+		<nav class="-mx-2 grid gap-0.5">
+			<SheetLink
+				icon={RepeatIcon}
+				label={m.schedule_frequency()}
+				detail={draftRuleSummary(draft.rule)}
+				onclick={() => go('repeat')}
+			/>
+			{#if editingId}
+				<SheetLink
+					icon={Trash2Icon}
+					label={m.schedule_delete()}
+					destructive
+					onclick={() => go('delete')}
+				/>
+			{/if}
+		</nav>
+
+		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+
+		<div class="grid grid-cols-2 gap-2">
+			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
+			<Button type="submit" disabled={busy || blocked}>{m.save()}</Button>
+		</div>
+	{:else if view === 'repeat'}
+		<div class="grid divide-y rounded-lg border">
+			<div class="grid gap-2 p-3">
 				<Label for="schedule-frequency">{m.schedule_frequency()}</Label>
 				<Select.Root
 					type="single"
@@ -138,8 +181,9 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
+
 			{#if draft.rule.frequency !== 'once'}
-				<div class="grid gap-2">
+				<div class="grid gap-2 p-3">
 					<Label for="schedule-interval">{m.schedule_interval()}</Label>
 					<div class="flex items-center gap-2">
 						<Input
@@ -154,34 +198,30 @@
 						</span>
 					</div>
 				</div>
-			{/if}
-		</div>
 
-		{#if draft.rule.frequency !== 'once'}
-			{#if draft.rule.frequency !== 'daily'}
-				<div class="grid gap-2">
-					<Label for="schedule-weekend">{m.schedule_weekend()}</Label>
-					<Select.Root
-						type="single"
-						value={draft.rule.weekend}
-						onValueChange={(v) => (draft.rule.weekend = v as WeekendRule)}
-					>
-						<Select.Trigger id="schedule-weekend" class="w-full">
-							{WEEKEND_LABELS[draft.rule.weekend]()}
-						</Select.Trigger>
-						<Select.Content>
-							{#each WEEKEND_RULES as weekend (weekend)}
-								<Select.Item value={weekend} label={WEEKEND_LABELS[weekend]()}>
-									{WEEKEND_LABELS[weekend]()}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-			{/if}
+				{#if draft.rule.frequency !== 'daily'}
+					<div class="grid gap-2 p-3">
+						<Label for="schedule-weekend">{m.schedule_weekend()}</Label>
+						<Select.Root
+							type="single"
+							value={draft.rule.weekend}
+							onValueChange={(v) => (draft.rule.weekend = v as WeekendRule)}
+						>
+							<Select.Trigger id="schedule-weekend" class="w-full">
+								{WEEKEND_LABELS[draft.rule.weekend]()}
+							</Select.Trigger>
+							<Select.Content>
+								{#each WEEKEND_RULES as weekend (weekend)}
+									<Select.Item value={weekend} label={WEEKEND_LABELS[weekend]()}>
+										{WEEKEND_LABELS[weekend]()}
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				{/if}
 
-			<div class="grid grid-cols-2 gap-3">
-				<div class="grid gap-2">
+				<div class="grid gap-2 p-3">
 					<Label for="schedule-ends">{m.schedule_ends()}</Label>
 					<Select.Root
 						type="single"
@@ -200,8 +240,9 @@
 						</Select.Content>
 					</Select.Root>
 				</div>
+
 				{#if draft.rule.ends === 'on'}
-					<div class="grid gap-2">
+					<div class="grid gap-2 p-3">
 						<Label for="schedule-end-date">{m.schedule_end_date()}</Label>
 						<DatePicker
 							id="schedule-end-date"
@@ -210,39 +251,31 @@
 						/>
 					</div>
 				{:else if draft.rule.ends === 'after'}
-					<div class="grid gap-2">
+					<div class="grid gap-2 p-3">
 						<Label for="schedule-end-count">{m.schedule_end_count()}</Label>
 						<Input
 							id="schedule-end-count"
 							bind:value={draft.rule.endCount}
 							inputmode="numeric"
 							autocomplete="off"
+							class="w-20"
 						/>
 					</div>
 				{/if}
-			</div>
-		{/if}
-	</div>
-
-	<div class="flex items-center justify-between gap-4">
-		<div class="grid gap-1">
-			<Label for="schedule-auto">{m.schedule_auto_enter()}</Label>
-			<p class="text-xs text-muted-foreground">
-				{draft.autoEnter ? m.schedule_auto_enter_hint() : m.schedule_manual_hint()}
-			</p>
+			{/if}
 		</div>
-		<Switch id="schedule-auto" bind:checked={draft.autoEnter} />
-	</div>
 
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+	{:else}
+		<p class="text-sm text-muted-foreground">{m.schedule_delete_body()}</p>
 
-	<div class="flex flex-wrap justify-end gap-2">
-		{#if editingId}
-			<Button variant="destructive" class="mr-auto" onclick={remove}>
-				{confirmDelete ? m.confirm_delete() : m.delete()}
+		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+
+		<div class="grid grid-cols-2 gap-2">
+			<Button variant="outline" onclick={() => go('main')}>{m.cancel()}</Button>
+			<Button variant="destructive" disabled={busy} onclick={remove}>
+				{m.schedule_delete()}
 			</Button>
-		{/if}
-		<Button variant="ghost" onclick={onDone}>{m.cancel()}</Button>
-		<Button type="submit" disabled={busy || blocked}>{m.save()}</Button>
-	</div>
+		</div>
+	{/if}
 </form>

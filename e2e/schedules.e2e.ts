@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseCombobox, onboard, pickDate } from './helpers';
+import { chooseCombobox, chooseSelect, onboard, pickDate } from './helpers';
 
 /** A local date `days` from today, as YYYY-MM-DD. */
 function daysFromToday(days: number): string {
@@ -54,6 +54,39 @@ test('schedules a monthly bill, forecasts it and enters it', async ({ page }) =>
 	// The next one is a month away, past the 30-day forecast.
 	await expect(upcoming).toHaveCount(0);
 	await expect(page.getByTestId('register-balance')).toHaveText('$600.00');
+});
+
+test('edits the repeat rule on its own screen and deletes a schedule', async ({ page }) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
+	await dialog.getByLabel('Amount', { exact: true }).fill('30');
+	await chooseCombobox(dialog, 'Category', 'Rent', 'Rent');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	const schedule = page.getByTestId('schedule-row');
+	await schedule.click();
+	await dialog.getByRole('button', { name: /^Repeats/ }).click();
+	await expect(dialog.getByRole('heading', { name: 'Repeats' })).toBeVisible();
+	await chooseSelect(dialog, 'Repeats', 'Weekly');
+	await dialog.getByLabel('Every').fill('2');
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	// The rule screen's edits wait in the draft until Save.
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toContainText('Every 2 weeks');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(schedule).toContainText('Every 2 weeks');
+
+	await schedule.click();
+	await dialog.getByRole('button', { name: 'Delete schedule' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Delete this schedule?' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Delete schedule' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByText('No schedules yet.')).toBeVisible();
 });
 
 /** Adds an automatic $2,000 paycheck from "Employer" to Checking, next on `date`. */
