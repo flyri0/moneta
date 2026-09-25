@@ -9,8 +9,9 @@ export interface LiveState<T> {
 }
 
 /**
- * A store that runs `fetch` on subscribe and again whenever a write changes
- * one of `tables`. Out-of-order results from older runs are ignored.
+ * A store that runs `fetch` on subscribe and again whenever a write changes one of `tables`.
+ * One fetch runs at a time: changes made while it runs fold into a single fetch after it, and
+ * the result of a fetch that changes overtook is dropped for that one.
  */
 export function liveQuery<T>(
 	client: Pick<RpcClient, 'onChange'>,
@@ -20,18 +21,26 @@ export function liveQuery<T>(
 	return readable<LiveState<T>>(
 		{ data: undefined, error: undefined, loading: true },
 		(set, update) => {
-			let run = 0;
 			let active = true;
+			let running = false;
+			let dirty = false;
 			const refresh = () => {
-				const mine = ++run;
+				if (running) {
+					dirty = true;
+					return;
+				}
+				running = true;
+				dirty = false;
 				update((s) => ({ ...s, loading: true }));
+				const settle = (apply: () => void) => {
+					running = false;
+					if (!active) return;
+					if (dirty) refresh();
+					else apply();
+				};
 				fetch().then(
-					(data) => {
-						if (active && mine === run) set({ data, error: undefined, loading: false });
-					},
-					(error: unknown) => {
-						if (active && mine === run) update((s) => ({ ...s, error, loading: false }));
-					}
+					(data) => settle(() => set({ data, error: undefined, loading: false })),
+					(error: unknown) => settle(() => update((s) => ({ ...s, error, loading: false })))
 				);
 			};
 			refresh();

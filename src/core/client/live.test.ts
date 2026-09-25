@@ -59,7 +59,7 @@ describe('liveQuery', () => {
 		unsub();
 	});
 
-	it('ignores stale results', async () => {
+	it('folds the changes made during a fetch into one more fetch, whose result wins', async () => {
 		const client = fakeClient();
 		const resolvers: ((v: string) => void)[] = [];
 		const store = liveQuery(
@@ -68,12 +68,16 @@ describe('liveQuery', () => {
 			() => new Promise<string>((r) => resolvers.push(r))
 		);
 		const unsub = store.subscribe(() => {});
-		client.emit(['accounts']);
-		resolvers[1]('new');
+		for (let i = 0; i < 5; i++) client.emit(['accounts']);
+		expect(resolvers).toHaveLength(1);
+		resolvers[0]('stale');
 		await flush();
-		resolvers[0]('old');
+		expect(resolvers).toHaveLength(2);
+		expect(get(store)).toMatchObject({ data: undefined, loading: true });
+		resolvers[1]('fresh');
 		await flush();
-		expect(get(store).data).toBe('new');
+		expect(resolvers).toHaveLength(2);
+		expect(get(store)).toEqual({ data: 'fresh', error: undefined, loading: false });
 		unsub();
 	});
 });

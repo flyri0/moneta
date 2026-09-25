@@ -14,7 +14,8 @@ export function useLive<T>(
 	tables: readonly Table[],
 	fetch: () => Promise<T>
 ): LiveState<T> {
-	let state = $state<LiveState<T>>({ data: undefined, error: undefined, loading: true });
+	// Replaced whole on every result, never changed in place: no need for a deep proxy.
+	let state = $state.raw<LiveState<T>>({ data: undefined, error: undefined, loading: true });
 	$effect(() => {
 		const store = liveQuery(client, tables, fetch);
 		return store.subscribe((next) => {
