@@ -156,7 +156,8 @@
 </script>
 
 {#if app.boot.kind === 'ready' && app.session}
-	{#key app.session.file}
+	<!-- Keyed on the session, not the file: a restore over the open budget makes a new session. -->
+	{#key app.session}
 		<AppShell>{@render children()}</AppShell>
 	{/key}
 {:else if app.boot.kind === 'onboarding' && worker}

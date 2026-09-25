@@ -46,10 +46,17 @@ export class BudgetSession {
 
 	parse = (text: string): number | null => parseAmount(text, this.money);
 
-	/** Re-reads meta whenever a write changes it. Returns the unsubscribe function. */
+	/**
+	 * Re-reads meta whenever a write changes it. Returns the unsubscribe function. A read that
+	 * fails (the budget was closed, as a restore does) keeps the meta it had.
+	 */
 	watchMeta(): () => void {
 		return this.client.onChange((tables) => {
-			if (tables.includes('meta')) void this.api.meta.get().then((meta) => (this.meta = meta));
+			if (!tables.includes('meta')) return;
+			this.api.meta.get().then(
+				(meta) => (this.meta = meta),
+				() => {}
+			);
 		});
 	}
 }
@@ -58,7 +65,7 @@ export class AppState {
 	boot: BootState = $state({ kind: 'loading' });
 	session: BudgetSession | null = $state(null);
 
-	/** Shows `file` as the open budget. The app shell remounts, since it is keyed on the file. */
+	/** Shows `file` as the open budget. The app shell remounts, since it is keyed on the session. */
 	show(client: RpcClient, file: string, meta: BudgetMeta): void {
 		this.session = new BudgetSession(client, file, meta);
 		this.boot = { kind: 'ready' };

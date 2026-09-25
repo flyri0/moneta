@@ -201,3 +201,28 @@ test('exports transactions as CSV and the budget as JSON', async ({ page }, test
 		meta: { name: 'Home', currency: 'USD' }
 	});
 });
+
+test('follows a budget restored over the open one, and its renames after', async ({
+	page
+}, testInfo) => {
+	await onboard(page);
+	await openSettings(page);
+	const backup = testInfo.outputPath('home.moneta');
+	await download(page, 'Back up now', backup);
+	await page.getByLabel('Budget name').fill('Changed');
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
+	const sidebar = page.locator('aside');
+	await expect(sidebar).toContainText('Changed');
+
+	await page.getByLabel('Restore from a backup').setInputFiles(backup);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Restore (1)' }).click();
+	await dialog.getByRole('button', { name: 'Tap again to restore' }).click({ timeout: 10_000 });
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(sidebar).toContainText('Home');
+
+	await openSettings(page);
+	await page.getByLabel('Budget name').fill('Renamed');
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(sidebar).toContainText('Renamed');
+});
