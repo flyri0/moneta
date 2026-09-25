@@ -122,14 +122,17 @@
 	async function restore(file: File) {
 		busy = true;
 		error = null;
-		const read = await readBackupFile(api, file);
-		if (read.encrypted) {
-			locked = read.bytes;
-			unlocking = true;
-			busy = false;
-			return;
-		}
-		await restoreBytes(read.bytes);
+		let plain: Uint8Array | null = null;
+		error = await runAction(async () => {
+			const read = await readBackupFile(api, file);
+			if (!read.encrypted) plain = read.bytes;
+			else {
+				locked = read.bytes;
+				unlocking = true;
+			}
+		});
+		busy = false;
+		if (plain) await restoreBytes(plain);
 	}
 
 	async function restoreBytes(bytes: Uint8Array) {

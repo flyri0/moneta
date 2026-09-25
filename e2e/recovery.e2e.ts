@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { deleteBudget, onboard, openSettings } from './helpers';
+import { deleteBudget, failReadingFiles, onboard, openSettings, UNREADABLE_FILE } from './helpers';
 
 /**
  * Overwrites the SQLite header of the budget file in the OPFS pool. It runs on the welcome page,
@@ -80,4 +80,21 @@ test('a damaged budget file can be deleted, then a new budget started', async ({
 
 	await deleteBudget(page, 'Home');
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
+});
+
+test('a backup file that cannot be read shows an error and leaves the way out usable', async ({
+	context
+}) => {
+	const first = await context.newPage();
+	await onboard(first);
+	await first.close();
+	await damageBudgetFile(context);
+
+	const page = await context.newPage();
+	await failReadingFiles(page);
+	await page.goto('/budget');
+	await expect(page.getByRole('heading', { name: "Your budget couldn't be opened" })).toBeVisible();
+	await page.getByLabel('Restore from a backup').setInputFiles(UNREADABLE_FILE);
+	await expect(page.getByTestId('form-message')).toBeVisible();
+	await expect(page.getByLabel('Restore from a backup')).toBeEnabled();
 });

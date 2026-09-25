@@ -3,11 +3,13 @@ import {
 	categoryRow,
 	chooseCombobox,
 	chooseSelect,
+	failReadingFiles,
 	nextStep,
 	onboard,
 	openSettings,
 	skipIntro,
-	startApp
+	startApp,
+	UNREADABLE_FILE
 } from './helpers';
 
 test('onboarding creates a budget that survives a reload', async ({ page }) => {
@@ -149,4 +151,16 @@ test('restores a backup directly from the onboarding backups step', async ({
 	await expect(page2.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await expect(categoryRow(page2, 'Groceries')).toBeVisible();
 	await cleanContext.close();
+});
+
+test('a backup file that cannot be read shows an error and leaves onboarding usable', async ({
+	page
+}) => {
+	await failReadingFiles(page);
+	await startApp(page);
+	await nextStep(page).click();
+	await expect(page.getByText('Already have a backup?')).toBeVisible();
+	await page.getByLabel('Restore from a backup').setInputFiles(UNREADABLE_FILE);
+	await expect(page.getByTestId('form-message')).toBeVisible();
+	await expect(nextStep(page)).toBeEnabled();
 });

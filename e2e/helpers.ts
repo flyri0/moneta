@@ -162,3 +162,22 @@ export async function spend(page: Page, payee: string, amount: string, category:
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();
 }
+
+/** Makes reading a picked file named `unreadable.moneta` fail, as a file removed meanwhile does. */
+export async function failReadingFiles(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		const read = Blob.prototype.arrayBuffer;
+		File.prototype.arrayBuffer = function (this: File) {
+			return this.name === 'unreadable.moneta'
+				? Promise.reject(new DOMException('The file could not be read.', 'NotReadableError'))
+				: read.call(this);
+		};
+	});
+}
+
+/** A backup file whose reading fails once `failReadingFiles` ran. */
+export const UNREADABLE_FILE = {
+	name: 'unreadable.moneta',
+	mimeType: 'application/octet-stream',
+	buffer: Buffer.from('x')
+};
