@@ -9,7 +9,12 @@
 	import { fileTarget } from '$features/backup/file-target';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
-	import { MIN_PASSWORD_LENGTH, passwordProblem } from '$domain/backup-password';
+	import {
+		MIN_PASSWORD_LENGTH,
+		MIN_PASSWORD_STRENGTH,
+		passwordProblem,
+		passwordStrength
+	} from '$domain/backup-password';
 	import { todayIso } from '$domain/month';
 	import { newRecoveryKey } from '$domain/recovery-key';
 	import { m } from '$i18n/paraglide/messages';
@@ -34,7 +39,22 @@
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
 
-	const problem = $derived(passwordProblem(password, confirm));
+	/** How hard the password is to guess (0 to 4), or null until it is rated. */
+	let strength = $state<number | null>(null);
+	const problem = $derived(passwordProblem(password, confirm, strength));
+
+	// Rated on this device as it is typed; the word lists load the first time.
+	$effect(() => {
+		const typed = password;
+		strength = null;
+		if (typed.length < MIN_PASSWORD_LENGTH) return;
+		let current = true;
+		passwordStrength(typed).then(
+			(score) => current && (strength = score),
+			() => {}
+		);
+		return () => (current = false);
+	});
 
 	$effect(() => {
 		if (!open) return;
@@ -48,9 +68,14 @@
 		error = null;
 	});
 
-	function next(event: SubmitEvent) {
+	async function next(event: SubmitEvent) {
 		event.preventDefault();
 		tried = true;
+		if (strength === null && password.length >= MIN_PASSWORD_LENGTH) {
+			const typed = password;
+			const score = await passwordStrength(typed).catch(() => null);
+			if (password === typed) strength = score;
+		}
 		if (problem) return;
 		// A new key every time, so going back can't leave one on screen that was never saved.
 		recoveryKey = newRecoveryKey();
@@ -108,6 +133,29 @@
 					bind:value={password}
 					autocomplete="new-password"
 				/>
+				{#if strength !== null}
+					<div class="flex items-center gap-2" data-testid="password-strength">
+						<div class="grid flex-1 grid-cols-4 gap-1" aria-hidden="true">
+							{#each [1, 2, 3, 4] as bar (bar)}
+								<span
+									class="h-1 rounded-full {strength >= bar
+										? strength >= MIN_PASSWORD_STRENGTH
+											? 'bg-emerald-600 dark:bg-emerald-400'
+											: 'bg-destructive'
+										: 'bg-muted'}"
+								></span>
+							{/each}
+						</div>
+						<span class="text-xs text-muted-foreground">
+							{strength >= 4
+								? m.backup_strength_strong()
+								: strength >= MIN_PASSWORD_STRENGTH
+									? m.backup_strength_good()
+									: m.backup_strength_weak()}
+						</span>
+					</div>
+				{/if}
+				<p class="text-xs text-muted-foreground">{m.backup_password_hint()}</p>
 			</div>
 			<div class="grid gap-1.5">
 				<Label for="backup-password-confirm">{m.backup_password_confirm()}</Label>
@@ -124,7 +172,9 @@
 						message:
 							problem === 'short'
 								? m.backup_password_short({ min: MIN_PASSWORD_LENGTH })
-								: m.backup_password_mismatch()
+								: problem === 'weak'
+									? m.backup_password_weak()
+									: m.backup_password_mismatch()
 					}}
 				/>
 			{/if}

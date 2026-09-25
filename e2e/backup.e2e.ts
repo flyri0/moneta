@@ -120,6 +120,11 @@ test('encrypts backups once set up, and restores them with the password or the r
 	await dialog.getByLabel('Confirm password').fill('short');
 	await dialog.getByRole('button', { name: 'Next' }).click();
 	await expect(dialog.getByRole('alert')).toHaveText('Use at least 8 characters.');
+	// Long enough, but among the first a guesser tries.
+	await dialog.getByLabel('Password', { exact: true }).fill('password1');
+	await dialog.getByLabel('Confirm password').fill('password1');
+	await dialog.getByRole('button', { name: 'Next' }).click();
+	await expect(dialog.getByRole('alert')).toContainText('too easy to guess');
 	await dialog.getByLabel('Password', { exact: true }).fill('correct horse');
 	await dialog.getByLabel('Confirm password').fill('correct horse');
 	await dialog.getByRole('button', { name: 'Next' }).click();
