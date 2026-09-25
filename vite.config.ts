@@ -43,6 +43,14 @@ export default defineConfig({
 			workbox: {
 				// Precache everything, including SQLite's WebAssembly, so the app works offline.
 				globPatterns: ['client/**/*.{js,css,html,ico,png,svg,webp,woff2,wasm,webmanifest}'],
+				globIgnores: [
+					// sqlite-wasm ships these for its other APIs; the app uses only the SAH pool.
+					'**/sqlite3-worker1-*',
+					'**/sqlite3-opfs-async-proxy-*',
+					// English and Portuguese need only Inter's latin subsets. The browser fetches the
+					// others by themselves if a page ever shows those scripts.
+					'**/inter-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*'
+				],
 				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
 			}
 		}),
