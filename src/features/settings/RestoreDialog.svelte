@@ -30,7 +30,8 @@
 	/** Seconds the restore button stays disabled after the first tap, with the warning shown. */
 	const REPLACE_DELAY = 5;
 
-	let bytes = $state.raw<Uint8Array | null>(null);
+	/** The worker's token for the backup it checked, to restore it by (`restoreInspected`). */
+	let token = $state<string | null>(null);
 	/** The picked file while it waits to be unlocked. */
 	let locked = $state.raw<Uint8Array | null>(null);
 	let createdAt = $state<string | null>(null);
@@ -54,7 +55,7 @@
 		if (!open || !file) return;
 		const picked = file;
 		let current = true;
-		bytes = null;
+		token = null;
 		locked = null;
 		createdAt = null;
 		plan = [];
@@ -81,7 +82,7 @@
 		const existing = await session.api.system.listFiles();
 		if (!current()) return;
 		locked = null;
-		bytes = data;
+		token = info.token;
 		createdAt = info.createdAt;
 		plan = planRestore(info.budgets, existing, true);
 		selected = plan.map((p) => p.index);
@@ -100,14 +101,14 @@
 	}
 
 	async function restore() {
-		if (!bytes || chosen.length === 0) return;
+		if (!token || chosen.length === 0) return;
 		if (replacing.length > 0 && !confirmReplace) {
 			confirmReplace = true;
 			countdown = REPLACE_DELAY;
 			return;
 		}
 		if (countdown > 0) return;
-		const data = bytes;
+		const data = token;
 		busy = true;
 		let failure: unknown = null;
 		error = await runAction(async () => {

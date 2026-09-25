@@ -216,6 +216,19 @@ describe('sealBackup and openSealed', () => {
 		expect(isSealed(sealed.slice(0, 100))).toBe(false);
 	});
 
+	it('tells an encrypted backup from its manifest alone, without unpacking the payload', () => {
+		// Claim the payload unpacks to ~4 GiB: unpacking it all would trip the ZIP bomb check.
+		const bytes = sealed.slice();
+		const name = strToU8('payload.bin');
+		for (let i = 0; i + 46 < bytes.length; i++) {
+			const central =
+				bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 1 && bytes[i + 3] === 2;
+			if (central && name.every((c, j) => bytes[i + 46 + j] === c))
+				bytes.set([0xf0, 0xff, 0xff, 0xff], i + 24);
+		}
+		expect(isSealed(bytes)).toBe(true);
+	});
+
 	it('rejects a wrong secret, or any change to the manifest', async () => {
 		expect(await codeOf(openSealed(sealed, { password: 'wrong horse' }))).toBe('BACKUP_WRONG_KEY');
 		const changed = resealed((json) => (json.note = 'hi'));

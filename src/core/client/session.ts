@@ -214,7 +214,8 @@ export function partlyRestored(err: unknown): string[] {
 }
 
 /**
- * Restores budgets from a backup as `planRestore` planned them, and opens one: `openFile` when it
+ * Restores budgets from a backup (its bytes, or the token `inspectBackup` gave for it) as
+ * `planRestore` planned them, and opens one: `openFile` when it
  * was replaced, else the first restored. The worker checks the backup first, so an invalid one
  * changes nothing. If the budget to open can't be opened, the files that were added are deleted
  * and `openFile` is opened again.
@@ -222,16 +223,15 @@ export function partlyRestored(err: unknown): string[] {
 export async function restoreBackup(
 	api: SessionApi,
 	store: KeyValueStore,
-	bytes: Uint8Array,
+	backup: Uint8Array | string,
 	plan: PlannedRestore[],
 	openFile?: string
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	if (plan.length === 0) throw new DomainError('INVALID_INPUT', 'Nothing to restore');
+	const picks = plan.map(({ index, file }) => ({ index, file }));
 	try {
-		await api.system.restoreBackup(
-			bytes,
-			plan.map(({ index, file }) => ({ index, file }))
-		);
+		if (typeof backup === 'string') await api.system.restoreInspected(backup, picks);
+		else await api.system.restoreBackup(backup, picks);
 	} catch (err) {
 		// Budgets written before a failure are there: list them, as startup would.
 		const restored = partlyRestored(err);
@@ -270,9 +270,9 @@ export async function restoreAll(
 	openFile?: string,
 	replace: boolean = false
 ): Promise<{ file: string; meta: BudgetMeta }> {
-	const { budgets } = await api.system.inspectBackup(bytes);
+	const { token, budgets } = await api.system.inspectBackup(bytes);
 	const plan = planRestore(budgets, await api.system.listFiles(), replace);
-	return restoreBackup(api, store, bytes, plan, openFile);
+	return restoreBackup(api, store, token, plan, openFile);
 }
 
 export type StartupErrorCode =

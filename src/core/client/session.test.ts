@@ -248,6 +248,26 @@ describe('switchBudget', () => {
 });
 
 describe('restoreBackup', () => {
+	it('restores what an inspect checked by its token, without sending the backup again', async () => {
+		const { api, store } = await setup();
+		const { file } = await createBudget(api, store, HOME);
+		const backup = await backUp(api, file);
+		const sent: string[] = [];
+		const counting: SessionApi = {
+			meta: api.meta,
+			accounts: api.accounts,
+			demo: api.demo,
+			system: {
+				...pick(api.system),
+				restoreBackup: (...args) => (sent.push('bytes'), api.system.restoreBackup(...args)),
+				restoreInspected: (...args) => (sent.push('token'), api.system.restoreInspected(...args))
+			}
+		};
+		const restored = await restoreAll(counting, store, backup);
+		expect(restored.meta.name).toBe('Home');
+		expect(sent).toEqual(['token']);
+	});
+
 	it('replaces the open budget with its backup, keeping it as a saved copy', async () => {
 		const { api, store, files } = await setup();
 		const { file } = await createBudget(api, store, HOME);
@@ -521,6 +541,7 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		markBackedUp: system.markBackedUp,
 		inspectBackup: system.inspectBackup,
 		restoreBackup: system.restoreBackup,
+		restoreInspected: system.restoreInspected,
 		backupEncryption: system.backupEncryption,
 		setBackupEncryption: system.setBackupEncryption,
 		clearBackupEncryption: system.clearBackupEncryption,

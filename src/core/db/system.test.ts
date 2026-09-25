@@ -260,6 +260,7 @@ describe('inspectBackup', () => {
 		const { bytes } = await system.exportBackup([FILE, OTHER]);
 		system.deleteFile(OTHER);
 		expect(system.inspectBackup(bytes)).toEqual({
+			token: expect.any(String),
 			createdAt: expect.any(String),
 			budgets: [
 				{ index: 0, id: ID, name: 'Home' },
@@ -277,6 +278,34 @@ describe('inspectBackup', () => {
 		expect(system.inspectBackup(budget.image).budgets).toEqual([
 			{ index: 0, id: null, name: 'Home' }
 		]);
+	});
+
+	it('restores what it checked by the token it gives, as a restore of the bytes would', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system, getDb } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE, OTHER]);
+		const { token } = system.inspectBackup(bytes);
+		await system.restoreInspected(token, [{ index: 1, file: THIRD }]);
+		await system.open(THIRD);
+		expect(getMeta(getDb()!).name).toBe('Trip');
+	});
+
+	it('refuses a token it did not give, or from before the last inspect', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE]);
+		const { token: old } = system.inspectBackup(bytes);
+		system.inspectBackup(bytes);
+		for (const token of ['nope', old])
+			await expect(
+				system.restoreInspected(token, [{ index: 0, file: THIRD }])
+			).rejects.toMatchObject({
+				code: 'INVALID_INPUT'
+			});
+		expect(system.listFiles()).toEqual([FILE]);
 	});
 
 	it('rejects a backup with a damaged budget', async () => {

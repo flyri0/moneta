@@ -1,4 +1,5 @@
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
+import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
 import { checkBackup, isIntact } from './backup';
 import { createKeys, openKey, type BackupKeys } from './backup-crypto';
@@ -89,6 +90,8 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 	const now = deps.now ?? (() => new Date());
 	let db: Db | null = null;
 	let openName: string | null = null;
+	/** The budgets the last inspectBackup checked, for restoreInspected to write without redoing it. */
+	let inspected: { token: string; images: Uint8Array[] } | null = null;
 
 	function closeDb(): void {
 		if (db) store.close(db);
@@ -272,17 +275,18 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 		},
 		inspectBackup(bytes) {
 			const { createdAt, budgets } = readBackup(bytes);
-			return {
-				createdAt,
-				budgets: budgets.map(({ id, image }, index) => {
-					const db = openImage(sqlite3, checkBackup(sqlite3, image, migrations));
-					try {
-						return { index, id, name: getMeta(db).name };
-					} finally {
-						db.close();
-					}
-				})
-			};
+			const images: Uint8Array[] = [];
+			const infos = budgets.map(({ id, image }, index) => {
+				images.push(checkBackup(sqlite3, image, migrations));
+				const db = openImage(sqlite3, images[index]);
+				try {
+					return { index, id, name: getMeta(db).name };
+				} finally {
+					db.close();
+				}
+			});
+			inspected = { token: uuidv7(), images };
+			return { token: inspected.token, createdAt, budgets: infos };
 		},
 		async restoreBackup(bytes, picks) {
 			if (!Array.isArray(picks)) throw new DomainError('INVALID_INPUT', 'Bad restore picks');
@@ -292,42 +296,62 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			const images = picks.map(({ index }) =>
 				checkBackup(sqlite3, budgets[index].image, migrations)
 			);
-			await store.reserve(SPARE_FILES + 2 * picks.length);
-			const existing = new Set(store.list());
-			const before = new Map<string, Uint8Array>();
-			for (const { file } of picks) {
-				if (!existing.has(file)) continue;
-				before.set(file, readImage(file));
-				await saveCopy(file, before.get(file)!);
-			}
-			const wasOpen = openName;
-			let written = 0;
-			try {
-				for (const [i, { file }] of picks.entries()) {
-					// The pool can't write over an open file; the open budget closes only for its own.
-					if (openName === file) closeDb();
-					await store.write(file, images[i]);
-					written++;
-				}
-			} catch (err) {
-				const failed = picks[written].file;
-				// A failed write may leave nothing behind: put back what was there.
-				if (before.has(failed) && !store.list().includes(failed))
-					await store.write(failed, before.get(failed)!).catch(() => {});
-				if (wasOpen && !db && store.list().includes(wasOpen)) {
-					const reopened = store.open(wasOpen);
-					configure(reopened);
-					db = reopened;
-					openName = wasOpen;
-				}
-				if (written === 0) throw err;
-				throw new DomainError(
-					'RESTORE_PARTIAL',
-					`Restored ${written} of ${picks.length} budgets: ${String(err)}`,
-					{ restored: picks.slice(0, written).map((p) => p.file) }
-				);
-			}
+			await writeRestored(picks, images);
+		},
+		async restoreInspected(token, picks) {
+			if (!inspected || token !== inspected.token)
+				throw new DomainError('INVALID_INPUT', 'Unknown or stale backup token');
+			if (!Array.isArray(picks)) throw new DomainError('INVALID_INPUT', 'Bad restore picks');
+			const { images } = inspected;
+			checkPicks(picks, images.length);
+			await writeRestored(
+				picks,
+				picks.map(({ index }) => images[index])
+			);
+			inspected = null;
 		}
 	};
+
+	/**
+	 * Writes checked budget images into the files picked for them, keeping a copy of each file
+	 * that exists and the open budget open unless it is replaced (see RESTORE_PARTIAL).
+	 */
+	async function writeRestored(picks: RestorePick[], images: Uint8Array[]): Promise<void> {
+		await store.reserve(SPARE_FILES + 2 * picks.length);
+		const existing = new Set(store.list());
+		const before = new Map<string, Uint8Array>();
+		for (const { file } of picks) {
+			if (!existing.has(file)) continue;
+			before.set(file, readImage(file));
+			await saveCopy(file, before.get(file)!);
+		}
+		const wasOpen = openName;
+		let written = 0;
+		try {
+			for (const [i, { file }] of picks.entries()) {
+				// The pool can't write over an open file; the open budget closes only for its own.
+				if (openName === file) closeDb();
+				await store.write(file, images[i]);
+				written++;
+			}
+		} catch (err) {
+			const failed = picks[written].file;
+			// A failed write may leave nothing behind: put back what was there.
+			if (before.has(failed) && !store.list().includes(failed))
+				await store.write(failed, before.get(failed)!).catch(() => {});
+			if (wasOpen && !db && store.list().includes(wasOpen)) {
+				const reopened = store.open(wasOpen);
+				configure(reopened);
+				db = reopened;
+				openName = wasOpen;
+			}
+			if (written === 0) throw err;
+			throw new DomainError(
+				'RESTORE_PARTIAL',
+				`Restored ${written} of ${picks.length} budgets: ${String(err)}`,
+				{ restored: picks.slice(0, written).map((p) => p.file) }
+			);
+		}
+	}
 	return { system, getDb: () => db };
 }

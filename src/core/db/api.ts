@@ -157,6 +157,11 @@ export interface BackupInfo {
 	budgets: BackupBudgetInfo[];
 }
 
+/** A backup `inspectBackup` checked, and the token to restore it by. */
+export interface InspectedBackup extends BackupInfo {
+	token: string;
+}
+
 /** Which budget of a backup (by index) to restore into which file. */
 export interface RestorePick {
 	index: number;
@@ -184,13 +189,18 @@ export interface SystemApi {
 	exportBackup(names: string[]): Promise<ExportedBackup>;
 	/** Records in each budget file when it was last backed up. Files that can't be written are skipped. */
 	markBackedUp(fileNames: string[], at: string): void;
-	/** Checks a `.moneta` (or legacy `.sqlite`) backup and lists its budgets. Writes nothing. */
-	inspectBackup(bytes: Uint8Array): BackupInfo;
+	/**
+	 * Checks a `.moneta` (or legacy `.sqlite`) backup and lists its budgets. Writes nothing. The
+	 * token lets `restoreInspected` restore them without unpacking and checking them again.
+	 */
+	inspectBackup(bytes: Uint8Array): InspectedBackup;
 	/**
 	 * Restores budgets from a backup into the given files, all checked before any is written. A
 	 * file that exists is replaced and kept as a saved copy; the open one is closed first.
 	 */
 	restoreBackup(bytes: Uint8Array, picks: RestorePick[]): Promise<void>;
+	/** `restoreBackup` for the budgets the last `inspectBackup` checked, by its token. */
+	restoreInspected(token: string, picks: RestorePick[]): Promise<void>;
 	/** Whether backups made on this device are encrypted. */
 	backupEncryption(): Promise<{ on: boolean }>;
 	/**

@@ -137,16 +137,21 @@ function unpack(manifest: Record<string, unknown>, files: Unzipped): BackupConte
 	};
 }
 
-/** The manifest and files of a `.moneta` ZIP, checked up to its version. */
-function readContainer(bytes: Uint8Array): { manifest: Record<string, unknown>; files: Unzipped } {
-	if (!startsWith(bytes, ZIP_HEADER)) throw new DomainError('BACKUP_NOT_RECOGNIZED');
-	const { manifest, files } = readZip(bytes);
+/** Checks a manifest's format and version. */
+function checkManifest(manifest: Record<string, unknown>): void {
 	if (manifest.format !== BACKUP_FORMAT)
 		throw new DomainError('BACKUP_NOT_RECOGNIZED', `Not a ${BACKUP_FORMAT}`);
 	const { version } = manifest;
 	if (typeof version !== 'number' || !Number.isInteger(version) || version < 1)
 		throw new DomainError('BACKUP_DAMAGED', `Bad version in ${MANIFEST}`);
 	if (version > BACKUP_VERSION) throw new DomainError('BACKUP_TOO_NEW', `Version ${version}`);
+}
+
+/** The manifest and files of a `.moneta` ZIP, checked up to its version. */
+function readContainer(bytes: Uint8Array): { manifest: Record<string, unknown>; files: Unzipped } {
+	if (!startsWith(bytes, ZIP_HEADER)) throw new DomainError('BACKUP_NOT_RECOGNIZED');
+	const { manifest, files } = readZip(bytes);
+	checkManifest(manifest);
 	return { manifest, files };
 }
 
@@ -185,10 +190,15 @@ export async function sealBackup(
 	return zipSync({ [MANIFEST]: manifest, [PAYLOAD]: [payload, { level: 0 }] });
 }
 
-/** Whether `bytes` are an encrypted `.moneta` backup. */
+/** Whether `bytes` are an encrypted `.moneta` backup. Only the manifest is unpacked. */
 export function isSealed(bytes: Uint8Array): boolean {
+	if (!startsWith(bytes, ZIP_HEADER)) return false;
 	try {
-		return readContainer(bytes).manifest.encryption != null;
+		const files = unzipSync(bytes, { filter: (file) => file.name === MANIFEST });
+		const manifest: unknown = JSON.parse(strFromU8(files[MANIFEST]));
+		if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) return false;
+		checkManifest(manifest as Record<string, unknown>);
+		return (manifest as Record<string, unknown>).encryption != null;
 	} catch {
 		return false;
 	}
