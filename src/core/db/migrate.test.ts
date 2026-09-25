@@ -62,6 +62,28 @@ describe('migrate', () => {
 		expect(all(db, 'PRAGMA foreign_key_check')).toEqual([]);
 	});
 
+	it('marks the first starting balance of each account as its opening, and nothing else', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 4));
+		db.exec(`
+			INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+				('a1', 'Bank', 'checking', 1, '2026-01-01'), ('a2', 'Conta', 'checking', 1, '2026-01-01'),
+				('a3', 'Cash', 'cash', 1, '2026-01-01');
+			INSERT INTO payees (id, name) VALUES ('p1', 'Starting Balance'), ('p2', 'Saldo inicial'),
+				('p3', 'Market');
+			INSERT INTO transactions (id, account_id, date, amount, payee_id) VALUES
+				('0190-1', 'a1', '2026-01-01', 1000, 'p1'), ('0190-2', 'a1', '2025-12-01', 50, 'p1'),
+				('0190-3', 'a2', '2026-01-01', 2000, 'p2'), ('0190-4', 'a3', '2026-01-01', -10, 'p3');
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT id FROM transactions WHERE is_opening = 1 ORDER BY id')).toEqual([
+			{ id: '0190-1' },
+			{ id: '0190-3' }
+		]);
+	});
+
 	it('is idempotent', async () => {
 		const db = await createTestDb();
 		migrate(db);

@@ -153,14 +153,16 @@ export function validateTransaction(db: Db, input: TransactionInput): void {
 }
 
 const INSERT_SQL = `INSERT INTO transactions
-	(id, account_id, date, amount, payee_id, category_id, memo, cleared, transfer_id, is_split)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+	(id, account_id, date, amount, payee_id, category_id, memo, cleared, transfer_id, is_split,
+	 is_opening)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 function write(
 	db: Db,
 	id: string,
 	input: TransactionInput,
-	pairState?: { id: string; cleared: boolean; accountId: string }
+	pairState?: { id: string; cleared: boolean; accountId: string },
+	opening = false
 ): void {
 	const plan = validate(db, input);
 	const memo = input.memo ?? '';
@@ -178,7 +180,8 @@ function write(
 		memo,
 		input.cleared ? 1 : 0,
 		pairId,
-		plan.splits.length > 0 ? 1 : 0
+		plan.splits.length > 0 ? 1 : 0,
+		opening ? 1 : 0
 	]);
 	if (plan.pair && pairId) {
 		run(db, INSERT_SQL, [
@@ -191,6 +194,7 @@ function write(
 			memo,
 			reusePair && pairState.cleared ? 1 : 0,
 			id,
+			0,
 			0
 		]);
 	}
@@ -208,12 +212,14 @@ interface RawRow {
 	accountId: string;
 	transferId: string | null;
 	cleared: number;
+	isOpening: number;
 }
 
 function getRaw(db: Db, id: string): RawRow {
 	const row = one<RawRow>(
 		db,
-		'SELECT id, account_id AS accountId, transfer_id AS transferId, cleared FROM transactions WHERE id = ?',
+		`SELECT id, account_id AS accountId, transfer_id AS transferId, cleared, is_opening AS isOpening
+		 FROM transactions WHERE id = ?`,
 		[id]
 	);
 	if (!row) throw new DomainError('NOT_FOUND', `Transaction ${id} not found`);
@@ -238,6 +244,15 @@ export function createTransaction(db: Db, input: TransactionInput): string {
 	});
 }
 
+/** Creates an account's starting balance, which reports leave out of income and spending. */
+export function createStartingBalance(db: Db, input: TransactionInput): string {
+	return tx(db, () => {
+		const id = uuidv7();
+		write(db, id, input, undefined, true);
+		return id;
+	});
+}
+
 /** Replaces a transaction (and its transfer pair / splits) while keeping its id. */
 export function updateTransaction(db: Db, id: string, input: TransactionInput): void {
 	tx(db, () => {
@@ -247,7 +262,8 @@ export function updateTransaction(db: Db, id: string, input: TransactionInput): 
 			db,
 			id,
 			input,
-			pair ? { id: pair.id, cleared: pair.cleared === 1, accountId: pair.accountId } : undefined
+			pair ? { id: pair.id, cleared: pair.cleared === 1, accountId: pair.accountId } : undefined,
+			existing.isOpening === 1
 		);
 	});
 }

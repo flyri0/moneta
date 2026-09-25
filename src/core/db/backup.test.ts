@@ -165,6 +165,23 @@ describe('checkBackup rebuilds the budget', () => {
 		restored.close();
 	});
 
+	it('keeps which transactions are starting balances', async () => {
+		const sqlite3 = await loadSqlite();
+		const db = await createBudgetDb();
+		createAccount(db, {
+			name: 'Bank',
+			type: 'checking',
+			onBudget: true,
+			startingBalance: 1000,
+			startingDate: '2026-01-01'
+		});
+		const restored = openImage(sqlite3, checkBackup(sqlite3, toImage(sqlite3, db)));
+		expect(all(restored, 'SELECT amount, is_opening FROM transactions')).toEqual([
+			{ amount: 1000, is_opening: 1 }
+		]);
+		restored.close();
+	});
+
 	it('keeps only the app schema: no triggers, views or extra tables', async () => {
 		const sqlite3 = await loadSqlite();
 		const image = await tampered(`

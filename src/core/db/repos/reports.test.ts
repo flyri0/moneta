@@ -14,7 +14,7 @@ import {
 	spendingByCategory,
 	spendingByPayee
 } from './reports';
-import { createTransaction } from './transactions';
+import { createTransaction, listTransactions, updateTransaction } from './transactions';
 
 let db: Db;
 let bank: string;
@@ -175,6 +175,38 @@ describe('cashFlow', () => {
 		expect(cashFlow(db, { from: '2026-08-01', to: '2026-09-30' })).toEqual([
 			{ month: '2026-08', income: 300000, spending: 7000 },
 			{ month: '2026-09', income: -1000, spending: 17000 }
+		]);
+	});
+
+	it('counts a transaction that only uses the starting balance payee', () => {
+		const income = defaultIncomeCategoryId(db);
+		for (const payeeName of ['Starting Balance', 'Saldo inicial'])
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-10-01',
+				amount: 500,
+				payeeName,
+				categoryId: income
+			});
+		expect(cashFlow(db, { from: '2026-10-01', to: '2026-10-31' })).toEqual([
+			{ month: '2026-10', income: 1000, spending: 0 }
+		]);
+	});
+
+	it('still leaves a starting balance out after it is edited', () => {
+		const [opening] = listTransactions(db, { accountId: bank }).filter(
+			(t) => t.date === '2026-08-01'
+		);
+		updateTransaction(db, opening.id, {
+			accountId: bank,
+			date: '2026-08-01',
+			amount: 250000,
+			payeeName: 'Starting Balance',
+			categoryId: defaultIncomeCategoryId(db),
+			cleared: true
+		});
+		expect(cashFlow(db, { from: '2026-08-01', to: '2026-08-31' })).toEqual([
+			{ month: '2026-08', income: 300000, spending: 7000 }
 		]);
 	});
 

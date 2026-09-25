@@ -62,7 +62,7 @@ export interface CashFlowRow {
 /**
  * Income against spending per month over a date range, on-budget accounts only, oldest first.
  * Only months with activity are returned. Starting balances land in the income category but
- * are money the user already had, so they are left out (matched by payee, like the register).
+ * are money the user already had, so they are left out.
  */
 export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
 	checkRange(query);
@@ -72,12 +72,13 @@ export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
 			COALESCE(SUM(CASE WHEN g.system = 'income' THEN e.amount END), 0) AS income,
 			-COALESCE(SUM(CASE WHEN g.system IS NULL THEN e.amount END), 0) AS spending
 		 FROM (
-			SELECT substr(t.date, 1, 7) AS month, t.category_id AS categoryId, t.amount, t.payee_id
+			SELECT substr(t.date, 1, 7) AS month, t.category_id AS categoryId, t.amount,
+				t.is_opening AS opening
 			FROM transactions t JOIN accounts a ON a.id = t.account_id
 			WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
 			  AND t.date BETWEEN :from AND :to
 			UNION ALL
-			SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.payee_id
+			SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.is_opening
 			FROM transaction_splits s
 			JOIN transactions t ON t.id = s.transaction_id
 			JOIN accounts a ON a.id = t.account_id
@@ -85,8 +86,7 @@ export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
 		 ) e
 		 JOIN categories c ON c.id = e.categoryId
 		 JOIN category_groups g ON g.id = c.group_id
-		 LEFT JOIN payees p ON p.id = e.payee_id
-		 WHERE p.name IS NULL OR lower(trim(p.name)) NOT IN ('starting balance', 'saldo inicial')
+		 WHERE NOT e.opening
 		 GROUP BY e.month
 		 ORDER BY e.month`,
 		{ ':from': query.from, ':to': query.to }
@@ -100,16 +100,16 @@ function checkRange(query: SpendingQuery): void {
 
 /**
  * Every categorized amount on an on-budget account in `:from`..`:to`: whole transactions and
- * split lines, with the month and the transaction's payee.
+ * split lines, with the month, the transaction's payee and whether it is a starting balance.
  */
 const CATEGORIZED_SQL = `
 	SELECT substr(t.date, 1, 7) AS month, t.category_id AS categoryId, t.amount, t.payee_id,
-		t.transfer_id
+		t.transfer_id, t.is_opening AS opening
 	FROM transactions t JOIN accounts a ON a.id = t.account_id
 	WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
 	  AND t.date BETWEEN :from AND :to
 	UNION ALL
-	SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.payee_id, t.transfer_id
+	SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.payee_id, t.transfer_id, t.is_opening
 	FROM transaction_splits s
 	JOIN transactions t ON t.id = s.transaction_id
 	JOIN accounts a ON a.id = t.account_id
@@ -139,8 +139,7 @@ export function categoryMonths(db: Db, query: SpendingQuery): CategoryMonthRow[]
 		 FROM (${CATEGORIZED_SQL}) e
 		 JOIN categories c ON c.id = e.categoryId
 		 JOIN category_groups g ON g.id = c.group_id
-		 LEFT JOIN payees p ON p.id = e.payee_id
-		 WHERE p.name IS NULL OR lower(trim(p.name)) NOT IN ('starting balance', 'saldo inicial')
+		 WHERE NOT e.opening
 		 GROUP BY e.month, c.id
 		 HAVING SUM(e.amount) <> 0
 		 ORDER BY g.sort_order, g.name, c.sort_order, c.name, e.month`,
@@ -199,20 +198,18 @@ export function accountBalances(db: Db, through: Month): AccountBalancesPoint[] 
 /**
  * The money moving in and out of the cash accounts (on-budget, not credit cards) through `today`,
  * which is what Age of Money follows. Moves between two cash accounts cancel out and are left out.
- * Card purchases are too: as in YNAB, card spending counts when the card is paid. Starting balances
- * are matched by payee, like the register.
+ * Card purchases are too: as in YNAB, card spending counts when the card is paid.
  */
 export function ageOfMoneyFlows(db: Db, today: string): CashFlowEntry[] {
 	if (!isDate(today)) throw new DomainError('INVALID_INPUT', `Invalid date ${today}`);
 	return all<Omit<CashFlowEntry, 'opening'> & { opening: number }>(
 		db,
 		`SELECT t.date, t.id, t.amount,
-			COALESCE(lower(trim(p.name)) IN ('starting balance', 'saldo inicial'), 0) AS opening
+			t.is_opening AS opening
 		 FROM transactions t
 		 JOIN accounts a ON a.id = t.account_id
 		 LEFT JOIN transactions o ON o.id = t.transfer_id
 		 LEFT JOIN accounts oa ON oa.id = o.account_id
-		 LEFT JOIN payees p ON p.id = t.payee_id
 		 WHERE a.on_budget = 1 AND a.type <> 'credit_card' AND t.amount <> 0 AND t.date <= :today
 		   AND NOT COALESCE(oa.on_budget = 1 AND oa.type <> 'credit_card', 0)`,
 		{ ':today': today }

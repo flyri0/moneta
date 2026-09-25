@@ -2,7 +2,7 @@ import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
 import { defaultIncomeCategoryId } from './meta';
-import { createTransaction } from './transactions';
+import { createStartingBalance } from './transactions';
 
 export type AccountType =
 	'checking' | 'savings' | 'cash' | 'credit_card' | 'investment' | 'loan' | 'other';
@@ -70,7 +70,7 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 			[id, name, input.type, onBudget ? 1 : 0, nowIso()]
 		);
 		if (input.startingBalance !== 0) {
-			createTransaction(db, {
+			createStartingBalance(db, {
 				accountId: id,
 				date: input.startingDate,
 				amount: input.startingBalance,
