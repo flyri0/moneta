@@ -488,6 +488,21 @@ describe('restoreBackup', () => {
 	});
 });
 
+describe('wipe', () => {
+	it('deletes every file and the backup key, closing the open budget', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system, getDb } = createSystem(deps);
+		await system.setBackupEncryption('correct horse', newRecoveryKey());
+		await system.open(FILE);
+		await system.wipe();
+		expect(getDb()).toBeNull();
+		expect(deps.store.list()).toEqual([]);
+		expect((await system.backupEncryption()).on).toBe(false);
+	});
+});
+
 describe('backup encryption', () => {
 	const PASSWORD = 'correct horse';
 	const RECOVERY = newRecoveryKey();

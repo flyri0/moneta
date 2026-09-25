@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
+	import WipeDeviceDialog from './WipeDeviceDialog.svelte';
 	import InstallHelpDialog from '$features/welcome/InstallHelpDialog.svelte';
 	import { installHow, isStandalone } from '$client/install';
 	import { install } from '$client/install.svelte';
@@ -27,6 +28,7 @@
 	let estimate = $state<StorageEstimate | null>(null);
 	let permission: PermissionStatus | null = null;
 	let helping = $state(false);
+	let wiping = $state(false);
 	const how = $derived(installHow(navigator.userAgent, install.available));
 
 	async function refresh() {
@@ -113,6 +115,8 @@
 			})}
 		/>
 	{/if}
+	<SettingsRow label={m.wipe_row()} onclick={() => (wiping = true)} />
 </SettingsGroup>
 
 <InstallHelpDialog bind:open={helping} {how} />
+<WipeDeviceDialog bind:open={wiping} />

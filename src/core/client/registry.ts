@@ -28,6 +28,9 @@ export function collapsedKey(file: string): string {
 	return `moneta.collapsed.${file}`;
 }
 
+/** The account the transaction dialog picked last, to start the next transaction in. */
+export const LAST_ACCOUNT_KEY = 'moneta.lastAccount';
+
 /** Where a budget file's report cards (their order and which are hidden) are stored. */
 export function reportsLayoutKey(file: string): string {
 	return `moneta.reports.${file}`;

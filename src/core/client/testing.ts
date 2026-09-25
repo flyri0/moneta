@@ -6,14 +6,20 @@ import { REGISTRY_KEY, type KeyValueStore } from './registry';
 import { createRpcClient, type RpcClient } from './rpc';
 
 /** A Map-backed KeyValueStore, optionally pre-filled with a raw registry value. Test-only. */
-export function memoryStore(registry?: string): KeyValueStore & { data: Map<string, string> } {
+export function memoryStore(
+	registry?: string
+): KeyValueStore & Pick<Storage, 'length' | 'key'> & { data: Map<string, string> } {
 	const data = new Map<string, string>();
 	if (registry !== undefined) data.set(REGISTRY_KEY, registry);
 	return {
 		data,
 		getItem: (k) => data.get(k) ?? null,
 		setItem: (k, v) => void data.set(k, v),
-		removeItem: (k) => void data.delete(k)
+		removeItem: (k) => void data.delete(k),
+		get length() {
+			return data.size;
+		},
+		key: (i) => [...data.keys()][i] ?? null
 	};
 }
 

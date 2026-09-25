@@ -2,7 +2,15 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { createTestDb } from '$db/testing';
 import { DomainError } from '$domain/errors';
 import { DEMO_FILE, isDemoOpen, openDemo, requestDemo } from './demo';
-import { collapsedKey, isBudgetFile, loadRegistry, newBudgetFile } from './registry';
+import {
+	collapsedKey,
+	isBudgetFile,
+	LAST_ACCOUNT_KEY,
+	loadRegistry,
+	newBudgetFile,
+	reportsLayoutKey
+} from './registry';
+import { newRecoveryKey } from '$domain/recovery-key';
 import { RpcError } from './rpc';
 import {
 	createBudget,
@@ -14,6 +22,7 @@ import {
 	startupError,
 	switchBudget,
 	updateBudget,
+	wipeDevice,
 	type NewBudget,
 	type SessionApi
 } from './session';
@@ -193,6 +202,37 @@ describe('deleteBudget', () => {
 		await deleteBudget(api, store, home.file, work.file);
 		expect(store.getItem(collapsedKey(home.file))).toBeNull();
 		expect(store.getItem(collapsedKey(work.file))).toBe('["g2"]');
+	});
+
+	it("forgets the deleted budget's report layout, and its last account once it was the open one", async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		store.setItem(reportsLayoutKey(home.file), '[]');
+		store.setItem(reportsLayoutKey(work.file), '[]');
+		store.setItem(LAST_ACCOUNT_KEY, 'a-work-account');
+		await deleteBudget(api, store, home.file, work.file);
+		expect(store.getItem(reportsLayoutKey(home.file))).toBeNull();
+		expect(store.getItem(LAST_ACCOUNT_KEY)).toBe('a-work-account');
+		await deleteBudget(api, store, work.file, work.file);
+		expect(store.getItem(reportsLayoutKey(work.file))).toBeNull();
+		expect(store.getItem(LAST_ACCOUNT_KEY)).toBeNull();
+	});
+});
+
+describe('wipeDevice', () => {
+	it("deletes every budget and the backup key, and forgets the app's settings", async () => {
+		const { api, store, files } = await setup();
+		await createBudget(api, store, HOME);
+		await api.system.setBackupEncryption('correct horse', newRecoveryKey());
+		store.setItem(LAST_ACCOUNT_KEY, 'a1');
+		store.setItem('PARAGLIDE_LOCALE', 'pt-BR');
+		store.setItem('mode-watcher-mode', 'dark');
+		store.setItem('someone-else', 'kept');
+		await wipeDevice(api, store);
+		expect(files.size).toBe(0);
+		expect((await api.system.backupEncryption()).on).toBe(false);
+		expect([...store.data.keys()]).toEqual(['someone-else']);
 	});
 });
 
@@ -542,6 +582,7 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		inspectBackup: system.inspectBackup,
 		restoreBackup: system.restoreBackup,
 		restoreInspected: system.restoreInspected,
+		wipe: system.wipe,
 		backupEncryption: system.backupEncryption,
 		setBackupEncryption: system.setBackupEncryption,
 		clearBackupEncryption: system.clearBackupEncryption,

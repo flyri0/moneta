@@ -183,6 +183,8 @@ export interface SystemApi {
 	readCopy(copyName: string): Uint8Array<ArrayBuffer>;
 	/** Closes the database and lets go of the OPFS files so another tab can open them. */
 	release(): void;
+	/** Deletes every file (budgets, copies, the demo) and the backup key of this device. */
+	wipe(): Promise<void>;
 	/**
 	 * Budget files or saved copies as one `.moneta` backup, encrypted when this device has a backup
 	 * key. Files that can't be read are left out and listed in `skipped`. BACKUP_KEYS_UNAVAILABLE

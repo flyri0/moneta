@@ -5,12 +5,14 @@ import type { BudgetMeta, InitBudgetInput, MetaPatch } from '$db/repos/meta';
 import { endDemo, isDemoOpen, openDemo, sweepDemo } from './demo';
 import {
 	collapsedKey,
+	LAST_ACCOUNT_KEY,
 	loadRegistry,
 	markOpened,
 	newBudgetFile,
 	pickBudget,
 	reconcile,
 	removeBudget,
+	reportsLayoutKey,
 	saveRegistry,
 	upsertBudget,
 	type KeyValueStore
@@ -169,16 +171,43 @@ export async function deleteBudget(
 ): Promise<OpenResult | null> {
 	await api.system.deleteFile(file);
 	saveRegistry(store, removeBudget(loadRegistry(store), file));
-	forgetBudget(store, file);
+	forgetBudget(store, file, file === openFile);
 	return file === openFile ? openLastBudget(api, store) : null;
 }
 
-/** Drops what this device remembers about a budget file that is gone. Only conveniences. */
-function forgetBudget(store: KeyValueStore, file: string): void {
+/**
+ * Drops what this device remembers about a budget file that is gone: its collapsed groups, its
+ * report layout, and the last account used when it was the open budget. Only conveniences.
+ */
+function forgetBudget(store: KeyValueStore, file: string, wasOpen: boolean): void {
 	try {
 		store.removeItem(collapsedKey(file));
+		store.removeItem(reportsLayoutKey(file));
+		if (wasOpen) store.removeItem(LAST_ACCOUNT_KEY);
 	} catch {
 		// Blocked storage has nothing to forget.
+	}
+}
+
+/** What the app keeps in localStorage beyond its `moneta.` keys: the language and the theme. */
+const PREFERENCE_KEYS = ['PARAGLIDE_LOCALE', 'mode-watcher-mode', 'mode-watcher-theme'];
+
+/**
+ * Deletes everything Moneta keeps on this device: every budget file and saved copy, the backup
+ * key, and what localStorage remembers (the budget list, conveniences, language and theme).
+ */
+export async function wipeDevice(
+	api: Pick<SessionApi, 'system'>,
+	store: KeyValueStore & Pick<Storage, 'length' | 'key'>
+): Promise<void> {
+	await api.system.wipe();
+	try {
+		const keys = Array.from({ length: store.length }, (_, i) => store.key(i));
+		for (const key of keys)
+			if (key && (key.startsWith('moneta.') || PREFERENCE_KEYS.includes(key)))
+				store.removeItem(key);
+	} catch {
+		// Blocked storage holds nothing to delete.
 	}
 }
 

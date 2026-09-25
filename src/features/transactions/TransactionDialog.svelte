@@ -2,6 +2,7 @@
 	import { Button } from '$ui/button';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { LAST_ACCOUNT_KEY } from '$client/registry';
 	import { notifyError } from '$client/notify';
 	import type { TransactionInput, TransactionRow } from '$db/repos/transactions';
 	import { todayIso } from '$domain/month';
@@ -33,7 +34,6 @@
 	} = $props();
 
 	const session = useSession();
-	const LAST_ACCOUNT_KEY = 'moneta.lastAccount';
 
 	let ctx = $state.raw<FormContext | null>(null);
 	let initial = $state.raw<TransactionDraft | null>(null);

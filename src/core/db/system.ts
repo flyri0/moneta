@@ -224,6 +224,12 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			closeDb();
 			store.release();
 		},
+		async wipe() {
+			closeDb();
+			inspected = null;
+			for (const name of store.list()) store.remove(name);
+			await keys.clear();
+		},
 		async exportBackup(names, options = {}) {
 			const budgets: BackupBudget[] = [];
 			const skipped: string[] = [];
