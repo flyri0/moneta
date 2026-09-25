@@ -2,12 +2,13 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
+	import FormMessage from '$components/FormMessage.svelte';
 	import CopyList from '$features/backup/CopyList.svelte';
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import { readBackupFile } from '$features/backup/actions';
 	import DeleteBudgetDialog from '$features/settings/DeleteBudgetDialog.svelte';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import {
 		deleteBudget,
 		restoreAll,
@@ -38,7 +39,7 @@
 	let deleting = $state<UnreadableBudget | null>(null);
 	let confirmingDelete = $state(false);
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 	let chosen = $state('');
 	/** An encrypted backup waiting for its password. */
 	let locked = $state.raw<Uint8Array | null>(null);
@@ -60,15 +61,15 @@
 		confirmingDelete = true;
 	}
 
-	async function remove(file: string): Promise<string | null> {
+	async function remove(file: string): Promise<ActionError | null> {
 		busy = true;
-		const message = await runAction(async () => {
+		const failure = await runAction(async () => {
 			// No budget is open, so the file stands in for it: what is left opens next.
 			const next = await deleteBudget(api, localStorage, file, file);
 			if (next) onResult(next);
 		});
 		busy = false;
-		return message;
+		return failure;
 	}
 
 	async function restore(event: Event & { currentTarget: HTMLInputElement }) {
@@ -152,7 +153,7 @@
 			/>
 		</div>
 		<Button variant="outline" disabled={busy} onclick={onNew}>{m.startup_unreadable_new()}</Button>
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 	</div>
 </main>
 

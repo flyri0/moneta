@@ -4,8 +4,9 @@
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { CategoryPatch } from '$db/repos/categories';
 	import { groupLabel } from '$i18n/labels';
@@ -26,7 +27,7 @@
 	let groupId = $state('');
 	let hidden = $state(false);
 	let carryover = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	/** Shows the saved values again, dropping edits. */
 	function reset() {
@@ -113,5 +114,5 @@
 			</div>
 		{/if}
 	</div>
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+	<FormMessage {error} />
 </div>

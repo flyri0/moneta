@@ -1,12 +1,13 @@
 <script lang="ts">
 	import CashFlowChart from './CashFlowChart.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetFlowChart from './NetFlowChart.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
 	import { type DateRange, reportMonths } from '$features/reports/range';
@@ -63,7 +64,7 @@
 </script>
 
 {#if flow.error}
-	<p class="text-sm text-destructive" role="alert">{errorMessage(flow.error)}</p>
+	<FormMessage error={actionError(flow.error)} />
 {:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
 	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
 		{m.reports_income_expense_empty()}

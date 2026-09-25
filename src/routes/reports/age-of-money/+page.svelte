@@ -11,10 +11,12 @@
 </script>
 
 <ReportPage title={m.reports_age_of_money()}>
-	<PeriodBar
-		bind:preset={() => period.preset ?? 'last_6_months', (v) => (period.preset = v)}
-		bind:custom={period.custom}
-		{range}
-	/>
+	{#snippet toolbar()}
+		<PeriodBar
+			bind:preset={() => period.preset ?? 'last_6_months', (v) => (period.preset = v)}
+			bind:custom={period.custom}
+			{range}
+		/>
+	{/snippet}
 	<AgeOfMoneyDetail {range} />
 </ReportPage>

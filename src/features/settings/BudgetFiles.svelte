@@ -3,11 +3,12 @@
 	import { resolve } from '$app/paths';
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
+	import FormMessage from '$components/FormMessage.svelte';
 	import DeleteBudgetDialog from './DeleteBudgetDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
 	import { deleteBudget, switchBudget } from '$client/session';
 	import { currentMonth } from '$domain/month';
@@ -18,7 +19,7 @@
 	let budgets = $state(loadRegistry(localStorage).budgets);
 	let deleting = $state<{ file: string; name: string } | null>(null);
 	let confirmingDelete = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	async function open(file: string) {
 		error = await runAction(async () => {
@@ -33,7 +34,7 @@
 		confirmingDelete = true;
 	}
 
-	function remove(file: string): Promise<string | null> {
+	function remove(file: string): Promise<ActionError | null> {
 		return runAction(async () => {
 			const next = await deleteBudget(session.api, localStorage, file, session.file);
 			if (next) app.apply(session.client, next);
@@ -75,9 +76,7 @@
 			</li>
 		{/each}
 	</ul>
-	{#if error}
-		<p class="px-4 py-3 text-sm text-destructive" role="alert">{error}</p>
-	{/if}
+	<FormMessage {error} />
 	<SettingsRow
 		label={m.settings_budget_new()}
 		onclick={() => (app.boot = { kind: 'onboarding' })}

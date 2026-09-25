@@ -2,12 +2,13 @@
 	import { LineChart } from 'layerchart';
 	import { resolve } from '$app/paths';
 	import * as Chart from '$ui/chart';
+	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth } from '$i18n/formats';
 	import { accountTypeLabel } from '$i18n/labels';
 	import {
@@ -99,9 +100,7 @@
 {/snippet}
 
 {#if accounts.error || history.error}
-	<p class="text-sm text-destructive" role="alert">
-		{errorMessage(accounts.error ?? history.error)}
-	</p>
+	<FormMessage error={actionError(accounts.error ?? history.error)} />
 {:else if accounts.data && breakdown.assets.length + breakdown.debts.length === 0}
 	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
 		{m.reports_accounts_empty()}

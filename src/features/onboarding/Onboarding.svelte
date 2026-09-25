@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { createBudget, restoreAll, type SessionApi } from '$client/session';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
@@ -61,7 +61,7 @@
 	let balance = $state('');
 	let date = $state(todayIso());
 
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 	/** An encrypted backup waiting for its password. */
 	let locked = $state.raw<Uint8Array | null>(null);
@@ -90,7 +90,7 @@
 		const typed =
 			!withAccount || balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
 		if (typed === null) {
-			error = m.form_error_amount_invalid();
+			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
 		busy = true;

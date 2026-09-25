@@ -24,17 +24,29 @@ export async function copyDetails(err: unknown): Promise<void> {
 	}
 }
 
+/** A failed write, as a form shows it. `cause` is set only for unexpected errors (a bug report). */
+export interface ActionError {
+	message: string;
+	cause?: unknown;
+}
+
+/** The inline form of an error: its message, and the error itself when it is unexpected. */
+export function actionError(err: unknown): ActionError {
+	return isUnexpected(err)
+		? { message: errorMessage(err), cause: err }
+		: { message: errorMessage(err) };
+}
+
 /**
- * Runs a write for a form. Returns null on success, or the message to show inline.
- * Unexpected errors are also reported with a toast.
+ * Runs a write for a form. Returns null on success, or the error to show inline (unexpected
+ * errors carry their cause, for the inline "copy details" action).
  */
-export async function runAction(fn: () => Promise<unknown>): Promise<string | null> {
+export async function runAction(fn: () => Promise<unknown>): Promise<ActionError | null> {
 	try {
 		await fn();
 		return null;
 	} catch (err) {
-		if (isUnexpected(err)) notifyError(err);
-		return errorMessage(err);
+		return actionError(err);
 	}
 }
 

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import ReportCard from './ReportCard.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import StatTile from './StatTile.svelte';
 	import TrendsMini from './TrendsMini.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { lastMonths } from '$features/reports/cash-flow';
 	import { segmentClass, SPENDING_TABLES } from '$features/reports/spending';
 	import { categoryTrends } from '$features/reports/trends';
@@ -27,7 +28,7 @@
 	testId="category-trends-card"
 >
 	{#if rows.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(rows.error)}</p>
+		<FormMessage error={actionError(rows.error)} />
 	{:else if rows.data && trends.categories.length === 0}
 		<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
 	{:else if rows.data}

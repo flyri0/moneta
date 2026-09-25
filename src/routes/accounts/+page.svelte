@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$ui/button';
+	import PageHeader from '$components/PageHeader.svelte';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
 	import AddAccountDialog from '$features/accounts/AddAccountDialog.svelte';
@@ -24,15 +25,16 @@
 	);
 </script>
 
-<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
-	<header class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold">{m.nav_accounts()}</h1>
-		<Button onclick={() => (adding = true)}>
+<PageHeader title={m.nav_accounts()}>
+	{#snippet actions()}
+		<Button size="sm" aria-label={m.accounts_add()} onclick={() => (adding = true)}>
 			<PlusIcon />
-			{m.accounts_add()}
+			<span class="hidden md:inline">{m.accounts_add()}</span>
 		</Button>
-	</header>
+	{/snippet}
+</PageHeader>
 
+<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
 	{#if accounts.data && accounts.data.length > 0}
 		<section
 			class="grid gap-1.5 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"

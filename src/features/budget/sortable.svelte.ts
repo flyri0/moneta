@@ -17,15 +17,18 @@ interface DragCallbacks {
 	onCancel: () => void;
 }
 
-/** The visible band of the page, between the fixed bars marked with `data-scroll-inset`. */
+/**
+ * The visible band of the page, between the fixed or sticky bars marked with `data-scroll-inset`
+ * (the demo banner and the page header at the top, the bottom nav on phones).
+ */
 function scrollLimits(): { top: number; bottom: number } {
-	const inset = (side: 'top' | 'bottom') => {
-		const rect = document.querySelector(`[data-scroll-inset="${side}"]`)?.getBoundingClientRect();
-		return rect && rect.height > 0 ? rect : null;
-	};
+	const insets = (side: 'top' | 'bottom') =>
+		[...document.querySelectorAll(`[data-scroll-inset="${side}"]`)]
+			.map((node) => node.getBoundingClientRect())
+			.filter((rect) => rect.height > 0);
 	return {
-		top: inset('top')?.bottom ?? 0,
-		bottom: inset('bottom')?.top ?? window.innerHeight
+		top: Math.max(0, ...insets('top').map((rect) => rect.bottom)),
+		bottom: Math.min(window.innerHeight, ...insets('bottom').map((rect) => rect.top))
 	};
 }
 

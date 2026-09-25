@@ -1,11 +1,12 @@
 <script lang="ts">
 	import ReportCard from './ReportCard.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import Sparkline from './Sparkline.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { monthOf, todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth } from '$i18n/formats';
 	import { netWorthChange, pointsInRange } from '$features/reports/net-worth';
 	import { presetRange } from '$features/reports/range';
@@ -42,7 +43,7 @@
 
 <ReportCard title={m.reports_net_worth()} route="/reports/net-worth" testId="net-worth-card">
 	{#if series.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(series.error)}</p>
+		<FormMessage error={actionError(series.error)} />
 	{:else if series.data && !current}
 		<p class="text-sm text-muted-foreground">{m.reports_net_worth_empty()}</p>
 	{:else if current}

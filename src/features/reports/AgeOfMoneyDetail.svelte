@@ -1,11 +1,12 @@
 <script lang="ts">
 	import AgeOfMoneyChart from './AgeOfMoneyChart.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import {
 		AGE_OF_MONEY_TABLES,
@@ -43,7 +44,7 @@
 </script>
 
 {#if series.error}
-	<p class="text-sm text-destructive" role="alert">{errorMessage(series.error)}</p>
+	<FormMessage error={actionError(series.error)} />
 {:else if series.data && !stat}
 	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
 		{m.reports_age_of_money_not_enough()}

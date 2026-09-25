@@ -11,10 +11,12 @@
 </script>
 
 <ReportPage title={m.reports_net_worth()}>
-	<PeriodBar
-		bind:preset={() => period.preset ?? 'last_6_months', (v) => (period.preset = v)}
-		bind:custom={period.custom}
-		{range}
-	/>
+	{#snippet toolbar()}
+		<PeriodBar
+			bind:preset={() => period.preset ?? 'last_6_months', (v) => (period.preset = v)}
+			bind:custom={period.custom}
+			{range}
+		/>
+	{/snippet}
 	<NetWorthDetail {range} />
 </ReportPage>

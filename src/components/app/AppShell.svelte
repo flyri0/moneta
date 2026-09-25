@@ -29,10 +29,21 @@
 
 	let { children }: { children: Snippet } = $props();
 
-	/** The banner's own height, so the sidebar and the sticky table headers can sit below it. */
-	const APP_TOP = '--app-top: calc(4rem + 1px + env(safe-area-inset-top))';
+	/**
+	 * The banner's own height, so the sidebar, the page header and the toasts can sit below it. Set
+	 * on the root, since the toaster lives outside the shell.
+	 */
+	const APP_TOP = 'calc(4rem + 1px + env(safe-area-inset-top))';
 
 	const session = useSession();
+
+	$effect(() => {
+		if (!session.isDemo) return;
+		const root = document.documentElement;
+		root.style.setProperty('--app-top', APP_TOP);
+		return () => root.style.removeProperty('--app-top');
+	});
+
 	const runSchedules = scheduleRunner(session.api);
 
 	/** Enters what automatic schedules have due. The demo keeps its seeded history as is. */
@@ -129,7 +140,7 @@
 	</a>
 {/snippet}
 
-<div class="flex min-h-dvh flex-col" style={session.isDemo ? APP_TOP : undefined}>
+<div class="flex min-h-dvh flex-col">
 	{#if session.isDemo}
 		<DemoBanner />
 	{/if}
@@ -171,14 +182,14 @@
 		onclick={() => (adding = true)}
 		aria-label={m.add_transaction()}
 		data-compact={compact}
-		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-14 items-center rounded-full bg-primary pr-[1.125rem] pl-4 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-4 md:hidden"
+		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-11 items-center rounded-full bg-primary pr-3.5 pl-3 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-3 md:hidden"
 	>
-		<PlusIcon class="size-6 shrink-0" />
+		<PlusIcon class="size-5 shrink-0" />
 		<span
 			data-fab-label
 			class="overflow-hidden text-sm font-medium whitespace-nowrap transition-[max-width,padding,opacity] duration-200 {compact
 				? 'max-w-0 pl-0 opacity-0'
-				: 'max-w-40 pl-2'}"
+				: 'max-w-40 pl-1.5'}"
 		>
 			{m.add_transaction()}
 		</span>

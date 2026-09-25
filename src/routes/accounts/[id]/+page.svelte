@@ -1,20 +1,23 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
-	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import { Button } from '$ui/button';
+	import FormMessage from '$components/FormMessage.svelte';
+	import PageHeader from '$components/PageHeader.svelte';
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
 	import { accountTypeIcon } from '$features/accounts/account-icons';
 	import Register from '$features/accounts/Register.svelte';
+	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
+	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
 	import { FORECAST_DAYS, projectBalances, registerBalances } from '$features/accounts/register';
 	import { addDays, todayIso } from '$domain/month';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { errorMessage } from '$i18n/errors';
+	import { actionError } from '$client/notify';
 	import { accountTypeLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -37,50 +40,47 @@
 		account.data && upcoming.data ? projectBalances(account.data.balance, upcoming.data) : []
 	);
 
+	const filters = new RegisterFilters();
+	// Another account (e.g. through a transfer's link) starts with no search or dates.
+	$effect(() => {
+		void accountId;
+		untrack(() => filters.clear());
+	});
+
 	let adding = $state(false);
 	let settingsOpen = $state(false);
 </script>
 
-<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
-	{#if account.error && !account.data}
-		<p class="text-destructive" role="alert">{errorMessage(account.error)}</p>
-	{:else if account.data && balances}
-		<nav class="flex items-center gap-1 text-sm text-muted-foreground">
-			<a
-				href={resolve('/accounts')}
-				class="inline-flex items-center gap-1 rounded-md py-1 pr-2 text-sm font-medium transition-colors hover:text-foreground"
-			>
-				<ChevronLeftIcon class="size-4" />
-				<span>{m.nav_accounts()}</span>
-			</a>
-		</nav>
-
-		<header class="flex flex-wrap items-center justify-between gap-3">
-			<div class="flex items-center gap-3">
+{#if account.data}
+	<PageHeader back={{ route: '/accounts', label: m.nav_accounts() }}>
+		{#snippet title()}
+			<div class="flex min-w-0 items-center gap-3">
 				{#if AccountIcon}
 					<div
-						class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+						class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
 					>
 						<AccountIcon class="size-5" />
 					</div>
 				{/if}
-				<div class="grid gap-0.5">
-					<div class="flex items-center gap-2">
-						<h1 class="text-xl font-semibold tracking-tight" data-testid="register-title">
-							{account.data.name}
+				<div class="grid min-w-0 gap-0.5">
+					<div class="flex min-w-0 items-center gap-1">
+						<h1 class="truncate text-xl font-semibold tracking-tight" data-testid="register-title">
+							{account.data?.name}
 						</h1>
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							aria-label={m.account_settings_for({ name: account.data.name })}
+							aria-label={m.account_settings_for({ name: account.data?.name ?? '' })}
 							onclick={() => (settingsOpen = true)}
 						>
 							<SettingsIcon class="size-4 text-muted-foreground" />
 						</Button>
 					</div>
 					<div class="flex items-center gap-2">
-						<span class="text-xs text-muted-foreground">{accountTypeLabel(account.data.type)}</span>
-						{#if account.data.closed}
+						<span class="text-xs text-muted-foreground">
+							{account.data ? accountTypeLabel(account.data.type) : ''}
+						</span>
+						{#if account.data?.closed}
 							<span
 								class="rounded bg-destructive/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-destructive"
 							>
@@ -90,11 +90,23 @@
 					</div>
 				</div>
 			</div>
-			{#if !account.data.closed}
-				<Button onclick={() => (adding = true)}><PlusIcon />{m.add_transaction()}</Button>
+		{/snippet}
+		{#snippet actions()}
+			{#if !account.data?.closed}
+				<Button size="sm" aria-label={m.add_transaction()} onclick={() => (adding = true)}>
+					<PlusIcon />
+					<span class="hidden md:inline">{m.add_transaction()}</span>
+				</Button>
 			{/if}
-		</header>
+		{/snippet}
+		{#snippet toolbar()}<RegisterToolbar {filters} />{/snippet}
+	</PageHeader>
+{/if}
 
+<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
+	{#if account.error && !account.data}
+		<FormMessage error={actionError(account.error)} />
+	{:else if account.data && balances}
 		<section
 			class="grid gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"
 			aria-label={m.register_total_balance()}
@@ -134,9 +146,9 @@
 			<UpcomingSection occurrences={upcoming.data} balances={projected} />
 		{/if}
 
-		<!-- Keyed so that switching accounts (e.g. the transfer link) clears the filters and paging. -->
+		<!-- Keyed so that switching accounts (e.g. the transfer link) starts paging over. -->
 		{#key accountId}
-			<Register {accountId} />
+			<Register {accountId} {filters} />
 		{/key}
 	{/if}
 </div>

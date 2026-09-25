@@ -7,10 +7,11 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import BackupUnlockForm from '$features/backup/BackupUnlockForm.svelte';
 	import { readBackupFile } from '$features/backup/actions';
 	import { getApp, useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
 	import { planRestore, restoreBackup, type PlannedRestore } from '$client/session';
 	import { currentMonth } from '$domain/month';
@@ -38,7 +39,7 @@
 	let confirmReplace = $state(false);
 	let countdown = $state(0);
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const chosen = $derived(plan.filter((p) => selected.includes(p.index)));
 	const replacing = $derived(chosen.filter((p) => p.replaces).map((p) => nameOf(p.file)));
@@ -182,6 +183,6 @@
 		{:else if busy}
 			<p class="text-sm text-muted-foreground" role="status">{m.backup_restore_reading()}</p>
 		{/if}
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 	</div>
 </ResponsiveDialog>

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import ReportCard from './ReportCard.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { errorMessage } from '$i18n/errors';
+	import { actionError } from '$client/notify';
 	import { accountTypeLabel } from '$i18n/labels';
 	import { accountBreakdown } from '$features/reports/accounts-breakdown';
 	import { m } from '$i18n/paraglide/messages';
@@ -38,7 +39,7 @@
 
 <ReportCard title={m.reports_accounts()} route="/reports/accounts" testId="accounts-card">
 	{#if accounts.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(accounts.error)}</p>
+		<FormMessage error={actionError(accounts.error)} />
 	{:else if accounts.data && all.length === 0}
 		<p class="text-sm text-muted-foreground">{m.reports_accounts_empty()}</p>
 	{:else if accounts.data}

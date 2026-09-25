@@ -10,8 +10,9 @@
 	import { Separator } from '$ui/separator';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { categoryProgress } from '$features/budget/progress';
 	import { moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
@@ -46,7 +47,7 @@
 	let moveAmount = $state('');
 	let moveDirection = $state<'to' | 'from'>('to');
 	let otherId = $state('');
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const isIncome = $derived(
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.system === 'income'
@@ -93,7 +94,7 @@
 		event.preventDefault();
 		const value = assignedText.trim() === '' ? 0 : session.parse(assignedText);
 		if (value === null) {
-			error = m.form_error_amount_invalid();
+			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
 		error = await runAction(() => session.api.budget.setAssigned(category.id, month, value));
@@ -104,11 +105,11 @@
 		event.preventDefault();
 		const amount = session.parse(moveAmount);
 		if (amount === null || amount <= 0) {
-			error = m.form_error_amount_invalid();
+			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
 		if (!otherId) {
-			error = m.budget_move_choose_category();
+			error = { message: m.budget_move_choose_category() };
 			return;
 		}
 		const [fromCategoryId, toCategoryId] =
@@ -155,7 +156,7 @@
 						/>
 						<Button type="submit">{m.save()}</Button>
 					</div>
-					{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+					<FormMessage {error} />
 				</form>
 
 				<QuickAssignButtons categoryIds={[category.id]} {month} onDone={() => (open = false)} />
@@ -215,7 +216,7 @@
 					placeholder="0"
 				/>
 			</div>
-			{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+			<FormMessage {error} />
 			<Button type="submit">{m.budget_move()}</Button>
 		</form>
 	{:else if view === 'settings'}

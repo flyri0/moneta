@@ -3,14 +3,15 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 	const session = useSession();
 	let name = $state('');
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	$effect(() => {
 		if (open) {
@@ -32,7 +33,7 @@
 			<Label for="new-group-name">{m.group_name()}</Label>
 			<Input id="new-group-name" bind:value={name} required autocomplete="off" />
 		</div>
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 		<Button type="submit">{m.add()}</Button>
 	</form>
 </ResponsiveDialog>

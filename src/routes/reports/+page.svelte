@@ -3,6 +3,7 @@
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import * as Collapsible from '$ui/collapsible';
 	import { Button } from '$ui/button';
+	import PageHeader from '$components/PageHeader.svelte';
 	import ReportsEditor from '$features/reports/ReportsEditor.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { REPORTS } from '$features/reports/catalog';
@@ -31,22 +32,23 @@
 	}
 </script>
 
-<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
-	<div class="flex items-center justify-between gap-2">
-		<h1 class="text-xl font-semibold">{m.nav_reports()}</h1>
+<PageHeader title={m.nav_reports()}>
+	{#snippet actions()}
 		{#if !editing}
 			<Button
 				variant="outline"
 				size="sm"
-				class="cursor-pointer shadow-xs"
 				aria-label={m.reports_customize()}
 				onclick={() => (editing = true)}
 			>
-				<SlidersHorizontalIcon class="size-4" />
+				<SlidersHorizontalIcon />
 				<span class="hidden md:inline">{m.reports_customize()}</span>
 			</Button>
 		{/if}
-	</div>
+	{/snippet}
+</PageHeader>
+
+<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
 	{#if editing}
 		<ReportsEditor {layout} onSave={save} onCancel={() => (editing = false)} />
 	{:else}

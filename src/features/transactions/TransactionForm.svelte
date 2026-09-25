@@ -2,8 +2,10 @@
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
 	import { Label } from '$ui/label';
+	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { TransactionInput } from '$db/repos/transactions';
 	import { m } from '$i18n/paraglide/messages';
 	import {
@@ -22,12 +24,15 @@
 		initial,
 		editingId,
 		onSave,
+		confirming = $bindable(false),
 		onDone
 	}: {
 		ctx: FormContext;
 		initial: TransactionDraft;
 		editingId: string | null;
 		onSave?: (input: TransactionInput) => Promise<unknown>;
+		/** Whether the delete confirmation shows in place of the form (the dialog titles it). */
+		confirming?: boolean;
 		onDone: (savedAccountId: string | null) => void;
 	} = $props();
 
@@ -35,9 +40,8 @@
 	// The dialog re-creates this form (with {#key}) for every transaction it opens.
 	// svelte-ignore state_referenced_locally
 	let draft = $state(structuredClone(initial));
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
-	let confirmDelete = $state(false);
 
 	/** Split lines that don't add up yet keep Save disabled. */
 	const blocked = $derived(
@@ -48,7 +52,7 @@
 		event.preventDefault();
 		const result = buildTransactionInput(draft, ctx);
 		if (!result.ok) {
-			error = FORM_ERRORS[result.error]();
+			error = { message: FORM_ERRORS[result.error]() };
 			return;
 		}
 		const input = result.input;
@@ -64,35 +68,49 @@
 		if (!error) onDone(input.accountId);
 	}
 
+	function confirm(next: boolean) {
+		confirming = next;
+		error = null;
+	}
+
 	async function remove() {
-		if (!editingId) return;
-		if (!confirmDelete) {
-			confirmDelete = true;
-			return;
-		}
+		if (!editingId || busy) return;
 		const id = editingId;
+		busy = true;
 		error = await runAction(() => session.api.transactions.delete(id));
+		busy = false;
 		if (!error) onDone(null);
 	}
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
-	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} />
+{#if confirming}
+	<ConfirmPanel
+		body={m.confirm_cannot_undo()}
+		confirmLabel={m.delete()}
+		{error}
+		{busy}
+		onCancel={() => confirm(false)}
+		onConfirm={remove}
+	/>
+{:else}
+	<form class="grid gap-4" onsubmit={save}>
+		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} />
 
-	<div class="flex items-center gap-2">
-		<Checkbox id="txn-cleared" bind:checked={draft.cleared} />
-		<Label for="txn-cleared">{m.transaction_cleared()}</Label>
-	</div>
+		<div class="flex items-center gap-2">
+			<Checkbox id="txn-cleared" bind:checked={draft.cleared} />
+			<Label for="txn-cleared">{m.transaction_cleared()}</Label>
+		</div>
 
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 
-	<div class="flex flex-wrap justify-end gap-2">
-		{#if editingId}
-			<Button variant="destructive" class="mr-auto" onclick={remove}>
-				{confirmDelete ? m.confirm_delete() : m.delete()}
-			</Button>
-		{/if}
-		<Button variant="ghost" onclick={() => onDone(null)}>{m.cancel()}</Button>
-		<Button type="submit" disabled={busy || blocked}>{m.save()}</Button>
-	</div>
-</form>
+		<div class="flex flex-wrap justify-end gap-2">
+			{#if editingId}
+				<Button variant="destructive" class="mr-auto" onclick={() => confirm(true)}>
+					{m.delete()}
+				</Button>
+			{/if}
+			<Button variant="ghost" onclick={() => onDone(null)}>{m.cancel()}</Button>
+			<Button type="submit" disabled={busy || blocked}>{m.save()}</Button>
+		</div>
+	</form>
+{/if}

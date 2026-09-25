@@ -3,8 +3,9 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
 
 	/** Checks a typed password against the one backups use on this device. */
@@ -14,7 +15,7 @@
 	let password = $state('');
 	let right = $state<boolean | null>(null);
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	$effect(() => {
 		if (!open) return;
@@ -54,6 +55,6 @@
 				{right ? m.backup_check_right() : m.backup_check_wrong()}
 			</p>
 		{/if}
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 	</form>
 </ResponsiveDialog>

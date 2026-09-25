@@ -47,6 +47,8 @@ test('renames, merges, sets defaults for and removes payees', async ({ page }) =
 	await dialog.getByLabel('Payee name').fill('amazon store');
 	await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
 	await dialog.getByRole('button', { name: 'Merge into Amazon Store' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Merge into Amazon Store?' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Merge', exact: true }).click();
 	await expect(dialog).toBeHidden();
 	await expect(rows.filter({ hasText: 'Amzn' })).toHaveCount(0);
 	await expect(rows.filter({ hasText: 'Amazon Store' })).toContainText('3 transactions');
@@ -127,9 +129,7 @@ test.describe('on a phone', () => {
 			await rows.filter({ hasText: long }).click();
 			await chooseCombobox(dialog, /Merge with another payee|Mesclar com outro favorecido/, /./);
 			await dialog.getByRole('button', { name: /^(Merge|Mesclar)$/ }).click();
-			await expect(
-				dialog.getByRole('button', { name: /Tap again to merge|Toque de novo para mesclar/ })
-			).toBeVisible();
+			await expect(dialog.getByRole('button', { name: /^(Cancel|Cancelar)$/ })).toBeVisible();
 			expect(await overflow(), 'merge confirmation').toEqual(fits);
 			await page.keyboard.press('Escape');
 			await expect(dialog).toBeHidden();

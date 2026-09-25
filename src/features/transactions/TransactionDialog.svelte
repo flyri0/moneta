@@ -37,6 +37,7 @@
 
 	let ctx = $state.raw<FormContext | null>(null);
 	let initial = $state.raw<TransactionDraft | null>(null);
+	let confirming = $state(false);
 
 	function readLastAccount(): string | null {
 		try {
@@ -61,6 +62,7 @@
 	) {
 		ctx = null;
 		initial = null;
+		confirming = false;
 		try {
 			const context = await loadFormContext(session.api, session.money);
 			if (entering) {
@@ -102,11 +104,14 @@
 
 <ResponsiveDialog
 	bind:open
-	title={occurrence
-		? m.schedule_enter_title()
-		: transaction
-			? m.transaction_edit_title()
-			: m.transaction_add_title()}
+	title={confirming
+		? m.transaction_delete_title()
+		: occurrence
+			? m.schedule_enter_title()
+			: transaction
+				? m.transaction_edit_title()
+				: m.transaction_add_title()}
+	onBack={confirming ? () => (confirming = false) : undefined}
 >
 	{#if ctx && initial}
 		{#if ctx.accounts.some((a) => !a.closed)}
@@ -116,6 +121,7 @@
 					{initial}
 					editingId={occurrence ? null : (transaction?.id ?? null)}
 					{onSave}
+					bind:confirming
 					onDone={(savedAccountId) => {
 						if (savedAccountId) rememberAccount(savedAccountId);
 						open = false;

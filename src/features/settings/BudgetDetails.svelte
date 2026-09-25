@@ -3,10 +3,11 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Combobox } from '$ui/combobox';
+	import FormMessage from '$components/FormMessage.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { updateBudget } from '$client/session';
 	import { currencyChoices, localeChoices } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -19,7 +20,7 @@
 	let name = $state(session.meta.name);
 	let locale = $state(session.meta.locale);
 	let currency = $state(session.meta.currency);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 
 	async function save(event: SubmitEvent) {
@@ -64,7 +65,7 @@
 		</SettingsRow>
 
 		<div class="grid gap-2 px-4 py-3">
-			{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+			<FormMessage {error} />
 			<Button type="submit" class="justify-self-start" disabled={busy}>{m.save()}</Button>
 		</div>
 	</SettingsGroup>

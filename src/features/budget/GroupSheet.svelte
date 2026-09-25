@@ -9,8 +9,9 @@
 	import { Switch } from '$ui/switch';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetGroupView } from '$db/repos/budget';
 	import type { Month } from '$domain/month';
 	import { groupLabel } from '$i18n/labels';
@@ -33,7 +34,7 @@
 	let name = $state('');
 	let hidden = $state(false);
 	let newCategory = $state('');
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const title = $derived(
 		{
@@ -110,7 +111,7 @@
 					<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
 					<Button type="submit" variant="outline">{m.add()}</Button>
 				</div>
-				{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+				<FormMessage {error} />
 			</form>
 
 			<!-- A system group takes new categories but can't be renamed, hidden or deleted. -->
@@ -157,7 +158,7 @@
 					/>
 				</div>
 			</div>
-			{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+			<FormMessage {error} />
 		</div>
 	{:else}
 		<GroupDelete

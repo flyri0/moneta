@@ -2,7 +2,8 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import { runAction } from '$client/notify';
+	import FormMessage from '$components/FormMessage.svelte';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { ClientApi } from '$db/api';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -23,7 +24,7 @@
 	let useRecovery = $state(false);
 	let secret = $state('');
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	function switchSecret() {
 		useRecovery = !useRecovery;
@@ -80,8 +81,8 @@
 	>
 		{useRecovery ? m.backup_unlock_use_password() : m.backup_unlock_use_recovery()}
 	</button>
+	<FormMessage {error} />
 	<Button type="submit" disabled={busy || !secret}>
 		{busy ? m.backup_unlocking() : m.backup_unlock()}
 	</Button>
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 </form>

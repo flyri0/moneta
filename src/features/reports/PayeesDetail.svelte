@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
 	import { NO_PAYEE, payeeSlices } from '$features/reports/payees';
@@ -59,7 +60,7 @@
 
 <div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
 	{#if payees.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(payees.error)}</p>
+		<FormMessage error={actionError(payees.error)} />
 	{:else if payees.data && report.rows.length === 0}
 		<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
 	{:else if report.rows.length > 0}

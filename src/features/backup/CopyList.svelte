@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
-	import { runAction } from '$client/notify';
+	import FormMessage from '$components/FormMessage.svelte';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { SessionApi } from '$client/session';
 	import type { BudgetCopy } from '$db/api';
 	import { formatDateTime } from '$i18n/formats';
@@ -26,7 +27,7 @@
 		onRestore: (bytes: Uint8Array) => Promise<void>;
 	} = $props();
 
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	async function run(fn: () => Promise<void>) {
 		busy = true;
@@ -61,4 +62,4 @@
 		</li>
 	{/each}
 </ul>
-{#if error}<p class="px-4 py-3 text-sm text-destructive" role="alert">{error}</p>{/if}
+<FormMessage {error} />

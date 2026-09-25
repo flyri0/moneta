@@ -1,15 +1,15 @@
 <script lang="ts">
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
-	import { Button } from '$ui/button';
 	import { Combobox } from '$ui/combobox';
 	import { Label } from '$ui/label';
+	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError, actionError } from '$client/notify';
 	import { moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
-	import { errorMessage } from '$i18n/errors';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -52,7 +52,7 @@
 
 	let reassignTo = $state('');
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const used = $derived(usage.data?.used ?? false);
 	const ready = $derived(usage.data !== undefined && (!used || reassignTo !== ''));
@@ -68,9 +68,16 @@
 	}
 </script>
 
-<div class="grid gap-4">
+<ConfirmPanel
+	confirmLabel={m.category_delete()}
+	{error}
+	{busy}
+	disabled={!ready}
+	{onCancel}
+	onConfirm={remove}
+>
 	{#if usage.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(usage.error)}</p>
+		<FormMessage error={actionError(usage.error)} />
 	{:else if usage.data && !used}
 		<p class="text-sm text-muted-foreground">{m.category_delete_unused()}</p>
 	{:else if usage.data}
@@ -101,13 +108,4 @@
 			/>
 		</div>
 	{/if}
-
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-
-	<div class="grid grid-cols-2 gap-2">
-		<Button variant="outline" onclick={onCancel}>{m.cancel()}</Button>
-		<Button variant="destructive" disabled={!ready || busy} onclick={remove}>
-			{m.category_delete()}
-		</Button>
-	</div>
-</div>
+</ConfirmPanel>

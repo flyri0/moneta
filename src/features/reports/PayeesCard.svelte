@@ -1,12 +1,13 @@
 <script lang="ts">
 	import ReportCard from './ReportCard.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import SegmentLegend from './SegmentLegend.svelte';
 	import StackedBar from './StackedBar.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { payeeSlices } from '$features/reports/payees';
 	import { presetRange } from '$features/reports/range';
 	import { SPENDING_TABLES, topSlices } from '$features/reports/spending';
@@ -23,7 +24,7 @@
 
 <ReportCard title={m.reports_payees()} route="/reports/payees" testId="payees-card">
 	{#if payees.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(payees.error)}</p>
+		<FormMessage error={actionError(payees.error)} />
 	{:else if payees.data && top.total === 0}
 		<p class="text-sm text-muted-foreground">{m.reports_spending_empty_month()}</p>
 	{:else if top.total > 0}

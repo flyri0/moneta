@@ -258,12 +258,20 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 });
 
 /** Drags a grip with the mouse (the same Pointer Events path as touch) to `y`, in steps. */
-async function dragTo(page: Page, handle: Locator, y: number) {
+/**
+ * Drags `handle` to `y`. A function measures `y` once the drag is under way, from the middle of
+ * the screen: starting near an edge scrolls the page, which moves the target.
+ */
+async function dragTo(page: Page, handle: Locator, y: number | (() => Promise<number>)) {
 	await handle.scrollIntoViewIfNeeded();
 	const box = (await handle.boundingBox())!;
 	const x = box.x + box.width / 2;
 	await page.mouse.move(x, box.y + box.height / 2);
 	await page.mouse.down();
+	if (typeof y === 'function') {
+		await page.mouse.move(x, page.viewportSize()!.height / 2, { steps: 10 });
+		y = await y();
+	}
 	await page.mouse.move(x, y, { steps: 20 });
 	await page.mouse.up();
 }
@@ -281,12 +289,10 @@ function orderCategory(page: Page, name: string) {
 test('drags a category into another group', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('button', { name: 'Edit order' }).click();
-	const target = (await orderCategory(page, 'Rent').boundingBox())!;
-	await dragTo(
-		page,
-		orderCategory(page, 'Groceries').getByTestId('drag-handle'),
-		target.y + target.height * 0.25
-	);
+	await dragTo(page, orderCategory(page, 'Groceries').getByTestId('drag-handle'), async () => {
+		const target = (await orderCategory(page, 'Rent').boundingBox())!;
+		return target.y + target.height * 0.25;
+	});
 	await expect(orderSection(page, 'Bills').getByTestId('order-category').first()).toHaveText(
 		'Groceries'
 	);

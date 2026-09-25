@@ -5,9 +5,10 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { fileTarget } from '$features/backup/file-target';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { MIN_PASSWORD_LENGTH, passwordProblem } from '$domain/backup-password';
 	import { todayIso } from '$domain/month';
 	import { newRecoveryKey } from '$domain/recovery-key';
@@ -31,7 +32,7 @@
 	let recoveryKey = $state('');
 	let saved = $state(false);
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const problem = $derived(passwordProblem(password, confirm));
 
@@ -118,11 +119,14 @@
 				/>
 			</div>
 			{#if tried && problem}
-				<p class="text-sm text-destructive" role="alert">
-					{problem === 'short'
-						? m.backup_password_short({ min: MIN_PASSWORD_LENGTH })
-						: m.backup_password_mismatch()}
-				</p>
+				<FormMessage
+					error={{
+						message:
+							problem === 'short'
+								? m.backup_password_short({ min: MIN_PASSWORD_LENGTH })
+								: m.backup_password_mismatch()
+					}}
+				/>
 			{/if}
 			<Button type="submit">{m.onboarding_next()}</Button>
 		</form>
@@ -143,6 +147,7 @@
 				<Checkbox id="recovery-saved" bind:checked={saved} disabled={busy} />
 				<Label for="recovery-saved" class="font-normal">{m.backup_recovery_saved()}</Label>
 			</div>
+			<FormMessage {error} />
 			<div class="grid grid-cols-2 gap-2">
 				<Button variant="outline" disabled={busy} onclick={() => (step = 'password')}>
 					{m.onboarding_back()}
@@ -151,7 +156,6 @@
 					{changing ? m.save() : m.backup_encrypt_turn_on()}
 				</Button>
 			</div>
-			{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 		</div>
 	{/if}
 </ResponsiveDialog>

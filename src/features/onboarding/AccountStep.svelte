@@ -3,6 +3,7 @@
 	import AccountFields from '$features/accounts/AccountFields.svelte';
 	import AccountTypePicker from '$features/accounts/AccountTypePicker.svelte';
 	import { defaultOnBudget } from '$features/accounts/account-form';
+	import type { ActionError } from '$client/notify';
 	import type { AccountType } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
@@ -28,7 +29,7 @@
 		/** Creates the budget with no account. */
 		onSkip: () => void;
 		busy: boolean;
-		error: string | null;
+		error: ActionError | null;
 		name: string;
 		type: AccountType;
 		onBudget: boolean;

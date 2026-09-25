@@ -1,11 +1,12 @@
 <script lang="ts">
 	import CashFlowMini from './CashFlowMini.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import ReportCard from './ReportCard.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { fillMonths, lastMonths, savingsRate } from '$features/reports/cash-flow';
 	import { SPENDING_TABLES } from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
@@ -29,7 +30,7 @@
 
 <ReportCard title={m.reports_cash_flow()} route="/reports/cash-flow" testId="cash-flow-card">
 	{#if flow.error}
-		<p class="text-sm text-destructive" role="alert">{errorMessage(flow.error)}</p>
+		<FormMessage error={actionError(flow.error)} />
 	{:else if flow.data}
 		<div class="flex items-end justify-between gap-3">
 			<StatTile

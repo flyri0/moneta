@@ -3,6 +3,8 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
+	import type { ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
 	import { nameConfirms } from './delete-confirm';
@@ -10,13 +12,13 @@
 	/**
 	 * Confirms deleting a budget, which also deletes its saved copies: the name must be typed, and
 	 * the button then waits a few seconds before a second tap deletes. `ondelete` does the deleting
-	 * and returns an inline error message, or null once the budget is gone.
+	 * and returns the inline error, or null once the budget is gone.
 	 */
 	let {
 		open = $bindable(false),
 		name,
 		ondelete
-	}: { open: boolean; name: string; ondelete: () => Promise<string | null> } = $props();
+	}: { open: boolean; name: string; ondelete: () => Promise<ActionError | null> } = $props();
 
 	/** Seconds the button stays disabled after the first tap, with the warning shown. */
 	const DELETE_DELAY = 5;
@@ -25,7 +27,7 @@
 	let armed = $state(false);
 	let countdown = $state(0);
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const confirmed = $derived(nameConfirms(typed, name));
 
@@ -86,6 +88,7 @@
 				spellcheck={false}
 			/>
 		</div>
+		<FormMessage {error} />
 		<Button variant="destructive" disabled={busy || !confirmed || countdown > 0} onclick={confirm}>
 			{#if !armed}
 				{m.budget_delete_confirm()}
@@ -95,6 +98,5 @@
 				{m.confirm_delete()}
 			{/if}
 		</Button>
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 	</div>
 </ResponsiveDialog>

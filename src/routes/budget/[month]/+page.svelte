@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import ChevronsDownUpIcon from '@lucide/svelte/icons/chevrons-down-up';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
@@ -6,6 +7,8 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
+	import FormMessage from '$components/FormMessage.svelte';
+	import PageHeader from '$components/PageHeader.svelte';
 	import AddGroupDialog from '$features/budget/AddGroupDialog.svelte';
 	import BudgetGrid from '$features/budget/BudgetGrid.svelte';
 	import CategorySheet from '$features/budget/CategorySheet.svelte';
@@ -15,6 +18,7 @@
 	import RtaCard from '$features/budget/RtaCard.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import {
 		allCollapsed,
 		loadCollapsed,
@@ -23,7 +27,7 @@
 		toggleCollapsed
 	} from '$features/budget/collapse';
 	import { BUDGET_TABLES, gridModel } from '$features/budget/view';
-	import { errorMessage } from '$i18n/errors';
+	import { currentMonth } from '$domain/month';
 	import { formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -58,12 +62,59 @@
 	const group = $derived(model?.groups.find((g) => g.id === groupId) ?? null);
 </script>
 
+<PageHeader>
+	{#snippet title()}<MonthPicker month={data.month} />{/snippet}
+	{#snippet actions()}
+		<!-- Here rather than beside the arrows, where appearing would move them under the pointer. -->
+		{#if data.month !== currentMonth()}
+			<Button
+				variant="outline"
+				size="sm"
+				href={resolve('/budget/[month]', { month: currentMonth() })}
+			>
+				{m.budget_this_month()}
+			</Button>
+		{/if}
+		{#if model && !editingOrder}
+			<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
+			<Button
+				variant="outline"
+				size="sm"
+				aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
+				onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
+			>
+				{#if everyCollapsed}
+					<ChevronsUpDownIcon />
+					<span class="hidden md:inline">{m.budget_expand_all()}</span>
+				{:else}
+					<ChevronsDownUpIcon />
+					<span class="hidden md:inline">{m.budget_collapse_all()}</span>
+				{/if}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				aria-label={m.budget_add_group()}
+				onclick={() => (addingGroup = true)}
+			>
+				<PlusIcon />
+				<span class="hidden md:inline">{m.budget_add_group()}</span>
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				aria-label={m.budget_edit_order()}
+				onclick={() => (editingOrder = true)}
+			>
+				<ArrowUpDownIcon />
+				<span class="hidden md:inline">{m.budget_edit_order()}</span>
+			</Button>
+		{/if}
+	{/snippet}
+</PageHeader>
+
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
-	<!-- Side by side only from 1024px up: below that the month picker has no room next to the card. -->
-	<header class="grid gap-3 lg:grid-cols-[1fr_20rem] lg:items-center">
-		<MonthPicker month={data.month} />
-		{#if view.data}<RtaCard view={view.data} />{/if}
-	</header>
+	{#if view.data}<RtaCard view={view.data} />{/if}
 
 	{#if view.data?.futureNegativeMonth}
 		<Alert.Root variant="destructive">
@@ -78,51 +129,13 @@
 	{/if}
 
 	{#if view.error && !view.data}
-		<p class="text-destructive" role="alert">{errorMessage(view.error)}</p>
+		<FormMessage error={actionError(view.error)} />
 	{/if}
 
 	{#if view.data && model}
 		{#if editingOrder}
 			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
 		{:else}
-			<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
-			<div class="flex items-center justify-end gap-2">
-				<Button
-					variant="outline"
-					size="sm"
-					class="cursor-pointer shadow-xs"
-					aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
-					onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
-				>
-					{#if everyCollapsed}
-						<ChevronsUpDownIcon class="size-4" />
-						<span class="hidden md:inline">{m.budget_expand_all()}</span>
-					{:else}
-						<ChevronsDownUpIcon class="size-4" />
-						<span class="hidden md:inline">{m.budget_collapse_all()}</span>
-					{/if}
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					class="cursor-pointer shadow-xs"
-					aria-label={m.budget_add_group()}
-					onclick={() => (addingGroup = true)}
-				>
-					<PlusIcon class="size-4" />
-					<span class="hidden md:inline">{m.budget_add_group()}</span>
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					class="cursor-pointer shadow-xs"
-					aria-label={m.budget_edit_order()}
-					onclick={() => (editingOrder = true)}
-				>
-					<ArrowUpDownIcon class="size-4" />
-					<span class="hidden md:inline">{m.budget_edit_order()}</span>
-				</Button>
-			</div>
 			<BudgetGrid
 				{model}
 				month={data.month}

@@ -64,9 +64,7 @@
 	});
 </script>
 
-<div
-	class="flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2 text-card-foreground"
->
+<div class="flex flex-wrap items-center gap-2">
 	<Label
 		for="report-period"
 		class="text-xs font-medium tracking-wide text-muted-foreground uppercase"

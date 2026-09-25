@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import type { Snippet } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { ModeWatcher } from 'mode-watcher';
 	import { page } from '$app/state';
 	import { DEFAULT_ACCENT } from '$client/accent';
@@ -17,6 +18,10 @@
 
 	/** The welcome and error pages are not the app: they open no database and claim no tab lock. */
 	const standalone = $derived(page.route.id === '/' || page.error !== null);
+
+	// Toasts sit at the top on phones, clear of the bottom nav and the floating add button (and
+	// below the demo banner, through --app-top).
+	const desktop = new MediaQuery('min-width: 768px');
 </script>
 
 <svelte:head>
@@ -24,7 +29,11 @@
 </svelte:head>
 
 <ModeWatcher defaultTheme={DEFAULT_ACCENT} />
-<Toaster richColors closeButton />
+<Toaster
+	closeButton
+	position={desktop.current ? 'bottom-right' : 'top-center'}
+	mobileOffset={{ top: 'calc(var(--app-top, env(safe-area-inset-top)) + 0.75rem)' }}
+/>
 {#if standalone}
 	{@render children()}
 {:else}

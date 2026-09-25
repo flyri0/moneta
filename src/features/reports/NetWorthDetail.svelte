@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
+	import FormMessage from '$components/FormMessage.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
 	import {
@@ -84,7 +85,7 @@
 </script>
 
 {#if series.error || flow.error}
-	<p class="text-sm text-destructive" role="alert">{errorMessage(series.error ?? flow.error)}</p>
+	<FormMessage error={actionError(series.error ?? flow.error)} />
 {:else if series.data && points.length === 0}
 	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
 		{m.reports_net_worth_empty()}

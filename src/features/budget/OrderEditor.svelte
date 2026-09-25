@@ -5,8 +5,9 @@
 	import { tick } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import { Button } from '$ui/button';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import {
 		dropCategory,
 		dropGroup,
@@ -32,7 +33,7 @@
 	// The editor starts from the order at the moment it opens.
 	// svelte-ignore state_referenced_locally
 	let layout = $state<OrderLayout>(toLayout(groups));
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	// The layout when the drag began, restored on cancel, and where the ghost sits.
 	let before: OrderLayout = [];
@@ -119,7 +120,7 @@
 			<Button onclick={save}>{m.save()}</Button>
 		</div>
 	</div>
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+	<FormMessage {error} />
 	{#each layout as group, gi (group.id)}
 		{@const dragged = drag.active?.id === group.id}
 		<section

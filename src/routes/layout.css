@@ -310,3 +310,70 @@
 		@apply font-sans;
 	}
 }
+
+/*
+ * Toasts (svelte-sonner) look like the app's cards: neutral, only as wide as their text, and only
+ * the icon's colour says what kind they are (sonner.svelte). These override sonner's own styles.
+ */
+[data-sonner-toaster] {
+	font-family: inherit;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+	width: fit-content;
+	max-width: 100%;
+	gap: 0.5rem;
+	padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+	border-radius: var(--radius-lg);
+	@apply shadow-lg;
+	font-size: 0.875rem;
+}
+
+[data-sonner-toaster][data-x-position='center'] [data-sonner-toast] {
+	left: 0;
+	right: 0;
+	margin-inline: auto;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button] {
+	height: 1.75rem;
+	padding-inline: 0.625rem;
+	border-radius: var(--radius-md);
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font-size: 0.8125rem;
+}
+
+/* The close button sits at the end of the row, not on the corner. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-close-button] {
+	position: static;
+	order: 1;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin-right: -0.25rem;
+	transform: none;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--muted-foreground);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+
+@media (max-width: 600px) {
+	/* Sonner stretches every toast across the screen; keep it the width of its text, centred. */
+	[data-sonner-toaster][data-sonner-toaster] {
+		right: var(--mobile-offset-right);
+		width: auto;
+	}
+
+	[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+		left: 0;
+		right: 0;
+		width: fit-content;
+		margin-inline: auto;
+	}
+}

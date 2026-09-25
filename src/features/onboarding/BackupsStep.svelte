@@ -5,6 +5,7 @@
 	import FileUpIcon from '@lucide/svelte/icons/file-up';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
+	import type { ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
 
@@ -20,7 +21,7 @@
 		current: number;
 		total: number;
 		busy?: boolean;
-		error?: string | null;
+		error?: ActionError | null;
 		onNext: () => void;
 		onBack: () => void;
 		onRestore?: (file: File) => void;

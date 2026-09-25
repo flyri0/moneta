@@ -56,7 +56,10 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Display money with `session.format(minor)`, parse typed amounts with `session.parse(text)`, and prefill inputs with `formatAmountInput`.
 - Links and navigation use `resolve()` from `$app/paths` with a route id (ESLint enforces it outside `components/ui/`).
 - Phone layout is the default; `md:` (768px) switches to desktop (sidebar, dialogs instead of bottom sheets).
-- Form writes go through `runAction` (returns `null` or an inline message; unexpected errors toast). Call `useLive` during component initialization.
+- Form writes go through `runAction` (returns `null` or an `ActionError`). Call `useLive` during component initialization.
+- Feedback has three places, nothing else: (1) a form's or dialog's error shows inline in `FormMessage` (`$components/FormMessage.svelte`), just above its buttons, unexpected ones with "Copy details" and no toast; (2) a section that fails to load shows the same `FormMessage` inside it; (3) toasts only for what has no form: background work, a result the screen doesn't show (restored, copied), failed inline edits (`runActionToast`). Persistent notices that belong to the content use `Alert`.
+- Destructive actions ask through `ConfirmPanel` (a dialog's own screen, with a back button) or `ConfirmDialog` (no dialog of its own). Only deleting a budget and replacing one on restore keep their countdown.
+- Every app page starts with `PageHeader` (`$components/PageHeader.svelte`), before the page's column: title, back link, actions (`size="sm"`, icon plus a label from `md:`) and a toolbar for search and filters. It sticks to the top.
 
 ## Testing
 

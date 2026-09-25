@@ -16,7 +16,11 @@
 	style="--normal-bg: var(--color-popover); --normal-text: var(--color-popover-foreground); --normal-border: var(--color-border);"
 	toastOptions={{
 		classes: {
-			toast: 'cn-toast'
+			toast: 'cn-toast',
+			success: '[&_[data-icon]]:text-emerald-600 dark:[&_[data-icon]]:text-emerald-400',
+			error: '[&_[data-icon]]:text-destructive',
+			warning: '[&_[data-icon]]:text-amber-600 dark:[&_[data-icon]]:text-amber-400',
+			info: '[&_[data-icon]]:text-primary'
 		}
 	}}
 	{...restProps}

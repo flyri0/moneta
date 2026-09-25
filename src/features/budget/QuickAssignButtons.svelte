@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { Month } from '$domain/month';
 	import type { QuickAssignStrategy } from '$domain/quick-assign';
 	import { m } from '$i18n/paraglide/messages';
@@ -10,7 +11,7 @@
 		$props();
 
 	const session = useSession();
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const STRATEGIES: { strategy: QuickAssignStrategy; label: () => string }[] = [
 		{ strategy: 'last-month', label: m.quick_assign_last_month },
@@ -34,5 +35,5 @@
 			<Button variant="outline" size="sm" onclick={() => apply(strategy)}>{label()}</Button>
 		{/each}
 	</div>
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+	<FormMessage {error} />
 </section>

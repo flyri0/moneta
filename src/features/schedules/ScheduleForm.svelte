@@ -9,8 +9,10 @@
 	import { Separator } from '$ui/separator';
 	import { Switch } from '$ui/switch';
 	import SheetLink from '$components/SheetLink.svelte';
+	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
 	import { todayIso } from '$domain/month';
 	import { FREQUENCIES, WEEKEND_RULES, type Frequency, type WeekendRule } from '$domain/schedule';
@@ -50,7 +52,7 @@
 	// The dialog re-creates this form (with {#key}) for every schedule it opens.
 	// svelte-ignore state_referenced_locally
 	let draft = $state(structuredClone(initial));
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 
 	const ERRORS: Record<ScheduleFormError, () => string> = {
@@ -89,7 +91,7 @@
 		event.preventDefault();
 		const result = buildScheduleInput(draft, ctx);
 		if (!result.ok) {
-			error = ERRORS[result.error]();
+			error = { message: ERRORS[result.error]() };
 			return;
 		}
 		const input = result.input;
@@ -154,7 +156,7 @@
 			{/if}
 		</nav>
 
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 
 		<div class="grid grid-cols-2 gap-2">
 			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
@@ -265,17 +267,15 @@
 			{/if}
 		</div>
 
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+		<FormMessage {error} />
 	{:else}
-		<p class="text-sm text-muted-foreground">{m.schedule_delete_body()}</p>
-
-		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-
-		<div class="grid grid-cols-2 gap-2">
-			<Button variant="outline" onclick={() => go('main')}>{m.cancel()}</Button>
-			<Button variant="destructive" disabled={busy} onclick={remove}>
-				{m.schedule_delete()}
-			</Button>
-		</div>
+		<ConfirmPanel
+			body={m.schedule_delete_body()}
+			confirmLabel={m.schedule_delete()}
+			{error}
+			{busy}
+			onCancel={() => go('main')}
+			onConfirm={remove}
+		/>
 	{/if}
 </form>

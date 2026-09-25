@@ -2,6 +2,8 @@
 	import type { Snippet } from 'svelte';
 	import { Button } from '$ui/button';
 	import * as Card from '$ui/card';
+	import FormMessage from '$components/FormMessage.svelte';
+	import type { ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
 
 	/** The card every onboarding step is drawn in: progress, copy, the step's body, and the footer. */
@@ -28,7 +30,7 @@
 		onBack?: () => void;
 		onNext: () => void;
 		busy?: boolean;
-		error?: string | null;
+		error?: ActionError | null;
 		cardClass?: string;
 		children?: Snippet;
 	} = $props();
@@ -60,9 +62,7 @@
 				{#if children}
 					{@render children()}
 				{/if}
-				{#if error}
-					<p class="text-sm text-destructive" role="alert">{error}</p>
-				{/if}
+				<FormMessage {error} />
 				<div class="flex flex-col gap-2 sm:flex-row-reverse">
 					<Button type="submit" disabled={busy}>{nextLabel}</Button>
 					{#if backLabel && onBack}

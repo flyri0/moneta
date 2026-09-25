@@ -7,7 +7,34 @@ const { errorMock, successMock } = vi.hoisted(() => ({
 vi.mock('svelte-sonner', () => ({ toast: { error: errorMock, success: successMock } }));
 
 import { DomainError } from '$domain/errors';
-import { copyDetails, runActionToast } from './notify';
+import { copyDetails, runAction, runActionToast } from './notify';
+
+describe('runAction', () => {
+	it('returns null on success', async () => {
+		expect(await runAction(async () => 'ok')).toBeNull();
+	});
+
+	it('returns an expected error inline, with no cause and no toast', async () => {
+		errorMock.mockClear();
+		const error = await runAction(() => {
+			throw new DomainError('CATEGORY_REQUIRED');
+		});
+		expect(error?.message).toBeTruthy();
+		expect(error?.cause).toBeUndefined();
+		expect(errorMock).not.toHaveBeenCalled();
+	});
+
+	it('returns an unexpected error inline with its cause, and no toast', async () => {
+		errorMock.mockClear();
+		const err = new DomainError('INTERNAL');
+		const error = await runAction(() => {
+			throw err;
+		});
+		expect(error?.message).toBeTruthy();
+		expect(error?.cause).toBe(err);
+		expect(errorMock).not.toHaveBeenCalled();
+	});
+});
 
 describe('runActionToast', () => {
 	it('does not toast on success', async () => {

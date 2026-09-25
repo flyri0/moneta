@@ -1,11 +1,11 @@
 <script lang="ts">
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
-	import { Button } from '$ui/button';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
+	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetGroupView } from '$db/repos/budget';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -32,7 +32,7 @@
 
 	let moveTo = $state('');
 	let busy = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	const target = $derived(targets.find((g) => g.id === moveTo));
 	const ready = $derived(count === 0 || target !== undefined);
@@ -48,7 +48,14 @@
 	}
 </script>
 
-<div class="grid gap-4">
+<ConfirmPanel
+	confirmLabel={m.group_delete()}
+	{error}
+	{busy}
+	disabled={!ready}
+	{onCancel}
+	onConfirm={remove}
+>
 	{#if count === 0}
 		<p class="text-sm text-muted-foreground">{m.group_delete_empty()}</p>
 	{:else}
@@ -77,13 +84,4 @@
 			</div>
 		{/if}
 	{/if}
-
-	{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-
-	<div class="grid grid-cols-2 gap-2">
-		<Button variant="outline" onclick={onCancel}>{m.cancel()}</Button>
-		<Button variant="destructive" disabled={!ready || busy} onclick={remove}>
-			{m.group_delete()}
-		</Button>
-	</div>
-</div>
+</ConfirmPanel>

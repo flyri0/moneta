@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
+	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
 	import { formatMonth } from '$i18n/formats';
 	import { axisMonthLabel } from '$features/reports/net-worth';
 	import { type DateRange, reportMonths } from '$features/reports/range';
@@ -91,7 +92,7 @@
 </script>
 
 {#if rows.error}
-	<p class="text-sm text-destructive" role="alert">{errorMessage(rows.error)}</p>
+	<FormMessage error={actionError(rows.error)} />
 {:else if rows.data && trends.categories.length === 0}
 	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
 		{m.reports_spending_empty()}

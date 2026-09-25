@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import { defaultOnBudget, signedStartingBalance } from '$features/accounts/account-form';
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction } from '$client/notify';
+	import { runAction, type ActionError } from '$client/notify';
 	import type { AccountType } from '$db/repos/accounts';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -19,7 +20,7 @@
 	let onBudget = $state(true);
 	let balance = $state('');
 	let date = $state(todayIso());
-	let error = $state<string | null>(null);
+	let error = $state<ActionError | null>(null);
 
 	$effect(() => {
 		if (!open) return;
@@ -42,7 +43,7 @@
 		event.preventDefault();
 		const typed = balance.trim() === '' ? 0 : session.parse(balance);
 		if (typed === null) {
-			error = m.form_error_amount_invalid();
+			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
 		error = await runAction(() =>
@@ -73,7 +74,7 @@
 				idPrefix="new-account"
 				onChangeType={() => (step = 1)}
 			/>
-			{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
+			<FormMessage {error} />
 			<Button type="submit">{m.accounts_add()}</Button>
 		</form>
 	{/if}

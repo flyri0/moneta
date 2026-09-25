@@ -11,10 +11,12 @@
 </script>
 
 <ReportPage title={m.reports_spending()}>
-	<PeriodBar
-		bind:preset={() => period.preset ?? 'this_month', (v) => (period.preset = v)}
-		bind:custom={period.custom}
-		{range}
-	/>
+	{#snippet toolbar()}
+		<PeriodBar
+			bind:preset={() => period.preset ?? 'this_month', (v) => (period.preset = v)}
+			bind:custom={period.custom}
+			{range}
+		/>
+	{/snippet}
 	<SpendingDetail {range} />
 </ReportPage>
