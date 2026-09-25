@@ -1,3 +1,4 @@
+import { groupBy } from './group-by';
 import { compareMonths, monthRange, type Month } from './month';
 
 /** The sum of an account's transactions dated in one month. */
@@ -32,10 +33,11 @@ export function accountBalanceSeries(
 	const months = changes.map((c) => c.month).sort(compareMonths);
 	const last =
 		compareMonths(months[months.length - 1], through) > 0 ? months[months.length - 1] : through;
+	const byMonth = groupBy(changes, (c) => c.month);
 	const balances: Record<string, number> = {};
 	return monthRange(months[0], last).map((month) => {
-		for (const c of changes)
-			if (c.month === month) balances[c.accountId] = (balances[c.accountId] ?? 0) + c.amount;
+		for (const c of byMonth.get(month) ?? [])
+			balances[c.accountId] = (balances[c.accountId] ?? 0) + c.amount;
 		return { month, balances: { ...balances } };
 	});
 }

@@ -55,3 +55,24 @@ describe('accountBalanceSeries', () => {
 		expect(accountBalanceSeries([], '2026-09')).toEqual([]);
 	});
 });
+
+describe('a far-off date', () => {
+	it('keeps a series quick when a typo dates a transaction in 2199', () => {
+		const changes = [];
+		for (let a = 0; a < 50; a++)
+			for (let y = 2006; y < 2026; y++)
+				for (let m = 1; m <= 12; m++)
+					changes.push({
+						accountId: `a${a}`,
+						month: `${y}-${String(m).padStart(2, '0')}`,
+						amount: 100
+					});
+		changes.push({ accountId: 'a0', month: '2199-12', amount: 1 });
+		const start = performance.now();
+		const series = accountBalanceSeries(changes, '2026-09');
+		const elapsed = performance.now() - start;
+		expect(series).toHaveLength((2199 - 2006) * 12 + 12);
+		expect(series.at(-1)!.balances).toMatchObject({ a0: 24001, a1: 24000 });
+		expect(elapsed).toBeLessThan(110);
+	});
+});
