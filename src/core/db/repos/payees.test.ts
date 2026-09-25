@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import type { Db } from '../connection';
+import { run, tx, type Db } from '../connection';
 import { createAccount } from './accounts';
 import { createTransaction, getTransaction } from './transactions';
 import {
@@ -68,6 +68,30 @@ describe('listPayees', () => {
 				lastCategoryId: null
 			})
 		]);
+	});
+});
+
+describe('listPayees on a long history', () => {
+	it('lists 500 payees over 30,000 transactions quickly', () => {
+		tx(db, () => {
+			for (let p = 0; p < 500; p++)
+				run(db, 'INSERT INTO payees (id, name) VALUES (?, ?)', [`p${p}`, `Payee ${p}`]);
+			for (let t = 0; t < 30_000; t++) {
+				const day = String((t % 28) + 1).padStart(2, '0');
+				const month = String((t % 12) + 1).padStart(2, '0');
+				run(
+					db,
+					`INSERT INTO transactions (id, account_id, date, amount, payee_id, category_id)
+					 VALUES (?, ?, ?, -100, ?, ?)`,
+					[`t${t}`, bank, `20${10 + (t % 16)}-${month}-${day}`, `p${t % 500}`, food]
+				);
+			}
+		});
+		const start = performance.now();
+		const payees = listPayees(db);
+		const elapsed = performance.now() - start;
+		expect(payees.find((p) => p.name === 'Payee 7')?.lastCategoryId).toBe(food);
+		expect(elapsed).toBeLessThan(500);
 	});
 });
 

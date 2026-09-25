@@ -55,7 +55,7 @@ describe('migrate', () => {
 			db,
 			"INSERT INTO transactions (id, account_id, date, amount) VALUES ('t1', 'a1', '2026-01-02', -500)"
 		);
-		migrate(db);
+		migrate(db, MIGRATIONS.slice(0, 3));
 		expect(schemaVersion(db)).toBe(3);
 		expect(all(db, 'SELECT id, amount FROM transactions')).toEqual([{ id: 't1', amount: -500 }]);
 		expect(all(db, 'SELECT * FROM schedules')).toEqual([]);

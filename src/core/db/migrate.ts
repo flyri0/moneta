@@ -3,8 +3,9 @@ import type { Db } from './connection';
 import init from './migrations/0001_init.sql?raw';
 import payeeDefaultCategory from './migrations/0002_payee_default_category.sql?raw';
 import schedules from './migrations/0003_schedules.sql?raw';
+import payeeIndex from './migrations/0004_transactions_payee_index.sql?raw';
 
-export const MIGRATIONS: readonly string[] = [init, payeeDefaultCategory, schedules];
+export const MIGRATIONS: readonly string[] = [init, payeeDefaultCategory, schedules, payeeIndex];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
 export function schemaVersion(db: Db): number {
