@@ -135,6 +135,8 @@ test('encrypts backups once set up, and restores them with the password or the r
 	await dialog.getByRole('button', { name: 'Turn on' }).click();
 	await expect(dialog).toBeHidden();
 	await expect(encrypt).toBeChecked();
+	// Exports aren't backups: they stay plain, and the page says so.
+	await expect(page.getByText(/exports? (are|is) not encrypted/i)).toBeVisible();
 
 	// The key stays on this device.
 	await page.reload();

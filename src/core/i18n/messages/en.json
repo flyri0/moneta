@@ -423,6 +423,7 @@
 	"backup_copy_restored": "Copy restored as a new budget.",
 	"backup_exports": "Exports",
 	"backup_exports_hint": "For spreadsheets and other apps. These files can't be restored.",
+	"backup_exports_hint_encrypted": "For spreadsheets and other apps. These files can't be restored, and exports are not encrypted: keep them somewhere safe.",
 	"backup_export_csv": "Transactions (CSV)",
 	"backup_export_json": "Whole budget (JSON)",
 	"backup_reminder": "Your last backup is more than two weeks old.",

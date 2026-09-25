@@ -423,6 +423,7 @@
 	"backup_copy_restored": "Cópia restaurada como novo orçamento.",
 	"backup_exports": "Exportações",
 	"backup_exports_hint": "Para planilhas e outros apps. Esses arquivos não podem ser restaurados.",
+	"backup_exports_hint_encrypted": "Para planilhas e outros apps. Esses arquivos não podem ser restaurados, e as exportações não são criptografadas: guarde-as em um lugar seguro.",
 	"backup_export_csv": "Transações (CSV)",
 	"backup_export_json": "Orçamento inteiro (JSON)",
 	"backup_reminder": "Seu último backup tem mais de duas semanas.",

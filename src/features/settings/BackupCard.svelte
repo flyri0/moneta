@@ -147,7 +147,10 @@
 	</SettingsGroup>
 {/if}
 
-<SettingsGroup title={m.backup_exports()} description={m.backup_exports_hint()}>
+<SettingsGroup
+	title={m.backup_exports()}
+	description={encrypted ? m.backup_exports_hint_encrypted() : m.backup_exports_hint()}
+>
 	<SettingsRow
 		label={m.backup_export_csv()}
 		onclick={() => runActionToast(() => exportTransactionsCsv(session))}
