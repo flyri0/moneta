@@ -50,15 +50,12 @@ export const api = {
 	accounts: {
 		list: read(accounts.listAccounts, []),
 		get: read(accounts.getAccount, ['string']),
-		create: write(['accounts', 'categories', ...TXN], accounts.createAccount, ['object']),
-		rename: write(['accounts', 'categories'], accounts.renameAccount, ['string', 'string']),
-		close: write(['accounts', 'categories'], accounts.closeAccount, ['string']),
-		reopen: write(['accounts', 'categories'], accounts.reopenAccount, ['string']),
-		delete: write(
-			['accounts', 'categories', 'budget_assignments', ...SCHED],
-			accounts.deleteAccount,
-			['string']
-		)
+		// A starting balance is one plain transaction, and its payee may be new.
+		create: write(['accounts', 'transactions', 'payees'], accounts.createAccount, ['object']),
+		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
+		close: write(['accounts'], accounts.closeAccount, ['string']),
+		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
+		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string'])
 	},
 	categories: {
 		tree: read(categories.listCategoryTree, []),
@@ -81,7 +78,7 @@ export const api = {
 	payees: {
 		list: read(payees.listPayees, []),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
-		merge: write(['payees', 'transactions', ...SCHED], payees.mergePayee, ['string', 'string']),
+		merge: write(['payees', 'transactions', 'schedules'], payees.mergePayee, ['string', 'string']),
 		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
 		delete: write(['payees'], payees.deletePayee, ['string']),
 		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
@@ -91,7 +88,9 @@ export const api = {
 		get: read(transactions.getTransaction, ['string']),
 		create: write(TXN, transactions.createTransaction, ['object']),
 		update: write(TXN, transactions.updateTransaction, ['string', 'object']),
-		delete: write(TXN, transactions.deleteTransaction, ['string']),
+		delete: write(['transactions', 'transaction_splits'], transactions.deleteTransaction, [
+			'string'
+		]),
 		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
 	},
 	schedules: {
@@ -101,9 +100,14 @@ export const api = {
 		create: write([...SCHED, 'payees'], schedules.createSchedule, ['object']),
 		update: write([...SCHED, 'payees'], schedules.updateSchedule, ['string', 'object']),
 		delete: write(SCHED, schedules.deleteSchedule, ['string']),
-		enter: write([...SCHED, ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),
-		skip: write(SCHED, schedules.skipOccurrence, ['string', 'number']),
-		enterDue: write([...SCHED, ...TXN], schedules.enterDueOccurrences, ['string'])
+		enter: write(['schedules', ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),
+		skip: write(['schedules'], schedules.skipOccurrence, ['string', 'number']),
+		// Entered with the schedule's own payee, which exists.
+		enterDue: write(
+			['schedules', 'transactions', 'transaction_splits'],
+			schedules.enterDueOccurrences,
+			['string']
+		)
 	},
 	budget: {
 		month: read(budget.getBudgetMonth, ['string']),
