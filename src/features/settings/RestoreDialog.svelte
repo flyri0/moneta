@@ -13,7 +13,7 @@
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
-	import { planRestore, restoreBackup, type PlannedRestore } from '$client/session';
+	import { partlyRestored, planRestore, restoreBackup, type PlannedRestore } from '$client/session';
 	import { currentMonth } from '$domain/month';
 	import { formatDateTime } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -109,11 +109,22 @@
 		if (countdown > 0) return;
 		const data = bytes;
 		busy = true;
+		let failure: unknown = null;
 		error = await runAction(async () => {
-			const restored = await restoreBackup(session.api, localStorage, data, chosen, session.file);
-			app.show(session.client, restored.file, restored.meta);
+			try {
+				const restored = await restoreBackup(session.api, localStorage, data, chosen, session.file);
+				app.show(session.client, restored.file, restored.meta);
+			} catch (err) {
+				failure = err;
+				throw err;
+			}
 		});
 		busy = false;
+		const partly = partlyRestored(failure);
+		if (partly.length > 0) {
+			const names = chosen.filter((p) => partly.includes(p.file)).map((p) => p.name);
+			error = { message: m.backup_restore_partial({ names: names.join(', ') }) };
+		}
 		if (error) return;
 		open = false;
 		toast.success(m.backup_restored());

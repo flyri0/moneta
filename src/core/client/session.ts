@@ -206,6 +206,13 @@ export function planRestore(
 	});
 }
 
+/** The files a restore that stopped partway (RESTORE_PARTIAL) had already written. */
+export function partlyRestored(err: unknown): string[] {
+	const { code, details } = (err ?? {}) as { code?: unknown; details?: { restored?: unknown } };
+	const restored = code === 'RESTORE_PARTIAL' ? details?.restored : undefined;
+	return Array.isArray(restored) ? restored.filter((f): f is string => typeof f === 'string') : [];
+}
+
 /**
  * Restores budgets from a backup as `planRestore` planned them, and opens one: `openFile` when it
  * was replaced, else the first restored. The worker checks the backup first, so an invalid one
@@ -220,10 +227,20 @@ export async function restoreBackup(
 	openFile?: string
 ): Promise<{ file: string; meta: BudgetMeta }> {
 	if (plan.length === 0) throw new DomainError('INVALID_INPUT', 'Nothing to restore');
-	await api.system.restoreBackup(
-		bytes,
-		plan.map(({ index, file }) => ({ index, file }))
-	);
+	try {
+		await api.system.restoreBackup(
+			bytes,
+			plan.map(({ index, file }) => ({ index, file }))
+		);
+	} catch (err) {
+		// Budgets written before a failure are there: list them, as startup would.
+		const restored = partlyRestored(err);
+		let registry = loadRegistry(store);
+		for (const p of plan.filter((p) => restored.includes(p.file)))
+			registry = upsertBudget(registry, { file: p.file, name: p.name });
+		saveRegistry(store, registry);
+		throw err;
+	}
 	const file = plan.find((p) => p.replaces && p.file === openFile)?.file ?? plan[0].file;
 	let meta: BudgetMeta;
 	try {

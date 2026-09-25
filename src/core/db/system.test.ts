@@ -53,7 +53,8 @@ describe('createSystem', () => {
 		const deps = await setup();
 		const reserve = vi.spyOn(deps.store, 'reserve');
 		await createSystem(deps).system.open(FILE);
-		expect(reserve).toHaveBeenCalledWith(3);
+		// The file, its journal, the open database's journal, and the file still open next to it.
+		expect(reserve).toHaveBeenCalledWith(4);
 	});
 
 	it('saves a copy of a budget before migrating it', async () => {
@@ -187,6 +188,7 @@ async function seedNamed(deps: Awaited<ReturnType<typeof setup>>, file: string, 
 const ID = '0190a000-0000-7000-8000-000000000001';
 const OTHER_ID = '0190a000-0000-7000-8000-000000000002';
 const THIRD = 'budget-0190a000-0000-7000-8000-000000000003.sqlite3';
+const FOURTH = 'budget-0190a000-0000-7000-8000-000000000004.sqlite3';
 
 describe('exportBackup', () => {
 	it('writes the budgets, open or not, as one .moneta file', async () => {
@@ -287,6 +289,63 @@ describe('inspectBackup', () => {
 		expect(() =>
 			system.inspectBackup(writeBackup([{ ...budget, id: ID, name: 'Home', image: damaged }], 'x'))
 		).toThrow(expect.objectContaining({ code: 'BACKUP_DAMAGED' }));
+	});
+});
+
+describe('failures keep the open budget', () => {
+	it('keeps the open budget when another one fails to open', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		deps.store.files.get(OTHER)!.exec(`PRAGMA user_version = ${SCHEMA_VERSION + 1}`);
+		const { system, getDb } = createSystem(deps);
+		await system.open(FILE);
+		await expect(system.open(OTHER)).rejects.toMatchObject({ code: 'SCHEMA_TOO_NEW' });
+		expect(getMeta(getDb()!).name).toBe('Home');
+	});
+
+	it('puts the open budget back when writing a restore over it fails', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system, getDb } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE]);
+		await system.open(FILE);
+		updateMeta(getDb()!, { name: 'Changed' });
+		const write = deps.store.write.bind(deps.store);
+		let failed = false;
+		deps.store.write = async (name, image) => {
+			if (name !== FILE || failed) return write(name, image);
+			failed = true;
+			// Like the OPFS pool, a failed import drops the file.
+			deps.store.remove(name);
+			throw new Error('disk full');
+		};
+		await expect(system.restoreBackup(bytes, [{ index: 0, file: FILE }])).rejects.toThrow(
+			'disk full'
+		);
+		expect(getMeta(getDb()!).name).toBe('Changed');
+		expect(system.listFiles()).toContain(FILE);
+	});
+
+	it('tells which budgets were restored when a later one fails', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		await seedNamed(deps, OTHER, 'Trip');
+		const { system } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE, OTHER]);
+		const write = deps.store.write.bind(deps.store);
+		deps.store.write = async (name, image) => {
+			if (name === FOURTH) throw new Error('disk full');
+			return write(name, image);
+		};
+		const picks = [
+			{ index: 0, file: THIRD },
+			{ index: 1, file: FOURTH }
+		];
+		await expect(system.restoreBackup(bytes, picks)).rejects.toMatchObject({
+			code: 'RESTORE_PARTIAL',
+			details: { restored: [THIRD] }
+		});
 	});
 });
 

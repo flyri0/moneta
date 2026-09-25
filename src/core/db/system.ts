@@ -53,7 +53,10 @@ export interface SystemDeps {
 }
 
 const FILE_NAME = /^[A-Za-z0-9_-]+\.sqlite3$/;
-/** Room kept before creating a file: the file, its journal and the open database's journal. */
+/**
+ * Room kept before creating a file: the file, its journal and the open database's journal. Opening
+ * a file takes one more, for the open file it opens next to.
+ */
 const SPARE_FILES = 3;
 const KEPT_COPIES = 3;
 
@@ -172,8 +175,9 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 	const system: SystemApi = {
 		async open(fileName) {
 			checkFileName(fileName);
-			closeDb();
-			await store.reserve(SPARE_FILES);
+			// Another file opens next to the open one, which stays open if this one fails.
+			if (openName === fileName) closeDb();
+			await store.reserve(SPARE_FILES + 1);
 			const next = store.open(fileName);
 			try {
 				configure(next);
@@ -185,6 +189,7 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 				store.close(next);
 				throw err;
 			}
+			closeDb();
 			db = next;
 			openName = fileName;
 		},
@@ -289,10 +294,38 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			);
 			await store.reserve(SPARE_FILES + 2 * picks.length);
 			const existing = new Set(store.list());
-			for (const { file } of picks) if (existing.has(file)) await saveCopy(file, readImage(file));
-			for (const [i, { file }] of picks.entries()) {
-				if (openName === file) closeDb();
-				await store.write(file, images[i]);
+			const before = new Map<string, Uint8Array>();
+			for (const { file } of picks) {
+				if (!existing.has(file)) continue;
+				before.set(file, readImage(file));
+				await saveCopy(file, before.get(file)!);
+			}
+			const wasOpen = openName;
+			let written = 0;
+			try {
+				for (const [i, { file }] of picks.entries()) {
+					// The pool can't write over an open file; the open budget closes only for its own.
+					if (openName === file) closeDb();
+					await store.write(file, images[i]);
+					written++;
+				}
+			} catch (err) {
+				const failed = picks[written].file;
+				// A failed write may leave nothing behind: put back what was there.
+				if (before.has(failed) && !store.list().includes(failed))
+					await store.write(failed, before.get(failed)!).catch(() => {});
+				if (wasOpen && !db && store.list().includes(wasOpen)) {
+					const reopened = store.open(wasOpen);
+					configure(reopened);
+					db = reopened;
+					openName = wasOpen;
+				}
+				if (written === 0) throw err;
+				throw new DomainError(
+					'RESTORE_PARTIAL',
+					`Restored ${written} of ${picks.length} budgets: ${String(err)}`,
+					{ restored: picks.slice(0, written).map((p) => p.file) }
+				);
 			}
 		}
 	};

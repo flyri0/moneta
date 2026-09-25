@@ -197,8 +197,8 @@ describe('deleteBudget', () => {
 });
 
 /** The open budget file as a `.moneta` backup. */
-async function backUp(api: SessionApi, file: string): Promise<Uint8Array> {
-	return (await api.system.exportBackup([file])).bytes;
+async function backUp(api: SessionApi, ...files: string[]): Promise<Uint8Array> {
+	return (await api.system.exportBackup(files)).bytes;
 }
 
 describe('planRestore', () => {
@@ -229,6 +229,21 @@ describe('planRestore', () => {
 		expect(legacy).toMatchObject({ index: 1, name: 'Old', replaces: false });
 		expect(new Set([home.file, legacy.file, FILE]).size).toBe(3);
 		expect([home.file, legacy.file].every(isBudgetFile)).toBe(true);
+	});
+});
+
+describe('switchBudget', () => {
+	it('stays on the open budget when the other one fails to open', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		files.get(work.file)!.exec('PRAGMA user_version = 999');
+		await switchBudget(api, store, home.file);
+		await expect(switchBudget(api, store, work.file)).rejects.toMatchObject({
+			code: 'SCHEMA_TOO_NEW'
+		});
+		expect((await api.meta.get()).name).toBe('Home');
+		expect((await api.accounts.list()).map((a) => a.name)).toEqual(['Checking']);
 	});
 });
 
@@ -309,6 +324,35 @@ describe('restoreBackup', () => {
 		};
 		await expect(restoreAll(failing, store, backup, home.file)).rejects.toThrow('disk error');
 		expect([...files.keys()]).toEqual([home.file]);
+		expect((await api.meta.get()).name).toBe('Home');
+	});
+});
+
+describe('a restore that stops partway', () => {
+	it('registers the budgets it restored before failing', async () => {
+		const { api, store } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		const backup = await backUp(api, home.file, work.file);
+		const { budgets } = await api.system.inspectBackup(backup);
+		const plan = planRestore(budgets, [home.file, work.file], false);
+		await switchBudget(api, store, home.file);
+		const partial: SessionApi = {
+			meta: api.meta,
+			accounts: api.accounts,
+			demo: api.demo,
+			system: {
+				...pick(api.system),
+				restoreBackup: async (bytes, picks) => {
+					await api.system.restoreBackup(bytes, picks.slice(0, 1));
+					throw new RpcError('RESTORE_PARTIAL', 'disk full', { restored: [picks[0].file] });
+				}
+			}
+		};
+		await expect(restoreBackup(partial, store, backup, plan, home.file)).rejects.toMatchObject({
+			code: 'RESTORE_PARTIAL'
+		});
+		expect(loadRegistry(store).budgets.map((b) => b.file)).toContain(plan[0].file);
 		expect((await api.meta.get()).name).toBe('Home');
 	});
 });
