@@ -1,3 +1,4 @@
+import { groupBy } from './group-by';
 import { addMonths, monthRange, type Month } from './month';
 
 export type CategoryKind = 'regular' | 'income';
@@ -51,17 +52,6 @@ export interface BudgetComputation {
 	months: Map<Month, MonthResult>;
 	first: Month;
 	last: Month;
-}
-
-function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
-	const map = new Map<string, T[]>();
-	for (const item of items) {
-		const k = key(item);
-		const list = map.get(k);
-		if (list) list.push(item);
-		else map.set(k, [item]);
-	}
-	return map;
 }
 
 function carryoverFrom(prev: CategoryMonth | undefined, category: EngineCategory): number {

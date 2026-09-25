@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { groupBy } from '$domain/group-by';
 import { MAX_DATE } from '$domain/month';
 import {
 	occurrenceDate,
@@ -123,21 +124,20 @@ function toRows(db: Db, raws: Raw[], today: string): ScheduleRow[] {
 					 ORDER BY s.rowid`,
 					[JSON.stringify(splitIds)]
 				);
+	const bySchedule = groupBy(splits, (s) => s.scheduleId);
 	return raws.map(({ paused, isSplit, autoEnter, ...rest }) => {
 		const nextDate = occurrenceDate(rest, rest.nextIndex);
 		return {
 			...rest,
 			isSplit: isSplit === 1,
 			autoEnter: autoEnter === 1,
-			splits: splits
-				.filter((s) => s.scheduleId === rest.id)
-				.map((s) => ({
-					id: s.id,
-					categoryId: s.categoryId,
-					categoryName: s.categoryName,
-					amount: s.amount,
-					memo: s.memo
-				})),
+			splits: (bySchedule.get(rest.id) ?? []).map((s) => ({
+				id: s.id,
+				categoryId: s.categoryId,
+				categoryName: s.categoryName,
+				amount: s.amount,
+				memo: s.memo
+			})),
 			nextDate,
 			status: statusOf(paused === 1, autoEnter === 1, nextDate, today)
 		};

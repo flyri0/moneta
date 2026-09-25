@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { groupBy } from '$domain/group-by';
 import { isDate } from '$domain/month';
 import { foldText, searchTerms, type SearchTerm } from '$domain/search';
 import { all, one, run, tx, type Db } from '../connection';
@@ -310,19 +311,18 @@ function attachSplits(db: Db, rows: Row[]): TransactionRow[] {
 					 ORDER BY s.rowid`,
 					[JSON.stringify(splitIds)]
 				);
+	const byTransaction = groupBy(splits, (s) => s.transactionId);
 	return rows.map((r) => ({
 		...r,
 		cleared: r.cleared === 1,
 		isSplit: r.isSplit === 1,
-		splits: splits
-			.filter((s) => s.transactionId === r.id)
-			.map((s) => ({
-				id: s.id,
-				categoryId: s.categoryId,
-				categoryName: s.categoryName,
-				amount: s.amount,
-				memo: s.memo
-			}))
+		splits: (byTransaction.get(r.id) ?? []).map((s) => ({
+			id: s.id,
+			categoryId: s.categoryId,
+			categoryName: s.categoryName,
+			amount: s.amount,
+			memo: s.memo
+		}))
 	}));
 }
 

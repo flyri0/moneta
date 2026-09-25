@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import { all, type Db } from '../connection';
+import { all, run, tx, type Db } from '../connection';
 import { closeAccount, createAccount, getAccount } from './accounts';
 import {
 	createTransaction,
@@ -210,6 +210,51 @@ describe('splits', () => {
 		});
 		expect(getTransaction(db, id)).toMatchObject({ isSplit: false, categoryId: food, splits: [] });
 		expect(all(db, 'SELECT * FROM transaction_splits')).toEqual([]);
+	});
+});
+
+describe('splits in a list', () => {
+	it('gives each split transaction its own lines, in order', () => {
+		const ids = [1, 2, 3].map((n) =>
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-01-10',
+				amount: -3000 * n,
+				splits: [
+					{ categoryId: food, amount: -1000 * n, memo: `a${n}` },
+					{ categoryId: fun, amount: -2000 * n, memo: `b${n}` }
+				]
+			})
+		);
+		const rows = listTransactions(db, { accountId: bank });
+		for (const [i, id] of ids.entries()) {
+			const n = i + 1;
+			expect(rows.find((r) => r.id === id)!.splits.map((s) => s.memo)).toEqual([`a${n}`, `b${n}`]);
+		}
+	});
+
+	it('lists 10,000 split transactions quickly', () => {
+		tx(db, () => {
+			for (let t = 0; t < 10_000; t++) {
+				run(
+					db,
+					`INSERT INTO transactions (id, account_id, date, amount, is_split)
+					 VALUES (?, ?, '2026-01-10', -300, 1)`,
+					[`t${t}`, bank]
+				);
+				for (const [n, category] of [food, fun].entries())
+					run(
+						db,
+						'INSERT INTO transaction_splits (id, transaction_id, category_id, amount) VALUES (?, ?, ?, ?)',
+						[`s${t}-${n}`, `t${t}`, category, n === 0 ? -100 : -200]
+					);
+			}
+		});
+		const start = performance.now();
+		const rows = listTransactions(db);
+		const elapsed = performance.now() - start;
+		expect(rows.filter((r) => r.splits.length === 2)).toHaveLength(10_000);
+		expect(elapsed).toBeLessThan(1000);
 	});
 });
 

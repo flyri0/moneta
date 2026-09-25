@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { groupBy } from '$domain/group-by';
 import { all, one, run, tx, type Db } from '../connection';
 
 export interface CategoryNode {
@@ -81,10 +82,11 @@ export function listCategoryTree(db: Db): GroupNode[] {
 		db,
 		`SELECT ${CATEGORY_COLUMNS} FROM categories ORDER BY sort_order, name`
 	).map(toCategory);
+	const byGroup = groupBy(categories, (c) => c.groupId);
 	return groups.map((g) => ({
 		...g,
 		hidden: g.hidden === 1,
-		categories: categories.filter((c) => c.groupId === g.id)
+		categories: byGroup.get(g.id) ?? []
 	}));
 }
 
