@@ -11,7 +11,7 @@
 	import { startDbWorker, type DbWorker } from '$client/db';
 	import { openLastBudget, startupError, type OpenResult } from '$client/session';
 	import { watchUncaught } from '$client/notify';
-	import { applyServiceWorkerUpdate, onNeedRefresh } from '$client/sw';
+	import { applyServiceWorkerUpdate, onNeedRefresh, onNeedReload } from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import { settleWithin } from '$client/timeout';
 	import type { BudgetMeta } from '$db/repos/meta';
@@ -127,8 +127,19 @@
 		await applyServiceWorkerUpdate();
 	}
 
+	/**
+	 * A new version took control, from this tab or another: the page must reload, but the tab that
+	 * has the database closes it cleanly first.
+	 */
+	async function reloadForUpdate() {
+		if (worker) await settleWithin(worker.idle(), SHUTDOWN_TIMEOUT);
+		await stopWorker();
+		location.reload();
+	}
+
 	onMount(() => {
 		const stopWatching = watchUncaught(window);
+		onNeedReload(() => void reloadForUpdate());
 		onNeedRefresh(() => {
 			toast(m.update_available(), {
 				duration: Number.POSITIVE_INFINITY,
