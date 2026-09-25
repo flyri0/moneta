@@ -14,8 +14,8 @@ describe('computeBudget (Actual Budget model)', () => {
 				{ id: 'groceries', kind: 'regular', carryoverOverspending: false }
 			],
 			entries: [
-				{ categoryId: 'salary', date: '2026-01-05', order: '1', amount: 500000 },
-				{ categoryId: 'groceries', date: '2026-01-10', order: '2', amount: -150000 }
+				{ categoryId: 'salary', month: '2026-01', amount: 500000 },
+				{ categoryId: 'groceries', month: '2026-01', amount: -150000 }
 			],
 			assignments: [{ categoryId: 'groceries', month: '2026-01', assigned: 200000 }]
 		};
@@ -46,9 +46,9 @@ describe('computeBudget (Actual Budget model)', () => {
 				{ id: 'card-debt', kind: 'regular', carryoverOverspending: true }
 			],
 			entries: [
-				{ categoryId: 'salary', date: '2026-01-01', order: '1', amount: 300000 },
-				{ categoryId: 'card-debt', date: '2026-01-15', order: '2', amount: -200000 },
-				{ categoryId: 'salary', date: '2026-02-01', order: '3', amount: 300000 }
+				{ categoryId: 'salary', month: '2026-01', amount: 300000 },
+				{ categoryId: 'card-debt', month: '2026-01', amount: -200000 },
+				{ categoryId: 'salary', month: '2026-02', amount: 300000 }
 			],
 			assignments: [
 				{ categoryId: 'card-debt', month: '2026-01', assigned: 0 },
@@ -83,9 +83,9 @@ describe('computeBudget (Actual Budget model)', () => {
 				{ id: 'dining', kind: 'regular', carryoverOverspending: false }
 			],
 			entries: [
-				{ categoryId: 'salary', date: '2026-01-01', order: '1', amount: 300000 },
-				{ categoryId: 'dining', date: '2026-01-15', order: '2', amount: -200000 },
-				{ categoryId: 'salary', date: '2026-02-01', order: '3', amount: 300000 }
+				{ categoryId: 'salary', month: '2026-01', amount: 300000 },
+				{ categoryId: 'dining', month: '2026-01', amount: -200000 },
+				{ categoryId: 'salary', month: '2026-02', amount: 300000 }
 			],
 			assignments: []
 		};
@@ -113,8 +113,8 @@ describe('computeBudget (Actual Budget model)', () => {
 				{ id: 'groceries', kind: 'regular', carryoverOverspending: false }
 			],
 			entries: [
-				{ categoryId: 'salary', date: '2026-01-01', order: '1', amount: 100000 },
-				{ categoryId: 'groceries', date: '2026-01-10', order: '2', amount: -12000 }
+				{ categoryId: 'salary', month: '2026-01', amount: 100000 },
+				{ categoryId: 'groceries', month: '2026-01', amount: -12000 }
 			],
 			assignments: [{ categoryId: 'groceries', month: '2026-01', assigned: 30000 }]
 		};
@@ -150,7 +150,7 @@ describe('computeBudget (Actual Budget model)', () => {
 				{ id: 'food', kind: 'regular', carryoverOverspending: false },
 				{ id: 'fun', kind: 'regular', carryoverOverspending: true }
 			],
-			entries: [{ categoryId: 'salary', date: '2026-01-01', order: '1', amount: 100000 }],
+			entries: [{ categoryId: 'salary', month: '2026-01', amount: 100000 }],
 			assignments: [
 				{ categoryId: 'food', month: '2026-02', assigned: 30000 },
 				{ categoryId: 'fun', month: '2026-03', assigned: 150000 }
@@ -166,17 +166,17 @@ describe('computeBudget (Actual Budget model)', () => {
 		expect(firstNegativeMonthAfter(comp, '2026-03')).toBeNull();
 	});
 
-	it('orders same-day entries by order key and handles multiple entries in a month', () => {
+	it('adds up several entries of a category in one month', () => {
 		const input: EngineInput = {
 			categories: [
 				{ id: 'salary', kind: 'income', carryoverOverspending: false },
 				{ id: 'food', kind: 'regular', carryoverOverspending: false }
 			],
 			entries: [
-				{ categoryId: 'food', date: '2026-01-03', order: '000002', amount: -2000 },
-				{ categoryId: 'food', date: '2026-01-03', order: '000001', amount: -3000 },
-				{ categoryId: 'salary', date: '2026-01-01', order: '000003', amount: 20000 },
-				{ categoryId: 'salary', date: '2026-01-15', order: '000004', amount: 10000 }
+				{ categoryId: 'food', month: '2026-01', amount: -2000 },
+				{ categoryId: 'food', month: '2026-01', amount: -3000 },
+				{ categoryId: 'salary', month: '2026-01', amount: 20000 },
+				{ categoryId: 'salary', month: '2026-01', amount: 10000 }
 			],
 			assignments: [{ categoryId: 'food', month: '2026-01', assigned: 10000 }]
 		};

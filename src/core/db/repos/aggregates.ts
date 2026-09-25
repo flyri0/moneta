@@ -23,17 +23,21 @@ export function loadEngineInput(db: Db): EngineInput {
 		carryoverOverspending: c.carryover === 1
 	}));
 
+	// Summed per month and category here: the engine only ever adds them up.
 	const entries = all<EngineEntry>(
 		db,
-		`SELECT t.category_id AS categoryId, t.date, t.id AS "order", t.amount
-		 FROM transactions t JOIN accounts a ON a.id = t.account_id
-		 WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
-		 UNION ALL
-		 SELECT s.category_id, t.date, t.id || ':' || s.id, s.amount
-		 FROM transaction_splits s
-		 JOIN transactions t ON t.id = s.transaction_id
-		 JOIN accounts a ON a.id = t.account_id
-		 WHERE a.on_budget = 1`
+		`SELECT categoryId, month, SUM(amount) AS amount FROM (
+			SELECT t.category_id AS categoryId, substr(t.date, 1, 7) AS month, t.amount
+			FROM transactions t JOIN accounts a ON a.id = t.account_id
+			WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
+			UNION ALL
+			SELECT s.category_id, substr(t.date, 1, 7), s.amount
+			FROM transaction_splits s
+			JOIN transactions t ON t.id = s.transaction_id
+			JOIN accounts a ON a.id = t.account_id
+			WHERE a.on_budget = 1
+		 )
+		 GROUP BY categoryId, month`
 	);
 
 	const assignments = all<EngineAssignment>(

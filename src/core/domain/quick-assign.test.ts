@@ -8,10 +8,10 @@ const input: EngineInput = {
 		{ id: 'food', kind: 'regular', carryoverOverspending: false }
 	],
 	entries: [
-		{ categoryId: 'food', date: '2026-01-10', order: 'a', amount: -9000 },
-		{ categoryId: 'food', date: '2026-02-10', order: 'b', amount: -6000 },
-		{ categoryId: 'food', date: '2026-03-10', order: 'c', amount: -3001 },
-		{ categoryId: 'food', date: '2026-04-10', order: 'd', amount: -7000 }
+		{ categoryId: 'food', month: '2026-01', amount: -9000 },
+		{ categoryId: 'food', month: '2026-02', amount: -6000 },
+		{ categoryId: 'food', month: '2026-03', amount: -3001 },
+		{ categoryId: 'food', month: '2026-04', amount: -7000 }
 	],
 	assignments: [
 		{ categoryId: 'food', month: '2026-03', assigned: 4000 },
@@ -36,7 +36,7 @@ describe('quickAssignAmount', () => {
 		const refunds = computeBudget(
 			{
 				...input,
-				entries: [{ categoryId: 'food', date: '2026-03-01', order: 'x', amount: 5000 }]
+				entries: [{ categoryId: 'food', month: '2026-03', amount: 5000 }]
 			},
 			'2026-04'
 		);

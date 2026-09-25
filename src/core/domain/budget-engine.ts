@@ -1,4 +1,4 @@
-import { addMonths, monthOf, monthRange, type Month } from './month';
+import { addMonths, monthRange, type Month } from './month';
 
 export type CategoryKind = 'regular' | 'income';
 
@@ -8,11 +8,13 @@ export interface EngineCategory {
 	carryoverOverspending: boolean;
 }
 
-/** One categorized amount on an on-budget account (a transaction or a split line). */
+/**
+ * Categorized money on on-budget accounts (transactions and split lines): a category's total for
+ * a month, or any part of it (the engine adds entries of the same month and category up).
+ */
 export interface EngineEntry {
 	categoryId: string;
-	date: string; // YYYY-MM-DD
-	order: string; // tie-breaker within a date (UUIDv7 ids sort by creation time)
+	month: Month;
 	amount: number; // minor units, negative = outflow
 }
 
@@ -51,11 +53,6 @@ export interface BudgetComputation {
 	last: Month;
 }
 
-function compareEntries(a: EngineEntry, b: EngineEntry): number {
-	if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-	return a.order < b.order ? -1 : a.order > b.order ? 1 : 0;
-}
-
 function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
 	const map = new Map<string, T[]>();
 	for (const item of items) {
@@ -76,7 +73,7 @@ function carryoverFrom(prev: CategoryMonth | undefined, category: EngineCategory
 
 export function computeBudget(input: EngineInput, through: Month): BudgetComputation {
 	const dataMonths = [
-		...input.entries.map((e) => monthOf(e.date)),
+		...input.entries.map((e) => e.month),
 		...input.assignments.map((a) => a.month)
 	];
 	const first = dataMonths.reduce((min, m) => (m < min ? m : min), through);
@@ -85,10 +82,7 @@ export function computeBudget(input: EngineInput, through: Month): BudgetComputa
 	const regular = input.categories.filter((c) => c.kind === 'regular');
 	const incomeCategories = input.categories.filter((c) => c.kind === 'income');
 
-	const entriesByKey = groupBy(
-		[...input.entries].sort(compareEntries),
-		(e) => `${monthOf(e.date)}|${e.categoryId}`
-	);
+	const entriesByKey = groupBy(input.entries, (e) => `${e.month}|${e.categoryId}`);
 	const assigned = new Map(
 		input.assignments.map((a) => [`${a.month}|${a.categoryId}`, a.assigned])
 	);
