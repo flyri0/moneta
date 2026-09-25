@@ -151,3 +151,14 @@ export async function deleteBudget(page: Page, name: string): Promise<void> {
 	await dialog.getByRole('button', { name: 'Delete budget' }).click();
 	await dialog.getByRole('button', { name: 'Tap again to delete' }).click({ timeout: 10_000 });
 }
+
+/** Enters an outflow of `amount` to `payee` in `category` from the transaction dialog. */
+export async function spend(page: Page, payee: string, amount: string, category: string) {
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', payee, payee);
+	await dialog.getByLabel('Amount', { exact: true }).fill(amount);
+	await chooseCombobox(dialog, 'Category', category, category);
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+}

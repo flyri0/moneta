@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SpendingDetail from '$features/reports/SpendingDetail.svelte';
+	import PayeesDetail from '$features/reports/PayeesDetail.svelte';
 	import PeriodBar from '$features/reports/PeriodBar.svelte';
 	import ReportPage from '$features/reports/ReportPage.svelte';
 	import { todayIso } from '$domain/month';
@@ -10,11 +10,11 @@
 	const range = $derived(periodRange('this_month', todayIso()));
 </script>
 
-<ReportPage title={m.reports_spending()}>
+<ReportPage title={m.reports_payees()}>
 	<PeriodBar
 		bind:preset={() => period.preset ?? 'this_month', (v) => (period.preset = v)}
 		bind:custom={period.custom}
 		{range}
 	/>
-	<SpendingDetail {range} />
+	<PayeesDetail {range} />
 </ReportPage>

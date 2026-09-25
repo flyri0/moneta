@@ -61,7 +61,7 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
   days forecast in each account
 - Payee management: rename a payee on every past transaction, merge duplicates, set a
   default category, and remove unused payees
-- Reports: spending by category and net worth over time
+- Reports: spending by category and by payee, net worth, cash flow, spending trends, assets and debts by account, and Age of Money, on an overview whose cards you can reorder and hide
 - Several budget files side by side
 - Backup and restore of every budget as one `.moneta` file, optionally encrypted with a
   password and a recovery key, plus CSV and JSON exports, with a reminder when your last
@@ -81,8 +81,7 @@ Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelop
   - **Account reconciliation**: Guided register reconciliation against bank statements, with locking for reconciled transactions.
 - **Budgeting & Goals**:
   - **Category targets & goals**: Target balances, target balances by date, monthly spending goals, visual progress indicators, and one-click "Underfunded" quick-assign.
-- **Analytics & Power Tools**:
-  - **Expanded reports**: Monthly Income vs. Expense matrix, payee spending breakdowns, and cash-flow trends.
+- **Power Tools**:
   - **Keyboard-first navigation & command palette**: Quick command palette (`Ctrl/Cmd + K`) and fast transaction entry shortcuts.
 
 ## Getting started
@@ -184,7 +183,7 @@ src/features/          feature modules (colocated screen logic + Svelte componen
   accounts/            account list, register, account creation dialogs
   transactions/        transaction entry dialog, form validation
   schedules/           schedules screen, schedule form, rule summaries
-  reports/             net worth, spending breakdown, date ranges
+  reports/             report cards and pages, overview layout, date ranges
   settings/            backup & restore, storage, theme, budget files
   onboarding/          first-run steps, starter categories
   welcome/             landing page, PWA install dialog

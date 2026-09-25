@@ -70,3 +70,19 @@ export function monthsCovered(range: DateRange, today: string): number | null {
 	const first = monthOf(range.from);
 	return compareMonths(first, last) > 0 ? null : monthRange(first, last).length;
 }
+
+/**
+ * The months a report over `range` shows, the future left out. All time starts at the first month
+ * that has data (`dataMonths`, in any order), so it has nothing to show without any.
+ */
+export function reportMonths(range: DateRange, today: string, dataMonths: Month[]): Month[] {
+	const now = monthOf(today);
+	const last = compareMonths(monthOf(range.to), now) > 0 ? now : monthOf(range.to);
+	let first = monthOf(range.from);
+	if (range.from === MIN_DATE) {
+		const earliest = [...dataMonths].sort(compareMonths)[0];
+		if (!earliest) return [];
+		first = earliest;
+	}
+	return compareMonths(first, last) > 0 ? [] : monthRange(first, last);
+}

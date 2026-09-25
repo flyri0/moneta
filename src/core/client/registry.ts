@@ -27,6 +27,11 @@ export const REGISTRY_KEY = 'moneta.registry';
 export function collapsedKey(file: string): string {
 	return `moneta.collapsed.${file}`;
 }
+
+/** Where a budget file's report cards (their order and which are hidden) are stored. */
+export function reportsLayoutKey(file: string): string {
+	return `moneta.reports.${file}`;
+}
 const BUDGET_FILE = /^budget-[0-9a-f-]+\.sqlite3$/;
 
 export function newBudgetFile(id: string = uuidv7()): string {

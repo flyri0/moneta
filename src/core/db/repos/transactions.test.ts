@@ -506,6 +506,12 @@ describe('listTransactions', () => {
 		).toEqual([-300]);
 	});
 
+	it('filters by payee', () => {
+		const padaria = listTransactions(db, { search: 'padaria' })[0].payeeId!;
+		expect(listTransactions(db, { payeeId: padaria }).map((t) => t.amount)).toEqual([-100]);
+		expect(listTransactions(db, { payeeId: padaria, from: '2026-02-01' })).toEqual([]);
+	});
+
 	it('pages with limit and offset', () => {
 		expect(listTransactions(db, { limit: 2, offset: 1 }).map((t) => t.amount)).toEqual([
 			-400, -300

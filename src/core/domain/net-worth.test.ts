@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { netWorthSeries } from './net-worth';
+import { accountBalanceSeries, netWorthSeries } from './net-worth';
 
 describe('netWorthSeries', () => {
 	it('totals month-end balances into assets and debts', () => {
@@ -30,5 +30,28 @@ describe('netWorthSeries', () => {
 
 	it('is empty without data', () => {
 		expect(netWorthSeries([], '2026-09')).toEqual([]);
+	});
+});
+
+describe('accountBalanceSeries', () => {
+	it("carries each account's month-end balance forward, month by month", () => {
+		const series = accountBalanceSeries(
+			[
+				{ accountId: 'bank', month: '2026-07', amount: 100000 },
+				{ accountId: 'card', month: '2026-08', amount: -20000 },
+				{ accountId: 'card', month: '2026-09', amount: 5000 }
+			],
+			'2026-10'
+		);
+		expect(series).toEqual([
+			{ month: '2026-07', balances: { bank: 100000 } },
+			{ month: '2026-08', balances: { bank: 100000, card: -20000 } },
+			{ month: '2026-09', balances: { bank: 100000, card: -15000 } },
+			{ month: '2026-10', balances: { bank: 100000, card: -15000 } }
+		]);
+	});
+
+	it('is empty without transactions', () => {
+		expect(accountBalanceSeries([], '2026-09')).toEqual([]);
 	});
 });

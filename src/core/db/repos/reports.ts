@@ -1,7 +1,13 @@
 import { ageOfMoneySeries, type AgeOfMoneyPoint, type CashFlowEntry } from '$domain/age-of-money';
 import { DomainError } from '$domain/errors';
 import { isDate, isMonth, type Month } from '$domain/month';
-import { netWorthSeries, type AccountMonthChange, type NetWorthPoint } from '$domain/net-worth';
+import {
+	accountBalanceSeries,
+	netWorthSeries,
+	type AccountBalancesPoint,
+	type AccountMonthChange,
+	type NetWorthPoint
+} from '$domain/net-worth';
 import { all, type Db } from '../connection';
 
 export interface SpendingRow {
@@ -21,8 +27,7 @@ export interface SpendingQuery {
  * Income is left out, and so are categories whose refunds outweigh spending.
  */
 export function spendingByCategory(db: Db, query: SpendingQuery): SpendingRow[] {
-	if (!isDate(query.from) || !isDate(query.to) || query.from > query.to)
-		throw new DomainError('INVALID_INPUT', 'Invalid date range');
+	checkRange(query);
 	return all<SpendingRow>(
 		db,
 		`SELECT c.id AS categoryId, c.name, g.name AS groupName, -SUM(e.amount) AS amount
@@ -60,8 +65,7 @@ export interface CashFlowRow {
  * are money the user already had, so they are left out (matched by payee, like the register).
  */
 export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
-	if (!isDate(query.from) || !isDate(query.to) || query.from > query.to)
-		throw new DomainError('INVALID_INPUT', 'Invalid date range');
+	checkRange(query);
 	return all<CashFlowRow>(
 		db,
 		`SELECT e.month,
@@ -89,15 +93,107 @@ export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
 	);
 }
 
-/** Month-end assets, debts and net worth across every account, through `through`. */
-export function netWorth(db: Db, through: Month): NetWorthPoint[] {
-	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
-	const changes = all<AccountMonthChange>(
+function checkRange(query: SpendingQuery): void {
+	if (!isDate(query.from) || !isDate(query.to) || query.from > query.to)
+		throw new DomainError('INVALID_INPUT', 'Invalid date range');
+}
+
+/**
+ * Every categorized amount on an on-budget account in `:from`..`:to`: whole transactions and
+ * split lines, with the month and the transaction's payee.
+ */
+const CATEGORIZED_SQL = `
+	SELECT substr(t.date, 1, 7) AS month, t.category_id AS categoryId, t.amount, t.payee_id,
+		t.transfer_id
+	FROM transactions t JOIN accounts a ON a.id = t.account_id
+	WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
+	  AND t.date BETWEEN :from AND :to
+	UNION ALL
+	SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.payee_id, t.transfer_id
+	FROM transaction_splits s
+	JOIN transactions t ON t.id = s.transaction_id
+	JOIN accounts a ON a.id = t.account_id
+	WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to`;
+
+export interface CategoryMonthRow {
+	month: Month;
+	categoryId: string;
+	name: string;
+	groupId: string;
+	groupName: string;
+	income: boolean; // in the Income group
+	amount: number; // signed: inflows positive, spending negative
+}
+
+/**
+ * The net amount per category and month over a date range, on-budget accounts only, in budget
+ * order, then oldest month first. Starting balances are left out, as in `cashFlow`, and so are
+ * categories that netted to zero.
+ */
+export function categoryMonths(db: Db, query: SpendingQuery): CategoryMonthRow[] {
+	checkRange(query);
+	return all<Omit<CategoryMonthRow, 'income'> & { income: number }>(
+		db,
+		`SELECT e.month, c.id AS categoryId, c.name, g.id AS groupId, g.name AS groupName,
+			g.system IS 'income' AS income, SUM(e.amount) AS amount
+		 FROM (${CATEGORIZED_SQL}) e
+		 JOIN categories c ON c.id = e.categoryId
+		 JOIN category_groups g ON g.id = c.group_id
+		 LEFT JOIN payees p ON p.id = e.payee_id
+		 WHERE p.name IS NULL OR lower(trim(p.name)) NOT IN ('starting balance', 'saldo inicial')
+		 GROUP BY e.month, c.id
+		 HAVING SUM(e.amount) <> 0
+		 ORDER BY g.sort_order, g.name, c.sort_order, c.name, e.month`,
+		{ ':from': query.from, ':to': query.to }
+	).map((r) => ({ ...r, income: r.income === 1 }));
+}
+
+export interface PayeeSpendingRow {
+	payeeId: string | null; // null: transactions without a payee
+	name: string | null;
+	amount: number; // net spending: outflows minus refunds, > 0
+}
+
+/**
+ * Net spending per payee over a date range, on-budget accounts only, largest first. Income and
+ * transfers are left out (a transfer has an account, not a payee), and so are payees whose refunds
+ * outweigh spending. Split lines count toward the transaction's payee.
+ */
+export function spendingByPayee(db: Db, query: SpendingQuery): PayeeSpendingRow[] {
+	checkRange(query);
+	return all<PayeeSpendingRow>(
+		db,
+		`SELECT p.id AS payeeId, p.name, -SUM(e.amount) AS amount
+		 FROM (${CATEGORIZED_SQL}) e
+		 JOIN categories c ON c.id = e.categoryId
+		 JOIN category_groups g ON g.id = c.group_id
+		 LEFT JOIN payees p ON p.id = e.payee_id
+		 WHERE g.system IS NULL AND e.transfer_id IS NULL
+		 GROUP BY p.id
+		 HAVING SUM(e.amount) < 0
+		 ORDER BY SUM(e.amount), p.name IS NULL, p.name`,
+		{ ':from': query.from, ':to': query.to }
+	);
+}
+
+function accountMonthChanges(db: Db): AccountMonthChange[] {
+	return all<AccountMonthChange>(
 		db,
 		`SELECT account_id AS accountId, substr(date, 1, 7) AS month, SUM(amount) AS amount
 		 FROM transactions GROUP BY account_id, month`
 	);
-	return netWorthSeries(changes, through);
+}
+
+/** Month-end assets, debts and net worth across every account, through `through`. */
+export function netWorth(db: Db, through: Month): NetWorthPoint[] {
+	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
+	return netWorthSeries(accountMonthChanges(db), through);
+}
+
+/** Each account's month-end balance, through `through`. */
+export function accountBalances(db: Db, through: Month): AccountBalancesPoint[] {
+	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
+	return accountBalanceSeries(accountMonthChanges(db), through);
 }
 
 /**

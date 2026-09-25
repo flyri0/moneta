@@ -28,10 +28,12 @@ export function amountInCategory(row: TransactionRow, categoryId: string): numbe
 		.reduce((sum, s) => sum + s.amount, 0);
 }
 
-/** The report's total, and each category's share of it in percent. */
-export function withShares(rows: SpendingRow[]): {
+/** The report's total, and each row's share of it in percent. */
+export function withShares<T extends { amount: number }>(
+	rows: T[]
+): {
 	total: number;
-	rows: (SpendingRow & { share: number })[];
+	rows: (T & { share: number })[];
 } {
 	const total = rows.reduce((sum, r) => sum + r.amount, 0);
 	return { total, rows: rows.map((r) => ({ ...r, share: total ? (r.amount / total) * 100 : 0 })) };
@@ -46,26 +48,26 @@ export interface Segment {
 	color: number;
 }
 
-/**
- * The first `n` rows as coloured segments, and everything after them folded into one
- * remainder, so the bar still adds up to the total. Rows come largest first.
- */
-export function topSegments(
-	rows: SpendingRow[],
-	n = 5
-): {
+/** What the stacked bar and its legend are made from: a keyed, labelled amount. */
+export interface Slice {
+	key: string;
+	label: string;
+	amount: number;
+}
+
+export interface TopSegments {
 	total: number;
 	segments: Segment[];
 	other: { count: number; amount: number; share: number } | null;
-} {
-	const { total, rows: shared } = withShares(rows);
-	const segments = shared.slice(0, n).map((r, i) => ({
-		key: r.categoryId,
-		label: r.name,
-		amount: r.amount,
-		share: r.share,
-		color: i + 1
-	}));
+}
+
+/**
+ * The first `n` slices as coloured segments, and everything after them folded into one
+ * remainder, so the bar still adds up to the total. Slices come largest first.
+ */
+export function topSlices(slices: Slice[], n = 5): TopSegments {
+	const { total, rows: shared } = withShares(slices);
+	const segments = shared.slice(0, n).map((r, i) => ({ ...r, color: i + 1 }));
 	const rest = shared.slice(n);
 	const amount = rest.reduce((sum, r) => sum + r.amount, 0);
 	return {
@@ -73,6 +75,14 @@ export function topSegments(
 		segments,
 		other: rest.length ? { count: rest.length, amount, share: (amount / total) * 100 } : null
 	};
+}
+
+/** `topSlices` over spending rows, one per category (or group). */
+export function topSegments(rows: SpendingRow[], n = 5): TopSegments {
+	return topSlices(
+		rows.map((r) => ({ key: r.categoryId, label: r.name, amount: r.amount })),
+		n
+	);
 }
 
 /**

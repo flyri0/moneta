@@ -3,7 +3,7 @@ import { edgeScrollSpeed } from './sortable';
 
 /** What is being dragged. */
 export interface DragItem {
-	kind: 'group' | 'category';
+	kind: 'group' | 'category' | 'card';
 	id: string;
 	label: string;
 }

@@ -12,7 +12,8 @@
 	/**
 	 * Age of Money over the months, as YNAB draws it: a smooth area fading into the baseline, with
 	 * today's figure marked. Monotone smoothing never swings past the points, so the curve stays
-	 * above zero and under the highest month. `compact` is the card's glance: no axes, no tooltip.
+	 * above zero and under the highest month. `compact` is the card's glance: no axes, no tooltip, and
+	 * whatever height the card has to spare.
 	 */
 	let {
 		points,
@@ -36,7 +37,7 @@
 
 <Chart.Container
 	{config}
-	class="aspect-auto w-full {compact ? 'h-24' : 'h-56 md:h-64'}"
+	class="aspect-auto w-full {compact ? 'min-h-16 flex-1' : 'h-56 md:h-64'}"
 	data-testid={testId}
 >
 	<svg width="0" height="0" class="absolute" aria-hidden="true">

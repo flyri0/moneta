@@ -54,6 +54,7 @@ export interface TransactionRow {
 export interface TransactionQuery {
 	accountId?: string;
 	categoryId?: string; // the transaction's category or one of its split lines'
+	payeeId?: string;
 	search?: string;
 	from?: string;
 	to?: string;
@@ -404,6 +405,7 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 	const bind: Record<string, string | number | null> = {
 		':accountId': query.accountId ?? null,
 		':categoryId': query.categoryId ?? null,
+		':payeeId': query.payeeId ?? null,
 		':from': query.from ?? null,
 		':to': query.to ?? null,
 		':limit': query.limit ?? -1,
@@ -425,6 +427,7 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		   AND (:categoryId IS NULL OR t.category_id = :categoryId
 		     OR EXISTS (SELECT 1 FROM transaction_splits s
 		                WHERE s.transaction_id = t.id AND s.category_id = :categoryId))
+		   AND (:payeeId IS NULL OR t.payee_id = :payeeId)
 		   AND (:from IS NULL OR t.date >= :from)
 		   AND (:to IS NULL OR t.date <= :to)
 		   ${conditions.join('\n')}

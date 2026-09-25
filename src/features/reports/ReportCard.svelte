@@ -2,11 +2,13 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
+	import type { ReportId } from '$features/reports/layout';
 
 	/**
 	 * A report on the overview: a glance at it, opening the full report. The title is the link and
 	 * stretches over the whole card, so everything is clickable while screen readers still read the
-	 * figures as text rather than as one long link name.
+	 * figures as text rather than as one long link name. Every card has the same height, so the grid
+	 * lines up; each glance is drawn to fit it.
 	 */
 	let {
 		title,
@@ -16,14 +18,14 @@
 	}: {
 		title: string;
 		/** The full report this card opens. */
-		route: '/reports/spending' | '/reports/net-worth' | '/reports/age-of-money';
+		route: `/reports/${ReportId}`;
 		testId?: string;
 		children: Snippet;
 	} = $props();
 </script>
 
 <section
-	class="group relative flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
+	class="group relative flex h-80 flex-col gap-4 overflow-hidden rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
 	data-testid={testId}
 >
 	<h2 class="flex items-center justify-between gap-3">
@@ -38,5 +40,7 @@
 			aria-hidden="true"
 		/>
 	</h2>
-	{@render children()}
+	<div class="flex min-h-0 flex-1 flex-col gap-4">
+		{@render children()}
+	</div>
 </section>

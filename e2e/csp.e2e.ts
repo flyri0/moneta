@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { onboard, openSettings } from './helpers';
+import { onboard, openSettings, spend } from './helpers';
 
 /** Records every CSP violation on the page in `window.__violations`. */
 async function recordViolations(page: Page): Promise<void> {
@@ -26,11 +26,15 @@ test('ships a restrictive CSP in the HTML', async ({ request }) => {
 test('runs the app without CSP violations', async ({ page }) => {
 	await recordViolations(page);
 	await onboard(page);
+	await spend(page, 'Market', '60', 'Groceries');
 	await page.getByRole('link', { name: 'Reports' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Reports' })).toBeVisible();
-	// Both charts live on the full net worth report.
-	await page.getByRole('link', { name: 'Net worth' }).click();
+	// The bar charts live on the full reports.
+	await page.getByRole('link', { name: 'Cash flow' }).click();
 	await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('link', { name: 'Spending trends' }).click();
+	await expect(page.getByTestId('trends-chart')).toBeVisible();
 	await page.getByRole('link', { name: 'Payees' }).first().click();
 	await expect(page.getByRole('heading', { name: 'Payees' })).toBeVisible();
 	await openSettings(page);

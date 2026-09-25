@@ -1,15 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCombobox, chooseSelect, onboard, pickDate } from './helpers';
-
-async function spend(page: Page, payee: string, amount: string, category: string) {
-	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
-	const dialog = page.getByRole('dialog');
-	await chooseCombobox(dialog, 'Payee', payee, payee);
-	await dialog.getByLabel('Amount', { exact: true }).fill(amount);
-	await chooseCombobox(dialog, 'Category', category, category);
-	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(dialog).toBeHidden();
-}
+import { chooseSelect, onboard, pickDate, spend } from './helpers';
 
 /** Fails unless every cell and axis label stays inside the card around each of `ids`. */
 async function expectInsideCards(page: Page, ids: string[]) {
@@ -42,6 +32,24 @@ async function expectInsideCards(page: Page, ids: string[]) {
 		.toEqual([]);
 }
 
+/** Fails unless every card on the overview has the same height and nothing spills out of one. */
+async function expectEvenCards(page: Page) {
+	const sizes = await page
+		.getByTestId('report-cards')
+		.locator('> section')
+		.evaluateAll((cards) =>
+			cards.map((card) => ({
+				height: Math.round(card.getBoundingClientRect().height),
+				spills: card.scrollHeight > card.clientHeight + 1
+			}))
+		);
+	expect(new Set(sizes.map((s) => s.height)).size, 'cards of different heights').toBe(1);
+	expect(
+		sizes.filter((s) => s.spills),
+		'cards whose content is cut off'
+	).toEqual([]);
+}
+
 test('shows each report as a card that opens the full report', async ({ page }) => {
 	await onboard(page);
 	await spend(page, 'Market', '60', 'Groceries');
@@ -66,7 +74,9 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	const netWorthCard = page.getByTestId('net-worth-card');
 	await expect(netWorthCard.getByTestId('net-worth-card-value')).toHaveText('$885.00');
 	// Six months of income against expenses; the starting balance is not income.
-	const months = netWorthCard.getByTestId('cash-flow-mini').getByRole('listitem');
+	const cashFlowCard = page.getByTestId('cash-flow-card');
+	await expect(cashFlowCard.getByTestId('cash-flow-card-net')).toHaveText('-$115.00');
+	const months = cashFlowCard.getByTestId('cash-flow-mini').getByRole('listitem');
 	await expect(months).toHaveCount(6);
 	await expect(months.last()).toContainText('income $0.00, expenses $115.00');
 
@@ -112,10 +122,116 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	await expect(page.getByTestId('net-worth-table').locator('tbody tr').first()).toContainText(
 		/\$0\.00.*\$115\.00.*-\$115\.00.*\$885\.00/
 	);
+	await expect(page.getByTestId('cash-flow-chart')).toHaveCount(0);
+
+	// Income against expenses has a report of its own.
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('link', { name: 'Cash flow' }).click();
+	await expect(page).toHaveURL(/\/reports\/cash-flow$/);
+	await expect(page.getByTestId('cash-flow-net')).toHaveText('-$115.00');
 	await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
+	await expect(page.getByTestId('cash-flow-table').locator('tbody tr').first()).toContainText(
+		/\$0\.00.*\$115\.00.*-\$115\.00/
+	);
 
 	await page.goBack();
 	await expect(page).toHaveURL(/\/reports$/);
+});
+
+test('opens the payee, trend and account reports from their cards', async ({ page }) => {
+	await onboard(page);
+	await spend(page, 'Market', '60', 'Groceries');
+	await spend(page, 'Bistro', '40', 'Dining Out');
+	await spend(page, 'Market', '15', 'Groceries');
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+
+	const payees = page.getByTestId('payees-card');
+	await expect(payees.getByTestId('payees-card-total')).toHaveText('$115.00');
+	await expect(payees.getByTestId('payees-card-legend').getByRole('listitem')).toHaveText([
+		/Market.*\$75\.00.*65%/,
+		/Bistro.*\$40\.00.*35%/
+	]);
+	await expect(page.getByTestId('category-trends-card-total')).toHaveText('$115.00');
+	await expect(page.getByTestId('accounts-card-assets')).toContainText('$885.00');
+
+	await payees.click();
+	await expect(page).toHaveURL(/\/reports\/payees$/);
+	await page
+		.getByTestId('payees-table')
+		.getByRole('button', { name: /Market/ })
+		.click();
+	const drill = page.getByRole('region', { name: 'Transactions with Market' });
+	await expect(drill.getByRole('listitem')).toHaveText([/-\$15\.00/, /-\$60\.00/]);
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('link', { name: 'Spending trends' }).click();
+	await expect(page.getByTestId('trends-table').locator('tbody tr')).toHaveText([
+		// One month of spending has nothing earlier to compare against.
+		/Groceries.*\$75\.00\s*—$/s,
+		/Dining Out.*\$40\.00\s*—$/s
+	]);
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('link', { name: 'Assets and debts by account' }).click();
+	await expect(page.getByTestId('accounts-assets')).toContainText('$885.00');
+	await expect(page.getByText('No debts. Nicely done.')).toBeVisible();
+});
+
+test('hides and reorders the report cards, remembering them', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	const cards = page.getByTestId('report-cards').locator('> section');
+	await expect(cards).toHaveCount(7);
+	await expect(cards.first()).toHaveAttribute('data-testid', 'spending-card');
+
+	await page.getByRole('button', { name: 'Customize' }).click();
+	const editor = page.getByTestId('reports-editor');
+	await editor.getByRole('switch', { name: 'Show Spending by category' }).click();
+	await editor.getByRole('button', { name: 'Move Age of Money up' }).click();
+	await editor.getByRole('button', { name: 'Save' }).click();
+	await expect(editor).toBeHidden();
+
+	await expect(cards).toHaveCount(6);
+	await expect(cards.first()).toHaveAttribute('data-testid', 'net-worth-card');
+	await expect(cards.nth(4)).toHaveAttribute('data-testid', 'age-of-money-card');
+
+	// The hidden report is still one click away, at the end.
+	await page.reload();
+	await expect(cards).toHaveCount(6);
+	await page.getByRole('button', { name: 'Hidden reports (1)' }).click();
+	await expect(page.getByTestId('hidden-report-cards').getByTestId('spending-card')).toBeVisible();
+
+	// Cancel leaves things as they were; restoring the default brings every card back in order.
+	await page.getByRole('button', { name: 'Customize' }).click();
+	await editor.getByRole('button', { name: 'Move Net worth down' }).click();
+	await editor.getByRole('button', { name: 'Cancel' }).click();
+	await expect(cards.first()).toHaveAttribute('data-testid', 'net-worth-card');
+	await page.getByRole('button', { name: 'Customize' }).click();
+	await editor.getByRole('button', { name: 'Restore default' }).click();
+	await editor.getByRole('button', { name: 'Save' }).click();
+	await expect(cards).toHaveCount(7);
+	await expect(cards.first()).toHaveAttribute('data-testid', 'spending-card');
+	await expect(page.getByRole('button', { name: /Hidden reports/ })).toHaveCount(0);
+});
+
+test('reorders the report cards by dragging', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('button', { name: 'Customize' }).click();
+	const rows = page.getByTestId('report-row');
+	const handle = rows.nth(2).getByTestId('drag-handle');
+	const target = await rows.nth(0).boundingBox();
+	const from = await handle.boundingBox();
+	await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(from!.x + from!.width / 2, target!.y + 4, { steps: 8 });
+	await page.mouse.up();
+	await expect(rows.first()).toContainText('Cash flow');
+	await page.getByRole('button', { name: 'Save' }).click();
+	await expect(page.getByTestId('report-cards').locator('> section').first()).toHaveAttribute(
+		'data-testid',
+		'cash-flow-card'
+	);
 });
 
 test('scopes the full reports with a period, a custom one too', async ({ page }) => {
@@ -194,10 +310,28 @@ test.describe('on a phone', () => {
 			await expect(page.getByTestId('net-worth-card-value')).toBeVisible();
 			await expect(page.getByTestId('spending-card-legend')).toBeVisible();
 			await expect(page.getByTestId('age-of-money-card-value')).toBeVisible();
+			await expect(page.getByTestId('payees-card-legend')).toBeVisible();
+			await expect(page.getByTestId('trends-mini')).toBeVisible();
 			expect(
 				await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
 				'the cards push the page sideways'
 			).toBe(true);
+			await expectEvenCards(page);
+			await expectInsideCards(page, ['payees-card-legend']);
+
+			// The editor's toolbar and rows fit a phone too.
+			await page.getByRole('button', { name: /Customize|Personalizar/ }).click();
+			await expect(page.getByTestId('reports-editor')).toBeVisible();
+			expect(
+				await page
+					.getByTestId('reports-editor')
+					.locator('button, [role="switch"]')
+					.evaluateAll(
+						(els) => els.filter((el) => el.getBoundingClientRect().right > innerWidth).length
+					),
+				'editor controls past the edge of the screen'
+			).toBe(0);
+			await page.getByRole('button', { name: /Cancel|Cancelar/ }).click();
 
 			await page.goto('/reports/net-worth');
 			await page.locator('#report-period').click();
@@ -207,18 +341,33 @@ test.describe('on a phone', () => {
 				.click();
 
 			await expect(page.getByTestId('net-worth-chart')).toBeVisible();
-			await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
 			const table = page.getByTestId('net-worth-table');
 
 			// Income and expenses move under the month, so the row has room for the net worth.
 			await expect(table.getByRole('columnheader')).toHaveCount(2);
 
+			await expectInsideCards(page, ['net-worth-chart', 'net-worth-table', 'net-worth-tiles']);
+
+			await page.goto('/reports/cash-flow');
+			await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
 			await expectInsideCards(page, [
-				'net-worth-chart',
 				'cash-flow-chart',
-				'net-worth-table',
-				'net-worth-tiles'
+				'net-flow-chart',
+				'cash-flow-table',
+				'cash-flow-tiles'
 			]);
+
+			await page.goto('/reports/category-trends');
+			await expect(page.getByTestId('trends-chart')).toBeVisible();
+			await expectInsideCards(page, ['trends-chart', 'trends-table']);
+
+			await page.goto('/reports/payees');
+			await expect(page.getByTestId('payees-table')).toBeVisible();
+			await expectInsideCards(page, ['payees-table']);
+
+			await page.goto('/reports/accounts');
+			await expect(page.getByTestId('accounts-assets')).toBeVisible();
+			await expectInsideCards(page, ['accounts-assets']);
 
 			// The demo's history gives Age of Money two months to draw.
 			await page.goto('/reports/age-of-money');

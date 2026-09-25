@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isDate, MAX_DATE, MIN_DATE } from '$domain/month';
-import { monthsCovered, presetRange, RANGE_PRESETS } from './range';
+import { monthsCovered, presetRange, RANGE_PRESETS, reportMonths } from './range';
 
 describe('presetRange', () => {
 	it.each([
@@ -49,5 +49,32 @@ describe('monthsCovered', () => {
 	it('is null for all time, which has no length, and for a range wholly in the future', () => {
 		expect(monthsCovered(presetRange('all', TODAY), TODAY)).toBeNull();
 		expect(monthsCovered({ from: '2026-10-01', to: '2026-12-31' }, TODAY)).toBeNull();
+	});
+});
+
+describe('reportMonths', () => {
+	const TODAY = '2026-09-19';
+
+	it('lists the months of a range, the future left out', () => {
+		expect(reportMonths(presetRange('last_3_months', TODAY), TODAY, [])).toEqual([
+			'2026-07',
+			'2026-08',
+			'2026-09'
+		]);
+		expect(reportMonths(presetRange('this_year', TODAY), TODAY, []).at(-1)).toBe('2026-09');
+	});
+
+	it('starts all time at the first month with data, and has nothing to show without any', () => {
+		const all = presetRange('all', TODAY);
+		expect(reportMonths(all, TODAY, ['2026-08', '2026-07', '2026-09'])).toEqual([
+			'2026-07',
+			'2026-08',
+			'2026-09'
+		]);
+		expect(reportMonths(all, TODAY, [])).toEqual([]);
+	});
+
+	it('is empty for a range wholly in the future', () => {
+		expect(reportMonths({ from: '2026-10-01', to: '2026-12-31' }, TODAY, [])).toEqual([]);
 	});
 });

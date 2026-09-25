@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
-	import CashFlowChart from './CashFlowChart.svelte';
-	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import StatTile from './StatTile.svelte';
@@ -117,68 +115,61 @@
 		</dl>
 	</div>
 
-	<div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-		<ReportSection title={m.reports_net_worth()}>
-			{#if chartData.length > 1}
-				<Chart.Container
-					{config}
-					class="aspect-auto h-56 w-full md:h-64"
-					data-testid="net-worth-chart"
+	<ReportSection title={m.reports_net_worth()}>
+		{#if chartData.length > 1}
+			<Chart.Container
+				{config}
+				class="aspect-auto h-56 w-full md:h-64"
+				data-testid="net-worth-chart"
+			>
+				<AreaChart
+					data={chartData}
+					x="date"
+					y="netWorth"
+					series={[
+						{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
+					]}
+					padding={{ top: 8, right: 28, bottom: 34, left: 56 }}
+					points={chartData.length <= 13}
+					props={{
+						area: {
+							fillOpacity: 0.1,
+							line: { strokeWidth: 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+						},
+						points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
+						xAxis: {
+							ticks: chartData.map((d) => d.date),
+							// Names only, so twelve months fit a phone; the tooltip and table say the year.
+							format: (d: Date) => {
+								const month = d.toISOString().slice(0, 7);
+								return axisMonthLabel(month, month === points[0]?.month, getLocale());
+							},
+							// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
+							tickLength: 10,
+							tickOcclusion: { padding: 8 }
+						},
+						yAxis: {
+							format: session.formatCompact,
+							ticks: 4,
+							tickLength: 0,
+							tickLabelProps: { dx: -6 }
+						}
+					}}
 				>
-					<AreaChart
-						data={chartData}
-						x="date"
-						y="netWorth"
-						series={[
-							{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
-						]}
-						padding={{ top: 8, right: 28, bottom: 34, left: 56 }}
-						points={chartData.length <= 13}
-						props={{
-							area: {
-								fillOpacity: 0.1,
-								line: { strokeWidth: 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-							},
-							points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
-							xAxis: {
-								ticks: chartData.map((d) => d.date),
-								// Names only, so twelve months fit a phone; the tooltip and table say the year.
-								format: (d: Date) => {
-									const month = d.toISOString().slice(0, 7);
-									return axisMonthLabel(month, month === points[0]?.month, getLocale());
-								},
-								// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
-								tickLength: 10,
-								tickOcclusion: { padding: 8 }
-							},
-							yAxis: {
-								format: session.formatCompact,
-								ticks: 4,
-								tickLength: 0,
-								tickLabelProps: { dx: -6 }
-							}
-						}}
-					>
-						{#snippet tooltip()}<NetWorthTooltip />{/snippet}
-					</AreaChart>
-				</Chart.Container>
-			{:else}
-				<!-- One point means either the period is a single month, or the budget has only one
+					{#snippet tooltip()}<NetWorthTooltip />{/snippet}
+				</AreaChart>
+			</Chart.Container>
+		{:else}
+			<!-- One point means either the period is a single month, or the budget has only one
 				month of history -- and telling someone to widen a period that is already wide is
 				advice they cannot act on. -->
-				<p class="text-sm text-muted-foreground">
-					{isSingleMonth(range, todayIso())
-						? m.reports_net_worth_single_month()
-						: m.reports_net_worth_one_month()}
-				</p>
-			{/if}
-		</ReportSection>
-
-		<ReportSection title={m.reports_income_vs_expenses()}>
-			{#snippet actions()}<CashFlowLegend />{/snippet}
-			<CashFlowChart rows={flows} />
-		</ReportSection>
-	</div>
+			<p class="text-sm text-muted-foreground">
+				{isSingleMonth(range, todayIso())
+					? m.reports_net_worth_single_month()
+					: m.reports_net_worth_one_month()}
+			</p>
+		{/if}
+	</ReportSection>
 
 	<div class="rounded-xl border bg-card p-4 text-card-foreground">
 		<table class="w-full text-sm" data-testid="net-worth-table">

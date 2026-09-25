@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SpendingDetail from '$features/reports/SpendingDetail.svelte';
+	import CashFlowDetail from '$features/reports/CashFlowDetail.svelte';
 	import PeriodBar from '$features/reports/PeriodBar.svelte';
 	import ReportPage from '$features/reports/ReportPage.svelte';
 	import { todayIso } from '$domain/month';
@@ -7,14 +7,14 @@
 	import { m } from '$i18n/paraglide/messages';
 
 	// Opens on the slice its card showed, until a period is picked here or on another report.
-	const range = $derived(periodRange('this_month', todayIso()));
+	const range = $derived(periodRange('last_6_months', todayIso()));
 </script>
 
-<ReportPage title={m.reports_spending()}>
+<ReportPage title={m.reports_cash_flow()}>
 	<PeriodBar
-		bind:preset={() => period.preset ?? 'this_month', (v) => (period.preset = v)}
+		bind:preset={() => period.preset ?? 'last_6_months', (v) => (period.preset = v)}
 		bind:custom={period.custom}
 		{range}
 	/>
-	<SpendingDetail {range} />
+	<CashFlowDetail {range} />
 </ReportPage>

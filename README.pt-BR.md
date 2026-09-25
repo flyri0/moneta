@@ -61,7 +61,7 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
   dos próximos 30 dias em cada conta
 - Gestão de favorecidos: renomear um favorecido em todas as transações passadas, mesclar
   duplicatas, definir uma categoria padrão e remover favorecidos sem uso
-- Relatórios: gastos por categoria e patrimônio líquido ao longo do tempo
+- Relatórios: gastos por categoria e por favorecido, patrimônio líquido, fluxo de caixa, tendência de gastos, ativos e dívidas por conta e idade do dinheiro, num painel cujos cards você pode reordenar e ocultar
 - Vários orçamentos lado a lado
 - Backup e restauração de todos os orçamentos em um arquivo `.moneta`, criptografado com
   senha e chave de recuperação se você quiser, além de exportações CSV e JSON, com lembrete
@@ -81,8 +81,7 @@ O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de
   - **Conciliação de contas**: Fluxo assistido de conciliação com o extrato do banco e travamento de transações já conferidas.
 - **Metas e planejamento**:
   - **Metas por categoria**: Metas de saldo, saldo alvo por data, metas de gastos mensais, barras visuais de progresso e atribuição rápida com um clique ("Metas não cobertas").
-- **Relatórios e produtividade**:
-  - **Novos relatórios**: Demonstrativo mensal de receitas vs. despesas, gastos por favorecido e evolução do fluxo de caixa.
+- **Produtividade**:
   - **Navegação rápida e paleta de comandos**: Paleta de comandos rápida (`Ctrl/Cmd + K`) e atalhos de teclado para entrada ágil de transações.
 
 ## Como começar
@@ -187,7 +186,7 @@ src/features/          módulos de funcionalidades (lógica de tela + componente
   accounts/            lista de contas, extrato, diálogos de criação de contas
   transactions/        diálogo de transação, validação de formulário
   schedules/           tela de agendamentos, formulário, resumo da repetição
-  reports/             patrimônio líquido, gastos por categoria, intervalos de datas
+  reports/             cards e páginas dos relatórios, layout do painel, intervalos de datas
   settings/            backup e restauração, armazenamento, tema, arquivos de orçamento
   onboarding/          passos iniciais, categorias de início
   welcome/             tela inicial, diálogo de instalação PWA

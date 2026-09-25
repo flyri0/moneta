@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { TransactionRow } from '$db/repos/transactions';
-import { amountInCategory, byGroup, topSegments, withShares } from './spending';
+import { amountInCategory, byGroup, topSegments, topSlices, withShares } from './spending';
 
 const row = (fields: Partial<TransactionRow>) => ({ ...({} as TransactionRow), ...fields });
 
@@ -90,5 +90,24 @@ describe('byGroup', () => {
 			{ categoryId: 'Everyday', name: 'Everyday', groupName: '', amount: 400 },
 			{ categoryId: 'Health', name: 'Health', groupName: '', amount: 400 }
 		]);
+	});
+});
+
+describe('topSlices', () => {
+	it('colours the first slices and folds the rest, for any keyed amounts', () => {
+		const top = topSlices(
+			[
+				{ key: 'market', label: 'Market', amount: 600 },
+				{ key: 'cinema', label: 'Cinema', amount: 300 },
+				{ key: 'gym', label: 'Gym', amount: 100 }
+			],
+			2
+		);
+		expect(top.total).toBe(1000);
+		expect(top.segments.map((s) => [s.key, s.color, s.share])).toEqual([
+			['market', 1, 60],
+			['cinema', 2, 30]
+		]);
+		expect(top.other).toEqual({ count: 1, amount: 100, share: 10 });
 	});
 });

@@ -12,10 +12,13 @@
 	let {
 		segments,
 		other,
+		label = (summary) => m.reports_spending_breakdown({ summary }),
 		class: className = 'h-3'
 	}: {
 		segments: Segment[];
 		other: { count: number; amount: number; share: number } | null;
+		/** The bar's text alternative, from a summary of its parts. */
+		label?: (summary: string) => string;
 		class?: string;
 	} = $props();
 
@@ -37,7 +40,7 @@
 <div
 	class="flex gap-0.5 overflow-hidden rounded-full {className}"
 	role="img"
-	aria-label={m.reports_spending_breakdown({ summary })}
+	aria-label={label(summary)}
 	data-testid="stacked-bar"
 >
 	{#each parts as part (part.key)}

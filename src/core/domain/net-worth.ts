@@ -14,22 +14,41 @@ export interface NetWorthPoint {
 	netWorth: number;
 }
 
+/** Every account's balance at the end of one month, keyed by account id. */
+export interface AccountBalancesPoint {
+	month: Month;
+	balances: Record<string, number>;
+}
+
+/**
+ * Month-end balances per account from the first month with data through `through` (or the last
+ * month with data, if later). An account appears from its first transaction on.
+ */
+export function accountBalanceSeries(
+	changes: AccountMonthChange[],
+	through: Month
+): AccountBalancesPoint[] {
+	if (changes.length === 0) return [];
+	const months = changes.map((c) => c.month).sort(compareMonths);
+	const last =
+		compareMonths(months[months.length - 1], through) > 0 ? months[months.length - 1] : through;
+	const balances: Record<string, number> = {};
+	return monthRange(months[0], last).map((month) => {
+		for (const c of changes)
+			if (c.month === month) balances[c.accountId] = (balances[c.accountId] ?? 0) + c.amount;
+		return { month, balances: { ...balances } };
+	});
+}
+
 /**
  * Month-end totals from the first month with data through `through` (or the last month with
  * data, if later). Each account counts as an asset or a debt by the sign of its balance.
  */
 export function netWorthSeries(changes: AccountMonthChange[], through: Month): NetWorthPoint[] {
-	if (changes.length === 0) return [];
-	const months = changes.map((c) => c.month).sort(compareMonths);
-	const last =
-		compareMonths(months[months.length - 1], through) > 0 ? months[months.length - 1] : through;
-	const balances = new Map<string, number>();
-	return monthRange(months[0], last).map((month) => {
-		for (const c of changes)
-			if (c.month === month) balances.set(c.accountId, (balances.get(c.accountId) ?? 0) + c.amount);
+	return accountBalanceSeries(changes, through).map(({ month, balances }) => {
 		let assets = 0;
 		let debts = 0;
-		for (const balance of balances.values()) {
+		for (const balance of Object.values(balances)) {
 			if (balance > 0) assets += balance;
 			else debts += balance;
 		}

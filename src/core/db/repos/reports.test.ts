@@ -3,7 +3,17 @@ import { categoryId, createBudgetDb } from '../testing';
 import type { Db } from '../connection';
 import { createAccount } from './accounts';
 import { defaultIncomeCategoryId } from './meta';
-import { ageOfMoney, ageOfMoneyFlows, cashFlow, netWorth, spendingByCategory } from './reports';
+import { listPayees } from './payees';
+import {
+	accountBalances,
+	ageOfMoney,
+	ageOfMoneyFlows,
+	cashFlow,
+	categoryMonths,
+	netWorth,
+	spendingByCategory,
+	spendingByPayee
+} from './reports';
 import { createTransaction } from './transactions';
 
 let db: Db;
@@ -265,6 +275,140 @@ describe('ageOfMoney', () => {
 
 	it('rejects an invalid date', () => {
 		expect(() => ageOfMoney(db, '2026-09-31')).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
+});
+
+describe('categoryMonths and spendingByPayee', () => {
+	let income: string;
+	beforeEach(() => {
+		income = defaultIncomeCategoryId(db);
+		const food = categoryId(db, 'Food');
+		const fun = categoryId(db, 'Fun');
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-08-05',
+			amount: 300000,
+			payeeName: 'Employer',
+			categoryId: income
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-08-06',
+			amount: -7000,
+			payeeName: 'Market',
+			categoryId: food
+		});
+		createTransaction(db, {
+			accountId: visa,
+			date: '2026-09-05',
+			amount: -9000,
+			payeeName: 'Market',
+			splits: [
+				{ categoryId: food, amount: -4000 },
+				{ categoryId: income, amount: -1000 },
+				{ categoryId: fun, amount: -4000 }
+			]
+		});
+		// a refund bigger than the spending, no payee, a card payment and an off-budget transfer
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-10',
+			amount: -500,
+			payeeName: 'Cinema',
+			categoryId: fun
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-11',
+			amount: 1000,
+			payeeName: 'Cinema',
+			categoryId: fun
+		});
+		createTransaction(db, { accountId: bank, date: '2026-09-12', amount: -2000, categoryId: food });
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-15',
+			amount: -8000,
+			transferAccountId: visa
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-16',
+			amount: -10000,
+			transferAccountId: broker,
+			categoryId: fun
+		});
+		createTransaction(db, { accountId: broker, date: '2026-09-20', amount: 5000 });
+	});
+
+	it('sums signed amounts per category and month, leaving starting balances out', () => {
+		const rows = categoryMonths(db, { from: '2026-08-01', to: '2026-09-30' });
+		const pick = (month: string, name: string) =>
+			rows.find((r) => r.month === month && r.name === name);
+		expect(rows).toHaveLength(5);
+		expect(pick('2026-08', rows.find((r) => r.income)!.name)).toMatchObject({
+			categoryId: income,
+			income: true,
+			amount: 300000
+		});
+		expect(pick('2026-08', 'Food')).toMatchObject({
+			categoryId: categoryId(db, 'Food'),
+			groupName: 'Everyday',
+			income: false,
+			amount: -7000
+		});
+		expect(pick('2026-09', 'Food')?.amount).toBe(-6000);
+		expect(pick('2026-09', 'Fun')?.amount).toBe(-13500);
+		expect(rows.filter((r) => r.income).map((r) => [r.month, r.amount])).toEqual([
+			['2026-08', 300000],
+			['2026-09', -1000]
+		]);
+		const names = rows.filter((r) => !r.income).map((r) => r.name);
+		expect(names).toEqual(['Food', 'Food', 'Fun']);
+		expect(rows.filter((r) => r.name === 'Food').map((r) => r.month)).toEqual([
+			'2026-08',
+			'2026-09'
+		]);
+	});
+
+	it('keeps categoryMonths to the date range and rejects invalid ranges', () => {
+		expect(categoryMonths(db, { from: '2027-01-01', to: '2027-12-31' })).toEqual([]);
+		expect(() => categoryMonths(db, { from: '2026-09-30', to: '2026-09-01' })).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
+
+	it('sums net spending per payee, largest first, leaving out income, transfers and refunds', () => {
+		const market = listPayees(db).find((p) => p.name === 'Market')!.id;
+		expect(spendingByPayee(db, { from: '2026-08-01', to: '2026-09-30' })).toEqual([
+			{ payeeId: market, name: 'Market', amount: 15000 },
+			{ payeeId: null, name: null, amount: 2000 }
+		]);
+		expect(spendingByPayee(db, { from: '2026-09-10', to: '2026-09-10' })).toEqual([
+			{ payeeId: expect.any(String), name: 'Cinema', amount: 500 }
+		]);
+		expect(() => spendingByPayee(db, { from: 'x', to: '2026-09-01' })).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
+});
+
+describe('accountBalances', () => {
+	it('gives each account its month-end balance through a month', () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-15',
+			amount: -20000,
+			transferAccountId: visa
+		});
+		expect(accountBalances(db, '2026-10')).toEqual([
+			{ month: '2026-08', balances: { [bank]: 200000, [visa]: -50000, [broker]: 100000 } },
+			{ month: '2026-09', balances: { [bank]: 180000, [visa]: -30000, [broker]: 100000 } },
+			{ month: '2026-10', balances: { [bank]: 180000, [visa]: -30000, [broker]: 100000 } }
+		]);
+		expect(() => accountBalances(db, '2026-13')).toThrow(
 			expect.objectContaining({ code: 'INVALID_INPUT' })
 		);
 	});
