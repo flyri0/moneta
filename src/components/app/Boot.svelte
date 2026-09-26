@@ -11,9 +11,15 @@
 	import { startDbWorker, type DbWorker } from '$client/db';
 	import { openLastBudget, startupError, type OpenResult } from '$client/session';
 	import { watchUncaught } from '$client/notify';
-	import { applyServiceWorkerUpdate, onNeedRefresh, onNeedReload } from '$client/sw';
+	import {
+		applyServiceWorkerUpdate,
+		onNeedReload,
+		onUpdateStatus,
+		type UpdateStatus
+	} from '$client/sw';
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import { settleWithin } from '$client/timeout';
+	import { appUpdate } from '$client/update.svelte';
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { currentMonth } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -24,6 +30,9 @@
 
 	/** How long shutting down waits on the worker before terminating it anyway. */
 	const SHUTDOWN_TIMEOUT = 3000;
+
+	/** The one toast for an update, from its download until it is ready. */
+	const UPDATE_TOAST = 'app-update';
 
 	const app = new AppState();
 	setApp(app);
@@ -145,17 +154,29 @@
 		location.reload();
 	}
 
-	onMount(() => {
-		const stopWatching = watchUncaught(window);
-		onNeedReload(() => void reloadForUpdate());
-		onNeedRefresh(() => {
-			// Workbox and the page's own check may both report the same version: show it once.
+	/** Shows a new version while it downloads, then offers it; a failed download goes away. */
+	function showUpdate(status: UpdateStatus) {
+		if (status === 'downloading') {
+			toast.loading(m.update_downloading(), {
+				id: UPDATE_TOAST,
+				duration: Number.POSITIVE_INFINITY
+			});
+		} else if (status === 'ready') {
 			toast(m.update_available(), {
-				id: 'app-update',
+				id: UPDATE_TOAST,
 				duration: Number.POSITIVE_INFINITY,
 				action: { label: m.startup_reload(), onClick: () => void applyUpdate() }
 			});
-		});
+		} else if (status === 'idle') {
+			toast.dismiss(UPDATE_TOAST);
+		}
+	}
+
+	onMount(() => {
+		const stopWatching = watchUncaught(window);
+		onNeedReload(() => void reloadForUpdate());
+		const stopUpdates = appUpdate.start(applyUpdate);
+		const stopToast = onUpdateStatus(showUpdate);
 		void (async () => {
 			if (teardown) {
 				await teardown.catch(() => {});
@@ -173,7 +194,11 @@
 				app.boot = { kind: 'blocked' };
 			}
 		})();
-		return stopWatching;
+		return () => {
+			stopWatching();
+			stopUpdates();
+			stopToast();
+		};
 	});
 
 	$effect(() => app.session?.watchMeta());
