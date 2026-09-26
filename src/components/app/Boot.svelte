@@ -149,7 +149,9 @@
 		const stopWatching = watchUncaught(window);
 		onNeedReload(() => void reloadForUpdate());
 		onNeedRefresh(() => {
+			// Workbox and the page's own check may both report the same version: show it once.
 			toast(m.update_available(), {
+				id: 'app-update',
 				duration: Number.POSITIVE_INFINITY,
 				action: { label: m.startup_reload(), onClick: () => void applyUpdate() }
 			});
