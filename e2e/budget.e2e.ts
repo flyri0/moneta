@@ -48,7 +48,7 @@ test('shows Ready to Assign as done only at zero', async ({ page }) => {
 
 test('keeps an unassigned amount in the header once the card scrolls away', async ({ page }) => {
 	await onboard(page);
-	const chip = page.getByTestId('page-header').getByTestId('rta-chip');
+	const chip = page.getByTestId('page-header').getByTestId('rta-chip').filter({ visible: true });
 	await expect(chip).toBeHidden();
 
 	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -128,6 +128,21 @@ test('collapses a group and remembers it across reloads', async ({ page }) => {
 
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('puts the Ready to Assign chip with the actions, leaving the month arrows still', async ({
+		page
+	}) => {
+		await onboard(page);
+		const header = page.getByTestId('page-header');
+		const next = header.getByRole('link', { name: 'Next month' });
+		const before = (await next.boundingBox())!;
+
+		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+		const chip = header.getByTestId('rta-chip').filter({ visible: true });
+		await expect(chip).toHaveText('$1,000.00');
+		expect(await next.boundingBox()).toEqual(before);
+		expect((await chip.boundingBox())!.y).toBeGreaterThanOrEqual(before.y + before.height);
+	});
 
 	test('assigns and moves money from the category sheet', async ({ page }) => {
 		await onboard(page);

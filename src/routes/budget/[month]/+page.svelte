@@ -91,27 +91,34 @@
 	const group = $derived(model?.groups.find((g) => g.id === groupId) ?? null);
 </script>
 
+<!-- Beside the month on desktop, where its fixed width keeps the arrows still. On phones the month
+spans the row, so the chip joins the actions below it instead. -->
+{#snippet rtaChip(display: string)}
+	{#if showRtaChip && view.data}
+		<button
+			type="button"
+			onclick={showRta}
+			aria-label={m.budget_rta_chip({ amount: session.format(view.data.readyToAssign) })}
+			data-testid="rta-chip"
+			class="{display} shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium tabular-nums {RTA_CHIP[
+				rtaState
+			]}"
+		>
+			<RtaIcon class="size-3.5 shrink-0" aria-hidden="true" />
+			{session.format(view.data.readyToAssign)}
+		</button>
+	{/if}
+{/snippet}
+
 <PageHeader>
 	{#snippet title()}
 		<div class="flex min-w-0 items-center gap-2">
 			<div class="min-w-0 flex-1 md:flex-none"><MonthPicker month={data.month} /></div>
-			{#if showRtaChip && view.data}
-				<button
-					type="button"
-					onclick={showRta}
-					aria-label={m.budget_rta_chip({ amount: session.format(view.data.readyToAssign) })}
-					data-testid="rta-chip"
-					class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium tabular-nums {RTA_CHIP[
-						rtaState
-					]}"
-				>
-					<RtaIcon class="size-3.5 shrink-0" aria-hidden="true" />
-					{session.format(view.data.readyToAssign)}
-				</button>
-			{/if}
+			{@render rtaChip('hidden md:inline-flex')}
 		</div>
 	{/snippet}
 	{#snippet actions()}
+		{@render rtaChip('inline-flex md:hidden')}
 		<!-- Here rather than beside the arrows, where appearing would move them under the pointer. -->
 		{#if data.month !== currentMonth()}
 			<Button
