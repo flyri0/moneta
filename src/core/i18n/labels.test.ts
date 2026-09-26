@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { m } from '$i18n/paraglide/messages';
-import { defaultCategoryGroups } from './defaults';
+import { defaultCategoryGroups, defaultIncomeCategories } from './defaults';
 import {
 	accountOptionLabel,
 	accountTypeDescription,
@@ -66,5 +66,16 @@ describe('defaultCategoryGroups', () => {
 		});
 		expect(pt[1].name).toBe('Dia a dia');
 		expect(pt.map((g) => g.categories.length)).toEqual(en.map((g) => g.categories.length));
+	});
+});
+
+describe('defaultIncomeCategories', () => {
+	it('offers the starter income categories in each language', () => {
+		expect(defaultIncomeCategories('en')).toEqual(['Salary', 'Other Income', 'Starting Balance']);
+		expect(defaultIncomeCategories('pt-BR')).toEqual([
+			'Salário',
+			'Outras receitas',
+			'Saldo inicial'
+		]);
 	});
 });

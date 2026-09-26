@@ -33,3 +33,13 @@ export function defaultCategoryGroups(locale?: Locale): { name: string; categori
 		}
 	];
 }
+
+/** The starter income categories offered during onboarding, in `locale` (default: the UI language). */
+export function defaultIncomeCategories(locale?: Locale): string[] {
+	const o = locale ? { locale } : {};
+	return [
+		m.default_category_salary({}, o),
+		m.default_category_other_income({}, o),
+		m.default_category_starting_balance({}, o)
+	];
+}

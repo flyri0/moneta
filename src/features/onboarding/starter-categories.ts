@@ -5,15 +5,27 @@ export interface StarterCategory {
 
 export interface StarterGroup {
 	name: string;
+	/** The Income group, which is created even with nothing picked. */
+	income?: true;
 	categories: StarterCategory[];
 }
 
-/** The offered starter tree, everything picked. */
-export function starterSelection(groups: { name: string; categories: string[] }[]): StarterGroup[] {
-	return groups.map((group) => ({
+interface OfferedGroup {
+	name: string;
+	categories: string[];
+}
+
+function offered(group: OfferedGroup): StarterGroup {
+	return {
 		name: group.name,
 		categories: group.categories.map((name) => ({ name, selected: true }))
-	}));
+	};
+}
+
+/** The offered starter tree, everything picked, with the income group first when given. */
+export function starterSelection(groups: OfferedGroup[], income?: OfferedGroup): StarterGroup[] {
+	const rest = groups.map(offered);
+	return income ? [{ ...offered(income), income: true }, ...rest] : rest;
 }
 
 function mapGroup(
@@ -95,11 +107,18 @@ export function selectedCount(selection: StarterGroup[]): number {
 }
 
 /** The `groups` input for `createBudget`: picked names only, groups with nothing picked left out. */
-export function toGroupsInput(selection: StarterGroup[]): { name: string; categories: string[] }[] {
+export function toGroupsInput(selection: StarterGroup[]): OfferedGroup[] {
 	return selection
+		.filter((group) => !group.income)
 		.map((group) => ({
 			name: group.name,
 			categories: group.categories.filter((c) => c.selected).map((c) => c.name)
 		}))
 		.filter((group) => group.categories.length > 0);
+}
+
+/** The `income` input for `createBudget`: the picked income categories. */
+export function toIncomeInput(selection: StarterGroup[]): string[] {
+	const income = selection.find((group) => group.income);
+	return income ? income.categories.filter((c) => c.selected).map((c) => c.name) : [];
 }

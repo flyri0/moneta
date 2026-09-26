@@ -7,7 +7,7 @@
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { parseAmount } from '$domain/money';
 	import { todayIso } from '$domain/month';
-	import { defaultCategoryGroups } from '$i18n/defaults';
+	import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
 	import { suggestCurrency, localeChoices } from '$i18n/formats';
 	import {
 		onboardingSteps,
@@ -16,7 +16,11 @@
 		stepNumber,
 		type OnboardingStep
 	} from '$features/onboarding/steps';
-	import { starterSelection, toGroupsInput } from '$features/onboarding/starter-categories';
+	import {
+		starterSelection,
+		toGroupsInput,
+		toIncomeInput
+	} from '$features/onboarding/starter-categories';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import AccountStep from './AccountStep.svelte';
@@ -54,7 +58,12 @@
 	let locale = $state(firstLocale);
 	let currency = $state(suggestCurrency(firstLocale));
 	// The starter names follow the UI language, not the number format picked on the budget step.
-	let selection = $state(starterSelection(defaultCategoryGroups()));
+	let selection = $state(
+		starterSelection(defaultCategoryGroups(), {
+			name: m.group_income(),
+			categories: defaultIncomeCategories()
+		})
+	);
 	let accountName = $state(m.onboarding_default_account_name());
 	let accountType = $state<AccountType>('checking');
 	let onBudget = $state(true);
@@ -99,6 +108,7 @@
 				name,
 				currency,
 				locale,
+				income: toIncomeInput(selection),
 				groups: toGroupsInput(selection),
 				account: withAccount
 					? {

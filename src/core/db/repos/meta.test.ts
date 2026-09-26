@@ -11,6 +11,16 @@ import {
 } from './meta';
 import { createCategory, deleteCategory, listCategoryTree, updateCategory } from './categories';
 
+function incomeNames(db: Db): string[] {
+	return all<{ name: string }>(
+		db,
+		`SELECT c.name FROM categories c
+		 JOIN category_groups g ON g.id = c.group_id
+		 WHERE g.system = 'income'
+		 ORDER BY c.sort_order`
+	).map((c) => c.name);
+}
+
 describe('initBudget', () => {
 	it('creates meta, system groups and the starting categories', async () => {
 		const db = await createTestDb();
@@ -19,6 +29,7 @@ describe('initBudget', () => {
 			name: ' Casa ',
 			currency: 'BRL',
 			locale: 'pt-BR',
+			income: ['Salário', 'Outras receitas', 'Saldo inicial'],
 			groups: [{ name: 'Everyday', categories: ['Food', 'Fun'] }]
 		});
 		expect(isInitialized(db)).toBe(true);
@@ -61,35 +72,38 @@ describe('initBudget', () => {
 		expect(cards).toBeUndefined();
 	});
 
-	it('seeds English starter income categories when locale is en', async () => {
+	it('creates the picked income categories in order, trimmed, blanks skipped', async () => {
 		const db = await createTestDb();
 		initBudget(db, {
 			name: 'Home',
 			currency: 'USD',
 			locale: 'en-US',
+			income: [' Salary ', '', 'Starting Balance'],
 			groups: []
 		});
-		const categories = all<{ name: string }>(
-			db,
-			`SELECT c.name FROM categories c
-			 JOIN category_groups g ON g.id = c.group_id
-			 WHERE g.system = 'income'
-			 ORDER BY c.sort_order`
-		);
-		expect(categories.map((c) => c.name)).toEqual(['Salary', 'Other Income', 'Starting Balance']);
+		expect(incomeNames(db)).toEqual(['Salary', 'Starting Balance']);
+		expect(startingBalanceCategoryId(db)).toBe(categoryId(db, 'Starting Balance'));
+	});
+
+	it('always creates the Income group, even with no income categories', async () => {
+		const db = await createTestDb();
+		initBudget(db, { name: 'Home', currency: 'USD', locale: 'en-US', income: [], groups: [] });
+		const income = listCategoryTree(db).find((g) => g.system === 'income');
+		expect(income?.categories).toEqual([]);
+		expect(startingBalanceCategoryId(db)).toBeNull();
 	});
 
 	it('refuses to initialize twice', async () => {
 		const db = await createBudgetDb();
 		expect(() =>
-			initBudget(db, { name: 'x', currency: 'BRL', locale: 'pt-BR', groups: [] })
+			initBudget(db, { name: 'x', currency: 'BRL', locale: 'pt-BR', income: [], groups: [] })
 		).toThrow(expect.objectContaining({ code: 'ALREADY_INITIALIZED' }));
 	});
 
 	it('rejects invalid locale tags on init and update', async () => {
 		const db = await createTestDb();
 		expect(() =>
-			initBudget(db, { name: 'x', currency: 'BRL', locale: 'not a locale', groups: [] })
+			initBudget(db, { name: 'x', currency: 'BRL', locale: 'not a locale', income: [], groups: [] })
 		).toThrow(expect.objectContaining({ code: 'INVALID_INPUT' }));
 		expect(isInitialized(db)).toBe(false);
 		const budget = await createBudgetDb();
@@ -102,7 +116,7 @@ describe('initBudget', () => {
 	it('rejects unknown currencies', async () => {
 		const db = await createTestDb();
 		expect(() =>
-			initBudget(db, { name: 'x', currency: 'XX', locale: 'pt-BR', groups: [] })
+			initBudget(db, { name: 'x', currency: 'XX', locale: 'pt-BR', income: [], groups: [] })
 		).toThrow(expect.objectContaining({ code: 'INVALID_INPUT' }));
 	});
 });
@@ -147,8 +161,11 @@ describe('ensureStartingBalanceCategory', () => {
 
 	it('names it in the budget language', async () => {
 		const db = await createTestDb();
-		initBudget(db, { name: 'Home', currency: 'USD', locale: 'en-US', groups: [] });
-		expect(startingBalanceCategoryId(db)).toBe(categoryId(db, 'Starting Balance'));
+		initBudget(db, { name: 'Home', currency: 'USD', locale: 'en-US', income: [], groups: [] });
+		expect(startingBalanceCategoryId(db)).toBeNull();
+		const id = ensureStartingBalanceCategory(db);
+		expect(id).toBe(categoryId(db, 'Starting Balance'));
+		expect(startingBalanceCategoryId(db)).toBe(id);
 	});
 });
 

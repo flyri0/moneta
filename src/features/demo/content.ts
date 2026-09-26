@@ -1,6 +1,6 @@
 import { currencyDigits } from '$domain/money';
 import { todayIso } from '$domain/month';
-import { defaultCategoryGroups } from '$i18n/defaults';
+import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
 import { suggestCurrency } from '$i18n/formats';
 import { m } from '$i18n/paraglide/messages';
 import { buildDemo, type DemoCategoryNames } from './dataset';
@@ -22,13 +22,12 @@ export function demoLocale(browser?: string): string {
 export function demoBudget(browser?: string, today: string = todayIso()): DemoBudgetSeed {
 	const locale = demoLocale(browser);
 	const currency = suggestCurrency(locale);
+	const income = defaultIncomeCategories();
 	const groups = defaultCategoryGroups();
 	const [bills, everyday, goals, fun] = groups;
-	// The income categories `initBudget` creates, named by the budget's locale.
-	const pt = locale.startsWith('pt');
 	const categories: DemoCategoryNames = {
-		salary: pt ? 'Salário' : 'Salary',
-		otherIncome: pt ? 'Outras receitas' : 'Other Income',
+		salary: income[0],
+		otherIncome: income[1],
 		rent: bills.categories[0],
 		utilities: bills.categories[1],
 		phone: bills.categories[2],
@@ -43,7 +42,7 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 		hobbies: fun.categories[1]
 	};
 	return {
-		init: { name: m.demo_budget_name(), currency, locale, groups },
+		init: { name: m.demo_budget_name(), currency, locale, income, groups },
 		seed: buildDemo({
 			today,
 			scale: 10 ** currencyDigits(currency),

@@ -44,6 +44,7 @@ const HOME: NewBudget = {
 	name: 'Home',
 	currency: 'BRL',
 	locale: 'pt-BR',
+	income: ['Salary'],
 	groups: [{ name: 'Everyday', categories: ['Food'] }],
 	account: {
 		name: 'Checking',

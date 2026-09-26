@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildDemo, type DemoCategoryNames } from '$features/demo/dataset';
 import { currentMonth, todayIso } from '$domain/month';
-import { defaultCategoryGroups } from '$i18n/defaults';
+import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
 import { demoBudget } from '$features/demo/content';
 import type { Db } from '../connection';
 import { createTestDb } from '../testing';
@@ -36,6 +36,7 @@ async function demoDb(): Promise<Db> {
 			name: 'Demo',
 			currency: 'USD',
 			locale: 'en-US',
+			income: defaultIncomeCategories('en'),
 			groups: defaultCategoryGroups('en')
 		},
 		seed: buildDemo({

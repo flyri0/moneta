@@ -44,6 +44,32 @@ test('onboarding seeds only the categories that were picked', async ({ page }) =
 	await expect(categoryRow(page, 'Hobbies')).toHaveCount(0);
 });
 
+test('onboarding can start with no categories, keeping an empty Income group', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Home');
+	await chooseCombobox(page, 'Number and date format', 'en-US', 'en-US');
+	await chooseCombobox(page, 'Currency', 'USD', 'USD');
+	await nextStep(page).click();
+
+	await expect(page.getByRole('checkbox', { name: 'Salary', exact: true })).toBeChecked();
+	await page.getByRole('button', { name: 'Start with no categories' }).click();
+	await expect(page.getByText('0 selected')).toBeVisible();
+	await nextStep(page).click();
+
+	await page.getByRole('button', { name: 'Start with no account' }).click();
+	await page.getByRole('button', { name: 'Start budgeting' }).click();
+
+	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
+	await expect(page.getByTestId('category-row')).toHaveCount(0);
+	// The grid leaves an empty Income group out; the order editor shows it's there.
+	await page.getByRole('button', { name: 'Edit order' }).click();
+	const sections = page.locator('section[data-order-group]');
+	await expect(sections).toHaveCount(1);
+	await expect(sections).toHaveAttribute('aria-label', 'Income');
+	await expect(sections.getByTestId('order-category')).toHaveCount(0);
+});
+
 test('onboarding can start with no account', async ({ page }) => {
 	await startApp(page);
 	await skipIntro(page);

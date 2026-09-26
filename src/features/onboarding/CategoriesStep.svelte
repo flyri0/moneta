@@ -83,6 +83,9 @@
 					</Collapsible.Trigger>
 				</div>
 				<Collapsible.Content class="grid flex-1 gap-3 border-t px-3 py-3">
+					{#if group.income}
+						<p class="text-sm text-muted-foreground">{m.onboarding_categories_income_hint()}</p>
+					{/if}
 					{#each group.categories as category, ci (category.name)}
 						<div class="flex items-center gap-3">
 							<Checkbox

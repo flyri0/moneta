@@ -17,6 +17,8 @@ export interface InitBudgetInput {
 	name: string;
 	currency: string;
 	locale: string;
+	/** The Income group's categories; the group itself is always created. */
+	income: string[];
 	groups: { name: string; categories: string[] }[];
 }
 
@@ -106,7 +108,10 @@ export function updateMeta(db: Db, patch: MetaPatch): void {
 	});
 }
 
-/** Creates meta, the system groups/categories, and the user's starting groups. */
+/**
+ * Creates meta, the Income group with the picked income categories, and the user's starting
+ * groups. An income category named like the starting balance one becomes it.
+ */
 export function initBudget(db: Db, input: InitBudgetInput): void {
 	tx(db, () => {
 		if (isInitialized(db)) throw new DomainError('ALREADY_INITIALIZED');
@@ -124,18 +129,18 @@ export function initBudget(db: Db, input: InitBudgetInput): void {
 			"INSERT INTO category_groups (id, name, sort_order, system) VALUES (?, 'Income', 0, 'income')",
 			[incomeGroup]
 		);
-		const defaultIncomeNames = input.locale.startsWith('pt')
-			? ['Salário', 'Outras receitas']
-			: ['Salary', 'Other Income'];
-		defaultIncomeNames.forEach((name, ci) => {
-			run(db, 'INSERT INTO categories (id, group_id, name, sort_order) VALUES (?, ?, ?, ?)', [
-				uuidv7(),
-				incomeGroup,
-				name,
-				ci
-			]);
-		});
-		ensureStartingBalanceCategory(db);
+		input.income
+			.map((name) => name.trim())
+			.filter((name) => name !== '')
+			.forEach((name, ci) => {
+				run(db, 'INSERT INTO categories (id, group_id, name, sort_order) VALUES (?, ?, ?, ?)', [
+					uuidv7(),
+					incomeGroup,
+					name,
+					ci
+				]);
+			});
+		adoptStartingBalanceCategory(db);
 		input.groups.forEach((group, gi) => {
 			const groupId = uuidv7();
 			run(db, 'INSERT INTO category_groups (id, name, sort_order) VALUES (?, ?, ?)', [
@@ -172,39 +177,40 @@ export function startingBalanceCategoryId(db: Db): string | null {
  */
 export function ensureStartingBalanceCategory(db: Db): string {
 	return tx(db, () => {
-		const current = startingBalanceCategoryId(db);
+		const current = startingBalanceCategoryId(db) ?? adoptStartingBalanceCategory(db);
 		if (current) return current;
-		const income = one<{ id: string }>(
+		const income = incomeGroupId(db);
+		const id = uuidv7();
+		const locale = one<{ value: string }>(db, 'SELECT value FROM meta WHERE key = ?', [
+			KEYS.locale
+		]);
+		run(
 			db,
-			"SELECT id FROM category_groups WHERE system = 'income'"
+			`INSERT INTO categories (id, group_id, name, sort_order)
+			 VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?))`,
+			[id, income, locale?.value.startsWith('pt') ? 'Saldo inicial' : 'Starting Balance', income]
 		);
-		if (!income) throw new DomainError('NOT_FOUND', 'No income group found');
-		const named = one<{ id: string }>(
-			db,
-			`SELECT id FROM categories
-			 WHERE group_id = ? AND lower(trim(name)) IN ('starting balance', 'saldo inicial')
-			 ORDER BY sort_order LIMIT 1`,
-			[income.id]
-		);
-		let id = named?.id;
-		if (!id) {
-			id = uuidv7();
-			const locale = one<{ value: string }>(db, 'SELECT value FROM meta WHERE key = ?', [
-				KEYS.locale
-			]);
-			run(
-				db,
-				`INSERT INTO categories (id, group_id, name, sort_order)
-				 VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?))`,
-				[
-					id,
-					income.id,
-					locale?.value.startsWith('pt') ? 'Saldo inicial' : 'Starting Balance',
-					income.id
-				]
-			);
-		}
 		setKey(db, KEYS.startingBalanceCategory, id);
 		return id;
 	});
+}
+
+function incomeGroupId(db: Db): string {
+	const income = one<{ id: string }>(db, "SELECT id FROM category_groups WHERE system = 'income'");
+	if (!income) throw new DomainError('NOT_FOUND', 'No income group found');
+	return income.id;
+}
+
+/** Records an income category named like the starting balance one as it, if there is one. */
+function adoptStartingBalanceCategory(db: Db): string | null {
+	const named = one<{ id: string }>(
+		db,
+		`SELECT id FROM categories
+		 WHERE group_id = ? AND lower(trim(name)) IN ('starting balance', 'saldo inicial')
+		 ORDER BY sort_order LIMIT 1`,
+		[incomeGroupId(db)]
+	);
+	if (!named) return null;
+	setKey(db, KEYS.startingBalanceCategory, named.id);
+	return named.id;
 }

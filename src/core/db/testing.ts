@@ -26,13 +26,17 @@ export async function createTestDb(): Promise<Db> {
 	return db;
 }
 
-/** A migrated database with an initialized BRL budget: Bills (Rent, Utilities), Everyday (Food, Fun). */
+/**
+ * A migrated database with an initialized BRL budget: Income (Salário, Outras receitas, Saldo
+ * inicial), Bills (Rent, Utilities), Everyday (Food, Fun).
+ */
 export async function createBudgetDb(): Promise<Db> {
 	const db = await createTestDb();
 	initBudget(db, {
 		name: 'Test Budget',
 		currency: 'BRL',
 		locale: 'pt-BR',
+		income: ['Salário', 'Outras receitas', 'Saldo inicial'],
 		groups: [
 			{ name: 'Bills', categories: ['Rent', 'Utilities'] },
 			{ name: 'Everyday', categories: ['Food', 'Fun'] }

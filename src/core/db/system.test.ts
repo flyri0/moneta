@@ -21,7 +21,7 @@ async function setup() {
 async function seedBudget(deps: Awaited<ReturnType<typeof setup>>) {
 	const { system, getDb } = createSystem(deps);
 	await system.open(FILE);
-	initBudget(getDb()!, { name: 'Home', currency: 'BRL', locale: 'pt-BR', groups: [] });
+	initBudget(getDb()!, { name: 'Home', currency: 'BRL', locale: 'pt-BR', income: [], groups: [] });
 	system.close();
 }
 
@@ -181,7 +181,7 @@ describe('listCopies / readCopy', () => {
 async function seedNamed(deps: Awaited<ReturnType<typeof setup>>, file: string, name: string) {
 	const { system, getDb } = createSystem(deps);
 	await system.open(file);
-	initBudget(getDb()!, { name, currency: 'BRL', locale: 'pt-BR', groups: [] });
+	initBudget(getDb()!, { name, currency: 'BRL', locale: 'pt-BR', income: [], groups: [] });
 	system.close();
 }
 

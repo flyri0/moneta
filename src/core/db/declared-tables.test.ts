@@ -162,7 +162,7 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	'meta.init': [
 		{
 			blank: true,
-			args: () => [{ name: 'Fresh', currency: 'BRL', locale: 'pt-BR', groups: [] }]
+			args: () => [{ name: 'Fresh', currency: 'BRL', locale: 'pt-BR', income: [], groups: [] }]
 		}
 	],
 	'accounts.create': [

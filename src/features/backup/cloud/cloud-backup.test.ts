@@ -10,6 +10,7 @@ const HOME: NewBudget = {
 	name: 'Home',
 	currency: 'USD',
 	locale: 'en-US',
+	income: ['Salary'],
 	groups: [{ name: 'Everyday', categories: ['Food'] }],
 	account: {
 		name: 'Checking',

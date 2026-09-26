@@ -6,6 +6,7 @@ import {
 	selectedCount,
 	starterSelection,
 	toGroupsInput,
+	toIncomeInput,
 	toggleCategory,
 	toggleGroup,
 	type StarterGroup
@@ -32,6 +33,46 @@ describe('starterSelection', () => {
 			},
 			{ name: 'Fun', categories: [{ name: 'Hobbies', selected: true }] }
 		]);
+	});
+});
+
+const INCOME = { name: 'Income', categories: ['Salary', 'Starting Balance'] };
+
+function withIncome(): StarterGroup[] {
+	return starterSelection(DEFAULTS, INCOME);
+}
+
+describe('starterSelection with income', () => {
+	it('puts the income group first, all picked', () => {
+		expect(withIncome()[0]).toEqual({
+			name: 'Income',
+			income: true,
+			categories: [
+				{ name: 'Salary', selected: true },
+				{ name: 'Starting Balance', selected: true }
+			]
+		});
+		expect(withIncome().slice(1)).toEqual(selection());
+	});
+});
+
+describe('toIncomeInput', () => {
+	it('returns the picked income categories only', () => {
+		expect(toIncomeInput(withIncome())).toEqual(['Salary', 'Starting Balance']);
+		expect(toIncomeInput(toggleCategory(withIncome(), 0, 1))).toEqual(['Salary']);
+	});
+
+	it('carries an income category the user typed', () => {
+		expect(toIncomeInput(addCategory(withIncome(), 0, 'Bonus'))).toEqual([
+			'Salary',
+			'Starting Balance',
+			'Bonus'
+		]);
+	});
+
+	it('is empty when the user starts from scratch, or with no income group', () => {
+		expect(toIncomeInput(clearSelection(withIncome()))).toEqual([]);
+		expect(toIncomeInput(selection())).toEqual([]);
 	});
 });
 
@@ -116,6 +157,10 @@ describe('toGroupsInput', () => {
 
 	it('is empty when the user starts from scratch', () => {
 		expect(toGroupsInput(clearSelection(selection()))).toEqual([]);
+	});
+
+	it('leaves out the income group, which has its own input', () => {
+		expect(toGroupsInput(withIncome())).toEqual(toGroupsInput(selection()));
 	});
 
 	it('carries a category the user typed', () => {
