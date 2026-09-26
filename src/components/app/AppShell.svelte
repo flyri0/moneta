@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { afterNavigate, preloadCode } from '$app/navigation';
+	import { afterNavigate, goto, preloadCode } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
@@ -17,6 +17,7 @@
 	import * as Sheet from '$ui/sheet';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import { backupDue } from '$features/backup/reminder';
 	import { useSession } from '$client/app-state.svelte';
 	import { runWhenIdle } from '$client/idle';
@@ -25,6 +26,7 @@
 	import { persistQuietly } from '$client/persistence';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
 	import { currentMonth } from '$domain/month';
+	import { errorMessage } from '$i18n/errors';
 	import { m } from '$i18n/paraglide/messages';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { actionError } from '$client/notify';
@@ -153,6 +155,24 @@
 		toast(m.backup_reminder(), {
 			duration: 15_000,
 			action: { label: m.backup_now(), onClick: () => void backUpNow(session.api) }
+		});
+	});
+
+	// Cloud backups run by themselves in this tab (the one with the database). The demo is not saved.
+	onMount(() => (session.isDemo ? undefined : cloudBackup.attach(session.client)));
+
+	/** Says once per shell when cloud backups stopped until the user acts (not for outages). */
+	let cloudWarned = false;
+	$effect(() => {
+		const { status, provider } = cloudBackup;
+		if (cloudWarned || status.kind !== 'failed' || status.retrying || !provider) return;
+		cloudWarned = true;
+		toast.error(m.cloud_stopped({ provider: provider.name, reason: errorMessage(status.error) }), {
+			duration: 15_000,
+			action: {
+				label: m.nav_settings(),
+				onClick: () => void goto(resolve('/settings'))
+			}
 		});
 	});
 </script>

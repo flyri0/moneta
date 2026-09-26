@@ -34,6 +34,13 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	BACKUP_KEYS_UNAVAILABLE: m.error_backup_keys_unavailable,
 	RESTORE_PARTIAL: m.error_restore_partial,
 	CURRENCY_LOCKED: m.error_currency_locked,
+	CLOUD_AUTH_NEEDED: m.error_cloud_auth_needed,
+	CLOUD_PERMISSION_DENIED: m.error_cloud_permission_denied,
+	CLOUD_POPUP_BLOCKED: m.error_cloud_popup_blocked,
+	CLOUD_UNAVAILABLE: m.error_cloud_unavailable,
+	CLOUD_STORAGE_FULL: m.error_cloud_storage_full,
+	CLOUD_NOT_ENCRYPTED: m.error_cloud_not_encrypted,
+	CLOUD_FAILED: m.error_cloud_failed,
 	WORKER_FAILED: m.error_worker_failed,
 	INTERNAL: m.error_internal
 };
@@ -43,7 +50,8 @@ const UNEXPECTED = new Set<string>([
 	'INTERNAL',
 	'UNKNOWN_METHOD',
 	'NO_DATABASE_OPEN',
-	'WORKER_FAILED'
+	'WORKER_FAILED',
+	'CLOUD_FAILED'
 ]);
 
 function codeOf(err: unknown): string | undefined {

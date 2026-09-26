@@ -66,6 +66,8 @@ Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um x
 - Backup e restauração de todos os orçamentos em um arquivo `.moneta`, criptografado com
   senha e chave de recuperação se você quiser, além de exportações CSV e JSON, com lembrete
   quando o último backup tem mais de duas semanas
+- Backups automáticos e criptografados no seu próprio Google Drive enquanto o Moneta está
+  aberto, e restauração de lá em outro aparelho
 - PWA instalável, que funciona offline, com uma página de boas-vindas que oferece a instalação
 - Inglês e português do Brasil
 
@@ -75,7 +77,7 @@ O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de
 
 - **Segurança e soberania de dados**:
   - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys).
-  - **Destinos de backup em nuvem**: Exportação de backups criptografados no próprio dispositivo diretamente para armazenamento do usuário (WebDAV/Nextcloud, Google Drive, Dropbox) e sincronização com pasta local via File System Access API.
+  - **Mais destinos de backup em nuvem**: WebDAV/Nextcloud, Dropbox e OneDrive ao lado do Google Drive, e sincronização com pasta local via File System Access API.
 - **Importação e conciliação**:
   - **Importação de extratos bancários**: Suporte a arquivos OFX, QFX, QIF e CSV com mapeamento inteligente de colunas e detecção de duplicatas.
   - **Conciliação de contas**: Fluxo assistido de conciliação com o extrato do banco e travamento de transações já conferidas.
@@ -119,10 +121,34 @@ obrigatório. O `netlify.toml` tem todos eles, junto com a regra que devolve o `
 política da própria página não pode ser repetida lá, porque os hashes dos scripts mudam a cada
 build.
 
+### Backups no Google Drive (opcional)
+
+Os backups automáticos no Google Drive precisam de uma pequena função serverless,
+`netlify/functions/oauth-token.mts`. O Google só entrega a um app de navegador tokens de uma
+hora, a menos que o pedido leve o client secret do OAuth, e esse segredo não pode ir dentro do
+app. A função o acrescenta aos dois pedidos de token que o Moneta faz (o login e a renovação do
+token de uma hora) e não guarda nada: o token de longa duração fica no aparelho, e os backups
+vão do navegador direto para o Drive. Sem `VITE_GOOGLE_CLIENT_ID` no build a opção não aparece,
+então qualquer host estático continua funcionando.
+
+1. No console do Google Cloud, crie um projeto, ative a **Google Drive API** e configure a
+   tela de consentimento OAuth com o escopo `https://www.googleapis.com/auth/drive.file`.
+   Publique-a (**Em produção**): enquanto está em Teste, os logins expiram em sete dias.
+   `drive.file` é um escopo não sensível, então o Google não precisa revisar o app.
+2. Crie um client OAuth do tipo **Aplicativo da Web**, com o seu site como origem JavaScript
+   autorizada e `https://<seu site>/oauth/callback` como URI de redirecionamento.
+3. Nas variáveis de ambiente do site no Netlify, defina `VITE_GOOGLE_CLIENT_ID` (o client id:
+   público, lido pelo build e pela função) e `GOOGLE_CLIENT_SECRET` (lido só pela função), e
+   publique de novo.
+
+Para testar localmente, coloque as duas no `.env` (veja o `.env.example`), rode
+`npx netlify dev` e acrescente o endereço dele (`http://localhost:8888`) às origens e URIs de
+redirecionamento do client.
+
 ## Onde ficam seus dados
 
 Cada orçamento é um único arquivo SQLite no armazenamento privado do navegador (OPFS).
-Nada sai do dispositivo por conta própria.
+Nada sai do aparelho, a menos que você ative os backups automáticos, e aí só criptografado.
 
 Em **Ajustes → Backup** você salva todos os orçamentos nos downloads em um arquivo
 `.moneta` e restaura os que escolher dele, e o Moneta avisa quando o último backup tem mais
@@ -137,6 +163,15 @@ ou a chave de recuperação. Um `.moneta` criptografado traz só as configuraç�
 criptografia no `moneta.json` e o backup inteiro, criptografado com AES-256-GCM, no
 `payload.bin`. A chave vem da senha por PBKDF2-SHA256, ou da chave de recuperação por HKDF.
 Sem as duas, ninguém abre esses backups, nem o Moneta.
+
+O **Backup automático** conecta seu Google Drive uma vez e depois salva sozinho, numa pasta
+Moneta de lá, um backup criptografado de todos os orçamentos: dois minutos depois que as
+alterações param, quando você sai do app com uma alteração pendente, e ao abrir quando o último
+tem um dia. Ele só roda com o Moneta aberto. Cada aparelho guarda um arquivo por dia, o mais
+novo e os cinco dias anteriores, e apaga os mais antigos. Backups na nuvem são sempre
+criptografados, então ele pede para ativar a criptografia antes, e restaurar do Drive em outro
+aparelho pede a senha ou a chave de recuperação. O Moneta só enxerga os arquivos que ele mesmo
+criou no seu Drive.
 
 Antes que uma atualização
 do app mude o esquema de um orçamento, o Moneta guarda uma cópia do arquivo antigo no mesmo
@@ -195,11 +230,12 @@ src/features/          módulos de funcionalidades (lógica de tela + componente
   settings/            backup e restauração, armazenamento, tema, arquivos de orçamento
   onboarding/          passos iniciais, categorias de início
   welcome/             tela inicial, diálogo de instalação PWA
-  backup/              backups, exportações CSV e JSON, lembrete de backup
+  backup/              backups, exportações CSV e JSON, lembrete de backup, backups na nuvem (cloud/)
   demo/                conjunto de dados de demonstração, sementes
 src/components/        componentes Svelte compartilhados (ui/ tem os primitivos do shadcn-svelte, app/ tem a casca da aplicação)
 src/routes/            páginas do SvelteKit
 e2e/                   testes do Playwright
+netlify/               a função opcional de tokens para os backups no Google Drive
 ```
 
 ### Traduções

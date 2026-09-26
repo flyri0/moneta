@@ -66,6 +66,8 @@ A budgeting app that reminds you where your money is meant to go seemed a fittin
 - Backup and restore of every budget as one `.moneta` file, optionally encrypted with a
   password and a recovery key, plus CSV and JSON exports, with a reminder when your last
   backup is more than two weeks old
+- Automatic, encrypted backups to your own Google Drive while Moneta is open, and restore
+  from there on another device
 - Installable, offline-capable PWA, with a welcome page that offers to install it
 - English and Brazilian Portuguese
 
@@ -75,7 +77,7 @@ Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelop
 
 - **Security & Data Sovereignty**:
   - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys).
-  - **Cloud backup targets**: Direct, client-side encrypted backup export to user-owned storage (WebDAV/Nextcloud, Google Drive, Dropbox) and local directory sync via the File System Access API.
+  - **More cloud backup targets**: WebDAV/Nextcloud, Dropbox and OneDrive next to Google Drive, and local directory sync via the File System Access API.
 - **Import & Reconciliation**:
   - **Bank file import**: Drag-and-drop import for OFX, QFX, QIF, and CSV with smart column mapping and duplicate detection.
   - **Account reconciliation**: Guided register reconciliation against bank statements, with locking for reconciled transactions.
@@ -117,10 +119,33 @@ for the rest, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` 
 required. `netlify.toml` has them all, along with the `index.html` fallback rule; the page's
 own policy can't be repeated there, since its script hashes change with every build.
 
+### Backups to Google Drive (optional)
+
+Automatic backups to Google Drive need one small serverless function,
+`netlify/functions/oauth-token.mts`. Google hands a browser app only one-hour tokens unless
+the token request carries the OAuth client secret, and that secret must not ship in the app.
+The function adds it to the two token requests Moneta makes (signing in, and renewing the
+hour-long token) and stores nothing: the long-lived token stays on the device, and backups go
+from the browser straight to Drive. Without `VITE_GOOGLE_CLIENT_ID` in the build the option
+doesn't appear, so any static host still works.
+
+1. In the Google Cloud console, create a project, enable the **Google Drive API** and set up
+   the OAuth consent screen with the `https://www.googleapis.com/auth/drive.file` scope.
+   Publish it (**In production**): while it is in Testing, sign-ins expire after seven days.
+   `drive.file` is a non-sensitive scope, so Google doesn't need to review the app.
+2. Create an OAuth client of type **Web application**, with your site as an authorized
+   JavaScript origin and `https://<your site>/oauth/callback` as a redirect URI.
+3. In the Netlify site's environment variables, set `VITE_GOOGLE_CLIENT_ID` (the client id:
+   public, read by the build and the function) and `GOOGLE_CLIENT_SECRET` (read only by the
+   function), then deploy again.
+
+To try it locally, put both in `.env` (see `.env.example`), run `npx netlify dev`, and add its
+address (`http://localhost:8888`) to the client's origins and redirect URIs.
+
 ## Where your data lives
 
 Each budget is a single SQLite file in your browser's private storage (OPFS). Nothing
-leaves the device on its own.
+leaves the device unless you turn on automatic backups, and then only encrypted.
 
 **Settings → Backup** saves every budget to your downloads as one `.moneta` file and
 restores the ones you pick from it, and Moneta nudges you when your last backup is more than
@@ -135,6 +160,14 @@ recovery key. An encrypted `.moneta` holds only the encryption settings in `mone
 the whole backup, encrypted with AES-256-GCM, in `payload.bin`. The key is derived with
 PBKDF2-SHA256 from the password, or with HKDF from the recovery key. Lose both and nobody can
 open those backups, Moneta included.
+
+**Automatic backup** connects your Google Drive once, then saves an encrypted backup of
+every budget to a Moneta folder there by itself: two minutes after changes stop, when you
+switch away with a change waiting, and at start when the last one is a day old. It runs only
+while Moneta is open. Each device keeps one file per day, its newest and the five days before
+it, and deletes the older ones. Backups to the cloud are always encrypted, so it asks you to
+turn encryption on first, and restoring from Drive on another device asks for the password or
+the recovery key. Moneta sees only the files it created in your Drive.
 
 Before an app update changes
 a budget's schema, Moneta keeps a copy of the old file in the same storage (the last
@@ -192,11 +225,12 @@ src/features/          feature modules (colocated screen logic + Svelte componen
   settings/            backup & restore, storage, theme, budget files
   onboarding/          first-run steps, starter categories
   welcome/             landing page, PWA install dialog
-  backup/              backups, CSV and JSON exports, backup reminder
+  backup/              backups, CSV and JSON exports, backup reminder, cloud backups (cloud/)
   demo/                demo dataset, seed data
 src/components/        shared Svelte components (ui/ holds shadcn-svelte primitives, app/ holds shell)
 src/routes/            SvelteKit pages
 e2e/                   Playwright tests
+netlify/               the optional token function for backups to Google Drive
 ```
 
 ### Translations

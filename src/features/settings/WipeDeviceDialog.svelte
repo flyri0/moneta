@@ -6,6 +6,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { wipeDevice } from '$client/session';
+	import { forgetCloud } from '$features/backup/cloud/cloud.svelte';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
 
@@ -47,7 +48,11 @@
 		}
 		if (countdown > 0) return;
 		busy = true;
-		error = await runAction(() => wipeDevice(session.api, localStorage));
+		error = await runAction(async () => {
+			// First, so no automatic backup starts while the budgets go.
+			await forgetCloud();
+			await wipeDevice(session.api, localStorage);
+		});
 		if (error) {
 			busy = false;
 			return;

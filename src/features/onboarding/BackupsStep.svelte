@@ -4,6 +4,10 @@
 	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import FileUpIcon from '@lucide/svelte/icons/file-up';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import CloudDownloadIcon from '@lucide/svelte/icons/cloud-download';
+	import CloudRestoreDialog from '$features/backup/cloud/CloudRestoreDialog.svelte';
+	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
+	import type { CloudProvider } from '$features/backup/cloud/provider';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import type { ActionError } from '$client/notify';
 	import { m } from '$i18n/paraglide/messages';
@@ -27,11 +31,21 @@
 		onRestore?: (file: File) => void;
 	} = $props();
 
+	const providers = cloudProviders();
 	const points = [
 		{ icon: TriangleAlertIcon, text: m.onboarding_backups_point_only_here() },
 		{ icon: FileDownIcon, text: m.onboarding_backups_point_file() },
-		{ icon: CloudUploadIcon, text: m.onboarding_backups_point_planned() }
+		{
+			icon: CloudUploadIcon,
+			text:
+				providers.length > 0
+					? m.onboarding_backups_point_cloud()
+					: m.onboarding_backups_point_reminder()
+		}
 	];
+	/** The provider whose backups are listed, to restore one. */
+	let fromCloud = $state<CloudProvider | null>(null);
+	let cloudOpen = $state(false);
 
 	let fileInput: HTMLInputElement | null = $state(null);
 
@@ -82,6 +96,23 @@
 					</div>
 					<ChevronRightIcon class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
 				</button>
+				{#each providers as provider (provider.id)}
+					<button
+						type="button"
+						disabled={busy}
+						onclick={() => {
+							fromCloud = provider;
+							cloudOpen = true;
+						}}
+						class="flex w-full items-center gap-3 border-t px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-50"
+					>
+						<CloudDownloadIcon class="size-5 shrink-0 text-primary" aria-hidden="true" />
+						<span class="min-w-0 flex-1 text-sm font-medium">
+							{m.cloud_restore({ provider: provider.name })}
+						</span>
+						<ChevronRightIcon class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+					</button>
+				{/each}
 			</div>
 		</section>
 		<label for="restore-file" class="sr-only">{m.backup_restore()}</label>
@@ -95,3 +126,7 @@
 		/>
 	{/if}
 </StepLayout>
+
+{#if fromCloud && onRestore}
+	<CloudRestoreDialog bind:open={cloudOpen} provider={fromCloud} onpick={onRestore} />
+{/if}

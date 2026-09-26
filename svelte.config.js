@@ -18,13 +18,21 @@ const config = {
 				'style-src': ['self', 'unsafe-inline'],
 				'img-src': ['self', 'data:'],
 				'font-src': ['self'],
-				'connect-src': ['self'],
+				// Backups to Google Drive (its API, and revoking access on disconnect).
+				'connect-src': ['self', 'https://www.googleapis.com', 'https://oauth2.googleapis.com'],
 				'worker-src': ['self'],
 				'manifest-src': ['self'],
 				'object-src': ['none'],
 				'base-uri': ['none'],
 				'form-action': ['none']
 			}
+		},
+		// The optional Netlify function (cloud backup tokens) is type-checked with the app.
+		typescript: {
+			config: (config) => ({
+				...config,
+				include: [...config.include, '../netlify/**/*.ts', '../netlify/**/*.mts']
+			})
 		},
 		alias: {
 			$domain: 'src/core/domain',

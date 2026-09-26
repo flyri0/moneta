@@ -5,6 +5,9 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import CopyList from '$features/backup/CopyList.svelte';
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
+	import CloudRestoreDialog from '$features/backup/cloud/CloudRestoreDialog.svelte';
+	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
+	import type { CloudProvider } from '$features/backup/cloud/provider';
 	import { readBackupFile } from '$features/backup/actions';
 	import DeleteBudgetDialog from '$features/settings/DeleteBudgetDialog.svelte';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
@@ -36,6 +39,10 @@
 		onNew: () => void;
 	} = $props();
 
+	const providers = cloudProviders();
+	/** The provider whose backups are listed, to restore one. */
+	let fromCloud = $state<CloudProvider | null>(null);
+	let cloudOpen = $state(false);
 	let deleting = $state<UnreadableBudget | null>(null);
 	let confirmingDelete = $state(false);
 	let busy = $state(false);
@@ -72,10 +79,13 @@
 		return failure;
 	}
 
-	async function restore(event: Event & { currentTarget: HTMLInputElement }) {
+	function restore(event: Event & { currentTarget: HTMLInputElement }) {
 		const picked = event.currentTarget.files?.[0];
 		chosen = '';
-		if (!picked) return;
+		if (picked) void restoreFile(picked);
+	}
+
+	async function restoreFile(picked: File) {
 		busy = true;
 		error = null;
 		let plain: Uint8Array | null = null;
@@ -155,6 +165,18 @@
 				onchange={restore}
 			/>
 		</div>
+		{#each providers as provider (provider.id)}
+			<Button
+				variant="outline"
+				disabled={busy}
+				onclick={() => {
+					fromCloud = provider;
+					cloudOpen = true;
+				}}
+			>
+				{m.cloud_restore({ provider: provider.name })}
+			</Button>
+		{/each}
 		<Button variant="outline" disabled={busy} onclick={onNew}>{m.startup_unreadable_new()}</Button>
 		<FormMessage {error} />
 	</div>
@@ -170,3 +192,6 @@
 {/if}
 
 <UnlockBackupDialog bind:open={unlocking} {api} bytes={locked} onunlock={restoreBytes} />
+{#if fromCloud}
+	<CloudRestoreDialog bind:open={cloudOpen} provider={fromCloud} onpick={restoreFile} />
+{/if}

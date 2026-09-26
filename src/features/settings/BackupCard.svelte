@@ -7,12 +7,14 @@
 	import { Switch } from '$ui/switch';
 	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
 	import CheckPasswordDialog from './CheckPasswordDialog.svelte';
+	import CloudBackupGroup from './CloudBackupGroup.svelte';
 	import RestoreDialog from './RestoreDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
 	import CopyList from '$features/backup/CopyList.svelte';
 	import { exportBudgetJson, exportTransactionsCsv } from '$features/backup/actions';
 	import { backUpNow } from '$features/backup/back-up-now';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import { BACKUP_ACCEPT } from '$features/backup/target';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { actionError, runActionToast, type ActionError } from '$client/notify';
@@ -71,6 +73,11 @@
 			settingUp = true;
 			return;
 		}
+		const cloud = cloudBackup.provider;
+		if (cloud) {
+			toast.error(m.cloud_disconnect_first({ provider: cloud.name }));
+			return;
+		}
 		void runActionToast(async () => {
 			await session.api.system.clearBackupEncryption();
 			encrypted = false;
@@ -81,6 +88,9 @@
 	function encryptionSet() {
 		toast.success(changing ? m.backup_password_changed() : m.backup_encrypted_on());
 		encrypted = true;
+		// Backups to the cloud may have stopped for want of encryption.
+		if (cloudBackup.connection && cloudBackup.status.kind === 'failed')
+			void runActionToast(() => cloudBackup.backUpNow(session.api));
 	}
 
 	/** Restores a saved copy next to the open budget, which is left as it is. */
@@ -140,6 +150,18 @@
 		</div>
 	{/if}
 </SettingsGroup>
+
+<CloudBackupGroup
+	{encrypted}
+	onNeedEncryption={() => {
+		changing = false;
+		settingUp = true;
+	}}
+	onRestore={(file) => {
+		picked = file;
+		restoring = true;
+	}}
+/>
 
 {#if copies.length > 0}
 	<SettingsGroup title={m.backup_copies()} description={m.backup_copies_hint()}>

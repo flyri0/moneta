@@ -16,8 +16,13 @@
 	// The app is a client-only SPA, so the document is always there.
 	document.documentElement.lang = getLocale();
 
-	/** The welcome and error pages are not the app: they open no database and claim no tab lock. */
-	const standalone = $derived(page.route.id === '/' || page.error !== null);
+	/**
+	 * The welcome, sign-in callback and error pages are not the app: they open no database and claim
+	 * no tab lock.
+	 */
+	const standalone = $derived(
+		page.route.id === '/' || page.route.id === '/oauth/callback' || page.error !== null
+	);
 
 	// Toasts sit at the top on phones, clear of the bottom nav and the floating add button (and
 	// below the demo banner, through --app-top).
