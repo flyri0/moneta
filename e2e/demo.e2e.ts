@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { categoryRow, useInBrowser } from './helpers';
+import { categoryRow, openSettings, useInBrowser } from './helpers';
 
 const BANNER = 'Demo data. Nothing here is saved.';
 
@@ -72,4 +72,17 @@ test('keeps the sticky budget header clear of the banner', async ({ page }) => {
 	await expect(header).toBeVisible();
 	const [bannerBox, headerBox] = [await banner.boundingBox(), await header.boundingBox()];
 	expect(headerBox!.y).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
+});
+
+test('turns backups and exports off in Settings', async ({ page }) => {
+	await tryDemo(page);
+	await openSettings(page);
+
+	await expect(page.getByTestId('backup-demo')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Back up now' })).toBeDisabled();
+	await expect(page.getByLabel('Restore from a backup')).toBeDisabled();
+	await expect(page.getByRole('button', { name: /Connect Google Drive/ })).toBeDisabled();
+	await expect(page.getByRole('switch', { name: 'Encrypt backups' })).toBeDisabled();
+	await expect(page.getByRole('button', { name: 'Transactions (CSV)' })).toBeDisabled();
+	await expect(page.getByRole('button', { name: 'Whole budget (JSON)' })).toBeDisabled();
 });

@@ -8,7 +8,8 @@
 	/**
 	 * One setting: its name on the left, its value or control on the right. With `onclick` the
 	 * whole row is the button that opens the choice, and with `href` it is a link to another site
-	 * that opens in a new tab; otherwise `control` sits inside the row.
+	 * that opens in a new tab; otherwise `control` sits inside the row. `disabled` greys the row out
+	 * (a row with a control disables the control itself).
 	 */
 	let {
 		label,
@@ -19,6 +20,7 @@
 		onclick,
 		href,
 		stacked = false,
+		disabled = false,
 		class: className
 	}: {
 		label: string;
@@ -32,6 +34,7 @@
 		href?: string;
 		/** Puts the control under the name instead of beside it, for wide controls. */
 		stacked?: boolean;
+		disabled?: boolean;
 		class?: string;
 	} = $props();
 
@@ -39,7 +42,7 @@
 </script>
 
 {#snippet name()}
-	<div class="grid min-w-0 gap-0.5">
+	<div class={cn('grid min-w-0 gap-0.5', disabled && 'opacity-50')}>
 		{#if labelFor}
 			<Label for={labelFor}>{label}</Label>
 		{:else}
@@ -53,10 +56,20 @@
 	<button
 		type="button"
 		{onclick}
-		class={cn(row, 'justify-between hover:bg-accent focus-visible:bg-accent', className)}
+		{disabled}
+		class={cn(
+			row,
+			'justify-between enabled:hover:bg-accent enabled:focus-visible:bg-accent disabled:cursor-not-allowed',
+			className
+		)}
 	>
 		{@render name()}
-		<span class="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+		<span
+			class={cn(
+				'flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground',
+				disabled && 'opacity-50'
+			)}
+		>
 			{#if value}{value}{/if}
 			{@render control?.()}
 			<ChevronRightIcon class="size-4" />

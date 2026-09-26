@@ -17,15 +17,18 @@
 	/**
 	 * Automatic backups to the user's cloud storage: connect a provider, see how the last backup
 	 * went, back up or restore now, disconnect. Hidden in builds without any provider. Backups to
-	 * the cloud are always encrypted, so connecting asks for encryption first.
+	 * the cloud are always encrypted, so connecting asks for encryption first. `disabled` shows it
+	 * all turned off (the demo).
 	 */
 	let {
 		encrypted,
+		disabled = false,
 		onNeedEncryption,
 		onRestore
 	}: {
 		/** Whether backups are encrypted; null until known. */
 		encrypted: boolean | null;
+		disabled?: boolean;
 		onNeedEncryption: () => void;
 		onRestore: (file: File) => void;
 	} = $props();
@@ -52,6 +55,7 @@
 
 	/** Straight from the click: the provider's popup opens before anything is awaited. */
 	function connect(target: CloudProvider) {
+		if (disabled) return;
 		if (encrypted !== true) {
 			if (encrypted === false) onNeedEncryption();
 			return;
@@ -82,7 +86,7 @@
 				<Button variant="outline" size="sm" onclick={() => signingIn?.abort()}>{m.cancel()}</Button>
 			</div>
 		{:else if provider && (connection || needsSignIn)}
-			<SettingsRow label={provider.name} value={connection?.account} />
+			<SettingsRow label={provider.name} value={connection?.account} {disabled} />
 			<p class="px-4 py-3 text-sm text-muted-foreground" data-testid="cloud-status">
 				{statusText(provider.name)}
 			</p>
@@ -96,6 +100,7 @@
 									variant="outline"
 									size="sm"
 									class="justify-self-start"
+									{disabled}
 									onclick={() => connect(provider)}
 								>
 									{m.cloud_reconnect()}
@@ -105,6 +110,7 @@
 									variant="outline"
 									size="sm"
 									class="justify-self-start"
+									{disabled}
 									onclick={onNeedEncryption}
 								>
 									{m.backup_encrypt()}
@@ -117,19 +123,22 @@
 			{#if connection}
 				<SettingsRow
 					label={m.cloud_back_up_now({ provider: provider.name })}
+					{disabled}
 					onclick={() => runActionToast(() => cloudBackup.backUpNow(session.api))}
 				/>
 				<SettingsRow
 					label={m.cloud_restore({ provider: provider.name })}
+					{disabled}
 					onclick={() => (restoring = true)}
 				/>
 			{/if}
-			<SettingsRow label={m.cloud_disconnect()} onclick={() => (disconnecting = true)} />
+			<SettingsRow label={m.cloud_disconnect()} {disabled} onclick={() => (disconnecting = true)} />
 		{:else}
 			{#each providers as target (target.id)}
 				<SettingsRow
 					label={m.cloud_connect({ provider: target.name })}
 					hint={encrypted === false ? m.cloud_needs_encryption() : undefined}
+					{disabled}
 					onclick={() => connect(target)}
 				/>
 			{/each}

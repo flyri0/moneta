@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import FormMessage from '$components/FormMessage.svelte';
+	import * as Alert from '$ui/alert';
 	import { Input } from '$ui/input';
 	import { Switch } from '$ui/switch';
 	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
@@ -26,6 +27,8 @@
 
 	const app = getApp();
 	const session = useSession();
+	/** The demo is never saved: backing it up, restoring into it or exporting it makes no sense. */
+	const demo = $derived(session.isDemo);
 	let copies = $state<BudgetCopy[]>([]);
 	let restoring = $state(false);
 	let picked = $state<File | null>(null);
@@ -49,6 +52,8 @@
 	$effect(() => {
 		let current = true;
 		copiesError = null;
+		copies = [];
+		if (demo) return;
 		session.api.system.listCopies(session.file).then(
 			(list) => current && (copies = list),
 			(err: unknown) => current && (copiesError = actionError(err))
@@ -102,57 +107,36 @@
 	}
 </script>
 
+{#if demo}
+	<Alert.Root data-testid="backup-demo">
+		<Alert.Description>{m.backup_demo()}</Alert.Description>
+	</Alert.Root>
+{/if}
+
 <SettingsGroup title={m.settings_backup()} description={m.backup_hint()}>
 	<p class="px-4 py-3 text-sm text-muted-foreground" data-testid="last-backup">
 		{session.meta.lastBackupAt
 			? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
 			: m.backup_never()}
 	</p>
-	<SettingsRow label={m.backup_now()} onclick={() => backUpNow(session.api)} />
-	<SettingsRow stacked label={m.backup_restore()} labelFor="restore-file">
+	<SettingsRow label={m.backup_now()} disabled={demo} onclick={() => backUpNow(session.api)} />
+	<SettingsRow stacked label={m.backup_restore()} labelFor="restore-file" disabled={demo}>
 		{#snippet control()}
 			<Input
 				id="restore-file"
 				type="file"
 				bind:value={chosen}
 				accept={BACKUP_ACCEPT}
+				disabled={demo}
 				onchange={pick}
 			/>
 		{/snippet}
 	</SettingsRow>
-	<SettingsRow
-		label={m.backup_encrypt()}
-		labelFor="encrypt-backups"
-		hint={encrypted ? m.backup_encrypt_on_hint() : m.backup_encrypt_off_hint()}
-	>
-		{#snippet control()}
-			<Switch
-				id="encrypt-backups"
-				disabled={encrypted === null}
-				bind:checked={() => encrypted === true, toggleEncryption}
-			/>
-		{/snippet}
-	</SettingsRow>
-	{#if encrypted}
-		<SettingsRow
-			label={m.backup_change_password()}
-			onclick={() => {
-				changing = true;
-				settingUp = true;
-			}}
-		/>
-		<SettingsRow label={m.backup_check_password()} onclick={() => (checking = true)} />
-	{/if}
-	{#if encryptionError || copiesError}
-		<div class="grid gap-2 px-4 py-3">
-			<FormMessage error={encryptionError} />
-			<FormMessage error={copiesError} />
-		</div>
-	{/if}
 </SettingsGroup>
 
 <CloudBackupGroup
 	{encrypted}
+	disabled={demo}
 	onNeedEncryption={() => {
 		changing = false;
 		settingUp = true;
@@ -163,9 +147,49 @@
 	}}
 />
 
-{#if copies.length > 0}
+<SettingsGroup title={m.backup_encryption()}>
+	<SettingsRow
+		label={m.backup_encrypt()}
+		labelFor="encrypt-backups"
+		hint={encrypted ? m.backup_encrypt_on_hint() : m.backup_encrypt_off_hint()}
+		disabled={demo}
+	>
+		{#snippet control()}
+			<Switch
+				id="encrypt-backups"
+				disabled={encrypted === null || demo}
+				bind:checked={() => encrypted === true, toggleEncryption}
+			/>
+		{/snippet}
+	</SettingsRow>
+	{#if encrypted}
+		<SettingsRow
+			label={m.backup_change_password()}
+			disabled={demo}
+			onclick={() => {
+				changing = true;
+				settingUp = true;
+			}}
+		/>
+		<SettingsRow
+			label={m.backup_check_password()}
+			disabled={demo}
+			onclick={() => (checking = true)}
+		/>
+	{/if}
+	{#if encryptionError}
+		<div class="px-4 py-3"><FormMessage error={encryptionError} /></div>
+	{/if}
+</SettingsGroup>
+
+{#if copies.length > 0 || copiesError}
 	<SettingsGroup title={m.backup_copies()} description={m.backup_copies_hint()}>
-		<CopyList api={session.api} {copies} name={session.meta.name} onRestore={restoreCopy} />
+		{#if copies.length > 0}
+			<CopyList api={session.api} {copies} name={session.meta.name} onRestore={restoreCopy} />
+		{/if}
+		{#if copiesError}
+			<div class="px-4 py-3"><FormMessage error={copiesError} /></div>
+		{/if}
 	</SettingsGroup>
 {/if}
 
@@ -175,10 +199,12 @@
 >
 	<SettingsRow
 		label={m.backup_export_csv()}
+		disabled={demo}
 		onclick={() => runActionToast(() => exportTransactionsCsv(session))}
 	/>
 	<SettingsRow
 		label={m.backup_export_json()}
+		disabled={demo}
 		onclick={() => runActionToast(() => exportBudgetJson(session))}
 	/>
 </SettingsGroup>
