@@ -1,0 +1,45 @@
+name: Deploy
+
+# Runs after CI finishes and deploys only a push to main whose CI run succeeded.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One deploy at a time, in order: a newer commit never gets overwritten by an older one mid-deploy.
+concurrency:
+  group: deploy-netlify
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Netlify
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      # Deploys the commit CI tested, not whatever main points to now.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `netlify deploy` runs the build from netlify.toml itself, with the site's environment
+      # variables from Netlify (VITE_GOOGLE_CLIENT_ID turns on cloud backups), and bundles the
+      # functions in netlify/functions.
+      - name: Deploy to Netlify
+        run: pnpm exec netlify deploy --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
