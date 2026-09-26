@@ -34,8 +34,8 @@ pnpm check     # svelte-check / TypeScript
 pnpm test      # unit and integration tests
 ```
 
-All three must pass. CI runs the same three plus a production build on every push, and
-runs the Playwright suite (`pnpm test:e2e`) on pull requests.
+All three must pass. CI runs the same three, a production build and the Playwright suite
+(`pnpm test:e2e`) on every push and pull request.
 
 Keep a pull request to one topic, link the issue it closes, and use conventional commit
 prefixes: `feat:`, `fix:`, `test:`, `docs:`, `chore:`. A `commit-msg` hook (husky and

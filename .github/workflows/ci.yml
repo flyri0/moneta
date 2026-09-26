@@ -45,8 +45,6 @@ jobs:
 
   e2e:
     name: Browser tests
-    # Pull requests and manual runs only: too slow for every push.
-    if: github.event_name != 'push'
     needs: check
     runs-on: ubuntu-latest
     steps:
