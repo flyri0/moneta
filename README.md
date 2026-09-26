@@ -10,9 +10,15 @@
 	<strong>English</strong> · <a href="README.pt-BR.md">Português (BR)</a>
 	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+	<a href="https://app.netlify.com/projects/usemoneta/deploys"><img src="https://api.netlify.com/api/v1/badges/058ac25a-38ff-40b3-a04e-d586850df680/deploy-status" alt="Netlify Status" /></a>
 </p>
 
 ---
+
+> [!WARNING]
+> **Moneta is an experimental personal project.** It was written 100% by LLMs, as a way for
+> me to learn. It is usable, but it comes with no guarantees: I take no responsibility for
+> lost or stolen data. Use it at your own risk and keep backups somewhere you control.
 
 ## What Moneta is
 
@@ -37,54 +43,28 @@ _moneda_ in Spanish all trace back to her.
 
 A budgeting app that reminds you where your money is meant to go seemed a fitting namesake.
 
-## Why you might like it
+## Main features
 
-- **Your money is nobody else's business.** Nothing is uploaded, because there is nowhere
-  to upload it to.
-- **Nothing to sign up for.** Open it and start budgeting.
-- **You own the file.** One budget is one `.sqlite` file, and a backup is all of them in
-  one `.moneta` file (a plain ZIP). Back up whenever you want, restore on another machine,
-  or export to CSV and JSON.
-- **It works on a plane.** The whole app, database and all, runs in the browser.
+1. **Zero-based envelope budget.** Income lands in Ready to Assign and you move it into
+   categories organized in groups. Overspending rolls over per category, and quick-assign
+   fills a month for you: same as last month, the average spent over 3, 6 or 12 months,
+   cover overspending, or clear.
+2. **Accounts and transactions.** On-budget and off-budget (tracking) accounts, credit cards
+   as on-budget accounts with budget-neutral payment transfers, split transactions,
+   transfers between accounts, and payees you can rename everywhere, merge and give a
+   default category.
+3. **Scheduled transactions.** One-off, daily, weekly, monthly or yearly schedules, with a
+   rule for dates that fall on a weekend. They are entered by themselves or with a tap, and
+   each account shows the next 30 days.
+4. **Reports.** Spending by category and by payee, net worth, cash flow, spending trends,
+   assets and debts by account, and Age of Money, on an overview whose cards you can reorder
+   and hide.
+5. **Your data, on your device.** An installable PWA that works offline, several budget files
+   side by side, backups of every budget in one `.moneta` file (optionally encrypted with a
+   password and a recovery key), CSV and JSON exports, and automatic encrypted backups to
+   your own Google Drive.
 
-## What it does
-
-- Zero-based envelope budgeting with Ready to Assign, category groups and per-category
-  overspending rollover
-- Quick-assign helpers: same as last month, spent average, cover overspending, clear
-- On-budget and off-budget (tracking) accounts
-- Actual-style credit cards: standard on-budget accounts with negative balances and
-  budget-neutral payment transfers
-- Customizable income categories in a dedicated system group feeding Ready to Assign
-- Split transactions and transfers between accounts
-- Scheduled and recurring transactions, entered automatically or with a tap, with the next 30
-  days forecast in each account
-- Payee management: rename a payee on every past transaction, merge duplicates, set a
-  default category, and remove unused payees
-- Reports: spending by category and by payee, net worth, cash flow, spending trends, assets and debts by account, and Age of Money, on an overview whose cards you can reorder and hide
-- Several budget files side by side
-- Backup and restore of every budget as one `.moneta` file, optionally encrypted with a
-  password and a recovery key, plus CSV and JSON exports, with a reminder when your last
-  backup is more than two weeks old
-- Automatic, encrypted backups to your own Google Drive while Moneta is open, and restore
-  from there on another device
-- Installable, offline-capable PWA, with a welcome page that offers to install it
-- English and Brazilian Portuguese
-
-## Roadmap (future)
-
-Moneta v1 focuses on a reliable, offline-first foundation for zero-based envelope budgeting. Planned directions for future releases include:
-
-- **Security & Data Sovereignty**:
-  - **Database encryption at rest**: Client-side encryption for the local OPFS SQLite database via a master passphrase or biometrics (WebAuthn/Passkeys).
-  - **More cloud backup targets**: WebDAV/Nextcloud, Dropbox and OneDrive next to Google Drive, and local directory sync via the File System Access API.
-- **Import & Reconciliation**:
-  - **Bank file import**: Drag-and-drop import for OFX, QFX, QIF, and CSV with smart column mapping and duplicate detection.
-  - **Account reconciliation**: Guided register reconciliation against bank statements, with locking for reconciled transactions.
-- **Budgeting & Goals**:
-  - **Category targets & goals**: Target balances, target balances by date, monthly spending goals, visual progress indicators, and one-click "Underfunded" quick-assign.
-- **Power Tools**:
-  - **Keyboard-first navigation & command palette**: Quick command palette (`Ctrl/Cmd + K`) and fast transaction entry shortcuts.
+The whole app is in English and Brazilian Portuguese.
 
 ## Getting started
 

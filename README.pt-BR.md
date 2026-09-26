@@ -10,9 +10,16 @@
 	<a href="README.md">English</a> · <strong>Português (BR)</strong>
 	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="Status do CI" /></a>
+	<a href="https://app.netlify.com/projects/usemoneta/deploys"><img src="https://api.netlify.com/api/v1/badges/058ac25a-38ff-40b3-a04e-d586850df680/deploy-status" alt="Status do Netlify" /></a>
 </p>
 
 ---
+
+> [!WARNING]
+> **O Moneta é um projeto pessoal experimental.** Ele foi escrito 100% por LLMs, como uma
+> forma de eu aprender. Ele é utilizável, mas vem sem garantia nenhuma: não me responsabilizo
+> por perda ou roubo de dados. Use por sua conta e risco e mantenha backups em um lugar que
+> você controle.
 
 ## O que é o Moneta
 
@@ -36,55 +43,28 @@ inglês e _moneda_ em espanhol vêm todas dela.
 
 Um app de orçamento que te lembra para onde o seu dinheiro deve ir pareceu um xará à altura.
 
-## Por que você pode gostar
+## Principais recursos
 
-- **Seu dinheiro não é da conta de ninguém.** Nada é enviado, porque não há para onde
-  enviar.
-- **Não tem cadastro.** É só abrir e começar.
-- **O arquivo é seu.** Um orçamento é um arquivo `.sqlite`, e um backup reúne todos em um
-  arquivo `.moneta` (um ZIP comum). Faça backup quando quiser, restaure em outra máquina,
-  ou exporte para CSV e JSON.
-- **Funciona no avião.** O app inteiro, banco de dados incluído, roda no navegador.
+1. **Orçamento de base zero por envelopes.** A receita cai em Pronto para atribuir e você a
+   distribui entre categorias organizadas em grupos. O gasto a mais rola por categoria, e a
+   atribuição rápida preenche o mês para você: igual ao mês passado, a média gasta em 3, 6 ou
+   12 meses, cobrir o gasto a mais, ou zerar.
+2. **Contas e transações.** Contas dentro do orçamento e fora dele (de acompanhamento),
+   cartões de crédito como contas dentro do orçamento com transferências de pagamento
+   neutras, transações divididas, transferências entre contas e favorecidos que você pode
+   renomear em todo lugar, mesclar e associar a uma categoria padrão.
+3. **Transações agendadas.** Agendamentos únicos, diários, semanais, mensais ou anuais, com uma
+   regra para datas que caem no fim de semana. São lançados sozinhos ou com um toque, e cada
+   conta mostra os próximos 30 dias.
+4. **Relatórios.** Gastos por categoria e por favorecido, patrimônio líquido, fluxo de caixa,
+   tendência de gastos, ativos e dívidas por conta e idade do dinheiro, num painel cujos
+   cards você pode reordenar e ocultar.
+5. **Seus dados, no seu dispositivo.** Um PWA instalável que funciona offline, vários
+   orçamentos lado a lado, backup de todos eles em um arquivo `.moneta` (criptografado com
+   senha e chave de recuperação, se você quiser), exportações CSV e JSON e backups
+   automáticos e criptografados no seu próprio Google Drive.
 
-## O que ele faz
-
-- Orçamento de base zero por envelopes, com Pronto para atribuir, grupos de categorias e
-  rolagem do gasto a mais por categoria
-- Atribuição rápida: igual ao mês passado, média gasta, cobrir gasto a mais, zerar
-- Contas dentro do orçamento e fora dele (de acompanhamento)
-- Cartões de crédito no estilo Actual Budget: contas normais dentro do orçamento com saldo
-  negativo e transferências de pagamento neutras para o orçamento
-- Categorias de receitas personalizáveis em um grupo de sistema dedicado que alimentam o Pronto
-  para atribuir
-- Transações divididas e transferências entre contas
-- Transações agendadas e recorrentes, lançadas automaticamente ou com um toque, com a previsão
-  dos próximos 30 dias em cada conta
-- Gestão de favorecidos: renomear um favorecido em todas as transações passadas, mesclar
-  duplicatas, definir uma categoria padrão e remover favorecidos sem uso
-- Relatórios: gastos por categoria e por favorecido, patrimônio líquido, fluxo de caixa, tendência de gastos, ativos e dívidas por conta e idade do dinheiro, num painel cujos cards você pode reordenar e ocultar
-- Vários orçamentos lado a lado
-- Backup e restauração de todos os orçamentos em um arquivo `.moneta`, criptografado com
-  senha e chave de recuperação se você quiser, além de exportações CSV e JSON, com lembrete
-  quando o último backup tem mais de duas semanas
-- Backups automáticos e criptografados no seu próprio Google Drive enquanto o Moneta está
-  aberto, e restauração de lá em outro aparelho
-- PWA instalável, que funciona offline, com uma página de boas-vindas que oferece a instalação
-- Inglês e português do Brasil
-
-## Futuro e roadmap
-
-O Moneta v1 estabelece uma base sólida, offline e confiável para orçamento de base zero por envelopes. As direções planejadas para as próximas versões incluem:
-
-- **Segurança e soberania de dados**:
-  - **Criptografia do banco de dados em repouso**: Criptografia local do SQLite no OPFS usando senha mestra ou biometria (WebAuthn/Passkeys).
-  - **Mais destinos de backup em nuvem**: WebDAV/Nextcloud, Dropbox e OneDrive ao lado do Google Drive, e sincronização com pasta local via File System Access API.
-- **Importação e conciliação**:
-  - **Importação de extratos bancários**: Suporte a arquivos OFX, QFX, QIF e CSV com mapeamento inteligente de colunas e detecção de duplicatas.
-  - **Conciliação de contas**: Fluxo assistido de conciliação com o extrato do banco e travamento de transações já conferidas.
-- **Metas e planejamento**:
-  - **Metas por categoria**: Metas de saldo, saldo alvo por data, metas de gastos mensais, barras visuais de progresso e atribuição rápida com um clique ("Metas não cobertas").
-- **Produtividade**:
-  - **Navegação rápida e paleta de comandos**: Paleta de comandos rápida (`Ctrl/Cmd + K`) e atalhos de teclado para entrada ágil de transações.
+O app inteiro está em inglês e português do Brasil.
 
 ## Como começar
 
