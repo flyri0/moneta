@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { chooseSelect, onboard } from './helpers';
 
 test('navigates between screens and switches the language', async ({ page }) => {
@@ -70,6 +70,95 @@ test('puts the add-transaction button in the sidebar on desktop', async ({ page 
 	const sidebar = page.getByRole('complementary');
 	await expect(sidebar.getByRole('button', { name: 'Transaction', exact: true })).toBeVisible();
 	await expect(page.getByRole('main').getByRole('button', { name: 'Transaction' })).toHaveCount(0);
+});
+
+test.describe('the desktop sidebar', () => {
+	/** Drags the sidebar's edge to `x`, the way a pointer does. */
+	async function dragEdge(page: Page, x: number) {
+		const handle = page.getByRole('separator', { name: 'Resize sidebar' });
+		const box = (await handle.boundingBox())!;
+		const y = box.y + box.height / 2;
+		await page.mouse.move(box.x + box.width / 2, y);
+		await page.mouse.down();
+		await page.mouse.move(x, y, { steps: 5 });
+		await page.mouse.up();
+	}
+
+	function sidebarWidth(page: Page) {
+		return async () => (await page.getByRole('complementary').boundingBox())!.width;
+	}
+
+	test('resizes up to a quarter of the window and snaps to icons', async ({ page }) => {
+		await onboard(page);
+		await dragEdge(page, 300);
+		await expect.poll(sidebarWidth(page)).toBe(300);
+
+		await dragEdge(page, 1000);
+		await expect.poll(sidebarWidth(page)).toBe(page.viewportSize()!.width / 4);
+
+		await dragEdge(page, 100);
+		await expect.poll(sidebarWidth(page)).toBe(64);
+		const sidebar = page.getByRole('complementary');
+		await expect(sidebar.getByRole('link', { name: 'Budget' })).toBeVisible();
+
+		await page.reload();
+		await expect(sidebar.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
+		await expect.poll(sidebarWidth(page)).toBe(64);
+	});
+
+	test('resizes from the keyboard', async ({ page }) => {
+		await onboard(page);
+		const handle = page.getByRole('separator', { name: 'Resize sidebar' });
+		await handle.focus();
+		await page.keyboard.press('ArrowLeft');
+		await expect(handle).toHaveAttribute('aria-valuenow', '240');
+		await expect.poll(sidebarWidth(page)).toBe(240);
+		await page.keyboard.press('Enter');
+		await expect(handle).toHaveAttribute('aria-valuenow', '64');
+		await page.keyboard.press('ArrowRight');
+		await expect(handle).toHaveAttribute('aria-valuenow', '240');
+	});
+
+	test('shows each account in a tooltip when collapsed to icons', async ({ page }) => {
+		await onboard(page);
+		const sidebar = page.getByRole('complementary');
+		await sidebar.getByRole('button', { name: 'Collapse sidebar' }).click();
+
+		const account = sidebar.getByRole('link', { name: 'Checking, $1,000.00' });
+		await account.hover();
+		const tooltip = page.locator('[data-slot="tooltip-content"]');
+		await expect(tooltip).toContainText('Checking');
+		await expect(tooltip.getByTestId('account-balance')).toHaveText('$1,000.00');
+
+		await account.click();
+		await expect(page.getByTestId('register-title')).toHaveText('Checking');
+	});
+
+	test('keeps a long balance on one line at the narrowest width', async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).first().click();
+		await page.getByRole('button', { name: 'Add account' }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByRole('button', { name: 'Credit card' }).click();
+		await dialog.getByLabel('Account name').fill('A credit card with a long name');
+		await dialog.getByLabel('Amount owed').fill('3001.55');
+		await dialog.getByRole('button', { name: 'Add account' }).click();
+		await expect(dialog).toBeHidden();
+
+		await dragEdge(page, 150);
+		await expect.poll(sidebarWidth(page)).toBe(208);
+		const balances = page.getByRole('complementary').getByTestId('account-balance');
+		await expect(balances.filter({ hasText: '-$3,001.55' })).toHaveCount(1);
+		const broken = await balances.evaluateAll((els) =>
+			els
+				.filter((el) => {
+					const edge = el.closest('aside')!.getBoundingClientRect().right;
+					return el.getClientRects().length !== 1 || el.getBoundingClientRect().right > edge;
+				})
+				.map((el) => el.textContent)
+		);
+		expect(broken, 'balances wrapped or overflowing').toEqual([]);
+	});
 });
 
 test.describe('on a phone', () => {

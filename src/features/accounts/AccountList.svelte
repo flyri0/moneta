@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import { Button } from '$ui/button';
+	import * as Tooltip from '$ui/tooltip';
 	import { accountSections, type AccountSectionKey } from '$features/accounts/account-form';
 	import { accountTypeIcon } from '$features/accounts/account-icons';
 	import { useSession } from '$client/app-state.svelte';
@@ -16,7 +17,8 @@
 	}: {
 		accounts: Account[];
 		onSettings?: (account: Account) => void;
-		variant?: 'card' | 'compact';
+		/** `compact` and `rail` are the desktop sidebar's, expanded and collapsed to icons. */
+		variant?: 'card' | 'compact' | 'rail';
 	} = $props();
 
 	const session = useSession();
@@ -28,25 +30,75 @@
 	};
 </script>
 
-{#if variant === 'compact'}
-	<div class="grid gap-4">
+{#if variant === 'rail'}
+	<!-- Only the icons fit: the name and balance show in a tooltip, mounted while it is open. -->
+	<div class="grid gap-3">
 		{#each sections as section (section.key)}
-			<section class="grid gap-1" aria-label={TITLES[section.key]()}>
+			<section
+				class="grid justify-items-center gap-1 border-t pt-3"
+				aria-label={TITLES[section.key]()}
+			>
+				{#each section.accounts as account (account.id)}
+					{@const Icon = accountTypeIcon(account.type)}
+					{@const balance = session.format(account.balance)}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<a
+									{...props}
+									href={resolve('/accounts/[id]', { id: account.id })}
+									aria-label={m.sidebar_account({ name: account.name, balance })}
+									data-testid="account-row"
+									class="relative flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+								>
+									<Icon class="size-4" />
+									{#if account.balance < 0}
+										<span
+											aria-hidden="true"
+											class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-destructive"
+										></span>
+									{/if}
+								</a>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content side="right" class="flex-col items-start gap-0.5">
+							<span class="max-w-56 truncate font-medium">{account.name}</span>
+							<span class="whitespace-nowrap tabular-nums" data-testid="account-balance"
+								>{balance}</span
+							>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				{/each}
+			</section>
+		{/each}
+	</div>
+{:else if variant === 'compact'}
+	<!-- A balance never wraps or shrinks: when the name can't keep 6rem beside it, it takes a
+	line of its own and the name truncates. The grids use `grid-cols-1` so a long name can't widen
+	the column past the sidebar. -->
+	<div class="grid grid-cols-1 gap-4">
+		{#each sections as section (section.key)}
+			<section class="grid grid-cols-1 gap-1" aria-label={TITLES[section.key]()}>
 				<div
-					class="flex items-center justify-between px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
+					class="flex flex-wrap items-center justify-between gap-x-2 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
 				>
-					<span>{TITLES[section.key]()}</span>
-					<span class="tabular-nums">{session.format(section.total)}</span>
+					<span class="min-w-0 flex-[1_1_6rem] truncate">{TITLES[section.key]()}</span>
+					<span class="ml-auto whitespace-nowrap tabular-nums">{session.format(section.total)}</span
+					>
 				</div>
 				{#each section.accounts as account (account.id)}
 					<div class="flex items-center gap-1" data-testid="account-row">
 						<a
 							href={resolve('/accounts/[id]', { id: account.id })}
-							class="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent"
+							class="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent"
 						>
-							<span class="truncate">{account.name}</span>
+							<span class="min-w-0 flex-[1_1_6rem] truncate" title={account.name}
+								>{account.name}</span
+							>
 							<span
-								class="tabular-nums {account.balance < 0 ? 'text-destructive' : ''}"
+								class="ml-auto shrink-0 whitespace-nowrap tabular-nums {account.balance < 0
+									? 'text-destructive'
+									: ''}"
 								data-testid="account-balance">{session.format(account.balance)}</span
 							>
 						</a>

@@ -8,6 +8,8 @@
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
+	import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
+	import PanelLeftOpenIcon from '@lucide/svelte/icons/panel-left-open';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ReceiptTextIcon from '@lucide/svelte/icons/receipt-text';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
@@ -15,6 +17,7 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
+	import * as Tooltip from '$ui/tooltip';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
 	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
@@ -24,6 +27,18 @@
 	import { pendingLoads } from '$client/pending';
 	import { useLive } from '$client/live.svelte';
 	import { persistQuietly } from '$client/persistence';
+	import {
+		MAX_SHARE,
+		MIN_WIDTH,
+		RAIL_WIDTH,
+		clampWidth,
+		dragTo,
+		maxWidth,
+		readSidebar,
+		stepBy,
+		writeSidebar,
+		type SidebarState
+	} from '$client/sidebar';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
 	import { currentMonth } from '$domain/month';
 	import { errorMessage } from '$i18n/errors';
@@ -127,6 +142,64 @@
 		if (adding) dialogLoad ??= import('$features/transactions/TransactionDialog.svelte');
 	});
 	let moreOpen = $state(false);
+
+	/** How far an arrow key moves the sidebar's edge. */
+	const RESIZE_STEP = 16;
+
+	/** The desktop sidebar's size, remembered on this device. */
+	let sidebar = $state(readSidebar(localStorage));
+	let dragging = $state(false);
+	let aside = $state<HTMLElement>();
+	let viewport = $state(0);
+	const collapsed = $derived(sidebar.collapsed);
+	/** CSS keeps an expanded width within its share of the window as the window resizes. */
+	const sidebarWidth = $derived(
+		collapsed
+			? `${RAIL_WIDTH}px`
+			: `clamp(${MIN_WIDTH}px, ${sidebar.width}px, ${MAX_SHARE * 100}vw)`
+	);
+
+	function resize(next: SidebarState) {
+		sidebar = next;
+		writeSidebar(localStorage, next);
+	}
+
+	function toggleSidebar() {
+		resize({ ...sidebar, collapsed: !collapsed });
+	}
+
+	function startDrag(event: PointerEvent) {
+		if (event.button !== 0) return;
+		event.preventDefault();
+		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+		dragging = true;
+	}
+
+	function drag(event: PointerEvent) {
+		if (!dragging || !aside) return;
+		const x = event.clientX - aside.getBoundingClientRect().left;
+		sidebar = dragTo(x, window.innerWidth, sidebar);
+	}
+
+	function endDrag() {
+		if (!dragging) return;
+		dragging = false;
+		writeSidebar(localStorage, sidebar);
+	}
+
+	/** The keyboard side of the window splitter pattern: arrows, Home, End and Enter. */
+	function resizeByKey(event: KeyboardEvent) {
+		const width = window.innerWidth;
+		let next: SidebarState;
+		if (event.key === 'ArrowLeft') next = stepBy(sidebar, -RESIZE_STEP, width);
+		else if (event.key === 'ArrowRight') next = stepBy(sidebar, RESIZE_STEP, width);
+		else if (event.key === 'Home') next = { ...sidebar, collapsed: true };
+		else if (event.key === 'End') next = { width: maxWidth(width), collapsed: false };
+		else if (event.key === 'Enter') next = { ...sidebar, collapsed: !collapsed };
+		else return;
+		event.preventDefault();
+		resize(next);
+	}
 	/** The floating add button shows its label only at the top of the page. */
 	let compact = $state(false);
 
@@ -188,45 +261,138 @@
 	</a>
 {/snippet}
 
+{#snippet sidebarToggle()}
+	<Button
+		variant="ghost"
+		size="icon-sm"
+		class="shrink-0 text-muted-foreground"
+		aria-controls="sidebar"
+		aria-expanded={!collapsed}
+		aria-label={collapsed ? m.sidebar_expand() : m.sidebar_collapse()}
+		onclick={toggleSidebar}
+	>
+		{#if collapsed}<PanelLeftOpenIcon />{:else}<PanelLeftCloseIcon />{/if}
+	</Button>
+{/snippet}
+
+{#snippet railLink(item: (typeof nav)[number])}
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<a
+					{...props}
+					href={item.href}
+					aria-current={item.active ? 'page' : undefined}
+					class="flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-primary"
+				>
+					<item.icon class="size-4" />
+					<span class="sr-only">{item.label}</span>
+				</a>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content side="right">{item.label}</Tooltip.Content>
+	</Tooltip.Root>
+{/snippet}
+
 <NavProgress {busy} />
 
-<div class="flex min-h-dvh flex-col">
+<div class="flex min-h-dvh flex-col {dragging ? 'cursor-col-resize select-none' : ''}">
 	{#if session.isDemo}
 		<DemoBanner />
 	{/if}
 
 	<div class="flex min-h-0 flex-1">
 		<aside
-			class="sticky top-[var(--app-top,0px)] hidden h-[calc(100dvh-var(--app-top,0px))] w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r bg-sidebar p-3 text-sidebar-foreground md:flex"
+			bind:this={aside}
+			id="sidebar"
+			data-collapsed={collapsed}
+			style:width={sidebarWidth}
+			class="sticky top-[var(--app-top,0px)] z-40 hidden h-[calc(100dvh-var(--app-top,0px))] shrink-0 border-r bg-sidebar text-sidebar-foreground md:block {dragging
+				? ''
+				: 'transition-[width] duration-200'}"
 		>
-			<div class="grid gap-3 px-2 pt-2">
-				<div>
-					<p class="text-lg font-semibold">{m.app_name()}</p>
-					<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
+			<Tooltip.Provider delayDuration={200}>
+				<div class="flex h-full flex-col gap-6 overflow-x-hidden overflow-y-auto p-3">
+					{#if collapsed}
+						<div class="grid justify-items-center gap-3 pt-1">
+							{@render sidebarToggle()}
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									{#snippet child({ props })}
+										<Button
+											{...props}
+											size="icon-lg"
+											aria-label={m.add_transaction()}
+											onclick={() => (adding = true)}
+										>
+											<PlusIcon />
+										</Button>
+									{/snippet}
+								</Tooltip.Trigger>
+								<Tooltip.Content side="right">{m.add_transaction()}</Tooltip.Content>
+							</Tooltip.Root>
+						</div>
+						<nav class="grid justify-items-center gap-1" aria-label={m.nav_label()}>
+							{#each nav as item (item.label)}
+								{@render railLink(item)}
+							{/each}
+						</nav>
+					{:else}
+						<div class="grid grid-cols-1 gap-3 px-2 pt-2">
+							<div class="flex items-start justify-between gap-2">
+								<div class="min-w-0">
+									<p class="truncate text-lg font-semibold">{m.app_name()}</p>
+									<p class="truncate text-sm text-muted-foreground">{session.meta.name}</p>
+								</div>
+								{@render sidebarToggle()}
+							</div>
+							<Button size="lg" onclick={() => (adding = true)}>
+								<PlusIcon />
+								<span class="truncate">{m.add_transaction()}</span>
+							</Button>
+						</div>
+						<nav class="grid grid-cols-1 gap-1" aria-label={m.nav_label()}>
+							{#each nav as item (item.label)}
+								<a
+									href={item.href}
+									aria-current={item.active ? 'page' : undefined}
+									class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-primary"
+								>
+									<item.icon class="size-4 shrink-0" />
+									<span class="truncate">{item.label}</span>
+								</a>
+							{/each}
+						</nav>
+					{/if}
+					<svelte:boundary onerror={logError}>
+						<AccountList accounts={accounts.data ?? []} variant={collapsed ? 'rail' : 'compact'} />
+						{#snippet failed(error)}
+							<FormMessage error={actionError(error)} class="px-2" />
+						{/snippet}
+					</svelte:boundary>
 				</div>
-				<Button size="lg" onclick={() => (adding = true)}>
-					<PlusIcon />
-					{m.add_transaction()}
-				</Button>
-			</div>
-			<nav class="grid gap-1" aria-label={m.nav_label()}>
-				{#each nav as item (item.label)}
-					<a
-						href={item.href}
-						aria-current={item.active ? 'page' : undefined}
-						class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-primary"
-					>
-						<item.icon class="size-4" />
-						{item.label}
-					</a>
-				{/each}
-			</nav>
-			<svelte:boundary onerror={logError}>
-				<AccountList accounts={accounts.data ?? []} variant="compact" />
-				{#snippet failed(error)}
-					<FormMessage error={actionError(error)} class="px-2" />
-				{/snippet}
-			</svelte:boundary>
+			</Tooltip.Provider>
+			<!-- The window splitter pattern: drag, double-click or use the keyboard. A focusable
+			separator is a widget in ARIA, which Svelte's checks don't know. -->
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+			<div
+				role="separator"
+				aria-orientation="vertical"
+				aria-controls="sidebar"
+				aria-label={m.sidebar_resize()}
+				aria-valuemin={RAIL_WIDTH}
+				aria-valuemax={maxWidth(viewport)}
+				aria-valuenow={collapsed ? RAIL_WIDTH : clampWidth(sidebar.width, viewport)}
+				tabindex="0"
+				data-dragging={dragging}
+				onpointerdown={startDrag}
+				onpointermove={drag}
+				onpointerup={endDrag}
+				onpointercancel={endDrag}
+				ondblclick={toggleSidebar}
+				onkeydown={resizeByKey}
+				class="absolute inset-y-0 -right-1 w-2 cursor-col-resize touch-none outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:transition-colors hover:before:bg-primary/60 focus-visible:before:bg-primary data-[dragging=true]:before:bg-primary"
+			></div>
 		</aside>
 
 		<main class="min-w-0 flex-1 pb-36 md:pb-0" aria-busy={busy}>
@@ -306,7 +472,7 @@
 		<TransactionDialog bind:open={adding} accountId={page.params.id} />
 	{/await}
 {/if}
-<svelte:window onscroll={trackScroll} />
+<svelte:window onscroll={trackScroll} bind:innerWidth={viewport} />
 <svelte:document
 	onvisibilitychange={() => {
 		if (document.visibilityState === 'visible') void enterSchedules();
