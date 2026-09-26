@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportBody from './ReportBody.svelte';
 	import AgeOfMoneyChart from './AgeOfMoneyChart.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
@@ -43,31 +44,33 @@
 	);
 </script>
 
-{#if series.error}
-	<FormMessage error={actionError(series.error)} />
-{:else if series.data && !stat}
-	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-		{m.reports_age_of_money_not_enough()}
-	</p>
-{:else if stat}
-	<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
-		<StatTile
-			value={daysLabel(stat.current)}
-			{delta}
-			caption={formatMonthLong(stat.to, getLocale())}
-			testId="age-of-money-current"
-		/>
-	</div>
+<ReportBody loading={!series.data && !series.error} stale={series.stale}>
+	{#if series.error}
+		<FormMessage error={actionError(series.error)} />
+	{:else if series.data && !stat}
+		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+			{m.reports_age_of_money_not_enough()}
+		</p>
+	{:else if stat}
+		<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
+			<StatTile
+				value={daysLabel(stat.current)}
+				{delta}
+				caption={formatMonthLong(stat.to, getLocale())}
+				testId="age-of-money-current"
+			/>
+		</div>
 
-	<ReportSection title={m.reports_age_of_money()} description={m.reports_age_of_money_about()}>
-		{#if points.length > 1}
-			<AgeOfMoneyChart {points} testId="age-of-money-chart" />
-		{:else}
-			<p class="text-sm text-muted-foreground">
-				{isSingleMonth(range, todayIso())
-					? m.reports_net_worth_single_month()
-					: m.reports_net_worth_one_month()}
-			</p>
-		{/if}
-	</ReportSection>
-{/if}
+		<ReportSection title={m.reports_age_of_money()} description={m.reports_age_of_money_about()}>
+			{#if points.length > 1}
+				<AgeOfMoneyChart {points} testId="age-of-money-chart" />
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					{isSingleMonth(range, todayIso())
+						? m.reports_net_worth_single_month()
+						: m.reports_net_worth_one_month()}
+				</p>
+			{/if}
+		</ReportSection>
+	{/if}
+</ReportBody>

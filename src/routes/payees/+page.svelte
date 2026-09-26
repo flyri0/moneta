@@ -4,6 +4,7 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import PayeeDialog from '$features/payees/PayeeDialog.svelte';
 	import PayeeList from '$features/payees/PayeeList.svelte';
@@ -82,6 +83,8 @@
 		{:else}
 			<PayeeList payees={shown} {categoryNames} onOpen={open} />
 		{/if}
+	{:else if !payees.error}
+		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows /></div>
 	{/if}
 </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import RegisterRow from '$features/accounts/RegisterRow.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import { PAGE_SIZE } from '$features/accounts/register';
@@ -65,6 +66,8 @@
 		{:else}
 			{#if rows.data}
 				<p class="p-8 text-center text-sm text-muted-foreground">{m.register_empty()}</p>
+			{:else}
+				<LoadingRows rows={8} />
 			{/if}
 		{/each}
 	{/if}

@@ -28,7 +28,12 @@
 	);
 </script>
 
-<ReportCard title={m.reports_cash_flow()} route="/reports/cash-flow" testId="cash-flow-card">
+<ReportCard
+	title={m.reports_cash_flow()}
+	route="/reports/cash-flow"
+	testId="cash-flow-card"
+	loading={!flow.data && !flow.error}
+>
 	{#if flow.error}
 		<FormMessage error={actionError(flow.error)} />
 	{:else if flow.data}

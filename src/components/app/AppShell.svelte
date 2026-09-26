@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { afterNavigate } from '$app/navigation';
-	import { page } from '$app/state';
+	import { afterNavigate, preloadCode } from '$app/navigation';
+	import { navigating, page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
@@ -19,6 +19,8 @@
 	import { backUpNow } from '$features/backup/back-up-now';
 	import { backupDue } from '$features/backup/reminder';
 	import { useSession } from '$client/app-state.svelte';
+	import { runWhenIdle } from '$client/idle';
+	import { pendingLoads } from '$client/pending';
 	import { useLive } from '$client/live.svelte';
 	import { persistQuietly } from '$client/persistence';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
@@ -28,6 +30,7 @@
 	import { actionError } from '$client/notify';
 	import CrashScreen from './CrashScreen.svelte';
 	import DemoBanner from './DemoBanner.svelte';
+	import NavProgress from './NavProgress.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -60,6 +63,9 @@
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
 		session.api.accounts.list()
 	);
+
+	/** Waiting on a page's code or on a query's first result. */
+	const busy = $derived(navigating.to !== null || $pendingLoads > 0);
 
 	const path = $derived(page.url.pathname);
 	const nav = $derived([
@@ -129,6 +135,16 @@
 	// A shorter page can reset the scroll without a scroll event.
 	afterNavigate(trackScroll);
 
+	// Each screen's code is loaded and compiled while the app sits idle, so a tap on the nav only
+	// has to render. On a phone that compile is most of the wait. The add dialog's code comes last;
+	// it still mounts only when first opened.
+	onMount(() =>
+		runWhenIdle([
+			...nav.map((item) => () => preloadCode(item.href)),
+			() => import('$features/transactions/TransactionDialog.svelte')
+		])
+	);
+
 	onMount(() => {
 		void enterSchedules();
 		// Chromium and Safari protect installed or often used apps without a prompt, when asked.
@@ -151,6 +167,8 @@
 		<span data-nav-label class="max-w-full truncate">{item.label}</span>
 	</a>
 {/snippet}
+
+<NavProgress {busy} />
 
 <div class="flex min-h-dvh flex-col">
 	{#if session.isDemo}
@@ -191,7 +209,7 @@
 			</svelte:boundary>
 		</aside>
 
-		<main class="min-w-0 flex-1 pb-36 md:pb-0">
+		<main class="min-w-0 flex-1 pb-36 md:pb-0" aria-busy={busy}>
 			<!-- A screen that throws while rendering shows a way out instead of half a page. -->
 			<svelte:boundary onerror={logError}>
 				{@render children()}

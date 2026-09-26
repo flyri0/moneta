@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { preloadCode } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import * as Collapsible from '$ui/collapsible';
@@ -6,6 +9,7 @@
 	import PageHeader from '$components/PageHeader.svelte';
 	import ReportsEditor from '$features/reports/ReportsEditor.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { runWhenIdle } from '$client/idle';
 	import { REPORTS } from '$features/reports/catalog';
 	import {
 		hiddenCards,
@@ -24,6 +28,9 @@
 	let editing = $state(false);
 	const visible = $derived(visibleCards(layout));
 	const hidden = $derived(hiddenCards(layout));
+
+	// The full reports share a charting library the overview does without: load it while idle.
+	onMount(() => runWhenIdle(visible.map((id) => () => preloadCode(resolve(`/reports/${id}`)))));
 
 	function save(next: ReportsLayout) {
 		layout = next;

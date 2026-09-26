@@ -37,7 +37,12 @@
 	const DEBT = 'bg-red-500 dark:bg-red-400';
 </script>
 
-<ReportCard title={m.reports_accounts()} route="/reports/accounts" testId="accounts-card">
+<ReportCard
+	title={m.reports_accounts()}
+	route="/reports/accounts"
+	testId="accounts-card"
+	loading={!accounts.data && !accounts.error}
+>
 	{#if accounts.error}
 		<FormMessage error={actionError(accounts.error)} />
 	{:else if accounts.data && all.length === 0}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportBody from './ReportBody.svelte';
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -8,14 +9,13 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
-	import { todayIso } from '$domain/month';
+	import { monthOf, todayIso } from '$domain/month';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
 	import {
 		axisMonthLabel,
 		isSingleMonth,
 		netWorthChange,
-		netWorthThrough,
 		pointsInRange
 	} from '$features/reports/net-worth';
 	import type { DateRange } from '$features/reports/range';
@@ -31,8 +31,10 @@
 
 	let expanded = $state(false);
 
+	// Read through this month whatever the period, and cut to it here: a new period then needs no
+	// new query for the series.
 	const series = useLive(session.client, ['transactions', 'accounts'], () =>
-		session.api.reports.netWorth(netWorthThrough(range, todayIso()))
+		session.api.reports.netWorth(monthOf(todayIso()))
 	);
 	const flow = useLive(session.client, SPENDING_TABLES, () =>
 		session.api.reports.cashFlow({ from: range.from, to: range.to })
@@ -84,161 +86,166 @@
 	);
 </script>
 
-{#if series.error || flow.error}
-	<FormMessage error={actionError(series.error ?? flow.error)} />
-{:else if series.data && points.length === 0}
-	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-		{m.reports_net_worth_empty()}
-	</p>
-{:else if stat && last}
-	<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
-		<StatTile
-			value={session.format(stat.current)}
-			{delta}
-			caption={formatMonthLong(stat.to, getLocale())}
-			testId="net-worth-current"
-		/>
-		<dl class="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="net-worth-tiles">
-			<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
-				<dt class="text-xs text-muted-foreground">{m.reports_assets()}</dt>
-				<dd class="font-semibold break-words tabular-nums">{session.format(last.assets)}</dd>
-			</div>
-			<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
-				<dt class="text-xs text-muted-foreground">{m.reports_debts()}</dt>
-				<dd class="font-semibold break-words tabular-nums">{session.format(last.debts)}</dd>
-			</div>
-			<div class="col-span-2 grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2 sm:col-span-1">
-				<dt class="text-xs text-muted-foreground">{m.reports_savings_rate()}</dt>
-				<dd class="font-semibold tabular-nums" data-testid="savings-rate">
-					{rate === null ? '—' : percent.format(rate / 100)}
-				</dd>
-			</div>
-		</dl>
-	</div>
+<ReportBody
+	loading={(!series.data || !flow.data) && !series.error && !flow.error}
+	stale={series.stale || flow.stale}
+>
+	{#if series.error || flow.error}
+		<FormMessage error={actionError(series.error ?? flow.error)} />
+	{:else if series.data && points.length === 0}
+		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+			{m.reports_net_worth_empty()}
+		</p>
+	{:else if stat && last}
+		<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
+			<StatTile
+				value={session.format(stat.current)}
+				{delta}
+				caption={formatMonthLong(stat.to, getLocale())}
+				testId="net-worth-current"
+			/>
+			<dl class="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="net-worth-tiles">
+				<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
+					<dt class="text-xs text-muted-foreground">{m.reports_assets()}</dt>
+					<dd class="font-semibold break-words tabular-nums">{session.format(last.assets)}</dd>
+				</div>
+				<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
+					<dt class="text-xs text-muted-foreground">{m.reports_debts()}</dt>
+					<dd class="font-semibold break-words tabular-nums">{session.format(last.debts)}</dd>
+				</div>
+				<div class="col-span-2 grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2 sm:col-span-1">
+					<dt class="text-xs text-muted-foreground">{m.reports_savings_rate()}</dt>
+					<dd class="font-semibold tabular-nums" data-testid="savings-rate">
+						{rate === null ? '—' : percent.format(rate / 100)}
+					</dd>
+				</div>
+			</dl>
+		</div>
 
-	<ReportSection title={m.reports_net_worth()}>
-		{#if chartData.length > 1}
-			<Chart.Container
-				{config}
-				class="aspect-auto h-56 w-full md:h-64"
-				data-testid="net-worth-chart"
-			>
-				<AreaChart
-					data={chartData}
-					x="date"
-					y="netWorth"
-					series={[
-						{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
-					]}
-					padding={{ top: 8, right: 28, bottom: 34, left: 56 }}
-					points={chartData.length <= 13}
-					props={{
-						area: {
-							fillOpacity: 0.1,
-							line: { strokeWidth: 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-						},
-						points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
-						xAxis: {
-							ticks: chartData.map((d) => d.date),
-							// Names only, so twelve months fit a phone; the tooltip and table say the year.
-							format: (d: Date) => {
-								const month = d.toISOString().slice(0, 7);
-								return axisMonthLabel(month, month === points[0]?.month, getLocale());
-							},
-							// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
-							tickLength: 10,
-							tickOcclusion: { padding: 8 }
-						},
-						yAxis: {
-							format: session.formatCompact,
-							ticks: 4,
-							tickLength: 0,
-							tickLabelProps: { dx: -6 }
-						}
-					}}
+		<ReportSection title={m.reports_net_worth()}>
+			{#if chartData.length > 1}
+				<Chart.Container
+					{config}
+					class="aspect-auto h-56 w-full md:h-64"
+					data-testid="net-worth-chart"
 				>
-					{#snippet tooltip()}<NetWorthTooltip />{/snippet}
-				</AreaChart>
-			</Chart.Container>
-		{:else}
-			<!-- One point means either the period is a single month, or the budget has only one
-				month of history -- and telling someone to widen a period that is already wide is
-				advice they cannot act on. -->
-			<p class="text-sm text-muted-foreground">
-				{isSingleMonth(range, todayIso())
-					? m.reports_net_worth_single_month()
-					: m.reports_net_worth_one_month()}
-			</p>
-		{/if}
-	</ReportSection>
+					<AreaChart
+						data={chartData}
+						x="date"
+						y="netWorth"
+						series={[
+							{ key: 'netWorth', label: config.netWorth.label, color: 'var(--color-netWorth)' }
+						]}
+						padding={{ top: 8, right: 28, bottom: 34, left: 56 }}
+						points={chartData.length <= 13}
+						props={{
+							area: {
+								fillOpacity: 0.1,
+								line: { strokeWidth: 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+							},
+							points: { r: 3.5, class: 'stroke-background', strokeWidth: 2 },
+							xAxis: {
+								ticks: chartData.map((d) => d.date),
+								// Names only, so twelve months fit a phone; the tooltip and table say the year.
+								format: (d: Date) => {
+									const month = d.toISOString().slice(0, 7);
+									return axisMonthLabel(month, month === points[0]?.month, getLocale());
+								},
+								// Enough drop to clear the y axis' own bottom label, which sits on the baseline.
+								tickLength: 10,
+								tickOcclusion: { padding: 8 }
+							},
+							yAxis: {
+								format: session.formatCompact,
+								ticks: 4,
+								tickLength: 0,
+								tickLabelProps: { dx: -6 }
+							}
+						}}
+					>
+						{#snippet tooltip()}<NetWorthTooltip />{/snippet}
+					</AreaChart>
+				</Chart.Container>
+			{:else}
+				<!-- One point means either the period is a single month, or the budget has only one
+					month of history -- and telling someone to widen a period that is already wide is
+					advice they cannot act on. -->
+				<p class="text-sm text-muted-foreground">
+					{isSingleMonth(range, todayIso())
+						? m.reports_net_worth_single_month()
+						: m.reports_net_worth_one_month()}
+				</p>
+			{/if}
+		</ReportSection>
 
-	<div class="rounded-xl border bg-card p-4 text-card-foreground">
-		<table class="w-full text-sm" data-testid="net-worth-table">
-			<thead class="text-left text-xs text-muted-foreground">
-				<tr>
-					<th scope="col" class="py-1 font-medium">{m.reports_month()}</th>
-					<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
-						{m.reports_income()}
-					</th>
-					<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
-						{m.reports_expenses()}
-					</th>
-					<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
-						{m.reports_net()}
-					</th>
-					<th scope="col" class="py-1 text-right font-medium whitespace-nowrap">
-						{m.reports_net_worth()}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each shown as row (row.month)}
-					<tr class="border-t">
-						<td class="py-1.5 whitespace-nowrap">
-							{formatMonth(row.month, getLocale())}
-							<!-- On a phone there is no room for a column each, so the month's cash flow sits
-							under it and the net worth keeps the right edge. -->
-							<span
-								class="block text-xs whitespace-normal text-muted-foreground tabular-nums md:hidden"
-							>
-								{m.reports_income()}
-								{session.format(row.income)} · {m.reports_expenses()}
+		<div class="rounded-xl border bg-card p-4 text-card-foreground">
+			<table class="w-full text-sm" data-testid="net-worth-table">
+				<thead class="text-left text-xs text-muted-foreground">
+					<tr>
+						<th scope="col" class="py-1 font-medium">{m.reports_month()}</th>
+						<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
+							{m.reports_income()}
+						</th>
+						<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
+							{m.reports_expenses()}
+						</th>
+						<th scope="col" class="hidden py-1 text-right font-medium md:table-cell">
+							{m.reports_net()}
+						</th>
+						<th scope="col" class="py-1 text-right font-medium whitespace-nowrap">
+							{m.reports_net_worth()}
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each shown as row (row.month)}
+						<tr class="border-t">
+							<td class="py-1.5 whitespace-nowrap">
+								{formatMonth(row.month, getLocale())}
+								<!-- On a phone there is no room for a column each, so the month's cash flow sits
+								under it and the net worth keeps the right edge. -->
+								<span
+									class="block text-xs whitespace-normal text-muted-foreground tabular-nums md:hidden"
+								>
+									{m.reports_income()}
+									{session.format(row.income)} · {m.reports_expenses()}
+									{session.format(row.spending)}
+								</span>
+							</td>
+							<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
+								{session.format(row.income)}
+							</td>
+							<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
 								{session.format(row.spending)}
-							</span>
-						</td>
-						<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
-							{session.format(row.income)}
-						</td>
-						<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
-							{session.format(row.spending)}
-						</td>
-						<td
-							class="hidden py-1.5 text-right tabular-nums md:table-cell {row.net < 0
-								? 'text-red-700 dark:text-red-400'
-								: ''}"
-						>
-							{signed(row.net)}
-						</td>
-						<td class="py-1.5 text-right font-medium whitespace-nowrap tabular-nums">
-							{session.format(row.netWorth)}
-						</td>
-					</tr>
-				{/each}
-				{#if rows.length > ROWS}
-					<tr class="border-t">
-						<td colspan="5" class="py-2">
-							<button
-								type="button"
-								class="text-sm text-muted-foreground hover:underline"
-								aria-expanded={expanded}
-								onclick={() => (expanded = !expanded)}
+							</td>
+							<td
+								class="hidden py-1.5 text-right tabular-nums md:table-cell {row.net < 0
+									? 'text-red-700 dark:text-red-400'
+									: ''}"
 							>
-								{expanded ? m.reports_show_less() : m.reports_show_all({ count: rows.length })}
-							</button>
-						</td>
-					</tr>
-				{/if}
-			</tbody>
-		</table>
-	</div>
-{/if}
+								{signed(row.net)}
+							</td>
+							<td class="py-1.5 text-right font-medium whitespace-nowrap tabular-nums">
+								{session.format(row.netWorth)}
+							</td>
+						</tr>
+					{/each}
+					{#if rows.length > ROWS}
+						<tr class="border-t">
+							<td colspan="5" class="py-2">
+								<button
+									type="button"
+									class="text-sm text-muted-foreground hover:underline"
+									aria-expanded={expanded}
+									onclick={() => (expanded = !expanded)}
+								>
+									{expanded ? m.reports_show_less() : m.reports_show_all({ count: rows.length })}
+								</button>
+							</td>
+						</tr>
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	{/if}
+</ReportBody>

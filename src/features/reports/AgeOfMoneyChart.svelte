@@ -12,14 +12,9 @@
 	/**
 	 * Age of Money over the months, as YNAB draws it: a smooth area fading into the baseline, with
 	 * today's figure marked. Monotone smoothing never swings past the points, so the curve stays
-	 * above zero and under the highest month. `compact` is the card's glance: no axes, no tooltip, and
-	 * whatever height the card has to spare.
+	 * above zero and under the highest month. The card's glance is a `Sparkline`.
 	 */
-	let {
-		points,
-		compact = false,
-		testId
-	}: { points: AgeOfMoneyValue[]; compact?: boolean; testId?: string } = $props();
+	let { points, testId }: { points: AgeOfMoneyValue[]; testId?: string } = $props();
 
 	const uid = $props.id();
 	const fill = `${uid}-fill`;
@@ -35,11 +30,7 @@
 	const last = $derived(chartData.at(-1));
 </script>
 
-<Chart.Container
-	{config}
-	class="aspect-auto w-full {compact ? 'min-h-16 flex-1' : 'h-56 md:h-64'}"
-	data-testid={testId}
->
+<Chart.Container {config} class="aspect-auto h-56 w-full md:h-64" data-testid={testId}>
 	<svg width="0" height="0" class="absolute" aria-hidden="true">
 		<defs>
 			<linearGradient id={fill} x1="0" y1="0" x2="0" y2="1">
@@ -54,13 +45,7 @@
 		y="days"
 		yDomain={[0, null]}
 		series={[{ key: 'days', label: config.days.label, color: 'var(--color-days)' }]}
-		padding={compact
-			? { top: 8, right: 8, bottom: 4, left: 8 }
-			: { top: 8, right: 28, bottom: 34, left: 40 }}
-		axis={!compact}
-		grid={!compact}
-		rule={!compact}
-		tooltipContext={!compact}
+		padding={{ top: 8, right: 28, bottom: 34, left: 40 }}
 		annotations={last
 			? [
 					{

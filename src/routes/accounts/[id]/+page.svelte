@@ -5,6 +5,7 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
 	import { accountTypeIcon } from '$features/accounts/account-icons';
@@ -150,6 +151,10 @@
 		{#key accountId}
 			<Register {accountId} {filters} />
 		{/key}
+	{:else if !account.data}
+		<div class="overflow-hidden rounded-xl border bg-card shadow-xs">
+			<LoadingRows rows={8} />
+		</div>
 	{/if}
 </div>
 

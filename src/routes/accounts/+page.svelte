@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$ui/button';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
@@ -56,6 +57,8 @@
 		<div class="rounded-xl border bg-card p-8 text-center text-card-foreground shadow-xs">
 			<p class="text-sm text-muted-foreground">{m.accounts_empty()}</p>
 		</div>
+	{:else if !accounts.data && !accounts.error}
+		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows rows={4} /></div>
 	{/if}
 	<AccountList
 		accounts={accounts.data ?? []}

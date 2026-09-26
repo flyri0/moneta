@@ -41,7 +41,12 @@
 	);
 </script>
 
-<ReportCard title={m.reports_net_worth()} route="/reports/net-worth" testId="net-worth-card">
+<ReportCard
+	title={m.reports_net_worth()}
+	route="/reports/net-worth"
+	testId="net-worth-card"
+	loading={!series.data && !series.error}
+>
 	{#if series.error}
 		<FormMessage error={actionError(series.error)} />
 	{:else if series.data && !current}
@@ -56,7 +61,6 @@
 		{#if recent.length > 1}
 			<Sparkline
 				points={recent.map((p) => ({ month: p.month, value: p.netWorth }))}
-				label={m.reports_net_worth()}
 				testId="net-worth-card-chart"
 			/>
 		{/if}

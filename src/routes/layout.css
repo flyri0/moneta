@@ -377,3 +377,17 @@
 		margin-inline: auto;
 	}
 }
+
+/* The loading bar's stripe, crossing the screen until the page is ready. */
+@utility animate-loading-bar {
+	animation: loading-bar 1.1s ease-in-out infinite;
+}
+
+@keyframes loading-bar {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(250%);
+	}
+}

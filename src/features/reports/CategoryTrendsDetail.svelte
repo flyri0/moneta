@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportBody from './ReportBody.svelte';
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -91,120 +92,125 @@
 	);
 </script>
 
-{#if rows.error}
-	<FormMessage error={actionError(rows.error)} />
-{:else if rows.data && trends.categories.length === 0}
-	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-		{m.reports_spending_empty()}
-	</p>
-{:else if rows.data && last}
-	<ReportSection title={m.reports_category_trends()}>
-		{#snippet actions()}
-			<ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-				{#each series as s (s.key)}
-					<li class="flex min-w-0 items-center gap-1.5">
-						<span class="size-2.5 shrink-0 rounded-full {segmentClass(s.color)}" aria-hidden="true"
-						></span>
-						<span class="max-w-36 truncate">{s.label}</span>
-					</li>
-				{/each}
-			</ul>
-		{/snippet}
-		<Chart.Container {config} class="aspect-auto h-64 w-full md:h-72" data-testid="trends-chart">
-			<BarChart
-				{data}
-				x="month"
-				series={series.map((s) => ({
-					key: s.key,
-					label: s.label,
-					color: `var(--color-${s.key})`
-				}))}
-				seriesLayout="stack"
-				bandPadding={0.3}
-				padding={{ top: 8, right: 8, bottom: 34, left: 56 }}
-				props={{
-					bars: { radius: 0, strokeWidth: 0 },
-					xAxis: {
-						format: (month: string) => axisMonthLabel(month, month === months[0], getLocale()),
-						tickLength: 10,
-						tickOcclusion: { padding: 8 }
-					},
-					yAxis: {
-						format: session.formatCompact,
-						ticks: 4,
-						tickLength: 0,
-						tickLabelProps: { dx: -6 }
-					}
-				}}
-			>
-				{#snippet tooltip()}<SeriesTooltip series={[...series].reverse()} total />{/snippet}
-			</BarChart>
-		</Chart.Container>
-	</ReportSection>
+<ReportBody loading={!rows.data && !rows.error} stale={rows.stale}>
+	{#if rows.error}
+		<FormMessage error={actionError(rows.error)} />
+	{:else if rows.data && trends.categories.length === 0}
+		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+			{m.reports_spending_empty()}
+		</p>
+	{:else if rows.data && last}
+		<ReportSection title={m.reports_category_trends()}>
+			{#snippet actions()}
+				<ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+					{#each series as s (s.key)}
+						<li class="flex min-w-0 items-center gap-1.5">
+							<span
+								class="size-2.5 shrink-0 rounded-full {segmentClass(s.color)}"
+								aria-hidden="true"
+							></span>
+							<span class="max-w-36 truncate">{s.label}</span>
+						</li>
+					{/each}
+				</ul>
+			{/snippet}
+			<Chart.Container {config} class="aspect-auto h-64 w-full md:h-72" data-testid="trends-chart">
+				<BarChart
+					{data}
+					x="month"
+					series={series.map((s) => ({
+						key: s.key,
+						label: s.label,
+						color: `var(--color-${s.key})`
+					}))}
+					seriesLayout="stack"
+					bandPadding={0.3}
+					padding={{ top: 8, right: 8, bottom: 34, left: 56 }}
+					props={{
+						bars: { radius: 0, strokeWidth: 0 },
+						xAxis: {
+							format: (month: string) => axisMonthLabel(month, month === months[0], getLocale()),
+							tickLength: 10,
+							tickOcclusion: { padding: 8 }
+						},
+						yAxis: {
+							format: session.formatCompact,
+							ticks: 4,
+							tickLength: 0,
+							tickLabelProps: { dx: -6 }
+						}
+					}}
+				>
+					{#snippet tooltip()}<SeriesTooltip series={[...series].reverse()} total />{/snippet}
+				</BarChart>
+			</Chart.Container>
+		</ReportSection>
 
-	<div class="rounded-xl border bg-card p-4 text-card-foreground">
-		<table class="w-full text-sm" data-testid="trends-table">
-			<thead class="text-left text-xs text-muted-foreground">
-				<tr>
-					<th scope="col" class="py-1 font-medium">{m.budget_category()}</th>
-					<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
-						{m.reports_average_before()}
-					</th>
-					<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap capitalize">
-						{formatMonth(last, getLocale())}
-					</th>
-					<th scope="col" class="py-1 pl-2 text-right font-medium">{m.reports_change()}</th>
-				</tr>
-			</thead>
-			<tbody class="tabular-nums">
-				{#each shown as row (row.key)}
-					<tr class="border-t">
-						<th scope="row" class="py-1.5 pr-3 text-left font-normal">
-							<span class="flex min-w-0 items-start gap-2">
-								<span
-									class="mt-1 size-2.5 shrink-0 rounded-full {segmentClass(
-										colorOf.get(row.key) ?? null
-									)}"
-									aria-hidden="true"
-								></span>
-								<span class="min-w-0 wrap-anywhere">{row.label}</span>
-							</span>
-							<span class="block pl-4.5 text-xs text-muted-foreground sm:hidden">
-								{m.reports_average_before()}
-								{row.before === null ? '—' : session.format(row.before)}
-							</span>
+		<div class="rounded-xl border bg-card p-4 text-card-foreground">
+			<table class="w-full text-sm" data-testid="trends-table">
+				<thead class="text-left text-xs text-muted-foreground">
+					<tr>
+						<th scope="col" class="py-1 font-medium">{m.budget_category()}</th>
+						<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
+							{m.reports_average_before()}
 						</th>
-						<td class="hidden py-1.5 text-right whitespace-nowrap sm:table-cell">
-							{row.before === null ? '—' : session.format(row.before)}
-						</td>
-						<td class="py-1.5 pl-2 text-right whitespace-nowrap">{session.format(row.current)}</td>
-						<td
-							class="py-1.5 pl-2 text-right whitespace-nowrap {row.change !== null &&
-							row.change > 0.1
-								? 'text-red-700 dark:text-red-400'
-								: row.change !== null && row.change < -0.1
-									? 'text-emerald-700 dark:text-emerald-400'
-									: 'text-muted-foreground'}"
-						>
-							{row.change === null ? '—' : percent.format(row.change)}
-						</td>
+						<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap capitalize">
+							{formatMonth(last, getLocale())}
+						</th>
+						<th scope="col" class="py-1 pl-2 text-right font-medium">{m.reports_change()}</th>
 					</tr>
-				{/each}
-				{#if table.length > ROWS}
-					<tr class="border-t">
-						<td colspan="4" class="py-2">
-							<button
-								type="button"
-								class="text-sm text-muted-foreground hover:underline"
-								aria-expanded={expanded}
-								onclick={() => (expanded = !expanded)}
+				</thead>
+				<tbody class="tabular-nums">
+					{#each shown as row (row.key)}
+						<tr class="border-t">
+							<th scope="row" class="py-1.5 pr-3 text-left font-normal">
+								<span class="flex min-w-0 items-start gap-2">
+									<span
+										class="mt-1 size-2.5 shrink-0 rounded-full {segmentClass(
+											colorOf.get(row.key) ?? null
+										)}"
+										aria-hidden="true"
+									></span>
+									<span class="min-w-0 wrap-anywhere">{row.label}</span>
+								</span>
+								<span class="block pl-4.5 text-xs text-muted-foreground sm:hidden">
+									{m.reports_average_before()}
+									{row.before === null ? '—' : session.format(row.before)}
+								</span>
+							</th>
+							<td class="hidden py-1.5 text-right whitespace-nowrap sm:table-cell">
+								{row.before === null ? '—' : session.format(row.before)}
+							</td>
+							<td class="py-1.5 pl-2 text-right whitespace-nowrap">{session.format(row.current)}</td
 							>
-								{expanded ? m.reports_show_less() : m.reports_show_all({ count: table.length })}
-							</button>
-						</td>
-					</tr>
-				{/if}
-			</tbody>
-		</table>
-	</div>
-{/if}
+							<td
+								class="py-1.5 pl-2 text-right whitespace-nowrap {row.change !== null &&
+								row.change > 0.1
+									? 'text-red-700 dark:text-red-400'
+									: row.change !== null && row.change < -0.1
+										? 'text-emerald-700 dark:text-emerald-400'
+										: 'text-muted-foreground'}"
+							>
+								{row.change === null ? '—' : percent.format(row.change)}
+							</td>
+						</tr>
+					{/each}
+					{#if table.length > ROWS}
+						<tr class="border-t">
+							<td colspan="4" class="py-2">
+								<button
+									type="button"
+									class="text-sm text-muted-foreground hover:underline"
+									aria-expanded={expanded}
+									onclick={() => (expanded = !expanded)}
+								>
+									{expanded ? m.reports_show_less() : m.reports_show_all({ count: table.length })}
+								</button>
+							</td>
+						</tr>
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	{/if}
+</ReportBody>

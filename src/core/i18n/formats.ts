@@ -1,4 +1,5 @@
 import type { Month } from '$domain/month';
+import { dateTimeFormat, numberFormat } from '$domain/intl-cache';
 
 const EURO_REGIONS = new Set(
 	'AT BE CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK'.split(' ')
@@ -88,7 +89,7 @@ function utc(date: string): Date {
 
 /** "Sep 2026" / "set. de 2026". */
 export function formatMonth(month: Month, locale: string): string {
-	return new Intl.DateTimeFormat(locale, {
+	return dateTimeFormat(locale, {
 		month: 'short',
 		year: 'numeric',
 		timeZone: 'UTC'
@@ -97,7 +98,7 @@ export function formatMonth(month: Month, locale: string): string {
 
 /** "September 2026" / "setembro de 2026". */
 export function formatMonthLong(month: Month, locale: string): string {
-	return new Intl.DateTimeFormat(locale, {
+	return dateTimeFormat(locale, {
 		month: 'long',
 		year: 'numeric',
 		timeZone: 'UTC'
@@ -111,7 +112,7 @@ export function formatMonthName(
 	length: 'short' | 'long' = 'short'
 ): string {
 	const date = new Date(Date.UTC(2026, monthNumber - 1, 1));
-	return new Intl.DateTimeFormat(locale, {
+	return dateTimeFormat(locale, {
 		month: length,
 		timeZone: 'UTC'
 	}).format(date);
@@ -119,7 +120,7 @@ export function formatMonthName(
 
 /** "Sep 5, 2026" / "5 de set. de 2026". */
 export function formatDate(date: string, locale: string): string {
-	return new Intl.DateTimeFormat(locale, {
+	return dateTimeFormat(locale, {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
@@ -129,7 +130,7 @@ export function formatDate(date: string, locale: string): string {
 
 /** "19 de set. de 2026, 15:04" for an ISO timestamp, in the device's time zone by default. */
 export function formatDateTime(iso: string, locale: string, timeZone?: string): string {
-	return new Intl.DateTimeFormat(locale, {
+	return dateTimeFormat(locale, {
 		dateStyle: 'medium',
 		timeStyle: 'short',
 		timeZone
@@ -146,7 +147,7 @@ export function formatBytes(bytes: number, locale: string): string {
 		value /= 1000;
 		unit++;
 	}
-	return new Intl.NumberFormat(locale, {
+	return numberFormat(locale, {
 		style: 'unit',
 		unit: BYTE_UNITS[unit],
 		maximumFractionDigits: 1

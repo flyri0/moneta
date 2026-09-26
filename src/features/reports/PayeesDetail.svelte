@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportBody from './ReportBody.svelte';
 	import { untrack } from 'svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
@@ -58,135 +59,137 @@
 	);
 </script>
 
-<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
-	{#if payees.error}
-		<FormMessage error={actionError(payees.error)} />
-	{:else if payees.data && report.rows.length === 0}
-		<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
-	{:else if report.rows.length > 0}
-		<StatTile
-			value={session.format(report.total)}
-			caption={months && months > 1
-				? m.reports_average_month({ amount: session.format(Math.round(report.total / months)) })
-				: undefined}
-			testId="payees-total"
-		/>
-		<StackedBar
-			segments={top.segments}
-			other={top.other}
-			label={(summary) => `${m.reports_payees()}: ${summary}`}
-			class="h-4"
-		/>
+<ReportBody loading={!payees.data && !payees.error} stale={payees.stale}>
+	<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
+		{#if payees.error}
+			<FormMessage error={actionError(payees.error)} />
+		{:else if payees.data && report.rows.length === 0}
+			<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
+		{:else if report.rows.length > 0}
+			<StatTile
+				value={session.format(report.total)}
+				caption={months && months > 1
+					? m.reports_average_month({ amount: session.format(Math.round(report.total / months)) })
+					: undefined}
+				testId="payees-total"
+			/>
+			<StackedBar
+				segments={top.segments}
+				other={top.other}
+				label={(summary) => `${m.reports_payees()}: ${summary}`}
+				class="h-4"
+			/>
 
-		<div class="grid gap-4 {payee ? 'lg:grid-cols-2 lg:items-start' : ''}">
-			<table class="w-full text-sm" data-testid="payees-table">
-				<thead class="text-left text-xs text-muted-foreground">
-					<tr>
-						<th scope="col" class="py-1 font-medium">{m.reports_payee()}</th>
-						<th scope="col" class="py-1 text-right font-medium">{m.reports_spent()}</th>
-						<th scope="col" class="py-1 text-right font-medium">{m.reports_share()}</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each shown as row, i (row.key)}
-						{@const bar = segmentClass(i < TOP ? i + 1 : null)}
-						<tr class="border-t">
-							<th scope="row" class="py-2 pr-3 text-left font-normal">
-								{#if row.key === NO_PAYEE}
-									<span class="grid gap-1.5">
-										<span class="font-medium text-muted-foreground">{row.label}</span>
-										<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
-											<span
-												class="block h-full rounded-full {bar}"
-												style="width: {(row.amount / max) * 100}%"
-											></span>
+			<div class="grid gap-4 {payee ? 'lg:grid-cols-2 lg:items-start' : ''}">
+				<table class="w-full text-sm" data-testid="payees-table">
+					<thead class="text-left text-xs text-muted-foreground">
+						<tr>
+							<th scope="col" class="py-1 font-medium">{m.reports_payee()}</th>
+							<th scope="col" class="py-1 text-right font-medium">{m.reports_spent()}</th>
+							<th scope="col" class="py-1 text-right font-medium">{m.reports_share()}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each shown as row, i (row.key)}
+							{@const bar = segmentClass(i < TOP ? i + 1 : null)}
+							<tr class="border-t">
+								<th scope="row" class="py-2 pr-3 text-left font-normal">
+									{#if row.key === NO_PAYEE}
+										<span class="grid gap-1.5">
+											<span class="font-medium text-muted-foreground">{row.label}</span>
+											<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
+												<span
+													class="block h-full rounded-full {bar}"
+													style="width: {(row.amount / max) * 100}%"
+												></span>
+											</span>
 										</span>
-									</span>
-								{:else}
+									{:else}
+										<button
+											type="button"
+											class="group grid w-full gap-1.5 text-left"
+											aria-pressed={selected === row.key}
+											onclick={() => (selected = selected === row.key ? null : row.key)}
+										>
+											<span class="font-medium group-aria-pressed:underline">{row.label}</span>
+											<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
+												<span
+													class="block h-full rounded-full {bar}"
+													style="width: {(row.amount / max) * 100}%"
+												></span>
+											</span>
+										</button>
+									{/if}
+								</th>
+								<td class="py-2 text-right align-top whitespace-nowrap tabular-nums">
+									{session.format(row.amount)}
+								</td>
+								<td
+									class="py-2 pl-2 text-right align-top whitespace-nowrap text-muted-foreground tabular-nums"
+								>
+									{percent.format(row.share / 100)}
+								</td>
+							</tr>
+						{/each}
+						{#if report.rows.length > ROWS}
+							<tr class="border-t">
+								<td colspan="3" class="py-2">
 									<button
 										type="button"
-										class="group grid w-full gap-1.5 text-left"
-										aria-pressed={selected === row.key}
-										onclick={() => (selected = selected === row.key ? null : row.key)}
+										class="text-sm text-muted-foreground hover:underline"
+										aria-expanded={expanded}
+										onclick={() => (expanded = !expanded)}
 									>
-										<span class="font-medium group-aria-pressed:underline">{row.label}</span>
-										<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
-											<span
-												class="block h-full rounded-full {bar}"
-												style="width: {(row.amount / max) * 100}%"
-											></span>
-										</span>
+										{expanded
+											? m.reports_show_less()
+											: m.reports_show_all({ count: report.rows.length })}
 									</button>
-								{/if}
-							</th>
-							<td class="py-2 text-right align-top whitespace-nowrap tabular-nums">
-								{session.format(row.amount)}
-							</td>
-							<td
-								class="py-2 pl-2 text-right align-top whitespace-nowrap text-muted-foreground tabular-nums"
-							>
-								{percent.format(row.share / 100)}
-							</td>
+								</td>
+							</tr>
+						{/if}
+					</tbody>
+					<tfoot>
+						<tr class="border-t font-medium">
+							<td class="py-2">{m.reports_total()}</td>
+							<td class="py-2 text-right tabular-nums">{session.format(report.total)}</td>
+							<td></td>
 						</tr>
-					{/each}
-					{#if report.rows.length > ROWS}
-						<tr class="border-t">
-							<td colspan="3" class="py-2">
-								<button
-									type="button"
-									class="text-sm text-muted-foreground hover:underline"
-									aria-expanded={expanded}
-									onclick={() => (expanded = !expanded)}
-								>
-									{expanded
-										? m.reports_show_less()
-										: m.reports_show_all({ count: report.rows.length })}
-								</button>
-							</td>
-						</tr>
-					{/if}
-				</tbody>
-				<tfoot>
-					<tr class="border-t font-medium">
-						<td class="py-2">{m.reports_total()}</td>
-						<td class="py-2 text-right tabular-nums">{session.format(report.total)}</td>
-						<td></td>
-					</tr>
-				</tfoot>
-			</table>
+					</tfoot>
+				</table>
 
-			{#if payee}
-				<section
-					class="grid gap-2"
-					aria-label={m.reports_payee_transactions({ payee: payee.label })}
-				>
-					<h3 class="text-sm font-medium">
-						{m.reports_payee_transactions({ payee: payee.label })}
-					</h3>
-					<ul class="grid text-sm">
-						{#each transactions.data ?? [] as row (row.id)}
-							<li
-								class="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-t py-1.5 sm:grid-cols-[6rem_1fr_auto]"
-							>
-								<span class="order-2 text-xs text-muted-foreground sm:order-none">
-									{formatDate(row.date, getLocale())}
-								</span>
-								<a
-									class="min-w-0 truncate hover:underline"
-									href={resolve('/accounts/[id]', { id: row.accountId })}
+				{#if payee}
+					<section
+						class="grid gap-2"
+						aria-label={m.reports_payee_transactions({ payee: payee.label })}
+					>
+						<h3 class="text-sm font-medium">
+							{m.reports_payee_transactions({ payee: payee.label })}
+						</h3>
+						<ul class="grid text-sm">
+							{#each transactions.data ?? [] as row (row.id)}
+								<li
+									class="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-t py-1.5 sm:grid-cols-[6rem_1fr_auto]"
 								>
-									{row.isSplit
-										? row.splits.map((s) => s.categoryName).join(', ')
-										: (row.categoryName ?? row.accountName)}
-								</a>
-								<span class="row-span-2 self-center tabular-nums sm:row-span-1">
-									{session.format(row.amount)}
-								</span>
-							</li>
-						{/each}
-					</ul>
-				</section>
-			{/if}
-		</div>
-	{/if}
-</div>
+									<span class="order-2 text-xs text-muted-foreground sm:order-none">
+										{formatDate(row.date, getLocale())}
+									</span>
+									<a
+										class="min-w-0 truncate hover:underline"
+										href={resolve('/accounts/[id]', { id: row.accountId })}
+									>
+										{row.isSplit
+											? row.splits.map((s) => s.categoryName).join(', ')
+											: (row.categoryName ?? row.accountName)}
+									</a>
+									<span class="row-span-2 self-center tabular-nums sm:row-span-1">
+										{session.format(row.amount)}
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</section>
+				{/if}
+			</div>
+		{/if}
+	</div>
+</ReportBody>

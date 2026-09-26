@@ -2,6 +2,8 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
+	import Delayed from '$components/Delayed.svelte';
+	import { Skeleton } from '$ui/skeleton';
 	import type { ReportId } from '$features/reports/layout';
 
 	/**
@@ -13,12 +15,15 @@
 	let {
 		title,
 		route,
+		loading = false,
 		testId,
 		children
 	}: {
 		title: string;
 		/** The full report this card opens. */
 		route: `/reports/${ReportId}`;
+		/** No data yet: placeholders stand in for the glance. */
+		loading?: boolean;
 		testId?: string;
 		children: Snippet;
 	} = $props();
@@ -41,6 +46,18 @@
 		/>
 	</h2>
 	<div class="flex min-h-0 flex-1 flex-col gap-4">
-		{@render children()}
+		{#if loading}
+			<Delayed>
+				<div class="flex flex-1 animate-in flex-col gap-4 fade-in" aria-hidden="true">
+					<div class="grid gap-2">
+						<Skeleton class="h-7 w-32" />
+						<Skeleton class="h-3 w-24" />
+					</div>
+					<Skeleton class="flex-1" />
+				</div>
+			</Delayed>
+		{:else}
+			{@render children()}
+		{/if}
 	</div>
 </section>

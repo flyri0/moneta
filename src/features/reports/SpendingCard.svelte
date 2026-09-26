@@ -22,7 +22,12 @@
 	const top = $derived(topSegments(spending.data ?? []));
 </script>
 
-<ReportCard title={m.reports_spending()} route="/reports/spending" testId="spending-card">
+<ReportCard
+	title={m.reports_spending()}
+	route="/reports/spending"
+	testId="spending-card"
+	loading={!spending.data && !spending.error}
+>
 	{#if spending.error}
 		<FormMessage error={actionError(spending.error)} />
 	{:else if spending.data && top.total === 0}

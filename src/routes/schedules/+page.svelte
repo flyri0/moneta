@@ -2,6 +2,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import ScheduleList from '$features/schedules/ScheduleList.svelte';
@@ -46,6 +47,8 @@
 		</div>
 	{:else if schedules.data}
 		<ScheduleList schedules={schedules.data} onOpen={open} />
+	{:else}
+		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows /></div>
 	{/if}
 </div>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportBody from './ReportBody.svelte';
 	import CashFlowChart from './CashFlowChart.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
@@ -63,94 +64,96 @@
 	]);
 </script>
 
-{#if flow.error}
-	<FormMessage error={actionError(flow.error)} />
-{:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
-	<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-		{m.reports_income_expense_empty()}
-	</p>
-{:else if flow.data}
-	<dl
-		class="grid grid-cols-2 gap-2 rounded-xl border bg-card p-4 text-card-foreground sm:grid-cols-4"
-		data-testid="cash-flow-tiles"
-	>
-		{#each tiles as tile (tile.key)}
-			<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
-				<dt class="text-xs text-muted-foreground">{tile.label}</dt>
-				<dd class="font-semibold break-words tabular-nums" data-testid="cash-flow-{tile.key}">
-					{tile.value}
-				</dd>
-			</div>
-		{/each}
-	</dl>
+<ReportBody loading={!flow.data && !flow.error} stale={flow.stale}>
+	{#if flow.error}
+		<FormMessage error={actionError(flow.error)} />
+	{:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
+		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+			{m.reports_income_expense_empty()}
+		</p>
+	{:else if flow.data}
+		<dl
+			class="grid grid-cols-2 gap-2 rounded-xl border bg-card p-4 text-card-foreground sm:grid-cols-4"
+			data-testid="cash-flow-tiles"
+		>
+			{#each tiles as tile (tile.key)}
+				<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-2">
+					<dt class="text-xs text-muted-foreground">{tile.label}</dt>
+					<dd class="font-semibold break-words tabular-nums" data-testid="cash-flow-{tile.key}">
+						{tile.value}
+					</dd>
+				</div>
+			{/each}
+		</dl>
 
-	<div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-		<ReportSection title={m.reports_income_vs_expenses()}>
-			{#snippet actions()}<CashFlowLegend />{/snippet}
-			<CashFlowChart {rows} />
-		</ReportSection>
-		<ReportSection title={m.reports_net_per_month()}>
-			<NetFlowChart {rows} />
-		</ReportSection>
-	</div>
+		<div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+			<ReportSection title={m.reports_income_vs_expenses()}>
+				{#snippet actions()}<CashFlowLegend />{/snippet}
+				<CashFlowChart {rows} />
+			</ReportSection>
+			<ReportSection title={m.reports_net_per_month()}>
+				<NetFlowChart {rows} />
+			</ReportSection>
+		</div>
 
-	<div class="rounded-xl border bg-card p-4 text-card-foreground">
-		<table class="w-full text-sm" data-testid="cash-flow-table">
-			<thead class="text-left text-xs text-muted-foreground">
-				<tr>
-					<th scope="col" class="py-1 font-medium">{m.reports_month()}</th>
-					<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
-						{m.reports_income()}
-					</th>
-					<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
-						{m.reports_expenses()}
-					</th>
-					<th scope="col" class="py-1 text-right font-medium">{m.reports_net()}</th>
-					<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap">
-						{m.reports_savings_rate()}
-					</th>
-				</tr>
-			</thead>
-			<tbody class="tabular-nums">
-				{#each shown as row (row.month)}
-					<tr class="border-t">
-						<td class="py-1.5 whitespace-nowrap">
-							{formatMonth(row.month, getLocale())}
-							<span class="block text-xs whitespace-normal text-muted-foreground sm:hidden">
-								{m.reports_income()}
-								{session.format(row.income)} · {m.reports_expenses()}
-								{session.format(row.spending)}
-							</span>
-						</td>
-						<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.income)}</td>
-						<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.spending)}</td>
-						<td
-							class="py-1.5 text-right whitespace-nowrap {row.net < 0
-								? 'text-red-700 dark:text-red-400'
-								: ''}"
-						>
-							{signed(row.net)}
-						</td>
-						<td class="py-1.5 pl-2 text-right text-muted-foreground">
-							{row.rate === null ? '—' : percent.format(row.rate / 100)}
-						</td>
+		<div class="rounded-xl border bg-card p-4 text-card-foreground">
+			<table class="w-full text-sm" data-testid="cash-flow-table">
+				<thead class="text-left text-xs text-muted-foreground">
+					<tr>
+						<th scope="col" class="py-1 font-medium">{m.reports_month()}</th>
+						<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
+							{m.reports_income()}
+						</th>
+						<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
+							{m.reports_expenses()}
+						</th>
+						<th scope="col" class="py-1 text-right font-medium">{m.reports_net()}</th>
+						<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap">
+							{m.reports_savings_rate()}
+						</th>
 					</tr>
-				{/each}
-				{#if table.length > ROWS}
-					<tr class="border-t">
-						<td colspan="5" class="py-2">
-							<button
-								type="button"
-								class="text-sm text-muted-foreground hover:underline"
-								aria-expanded={expanded}
-								onclick={() => (expanded = !expanded)}
+				</thead>
+				<tbody class="tabular-nums">
+					{#each shown as row (row.month)}
+						<tr class="border-t">
+							<td class="py-1.5 whitespace-nowrap">
+								{formatMonth(row.month, getLocale())}
+								<span class="block text-xs whitespace-normal text-muted-foreground sm:hidden">
+									{m.reports_income()}
+									{session.format(row.income)} · {m.reports_expenses()}
+									{session.format(row.spending)}
+								</span>
+							</td>
+							<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.income)}</td>
+							<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.spending)}</td>
+							<td
+								class="py-1.5 text-right whitespace-nowrap {row.net < 0
+									? 'text-red-700 dark:text-red-400'
+									: ''}"
 							>
-								{expanded ? m.reports_show_less() : m.reports_show_all({ count: table.length })}
-							</button>
-						</td>
-					</tr>
-				{/if}
-			</tbody>
-		</table>
-	</div>
-{/if}
+								{signed(row.net)}
+							</td>
+							<td class="py-1.5 pl-2 text-right text-muted-foreground">
+								{row.rate === null ? '—' : percent.format(row.rate / 100)}
+							</td>
+						</tr>
+					{/each}
+					{#if table.length > ROWS}
+						<tr class="border-t">
+							<td colspan="5" class="py-2">
+								<button
+									type="button"
+									class="text-sm text-muted-foreground hover:underline"
+									aria-expanded={expanded}
+									onclick={() => (expanded = !expanded)}
+								>
+									{expanded ? m.reports_show_less() : m.reports_show_all({ count: table.length })}
+								</button>
+							</td>
+						</tr>
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	{/if}
+</ReportBody>

@@ -22,7 +22,12 @@
 	const breakdown = (summary: string) => `${m.reports_payees()}: ${summary}`;
 </script>
 
-<ReportCard title={m.reports_payees()} route="/reports/payees" testId="payees-card">
+<ReportCard
+	title={m.reports_payees()}
+	route="/reports/payees"
+	testId="payees-card"
+	loading={!payees.data && !payees.error}
+>
 	{#if payees.error}
 		<FormMessage error={actionError(payees.error)} />
 	{:else if payees.data && top.total === 0}

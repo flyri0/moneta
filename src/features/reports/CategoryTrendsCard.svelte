@@ -26,6 +26,7 @@
 	title={m.reports_category_trends()}
 	route="/reports/category-trends"
 	testId="category-trends-card"
+	loading={!rows.data && !rows.error}
 >
 	{#if rows.error}
 		<FormMessage error={actionError(rows.error)} />

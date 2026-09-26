@@ -1,3 +1,5 @@
+import { numberFormat } from './intl-cache';
+
 export interface MoneyFormat {
 	currency: string; // ISO 4217, e.g. 'BRL'
 	locale: string; // BCP 47, e.g. 'pt-BR'
@@ -8,14 +10,13 @@ const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'));
 export function currencyDigits(currency: string): number {
 	if (!SUPPORTED_CURRENCIES.has(currency)) throw new RangeError(`Unknown currency ${currency}`);
 	return (
-		new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
-			.maximumFractionDigits ?? 2
+		numberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
 	);
 }
 
 export function formatMoney(minor: number, fmt: MoneyFormat): string {
 	const digits = currencyDigits(fmt.currency);
-	return new Intl.NumberFormat(fmt.locale, { style: 'currency', currency: fmt.currency }).format(
+	return numberFormat(fmt.locale, { style: 'currency', currency: fmt.currency }).format(
 		minor / 10 ** digits
 	);
 }
@@ -23,7 +24,7 @@ export function formatMoney(minor: number, fmt: MoneyFormat): string {
 /** A short form for chart axes, e.g. "$1.2M" or "R$ 1,5 mil". */
 export function formatMoneyCompact(minor: number, fmt: MoneyFormat): string {
 	const digits = currencyDigits(fmt.currency);
-	return new Intl.NumberFormat(fmt.locale, {
+	return numberFormat(fmt.locale, {
 		style: 'currency',
 		currency: fmt.currency,
 		notation: 'compact',
@@ -34,7 +35,7 @@ export function formatMoneyCompact(minor: number, fmt: MoneyFormat): string {
 /** The editable text for an amount: no currency symbol and no grouping, e.g. "1234,50" in pt-BR. */
 export function formatAmountInput(minor: number, fmt: MoneyFormat): string {
 	const digits = currencyDigits(fmt.currency);
-	return new Intl.NumberFormat(fmt.locale, {
+	return numberFormat(fmt.locale, {
 		minimumFractionDigits: digits,
 		maximumFractionDigits: digits,
 		useGrouping: false,
@@ -45,7 +46,9 @@ export function formatAmountInput(minor: number, fmt: MoneyFormat): string {
 }
 
 function decimalSeparator(locale: string): string {
-	const part = new Intl.NumberFormat(locale).formatToParts(1.5).find((p) => p.type === 'decimal');
+	const part = numberFormat(locale)
+		.formatToParts(1.5)
+		.find((p) => p.type === 'decimal');
 	return part?.value ?? '.';
 }
 
@@ -87,7 +90,7 @@ function parseNumberToken(token: string, decimalSep: string, maxDecimals: number
 function currencySymbols(fmt: MoneyFormat): string[] {
 	const symbols = new Set([fmt.currency]);
 	for (const currencyDisplay of ['symbol', 'narrowSymbol'] as const) {
-		const part = new Intl.NumberFormat(fmt.locale, {
+		const part = numberFormat(fmt.locale, {
 			style: 'currency',
 			currency: fmt.currency,
 			currencyDisplay

@@ -7,7 +7,10 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
+	import { Skeleton } from '$ui/skeleton';
+	import Delayed from '$components/Delayed.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AddGroupDialog from '$features/budget/AddGroupDialog.svelte';
 	import BudgetGrid from '$features/budget/BudgetGrid.svelte';
@@ -113,7 +116,11 @@
 	{/snippet}
 </PageHeader>
 
-<div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
+<!-- Dimmed while another month's figures are on their way. -->
+<div
+	class="mx-auto grid max-w-2xl gap-4 p-3 transition-opacity aria-busy:opacity-60 aria-busy:delay-150 md:p-6 lg:max-w-5xl"
+	aria-busy={view.stale}
+>
 	{#if view.data}<RtaCard view={view.data} />{/if}
 
 	{#if view.data?.futureNegativeMonth}
@@ -130,6 +137,17 @@
 
 	{#if view.error && !view.data}
 		<FormMessage error={actionError(view.error)} />
+	{:else if !view.data}
+		<Delayed>
+			<div class="grid animate-in gap-4 fade-in" aria-hidden="true" data-testid="budget-loading">
+				<Skeleton class="h-24 rounded-xl" />
+				{#each { length: 3 }, i (i)}
+					<div class="overflow-hidden rounded-xl border bg-card">
+						<LoadingRows rows={4} delay={0} />
+					</div>
+				{/each}
+			</div>
+		</Delayed>
 	{/if}
 
 	{#if view.data && model}

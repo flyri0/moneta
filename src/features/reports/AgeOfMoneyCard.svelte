@@ -1,7 +1,7 @@
 <script lang="ts">
-	import AgeOfMoneyChart from './AgeOfMoneyChart.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportCard from './ReportCard.svelte';
+	import Sparkline from './Sparkline.svelte';
 	import StatTile from './StatTile.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
@@ -58,6 +58,7 @@
 	title={m.reports_age_of_money()}
 	route="/reports/age-of-money"
 	testId="age-of-money-card"
+	loading={!series.data && !series.error}
 >
 	{#if series.error}
 		<FormMessage error={actionError(series.error)} />
@@ -71,7 +72,7 @@
 			testId="age-of-money-card-value"
 		/>
 		{#if recent.length > 1}
-			<AgeOfMoneyChart points={recent} compact />
+			<Sparkline points={recent.map((p) => ({ month: p.month, value: p.days }))} />
 			<dl class="grid grid-cols-2 gap-2 text-sm" data-testid="age-of-money-card-extremes">
 				{#each extremes as e (e.key)}
 					<div class="grid gap-0.5 rounded-lg bg-muted/60 px-3 py-1.5">
