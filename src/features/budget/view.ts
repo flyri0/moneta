@@ -22,6 +22,14 @@ export function availableTone(
 	return category.carryoverOverspending ? 'carryover' : 'overspent';
 }
 
+/** Ready to Assign's state. Zero is the goal of a zero-based budget; anything else needs a look. */
+export type RtaTone = 'assigned' | 'unassigned' | 'overassigned';
+
+export function rtaTone(readyToAssign: number): RtaTone {
+	if (readyToAssign > 0) return 'unassigned';
+	return readyToAssign < 0 ? 'overassigned' : 'assigned';
+}
+
 export interface HiddenCategory {
 	group: BudgetGroupView;
 	category: BudgetCategoryView;

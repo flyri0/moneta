@@ -21,7 +21,7 @@ interface DragCallbacks {
  * The visible band of the page, between the fixed or sticky bars marked with `data-scroll-inset`
  * (the demo banner and the page header at the top, the bottom nav on phones).
  */
-function scrollLimits(): { top: number; bottom: number } {
+export function scrollLimits(): { top: number; bottom: number } {
 	const insets = (side: 'top' | 'bottom') =>
 		[...document.querySelectorAll(`[data-scroll-inset="${side}"]`)]
 			.map((node) => node.getBoundingClientRect())

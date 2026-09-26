@@ -19,6 +19,8 @@
 	import MonthPicker from '$features/budget/MonthPicker.svelte';
 	import OrderEditor from '$features/budget/OrderEditor.svelte';
 	import RtaCard from '$features/budget/RtaCard.svelte';
+	import { scrollLimits } from '$features/budget/sortable.svelte';
+	import { RTA_CHIP, RTA_ICON } from '$features/budget/tones';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
@@ -29,7 +31,7 @@
 		toggleAll,
 		toggleCollapsed
 	} from '$features/budget/collapse';
-	import { BUDGET_TABLES, gridModel } from '$features/budget/view';
+	import { BUDGET_TABLES, gridModel, rtaTone } from '$features/budget/view';
 	import { currentMonth } from '$domain/month';
 	import { formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -40,6 +42,30 @@
 	const session = useSession();
 	const view = useLive(session.client, BUDGET_TABLES, () => session.api.budget.month(data.month));
 	const model = $derived(view.data ? gridModel(view.data) : null);
+
+	let rtaCard = $state<HTMLElement>();
+	/** Whether any of the Ready to Assign card shows below the sticky bars at the top. */
+	let rtaInView = $state(true);
+	const rtaState = $derived(view.data ? rtaTone(view.data.readyToAssign) : 'assigned');
+	const RtaIcon = $derived(RTA_ICON[rtaState]);
+	// Once the card scrolls away, the header keeps an amount that needs attention in sight.
+	const showRtaChip = $derived(rtaState !== 'assigned' && !rtaInView);
+
+	$effect(() => {
+		const card = rtaCard;
+		if (!card) return;
+		const observer = new IntersectionObserver(([entry]) => (rtaInView = entry.isIntersecting), {
+			rootMargin: `-${Math.ceil(scrollLimits().top)}px 0px 0px 0px`
+		});
+		observer.observe(card);
+		return () => observer.disconnect();
+	});
+
+	function showRta() {
+		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+		rtaCard?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
+		rtaCard?.querySelector('button')?.focus({ preventScroll: true });
+	}
 
 	let categoryId = $state<string | null>(null);
 	let groupId = $state<string | null>(null);
@@ -66,7 +92,25 @@
 </script>
 
 <PageHeader>
-	{#snippet title()}<MonthPicker month={data.month} />{/snippet}
+	{#snippet title()}
+		<div class="flex min-w-0 items-center gap-2">
+			<div class="min-w-0 flex-1 md:flex-none"><MonthPicker month={data.month} /></div>
+			{#if showRtaChip && view.data}
+				<button
+					type="button"
+					onclick={showRta}
+					aria-label={m.budget_rta_chip({ amount: session.format(view.data.readyToAssign) })}
+					data-testid="rta-chip"
+					class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium tabular-nums {RTA_CHIP[
+						rtaState
+					]}"
+				>
+					<RtaIcon class="size-3.5 shrink-0" aria-hidden="true" />
+					{session.format(view.data.readyToAssign)}
+				</button>
+			{/if}
+		</div>
+	{/snippet}
 	{#snippet actions()}
 		<!-- Here rather than beside the arrows, where appearing would move them under the pointer. -->
 		{#if data.month !== currentMonth()}
@@ -121,7 +165,7 @@
 	class="mx-auto grid max-w-2xl gap-4 p-3 transition-opacity aria-busy:opacity-60 aria-busy:delay-150 md:p-6 lg:max-w-5xl"
 	aria-busy={view.stale}
 >
-	{#if view.data}<RtaCard view={view.data} />{/if}
+	{#if view.data}<RtaCard view={view.data} bind:ref={rtaCard} />{/if}
 
 	{#if view.data?.futureNegativeMonth}
 		<Alert.Root variant="destructive">

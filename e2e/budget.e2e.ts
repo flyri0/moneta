@@ -28,6 +28,44 @@ test('renders RTA hero card and divided category group cards', async ({ page }) 
 	await expect(groupCards.filter({ hasText: 'Everyday' })).toBeVisible();
 });
 
+test('shows Ready to Assign as done only at zero', async ({ page }) => {
+	await onboard(page);
+	const rtaCard = page.getByTestId('rta-card');
+	await expect(rtaCard).toHaveAttribute('data-tone', 'unassigned');
+	await expect(rtaCard.getByTestId('rta-hint')).toHaveText('Assign this money to your categories.');
+
+	const assigned = categoryRow(page, 'Groceries').getByTestId('assigned');
+	await assigned.fill('1000');
+	await assigned.press('Enter');
+	await expect(rtaCard).toHaveAttribute('data-tone', 'assigned');
+	await expect(rtaCard.getByTestId('rta-hint')).toHaveText('All your money has a job.');
+
+	await assigned.fill('1200');
+	await assigned.press('Enter');
+	await expect(rtaCard).toHaveAttribute('data-tone', 'overassigned');
+	await expect(page.getByTestId('rta-amount')).toHaveText('-$200.00');
+});
+
+test('keeps an unassigned amount in the header once the card scrolls away', async ({ page }) => {
+	await onboard(page);
+	const chip = page.getByTestId('page-header').getByTestId('rta-chip');
+	await expect(chip).toBeHidden();
+
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	await expect(chip).toHaveText('$1,000.00');
+	await chip.click();
+	await expect(page.getByTestId('rta-card')).toBeInViewport();
+	await expect(chip).toBeHidden();
+
+	const assigned = categoryRow(page, 'Groceries').getByTestId('assigned');
+	await assigned.fill('1000');
+	await assigned.press('Enter');
+	await expect(page.getByTestId('rta-card')).toHaveAttribute('data-tone', 'assigned');
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	await expect(page.getByTestId('rta-card')).not.toBeInViewport();
+	await expect(chip).toBeHidden();
+});
+
 test('sends invalid months to the current one', async ({ page }) => {
 	await onboard(page);
 	const current = page.url();

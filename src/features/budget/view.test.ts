@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
-import { availableTone, gridModel, moveTargets } from './view';
+import { availableTone, gridModel, moveTargets, rtaTone } from './view';
 
 const cat = (id: string, p: Partial<BudgetCategoryView> = {}): BudgetCategoryView => ({
 	id,
@@ -38,6 +38,20 @@ const month = (groups: BudgetGroupView[]): BudgetMonthView => ({
 	assignedThisMonth: 0,
 	futureNegativeMonth: null,
 	groups
+});
+
+describe('rtaTone', () => {
+	it('approves a budget where every unit has a job', () => {
+		expect(rtaTone(0)).toBe('assigned');
+	});
+
+	it('flags money still waiting for a job', () => {
+		expect(rtaTone(1)).toBe('unassigned');
+	});
+
+	it('flags assigning more than there is', () => {
+		expect(rtaTone(-1)).toBe('overassigned');
+	});
 });
 
 describe('availableTone (Actual Budget model)', () => {
