@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
-import { availableTone, gridModel, moveTargets, rtaTone } from './view';
+import {
+	availableTone,
+	gridModel,
+	moveTargets,
+	overspentCategories,
+	overspentCount,
+	rtaTone
+} from './view';
 
 const cat = (id: string, p: Partial<BudgetCategoryView> = {}): BudgetCategoryView => ({
 	id,
@@ -112,5 +119,46 @@ describe('moveTargets', () => {
 		);
 		const targets = moveTargets(model, 'Rent');
 		expect(targets.map((t) => t.name)).toEqual(['Power']);
+	});
+});
+
+describe('overspentCategories', () => {
+	const over = (id: string, p: Partial<BudgetCategoryView> = {}) =>
+		cat(id, { available: -500, ...p });
+
+	it('lists overspent categories in grid order, the hidden section last', () => {
+		const model = gridModel(
+			month([
+				group('Bills', [over('Old', { hidden: true }), cat('Rent'), over('Power')]),
+				group('Fun', [over('Games')])
+			])
+		);
+		expect(overspentCategories(model).map((c) => c.name)).toEqual(['Power', 'Games', 'Old']);
+	});
+
+	it('leaves out rolled-over overspending and income', () => {
+		const model = gridModel(
+			month([
+				group('Income', [over('Salary')], { system: 'income' }),
+				group('Bills', [over('Card', { carryoverOverspending: true })])
+			])
+		);
+		expect(overspentCategories(model)).toEqual([]);
+	});
+});
+
+describe('overspentCount', () => {
+	it('counts the overspent categories a group shows', () => {
+		const bills = group('Bills', [
+			cat('Rent', { available: -1 }),
+			cat('Power', { available: -1, carryoverOverspending: true }),
+			cat('Water', { available: 1 })
+		]);
+		expect(overspentCount(bills)).toBe(1);
+	});
+
+	it('never counts income', () => {
+		const income = group('Income', [cat('Salary', { available: -1 })], { system: 'income' });
+		expect(overspentCount(income)).toBe(0);
 	});
 });

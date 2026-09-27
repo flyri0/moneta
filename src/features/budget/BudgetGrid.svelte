@@ -1,9 +1,10 @@
 <script lang="ts">
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { MediaQuery } from 'svelte/reactivity';
 	import * as Collapsible from '$ui/collapsible';
 	import { useSession } from '$client/app-state.svelte';
-	import type { GridModel } from '$features/budget/view';
+	import { availableTone, overspentCount, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { Month } from '$domain/month';
 	import { groupLabel } from '$i18n/labels';
@@ -11,6 +12,7 @@
 	import AssignedInput from './AssignedInput.svelte';
 	import AvailablePill from './AvailablePill.svelte';
 	import CategoryCard from './CategoryCard.svelte';
+	import { TONE_PILL, TONE_ROW } from './tones';
 
 	let {
 		model,
@@ -53,8 +55,29 @@
 	</button>
 {/snippet}
 
+<!-- Stays on a collapsed group's header, so folding a group never hides its overspending. -->
+{#snippet overspentBadge(group: BudgetGroupView)}
+	{@const count = overspentCount(group)}
+	{#if count > 0}
+		<span
+			class="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold tracking-normal tabular-nums {TONE_PILL.overspent}"
+			role="img"
+			aria-label={m.budget_group_overspent({ count })}
+			data-testid="group-overspent"
+		>
+			<TriangleAlertIcon class="size-3 shrink-0" aria-hidden="true" />
+			{count}
+		</span>
+	{/if}
+{/snippet}
+
 {#snippet categoryRow(category: BudgetCategoryView)}
-	<div class="{COLUMNS} px-4 py-2 transition-colors hover:bg-muted/30" data-testid="category-row">
+	{@const tone = availableTone(category)}
+	<div
+		class="{COLUMNS} px-4 py-2 transition-colors hover:bg-muted/30 {TONE_ROW[tone]}"
+		data-testid="category-row"
+		data-tone={tone}
+	>
 		<button
 			type="button"
 			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
@@ -153,6 +176,7 @@
 							class="cursor-pointer truncate text-left font-semibold hover:underline"
 							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
 						>
+						{@render overspentBadge(group)}
 					</div>
 					{#if isIncome}
 						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
@@ -201,6 +225,7 @@
 							class="min-w-0 flex-1 cursor-pointer truncate text-left hover:text-foreground"
 							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
 						>
+						{@render overspentBadge(group)}
 					</div>
 					{#if isIncome}
 						<span

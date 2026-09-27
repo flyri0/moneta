@@ -3,6 +3,7 @@
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -14,7 +15,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { categoryProgress } from '$features/budget/progress';
-	import { moveTargets, type GridModel } from '$features/budget/view';
+	import { isOverspent, moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import { formatAmountInput } from '$domain/money';
 	import type { Month } from '$domain/month';
@@ -24,6 +25,7 @@
 	import CategoryDelete from './CategoryDelete.svelte';
 	import CategorySettings from './CategorySettings.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
+	import { TONE_PILL } from './tones';
 
 	let {
 		open = $bindable(false),
@@ -48,6 +50,7 @@
 	let moveDirection = $state<'to' | 'from'>('to');
 	let otherId = $state('');
 	let error = $state<ActionError | null>(null);
+	let coverError = $state<ActionError | null>(null);
 
 	const isIncome = $derived(
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.system === 'income'
@@ -57,6 +60,7 @@
 		targets.map((t) => ({ value: t.id, label: `${groupLabel(t.group)} · ${t.name}` }))
 	);
 	const progress = $derived(categoryProgress(category));
+	const overspent = $derived(!isIncome && isOverspent(category));
 	const title = $derived(
 		{
 			main: category.name,
@@ -80,6 +84,7 @@
 			moveAmount = '';
 			otherId = '';
 			error = null;
+			coverError = null;
 		});
 	});
 
@@ -88,6 +93,25 @@
 		moveAmount = '';
 		otherId = '';
 		error = null;
+		coverError = null;
+	}
+
+	async function coverFromReady() {
+		coverError = await runAction(() =>
+			session.api.budget.quickAssign({
+				month,
+				categoryIds: [category.id],
+				strategy: 'cover-overspending'
+			})
+		);
+		if (!coverError) open = false;
+	}
+
+	/** The move form, set to take exactly the overspent amount from a category still to choose. */
+	function coverFromCategory() {
+		go('move');
+		moveDirection = 'from';
+		moveAmount = formatAmountInput(-category.available, session.money);
 	}
 
 	async function saveAssigned(event: SubmitEvent) {
@@ -137,13 +161,34 @@
 						<span class="text-muted-foreground">{m.budget_available()}</span>
 						<AvailablePill {category} />
 					</div>
-					<p class="text-xs text-muted-foreground tabular-nums">
-						{m.budget_progress_spent({
-							spent: session.format(progress.spent),
-							funded: session.format(progress.funded)
-						})}
-					</p>
+					{#if !overspent}
+						<p class="text-xs text-muted-foreground tabular-nums">
+							{m.budget_progress_spent({
+								spent: session.format(progress.spent),
+								funded: session.format(progress.funded)
+							})}
+						</p>
+					{/if}
 				</div>
+
+				{#if overspent}
+					<section
+						class="grid gap-3 rounded-lg p-3 {TONE_PILL.overspent}"
+						data-testid="overspent-callout"
+					>
+						<p class="flex items-center gap-1.5 text-sm font-medium tabular-nums">
+							<TriangleAlertIcon class="size-4 shrink-0" aria-hidden="true" />
+							{m.budget_overspent_by({ amount: session.format(-category.available) })}
+						</p>
+						<div class="grid gap-2 sm:grid-cols-2">
+							<Button size="sm" onclick={coverFromReady}>{m.budget_cover_from_rta()}</Button>
+							<Button size="sm" variant="outline" onclick={coverFromCategory}>
+								{m.budget_cover_from_category()}
+							</Button>
+						</div>
+						<FormMessage error={coverError} />
+					</section>
+				{/if}
 
 				<form class="grid gap-2" onsubmit={saveAssigned}>
 					<Label for="sheet-assigned">{m.budget_assigned_this_month()}</Label>

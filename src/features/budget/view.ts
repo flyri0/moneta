@@ -22,6 +22,30 @@ export function availableTone(
 	return category.carryoverOverspending ? 'carryover' : 'overspent';
 }
 
+/** Spent past its envelope, with no choice to roll it over: next month pays for it. */
+export function isOverspent(
+	category: Pick<BudgetCategoryView, 'available' | 'carryoverOverspending'>
+): boolean {
+	return availableTone(category) === 'overspent';
+}
+
+/** How many of a group's categories are overspent. Income is never counted. */
+export function overspentCount(group: BudgetGroupView): number {
+	if (group.system === 'income') return 0;
+	return group.categories.filter(isOverspent).length;
+}
+
+/**
+ * Every overspent category in the order the grid shows them, the hidden section last: hidden
+ * categories still cost next month's Ready to Assign.
+ */
+export function overspentCategories(model: GridModel): BudgetCategoryView[] {
+	return [
+		...model.groups.filter((g) => g.system !== 'income').flatMap((g) => g.categories),
+		...model.hidden.filter((h) => h.group.system !== 'income').map((h) => h.category)
+	].filter(isOverspent);
+}
+
 /** Ready to Assign's state. Zero is the goal of a zero-based budget; anything else needs a look. */
 export type RtaTone = 'assigned' | 'unassigned' | 'overassigned';
 

@@ -18,6 +18,7 @@
 	import GroupSheet from '$features/budget/GroupSheet.svelte';
 	import MonthPicker from '$features/budget/MonthPicker.svelte';
 	import OrderEditor from '$features/budget/OrderEditor.svelte';
+	import OverspentAlert from '$features/budget/OverspentAlert.svelte';
 	import RtaCard from '$features/budget/RtaCard.svelte';
 	import { scrollLimits } from '$features/budget/sortable.svelte';
 	import { RTA_CHIP, RTA_ICON } from '$features/budget/tones';
@@ -31,7 +32,7 @@
 		toggleAll,
 		toggleCollapsed
 	} from '$features/budget/collapse';
-	import { BUDGET_TABLES, gridModel, rtaTone } from '$features/budget/view';
+	import { BUDGET_TABLES, gridModel, overspentCategories, rtaTone } from '$features/budget/view';
 	import { currentMonth } from '$domain/month';
 	import { formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -42,6 +43,7 @@
 	const session = useSession();
 	const view = useLive(session.client, BUDGET_TABLES, () => session.api.budget.month(data.month));
 	const model = $derived(view.data ? gridModel(view.data) : null);
+	const overspent = $derived(model ? overspentCategories(model) : []);
 
 	let rtaCard = $state<HTMLElement>();
 	/** Whether any of the Ready to Assign card shows below the sticky bars at the top. */
@@ -73,6 +75,11 @@
 	let groupOpen = $state(false);
 	let addingGroup = $state(false);
 	let editingOrder = $state(false);
+
+	function openCategory(id: string) {
+		categoryId = id;
+		categoryOpen = true;
+	}
 
 	// Which groups are folded shut. A per-device convenience, so it lives outside the budget file.
 	let collapsed = $state<ReadonlySet<string>>(loadCollapsed(localStorage, session.file));
@@ -174,6 +181,10 @@ spans the row, so the chip joins the actions below it instead. -->
 >
 	{#if view.data}<RtaCard view={view.data} bind:ref={rtaCard} />{/if}
 
+	{#if overspent.length > 0 && !editingOrder}
+		<OverspentAlert categories={overspent} onReview={openCategory} />
+	{/if}
+
 	{#if view.data?.futureNegativeMonth}
 		<Alert.Root variant="destructive">
 			<TriangleAlertIcon class="size-4" />
@@ -210,10 +221,7 @@ spans the row, so the chip joins the actions below it instead. -->
 				month={data.month}
 				{collapsed}
 				onToggleGroup={(id) => setCollapsed(toggleCollapsed(collapsed, id))}
-				onSelectCategory={(id) => {
-					categoryId = id;
-					categoryOpen = true;
-				}}
+				onSelectCategory={openCategory}
 				onSelectGroup={(id) => {
 					groupId = id;
 					groupOpen = true;
