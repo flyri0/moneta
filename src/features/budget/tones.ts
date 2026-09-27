@@ -20,6 +20,18 @@ export const TONE_BAR: Record<AvailableTone, string> = {
 	overspent: 'bg-red-500 dark:bg-red-400'
 };
 
+/**
+ * A category row's tint. Only overspending marks the row, with an edge on its left (a shadow, so
+ * nothing shifts) and a faint wash, so it stands out in a long list.
+ */
+export const TONE_ROW: Record<AvailableTone, string> = {
+	positive: '',
+	zero: '',
+	carryover: '',
+	overspent:
+		'bg-red-50/60 shadow-[inset_3px_0_0_var(--color-red-500)] dark:bg-red-950/20 dark:shadow-[inset_3px_0_0_var(--color-red-400)]'
+};
+
 /** The Ready to Assign card's tint: green once every unit has a job, amber or red until then. */
 export const RTA_CARD: Record<RtaTone, string> = {
 	assigned:

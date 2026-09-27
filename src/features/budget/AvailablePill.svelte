@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { useSession } from '$client/app-state.svelte';
 	import { availableTone } from '$features/budget/view';
 	import type { BudgetCategoryView } from '$db/repos/budget';
@@ -19,6 +20,12 @@
 	data-testid="available"
 	data-tone={tone}
 >
+	{#if tone === 'overspent'}
+		<TriangleAlertIcon
+			class="size-3.5 shrink-0 text-red-900/80 dark:text-red-200/80"
+			aria-hidden="true"
+		/>
+	{/if}
 	<span>{session.format(category.available)}</span>
 	{#if tone === 'carryover'}
 		<ArrowRightIcon

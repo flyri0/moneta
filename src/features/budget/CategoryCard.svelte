@@ -5,7 +5,7 @@
 	import type { BudgetCategoryView } from '$db/repos/budget';
 	import { m } from '$i18n/paraglide/messages';
 	import AvailablePill from './AvailablePill.svelte';
-	import { TONE_BAR } from './tones';
+	import { TONE_BAR, TONE_ROW } from './tones';
 
 	let { category, onSelect }: { category: BudgetCategoryView; onSelect: (id: string) => void } =
 		$props();
@@ -34,7 +34,11 @@
 	});
 </script>
 
-<div class="grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40" data-testid="category-row">
+<div
+	class="grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40 {TONE_ROW[tone]}"
+	data-testid="category-row"
+	data-tone={tone}
+>
 	<div class="flex items-center justify-between gap-3">
 		<button
 			type="button"

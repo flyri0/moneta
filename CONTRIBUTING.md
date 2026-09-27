@@ -35,7 +35,7 @@ pnpm test      # unit and integration tests
 ```
 
 All three must pass. CI runs the same three, a production build and the Playwright suite
-(`pnpm test:e2e`) on every push and pull request.
+(`pnpm test:e2e`) on every pull request and every push to `main`.
 
 Keep a pull request to one topic, link the issue it closes, and use conventional commit
 prefixes: `feat:`, `fix:`, `test:`, `docs:`, `chore:`. A `commit-msg` hook (husky and
