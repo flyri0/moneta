@@ -3,9 +3,11 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import RegisterRow from '$features/accounts/RegisterRow.svelte';
+	import SelectionBar from '$features/accounts/SelectionBar.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import { PAGE_SIZE } from '$features/accounts/register';
 	import type { RegisterFilters } from '$features/accounts/register-filters.svelte';
+	import type { RegisterSelection } from '$features/accounts/selection.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
@@ -15,9 +17,13 @@
 	/**
 	 * The paged transaction list of one account, or of every account (showing each row's account)
 	 * without `accountId`, narrowed by `filters` (whose controls sit in the page header). Rows open
-	 * in the edit dialog.
+	 * in the edit dialog, or, while `selection` is active, are chosen for its bar.
 	 */
-	let { accountId, filters }: { accountId?: string; filters: RegisterFilters } = $props();
+	let {
+		accountId,
+		filters,
+		selection
+	}: { accountId?: string; filters: RegisterFilters; selection?: RegisterSelection } = $props();
 
 	const session = useSession();
 
@@ -29,6 +35,12 @@
 		void filters.from;
 		void filters.to;
 		pages = 1;
+	});
+
+	// Only listed rows stay chosen: a deleted one, or one a new search leaves out, drops off.
+	$effect(() => {
+		const listed = rows.data?.map((r) => r.id);
+		if (listed && selection) selection.keepOnly(listed);
 	});
 
 	const rows = useLive(
@@ -62,7 +74,14 @@
 		<FormMessage error={actionError(rows.error)} class="justify-center p-6" />
 	{:else}
 		{#each rows.data ?? [] as row (row.id)}
-			<RegisterRow {row} showAccount={!accountId} onEdit={edit} />
+			<RegisterRow
+				{row}
+				showAccount={!accountId}
+				onEdit={edit}
+				selecting={selection?.active}
+				selected={selection?.has(row.id)}
+				onSelect={(r) => selection?.toggle(r.id)}
+			/>
 		{:else}
 			{#if rows.data}
 				<p class="p-8 text-center text-sm text-muted-foreground">{m.register_empty()}</p>
@@ -77,6 +96,10 @@
 	<Button variant="outline" class="w-full" onclick={() => pages++}>
 		{m.register_load_more()}
 	</Button>
+{/if}
+
+{#if selection?.active}
+	<SelectionBar {selection} rows={rows.data ?? []} />
 {/if}
 
 <TransactionDialog bind:open={dialogOpen} {accountId} transaction={editing} />

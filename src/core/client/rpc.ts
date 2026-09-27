@@ -32,6 +32,11 @@ export interface RpcClient {
 	onChange(listener: ChangeListener): () => void;
 	/** Called once if the worker dies or a reply cannot be read. Every later call rejects. */
 	onFatal(listener: FatalListener): () => void;
+	/**
+	 * The token that takes back the write `call` made (`api.undo.apply`), once it has resolved; null
+	 * for a call that can't be undone.
+	 */
+	undoToken(call: Promise<unknown>): string | null;
 	/** Resolves once no call is waiting for its reply. */
 	idle(): Promise<void>;
 	/** Stops the client on purpose: pending and later calls reject, with no fatal report. */
@@ -43,8 +48,9 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 	let fatal: RpcError | null = null;
 	const pending = new Map<
 		number,
-		{ resolve: (v: unknown) => void; reject: (e: unknown) => void }
+		{ resolve: (v: unknown) => void; reject: (e: unknown) => void; undo: (token: string) => void }
 	>();
+	const undoTokens = new WeakMap<Promise<unknown>, string>();
 	const listeners = new Set<ChangeListener>();
 	const fatalListeners = new Set<FatalListener>();
 	const idleWaiters: (() => void)[] = [];
@@ -68,6 +74,7 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		if (!entry) return;
 		pending.delete(res.id);
 		if (res.ok) {
+			if (res.undo) entry.undo(res.undo);
 			entry.resolve(res.data);
 			if (res.changed.length > 0) for (const l of listeners) l(res.changed);
 		} else {
@@ -85,7 +92,7 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 	function call(method: string, args: unknown[]): Promise<unknown> {
 		if (fatal) return Promise.reject(fatal);
 		const id = nextId++;
-		return new Promise((resolve, reject) => {
+		const promise: Promise<unknown> = new Promise((resolve, reject) => {
 			const req: CallRequest = { id, method, args: toTransferable(args) };
 			try {
 				endpoint.postMessage(req);
@@ -94,8 +101,9 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 				reject(new RpcError('INTERNAL', err instanceof Error ? err.message : String(err)));
 				return;
 			}
-			pending.set(id, { resolve, reject });
+			pending.set(id, { resolve, reject, undo: (token) => undoTokens.set(promise, token) });
 		});
+		return promise;
 	}
 
 	const api = new Proxy({} as ClientApi, {
@@ -122,6 +130,9 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		onFatal(listener) {
 			fatalListeners.add(listener);
 			return () => fatalListeners.delete(listener);
+		},
+		undoToken(call) {
+			return undoTokens.get(call) ?? null;
 		},
 		idle() {
 			return pending.size === 0

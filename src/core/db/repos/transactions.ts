@@ -325,6 +325,110 @@ export function setCleared(db: Db, id: string, cleared: boolean): void {
 	run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [cleared ? 1 : 0, id]);
 }
 
+/** A change to apply to several transactions at once. Each field left out stays as it is. */
+export interface BulkChange {
+	categoryId?: string;
+	date?: string;
+	cleared?: boolean;
+}
+
+/** How many transactions a bulk change touched, and how many it left because it didn't apply. */
+export interface BulkResult {
+	changed: number;
+	skipped: number;
+}
+
+/** A row and its transfer pair, or null when it is gone or sits in a closed account. */
+function bulkEditable(db: Db, id: string): { existing: RawRow; pair: RawRow | null } | null {
+	const existing = one<{ id: string }>(db, 'SELECT id FROM transactions WHERE id = ?', [id]);
+	if (!existing) return null;
+	try {
+		return getEditable(db, id);
+	} catch (err) {
+		if (err instanceof DomainError && err.code === 'ACCOUNT_CLOSED') return null;
+		throw err;
+	}
+}
+
+/**
+ * The row whose category a bulk change sets: the row itself, or for a transfer between the budget
+ * and a tracking account, its budget side. Null for rows with no category: splits, off-budget
+ * rows, and transfers that stay on one side.
+ */
+function categoryRow(db: Db, existing: RawRow, pair: RawRow | null): string | null {
+	const onBudget = (row: RawRow) => getAccountInfo(db, row.accountId).onBudget === 1;
+	if (pair) {
+		if (onBudget(existing) === onBudget(pair)) return null;
+		return onBudget(existing) ? existing.id : pair.id;
+	}
+	const split = one<{ s: number }>(db, 'SELECT is_split AS s FROM transactions WHERE id = ?', [
+		existing.id
+	]);
+	return onBudget(existing) && split?.s === 0 ? existing.id : null;
+}
+
+/**
+ * Applies one change to several transactions. A row the change doesn't fit is skipped, not
+ * refused: one in a closed account, a split or tracking row for a category, a reconciled row for
+ * uncleared. Transfers move both sides to a new date.
+ */
+export function updateTransactions(db: Db, ids: string[], change: BulkChange): BulkResult {
+	if (change.date !== undefined && !isDate(change.date))
+		throw new DomainError('INVALID_INPUT', `Invalid date ${change.date}`);
+	return tx(db, () => {
+		if (change.categoryId !== undefined) checkUsableCategory(db, change.categoryId);
+		const result = { changed: 0, skipped: 0 };
+		for (const id of new Set(ids)) {
+			const row = bulkEditable(db, id);
+			const target =
+				row && change.categoryId !== undefined ? categoryRow(db, row.existing, row.pair) : null;
+			const fits =
+				row !== null &&
+				(change.categoryId === undefined || target !== null) &&
+				(change.cleared !== false || row.existing.reconciled === 0);
+			if (!fits) {
+				result.skipped++;
+				continue;
+			}
+			if (target !== null)
+				run(db, 'UPDATE transactions SET category_id = ? WHERE id = ?', [
+					change.categoryId!,
+					target
+				]);
+			if (change.date !== undefined)
+				run(db, 'UPDATE transactions SET date = ? WHERE id IN (?, ?)', [
+					change.date,
+					id,
+					row.existing.transferId
+				]);
+			if (change.cleared !== undefined)
+				run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [change.cleared ? 1 : 0, id]);
+			result.changed++;
+		}
+		return result;
+	});
+}
+
+/** Deletes several transactions (a transfer once, whichever sides are chosen), skipping any in a closed account. */
+export function deleteTransactions(db: Db, ids: string[]): BulkResult {
+	return tx(db, () => {
+		const result = { changed: 0, skipped: 0 };
+		const gone = new Set<string>();
+		for (const id of new Set(ids)) {
+			if (gone.has(id)) continue;
+			const row = bulkEditable(db, id);
+			if (!row) {
+				result.skipped++;
+				continue;
+			}
+			run(db, 'DELETE FROM transactions WHERE id IN (?, ?)', [id, row.existing.transferId]);
+			if (row.existing.transferId) gone.add(row.existing.transferId);
+			result.changed++;
+		}
+		return result;
+	});
+}
+
 type Row = Omit<TransactionRow, 'cleared' | 'isSplit' | 'isOpening' | 'reconciled' | 'splits'> & {
 	cleared: number;
 	isSplit: number;

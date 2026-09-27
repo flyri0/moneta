@@ -341,6 +341,11 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	],
 	'transactions.delete': [{ args: (f) => [f.split] }],
 	'transactions.setCleared': [{ args: (f) => [f.plain, true] }],
+	'transactions.updateMany': [
+		{ args: (f) => [[f.plain, f.split], { categoryId: f.fun }] },
+		{ args: (f) => [[f.transfer], { date: '2026-01-20', cleared: true }] }
+	],
+	'transactions.deleteMany': [{ args: (f) => [[f.plain, f.split]] }],
 	'schedules.create': [
 		{ args: (f) => [scheduleInput(f, { payeeName: 'Gym', categoryId: f.fun })] },
 		{

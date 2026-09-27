@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { toast } from 'svelte-sonner';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
@@ -14,6 +13,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
 	import { m } from '$i18n/paraglide/messages';
@@ -113,23 +113,26 @@
 		busy = true;
 		const lines = importLines(rows, account.onBudget);
 		let done: { created: number; matched: number } | null = null;
+		let call: Promise<unknown> | null = null;
 		error = await runAction(async () => {
 			// Categories picked by a new name are created first, then used by their ids.
 			const ids = await pending.resolve(
 				session.api,
 				lines.map((l) => l.categoryId)
 			);
-			done = await session.api.imports.commit(account.id, {
+			const committing = session.api.imports.commit(account.id, {
 				lines: lines.map((l) => withCategoryIds(l, ids)),
 				csvFormat
 			});
+			call = committing;
+			done = await committing;
 		});
 		busy = false;
-		if (error || !done) return;
+		if (error || !done || !call) return;
 		const { created, matched } = done;
 		const accountId = account.id;
 		await goto(resolve('/accounts/[id]', { id: accountId }));
-		toast.success(m.import_done({ created, matched }), {
+		offerUndo(session.client, call, m.import_done({ created, matched }), {
 			duration: balance ? 15_000 : undefined,
 			action: balance
 				? {

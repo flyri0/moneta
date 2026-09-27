@@ -84,7 +84,11 @@ function copySavedAt(name: string): string {
 }
 
 /** The worker's file operations over any FileStore. */
-export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () => Db | null } {
+export function createSystem(deps: SystemDeps): {
+	system: SystemApi;
+	getDb: () => Db | null;
+	sqlite3: Sqlite3Static;
+} {
 	const { sqlite3, store, keys } = deps;
 	const migrations = deps.migrations ?? MIGRATIONS;
 	const now = deps.now ?? (() => new Date());
@@ -366,5 +370,5 @@ export function createSystem(deps: SystemDeps): { system: SystemApi; getDb: () =
 			);
 		}
 	}
-	return { system, getDb: () => db };
+	return { system, getDb: () => db, sqlite3 };
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { DomainError } from '$domain/errors';
 import { createDispatcher } from './dispatcher';
-import { createBudgetDb } from './testing';
+import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { run } from './connection';
 import { api, type SystemApi } from './api';
 import { getMeta } from './repos/meta';
@@ -199,5 +199,96 @@ describe('createDispatcher', () => {
 			ok: true,
 			changed: []
 		});
+	});
+});
+
+describe('undo', () => {
+	async function setUp() {
+		const db = await createBudgetDb();
+		const sqlite3 = await loadSqlite();
+		const { system } = fakeSystem();
+		const dispatch = createDispatcher({ system, getDb: () => db, sqlite3 });
+		const move = (id: number, amount: number) =>
+			dispatch({
+				id,
+				method: 'budget.moveMoney',
+				args: [
+					{
+						fromCategoryId: categoryId(db, 'Food'),
+						toCategoryId: categoryId(db, 'Fun'),
+						month: '2026-01',
+						amount
+					}
+				]
+			});
+		const assigned = () =>
+			db.selectValue(
+				'SELECT COALESCE(SUM(assigned), 0) FROM budget_assignments WHERE category_id = ?',
+				[categoryId(db, 'Fun')]
+			);
+		const undo = (id: number, token: unknown) =>
+			dispatch({ id, method: 'undo.apply', args: [token] });
+		return { db, dispatch, move, assigned, undo };
+	}
+
+	it('returns a token for undoable writes only, and takes the write back with it', async () => {
+		const { dispatch, move, assigned, undo } = await setUp();
+		const plain = await dispatch({ id: 1, method: 'meta.update', args: [{ name: 'Home' }] });
+		expect(plain).not.toHaveProperty('undo');
+
+		const res = await move(2, 500);
+		expect(assigned()).toBe(500);
+		if (!res.ok) throw new Error('move failed');
+		expect(typeof res.undo).toBe('string');
+
+		expect(await undo(3, res.undo)).toEqual({
+			id: 3,
+			ok: true,
+			data: null,
+			changed: ['budget_assignments']
+		});
+		expect(assigned()).toBe(0);
+		// Once taken back, it can't be taken back again.
+		expect(await undo(4, res.undo)).toMatchObject({
+			ok: false,
+			error: { code: 'UNDO_UNAVAILABLE' }
+		});
+	});
+
+	it('keeps only the latest undoable write', async () => {
+		const { move, assigned, undo } = await setUp();
+		const first = await move(1, 500);
+		const second = await move(2, 300);
+		if (!first.ok || !second.ok) throw new Error('move failed');
+		expect(await undo(3, first.undo)).toMatchObject({ error: { code: 'UNDO_UNAVAILABLE' } });
+		expect(await undo(4, second.undo)).toMatchObject({ ok: true });
+		expect(assigned()).toBe(500);
+	});
+
+	it('forgets it when another budget opens', async () => {
+		const { dispatch, move, undo } = await setUp();
+		const res = await move(1, 500);
+		if (!res.ok) throw new Error('move failed');
+		await dispatch({ id: 2, method: 'system.open', args: ['b.sqlite3'] });
+		expect(await undo(3, res.undo)).toMatchObject({ error: { code: 'UNDO_UNAVAILABLE' } });
+	});
+
+	it('returns no token without the SQLite module', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		const res = await dispatch({
+			id: 1,
+			method: 'budget.moveMoney',
+			args: [
+				{
+					fromCategoryId: categoryId(db, 'Food'),
+					toCategoryId: categoryId(db, 'Fun'),
+					month: '2026-01',
+					amount: 500
+				}
+			]
+		});
+		expect(res).toMatchObject({ ok: true });
+		expect(res).not.toHaveProperty('undo');
 	});
 });

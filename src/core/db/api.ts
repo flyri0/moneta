@@ -20,6 +20,8 @@ interface Handler<A extends unknown[], R> {
 	tables: readonly Table[];
 	/** The top-level shape of each argument, checked before `fn` runs. */
 	args: readonly string[];
+	/** Whether the write can be taken back with `undo.apply` (see `undo.ts`). */
+	undoable: boolean;
 	fn: (db: Db, ...args: A) => R;
 }
 
@@ -27,15 +29,16 @@ function read<A extends unknown[], R>(
 	fn: (db: Db, ...args: A) => R,
 	args: NoInfer<ArgSpec<A>>
 ): Handler<A, R> {
-	return { kind: 'read', tables: [], args, fn };
+	return { kind: 'read', tables: [], args, fn, undoable: false };
 }
 
 function write<A extends unknown[], R>(
 	tables: readonly Table[],
 	fn: (db: Db, ...args: A) => R,
-	args: NoInfer<ArgSpec<A>>
+	args: NoInfer<ArgSpec<A>>,
+	options: { undo?: boolean } = {}
 ): Handler<A, R> {
-	return { kind: 'write', tables, args, fn };
+	return { kind: 'write', tables, args, fn, undoable: options.undo ?? false };
 }
 
 const TXN: readonly Table[] = ['transactions', 'transaction_splits', 'payees'];
@@ -107,19 +110,33 @@ export const api = {
 		get: read(transactions.getTransaction, ['string']),
 		create: write(TXN, transactions.createTransaction, ['object']),
 		update: write(TXN, transactions.updateTransaction, ['string', 'object']),
-		delete: write(['transactions', 'transaction_splits'], transactions.deleteTransaction, [
-			'string'
-		]),
-		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
+		delete: write(
+			['transactions', 'transaction_splits'],
+			transactions.deleteTransaction,
+			['string'],
+			{ undo: true }
+		),
+		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean']),
+		updateMany: write(['transactions'], transactions.updateTransactions, ['array', 'object'], {
+			undo: true
+		}),
+		deleteMany: write(
+			['transactions', 'transaction_splits'],
+			transactions.deleteTransactions,
+			['array'],
+			{ undo: true }
+		)
 	},
 	imports: {
 		preview: read(imports.previewImport, ['string', 'array']),
 		csvFormat: read(imports.getCsvFormat, ['string']),
 		// New lines create payees; matched ones only change their own row.
-		commit: write(['transactions', 'payees', 'accounts'], imports.importTransactions, [
-			'string',
-			'object'
-		])
+		commit: write(
+			['transactions', 'payees', 'accounts'],
+			imports.importTransactions,
+			['string', 'object'],
+			{ undo: true }
+		)
 	},
 	schedules: {
 		list: read(schedules.listSchedules, ['string']),
@@ -146,8 +163,10 @@ export const api = {
 	budget: {
 		month: read(budget.getBudgetMonth, ['string']),
 		setAssigned: write(['budget_assignments'], budget.setAssigned, ['string', 'string', 'number']),
-		moveMoney: write(['budget_assignments'], budget.moveMoney, ['object']),
-		quickAssign: write(['budget_assignments'], budget.applyQuickAssign, ['object'])
+		moveMoney: write(['budget_assignments'], budget.moveMoney, ['object'], { undo: true }),
+		quickAssign: write(['budget_assignments'], budget.applyQuickAssign, ['object'], {
+			undo: true
+		})
 	},
 	reports: {
 		spending: read(reports.spendingByCategory, ['object']),
@@ -271,7 +290,11 @@ export type ClientApi = {
 			? (...args: A) => Promise<R>
 			: never;
 	};
-} & { system: { [M in keyof SystemApi]: Promisify<SystemApi[M]> } };
+} & {
+	system: { [M in keyof SystemApi]: Promisify<SystemApi[M]> };
+	/** Takes back the undoable write that returned `token`, if it is still the latest one. */
+	undo: { apply(token: string): Promise<void> };
+};
 
 export function findHandler(method: string): Handler<unknown[], unknown> | undefined {
 	const [ns, name] = method.split('.');
