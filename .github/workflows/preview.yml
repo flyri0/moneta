@@ -78,7 +78,8 @@ jobs:
           site=$(jq -r .site_name "$RUNNER_TEMP/deploy.json")
           {
             echo "url=https://$ALIAS--$site.netlify.app"
-            echo "permalink=$(jq -r .deploy_url "$RUNNER_TEMP/deploy.json")"
+            # deploy_url is the alias; the deploy's own address keeps this commit after later pushes.
+            echo "permalink=https://$(jq -r .deploy_id "$RUNNER_TEMP/deploy.json")--$site.netlify.app"
             echo "logs=$(jq -r .logs "$RUNNER_TEMP/deploy.json")"
           } >> "$GITHUB_OUTPUT"
         env:
