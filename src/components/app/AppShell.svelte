@@ -48,6 +48,7 @@
 	import CrashScreen from './CrashScreen.svelte';
 	import DemoBanner from './DemoBanner.svelte';
 	import NavProgress from './NavProgress.svelte';
+	import { fab } from './fab.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -409,6 +410,7 @@
 	<button
 		type="button"
 		onclick={() => (adding = true)}
+		hidden={fab.hidden}
 		aria-label={m.add_transaction()}
 		data-compact={compact}
 		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-11 items-center rounded-full bg-primary pr-3.5 pl-3 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-3 md:hidden"

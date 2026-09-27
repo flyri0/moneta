@@ -19,6 +19,8 @@
 	import Register from '$features/accounts/Register.svelte';
 	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
 	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
+	import { RegisterSelection } from '$features/accounts/selection.svelte';
+	import SelectButton from '$features/accounts/SelectButton.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
 	import { FORECAST_DAYS, projectBalances, registerBalances } from '$features/accounts/register';
@@ -52,10 +54,14 @@
 	);
 
 	const filters = new RegisterFilters();
+	const selection = new RegisterSelection();
 	// Another account (e.g. through a transfer's link) starts with no search or dates.
 	$effect(() => {
 		void accountId;
-		untrack(() => filters.clear());
+		untrack(() => {
+			filters.clear();
+			selection.stop();
+		});
 	});
 
 	let adding = $state(false);
@@ -137,6 +143,7 @@
 			</div>
 		{/snippet}
 		{#snippet actions()}
+			<SelectButton {selection} />
 			{#if !account.data?.closed}
 				<Button
 					variant="outline"
@@ -223,7 +230,7 @@
 
 		<!-- Keyed so that switching accounts (e.g. the transfer link) starts paging over. -->
 		{#key accountId}
-			<Register {accountId} {filters} />
+			<Register {accountId} {filters} {selection} />
 		{/key}
 	{:else if !account.data}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs">

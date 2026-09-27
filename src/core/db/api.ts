@@ -116,7 +116,16 @@ export const api = {
 			['string'],
 			{ undo: true }
 		),
-		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
+		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean']),
+		updateMany: write(['transactions'], transactions.updateTransactions, ['array', 'object'], {
+			undo: true
+		}),
+		deleteMany: write(
+			['transactions', 'transaction_splits'],
+			transactions.deleteTransactions,
+			['array'],
+			{ undo: true }
+		)
 	},
 	imports: {
 		preview: read(imports.previewImport, ['string', 'array']),

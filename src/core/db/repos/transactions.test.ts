@@ -5,10 +5,12 @@ import { closeAccount, createAccount, getAccount } from './accounts';
 import {
 	createTransaction,
 	deleteTransaction,
+	deleteTransactions,
 	getTransaction,
 	listTransactions,
 	setCleared,
-	updateTransaction
+	updateTransaction,
+	updateTransactions
 } from './transactions';
 import { listPayees } from './payees';
 
@@ -694,5 +696,113 @@ describe('closed accounts stay frozen', () => {
 		expect(() => setCleared(db, outflow, true)).toThrow(code('ACCOUNT_CLOSED'));
 		expect(getAccount(db, bank)).toMatchObject({ balance: 0, clearedBalance: 0 });
 		expect(getTransaction(db, outflow).cleared).toBe(false);
+	});
+});
+
+describe('several transactions at once', () => {
+	function plain(over: Partial<Parameters<typeof createTransaction>[1]> = {}) {
+		return createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -1000,
+			payeeName: 'Shop',
+			categoryId: food,
+			...over
+		});
+	}
+
+	function split() {
+		return createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -3000,
+			splits: [
+				{ categoryId: food, amount: -2000 },
+				{ categoryId: fun, amount: -1000 }
+			]
+		});
+	}
+
+	it('sets a category, skipping splits and rows with no budget side', () => {
+		const a = plain();
+		const b = plain({ amount: -2000 });
+		const s = split();
+		const offBudget = plain({ accountId: broker, categoryId: null });
+		const neutral = plain({ transferAccountId: savings, categoryId: null });
+		expect(updateTransactions(db, [a, b, s, offBudget, neutral], { categoryId: fun })).toEqual({
+			changed: 2,
+			skipped: 3
+		});
+		expect(getTransaction(db, a).categoryId).toBe(fun);
+		expect(getTransaction(db, b).categoryId).toBe(fun);
+		expect(getTransaction(db, s).isSplit).toBe(true);
+		expect(getTransaction(db, offBudget).categoryId).toBeNull();
+	});
+
+	it('sets the category of a transfer on its budget side, from either side', () => {
+		const out = plain({ accountId: broker, transferAccountId: bank, categoryId: fun, amount: 500 });
+		const bankLeg = getTransaction(db, out).transferId!;
+		expect(updateTransactions(db, [out], { categoryId: food })).toEqual({ changed: 1, skipped: 0 });
+		expect(getTransaction(db, bankLeg).categoryId).toBe(food);
+		expect(getTransaction(db, out).categoryId).toBeNull();
+	});
+
+	it('moves both sides of a transfer to a new date and keeps what was imported', () => {
+		const t = plain({ transferAccountId: savings, categoryId: null });
+		run(db, "UPDATE transactions SET import_id = 'ofx:1' WHERE id = ?", [t]);
+		expect(updateTransactions(db, [t], { date: '2026-02-01' })).toEqual({ changed: 1, skipped: 0 });
+		const row = getTransaction(db, t);
+		expect(row.date).toBe('2026-02-01');
+		expect(getTransaction(db, row.transferId!).date).toBe('2026-02-01');
+		expect(all(db, 'SELECT import_id FROM transactions WHERE id = ?', [t])).toEqual([
+			{ import_id: 'ofx:1' }
+		]);
+	});
+
+	it('clears and unclears, leaving reconciled rows cleared', () => {
+		const a = plain();
+		const locked = plain();
+		run(db, 'UPDATE transactions SET reconciled = 1, cleared = 1 WHERE id = ?', [locked]);
+		expect(updateTransactions(db, [a], { cleared: true })).toEqual({ changed: 1, skipped: 0 });
+		expect(getTransaction(db, a).cleared).toBe(true);
+		expect(updateTransactions(db, [a, locked], { cleared: false })).toEqual({
+			changed: 1,
+			skipped: 1
+		});
+		expect(getTransaction(db, a).cleared).toBe(false);
+		expect(getTransaction(db, locked).cleared).toBe(true);
+	});
+
+	it('skips rows in closed accounts', () => {
+		const a = plain({ accountId: visa, categoryId: food });
+		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [visa]);
+		expect(updateTransactions(db, [a], { cleared: true })).toEqual({ changed: 0, skipped: 1 });
+	});
+
+	it('refuses an invalid date or an unknown category, changing nothing', () => {
+		const a = plain();
+		expect(() => updateTransactions(db, [a], { date: '2026-13-01' })).toThrow(
+			code('INVALID_INPUT')
+		);
+		expect(() => updateTransactions(db, [a], { categoryId: 'nope' })).toThrow(code('NOT_FOUND'));
+		expect(getTransaction(db, a)).toMatchObject({ date: '2026-01-05', categoryId: food });
+	});
+
+	it('deletes them, once per transfer even when both sides are chosen', () => {
+		const a = plain();
+		const s = split();
+		const t = plain({ transferAccountId: savings, categoryId: null });
+		const pair = getTransaction(db, t).transferId!;
+		expect(deleteTransactions(db, [a, s, t, pair])).toEqual({ changed: 3, skipped: 0 });
+		expect(listTransactions(db, { accountId: bank })).toHaveLength(0);
+		expect(all(db, 'SELECT * FROM transaction_splits')).toEqual([]);
+	});
+
+	it('leaves rows in closed accounts when deleting', () => {
+		const a = plain({ accountId: visa, categoryId: food });
+		const b = plain();
+		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [visa]);
+		expect(deleteTransactions(db, [a, b])).toEqual({ changed: 1, skipped: 1 });
+		expect(getTransaction(db, a).id).toBe(a);
 	});
 });

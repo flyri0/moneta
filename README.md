@@ -46,7 +46,9 @@ nothing you do there is saved.
   overspending, or clear.
 - **Accounts and transactions.** Budget and tracking accounts, credit cards whose payments
   don't touch the budget, split transactions, transfers between accounts, and payees you can
-  rename everywhere, merge, and give a default category.
+  rename everywhere, merge, and give a default category. Select several transactions to set
+  their category or date, clear or delete them at once, and undo a deletion, a money move or an
+  import right after.
 - **Bank statements.** Import OFX and CSV statements: lines you already entered are matched
   instead of doubled, a statement imported twice adds nothing, and each payee's usual category
   comes back by itself. Reconcile an account against the bank's balance to lock what was
