@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
 import { createAccount } from './accounts';
+import { updateCategory } from './categories';
 import { createTransaction } from './transactions';
 import {
 	applyQuickAssign,
@@ -223,5 +224,27 @@ describe('assigning money', () => {
 		applyQuickAssign(db, { month: '2026-02', categoryIds: [food, rent], strategy: 'clear' });
 		view = getBudgetMonth(db, '2026-02');
 		expect(cat(view, 'Rent').assigned).toBe(0);
+	});
+
+	it('funds goals, leaving categories without one as they are', () => {
+		setAssigned(db, food, '2026-01', 30000);
+		updateCategory(db, rent, { goal: { type: 'monthly', amount: 120000, month: null } });
+		applyQuickAssign(db, { month: '2026-01', categoryIds: [food, rent], strategy: 'goals' });
+		const view = getBudgetMonth(db, '2026-01');
+		expect(cat(view, 'Food').assigned).toBe(30000);
+		expect(cat(view, 'Rent').assigned).toBe(120000);
+	});
+});
+
+describe('goals in the budget month', () => {
+	it("shows each category's goal and what it needs this month", () => {
+		updateCategory(db, rent, { goal: { type: 'target', amount: 120000, month: '2026-03' } });
+		setAssigned(db, rent, '2026-01', 40000);
+		const view = getBudgetMonth(db, '2026-02');
+		expect(cat(view, 'Rent')).toMatchObject({
+			goal: { type: 'target', amount: 120000, month: '2026-03' },
+			goalNeed: 40000 // (120000 - 40000 carried over) over February and March
+		});
+		expect(cat(view, 'Food')).toMatchObject({ goal: null, goalNeed: null });
 	});
 });

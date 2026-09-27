@@ -31,6 +31,20 @@ const BROKEN_ROWS: [string, string][] = [
 		"SELECT 1 FROM schedule_splits WHERE typeof(amount) <> 'integer'"
 	],
 	[
+		'a goal amount that is not an integer',
+		"SELECT 1 FROM categories WHERE typeof(goal_amount) NOT IN ('integer', 'null')"
+	],
+	[
+		'an incomplete goal',
+		`SELECT 1 FROM categories WHERE (goal_type IS NULL) <> (goal_amount IS NULL)
+			OR (goal_month IS NOT NULL AND goal_type IS NOT 'target')`
+	],
+	[
+		'a goal on an income category',
+		`SELECT 1 FROM categories c JOIN category_groups g ON g.id = c.group_id
+			WHERE g.system = 'income' AND c.goal_type IS NOT NULL`
+	],
+	[
 		'a split transaction without splits',
 		`SELECT 1 FROM transactions t WHERE t.is_split = 1
 			AND NOT EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transaction_id = t.id)`
@@ -76,7 +90,8 @@ const DATES: [string, string, (value: string) => boolean][] = [
 	['transactions', 'date', isDate],
 	['schedules', 'start_date', isDate],
 	['schedules', 'end_date', isDate],
-	['budget_assignments', 'month', isMonth]
+	['budget_assignments', 'month', isMonth],
+	['categories', 'goal_month', isMonth]
 ];
 
 function damaged(what: string): DomainError {

@@ -183,6 +183,68 @@ test.describe('on a phone', () => {
 		await expect(groceries.getByTestId('progress')).toHaveText('$240.00 of $300.00 spent');
 	});
 
+	test('sets a monthly goal, funds it and removes it', async ({ page }) => {
+		await onboard(page);
+		const groceries = categoryRow(page, 'Groceries');
+		await groceries.getByRole('button', { name: 'Groceries' }).click();
+		const sheet = page.getByRole('dialog');
+		await expect(sheet.getByRole('button', { name: 'Fund goals' })).toBeHidden();
+		await sheet.getByRole('button', { name: /^Goal/ }).click();
+		await expect(sheet.getByRole('heading', { name: 'Goal' })).toBeVisible();
+		await sheet.getByLabel('Amount').fill('400');
+		await sheet.getByRole('button', { name: 'Save', exact: true }).click();
+		await expect(sheet.getByRole('heading', { name: 'Groceries' })).toBeVisible();
+		await expect(sheet.getByRole('button', { name: /^Goal/ })).toContainText('$400.00 a month');
+		await page.keyboard.press('Escape');
+		await expect(sheet).toBeHidden();
+
+		await expect(groceries.getByTestId('progress')).toHaveText(
+			'$0.00 of $0.00 spent · $400.00 to goal'
+		);
+		await expect(groceries.getByTestId('goal-tick')).toBeAttached();
+
+		await groceries.getByRole('button', { name: 'Groceries' }).click();
+		await sheet.getByRole('button', { name: 'Fund goals' }).click();
+		await expect(sheet).toBeHidden();
+		await expect(groceries.getByTestId('available')).toHaveText('$400.00');
+		await expect(groceries.getByTestId('progress')).toHaveText('$0.00 of $400.00 spent');
+
+		await groceries.getByRole('button', { name: 'Groceries' }).click();
+		await sheet.getByRole('button', { name: /^Goal/ }).click();
+		await sheet.getByRole('button', { name: 'Remove goal' }).click();
+		await expect(sheet.getByRole('button', { name: /^Goal/ })).toContainText('None');
+		await expect(sheet.getByRole('button', { name: 'Fund goals' })).toBeHidden();
+	});
+
+	test('spreads a dated savings goal over the months left', async ({ page }) => {
+		await onboard(page);
+		const month = page.url().match(/(\d{4})-(\d{2})$/)!;
+		const by = new Date(Date.UTC(Number(month[1]), Number(month[2]) - 1 + 11, 1));
+		const byLabel = by.toLocaleDateString('en-US', {
+			month: 'short',
+			year: 'numeric',
+			timeZone: 'UTC'
+		});
+
+		const household = categoryRow(page, 'Household');
+		await household.getByRole('button', { name: 'Household' }).click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: /^Goal/ }).click();
+		await sheet.getByRole('button', { name: 'Save up' }).click();
+		await sheet.getByLabel('Amount').fill('1200');
+		await sheet.getByLabel('By a month').click();
+		await sheet.getByRole('button', { name: 'Save', exact: true }).click();
+		await expect(sheet.getByRole('button', { name: /^Goal/ })).toContainText(
+			`Save $1,200.00 by ${byLabel}`
+		);
+		await page.keyboard.press('Escape');
+
+		// Twelve months, this one included: $100.00 a month.
+		await expect(household.getByTestId('progress')).toHaveText(
+			'$0.00 of $0.00 spent · $100.00 to goal'
+		);
+	});
+
 	test('points out an overspent category until it is covered', async ({ page }) => {
 		await onboard(page);
 		const groceries = categoryRow(page, 'Groceries');

@@ -25,7 +25,8 @@ const tree: GroupNode[] = [
 				name: 'Rent',
 				sortOrder: 0,
 				hidden: false,
-				carryoverOverspending: false
+				carryoverOverspending: false,
+				goal: null
 			}
 		]
 	}

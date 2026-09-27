@@ -64,4 +64,19 @@ describe('quickAssignAmount', () => {
 	it('clears', () => {
 		expect(quickAssignAmount(comp, '2026-04', 'food', 'clear')).toBe(0);
 	});
+
+	it("raises assigned to what the category's goal needs", () => {
+		const goal = { type: 'monthly', amount: 8000, month: null } as const;
+		expect(quickAssignAmount(comp, '2026-04', 'food', 'goals', goal)).toBe(8000);
+	});
+
+	it('keeps an assigned amount already past the goal', () => {
+		const goal = { type: 'monthly', amount: 3000, month: null } as const;
+		expect(quickAssignAmount(comp, '2026-04', 'food', 'goals', goal)).toBe(5000);
+	});
+
+	it('leaves a category without a goal as it is', () => {
+		expect(quickAssignAmount(comp, '2026-04', 'food', 'goals')).toBe(5000);
+		expect(quickAssignAmount(comp, '2026-04', 'food', 'goals', null)).toBe(5000);
+	});
 });

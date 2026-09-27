@@ -15,6 +15,8 @@ const cat = (id: string, p: Partial<BudgetCategoryView> = {}): BudgetCategoryVie
 	name: id,
 	hidden: false,
 	carryoverOverspending: false,
+	goal: null,
+	goalNeed: null,
 	carryover: 0,
 	assigned: 0,
 	activity: 0,

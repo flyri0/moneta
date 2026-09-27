@@ -6,6 +6,7 @@ import {
 	monthOf,
 	addMonths,
 	compareMonths,
+	monthDiff,
 	monthRange,
 	todayIso,
 	currentMonth,
@@ -81,6 +82,12 @@ describe('month helpers', () => {
 		expect(addMonths('2026-01', -1)).toBe('2025-12');
 		expect(addMonths('2026-05', 14)).toBe('2027-07');
 		expect(addMonths('2026-05', 0)).toBe('2026-05');
+	});
+
+	it('counts the months between two months', () => {
+		expect(monthDiff('2026-05', '2026-05')).toBe(0);
+		expect(monthDiff('2026-11', '2027-02')).toBe(3);
+		expect(monthDiff('2027-02', '2026-11')).toBe(-3);
 	});
 
 	it('compares months', () => {

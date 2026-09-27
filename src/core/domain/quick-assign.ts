@@ -1,10 +1,12 @@
 import { categoryMonth, type BudgetComputation } from './budget-engine';
+import { goalNeed, type CategoryGoal } from './goal';
 import { addMonths, type Month } from './month';
 
 export type QuickAssignStrategy =
-	'last-month' | 'avg-3' | 'avg-6' | 'avg-12' | 'cover-overspending' | 'clear';
+	'goals' | 'last-month' | 'avg-3' | 'avg-6' | 'avg-12' | 'cover-overspending' | 'clear';
 
 export const QUICK_ASSIGN_STRATEGIES: readonly QuickAssignStrategy[] = [
+	'goals',
 	'last-month',
 	'avg-3',
 	'avg-6',
@@ -13,15 +15,21 @@ export const QUICK_ASSIGN_STRATEGIES: readonly QuickAssignStrategy[] = [
 	'clear'
 ];
 
-/** The new assigned amount for `categoryId` in `month` under `strategy`. */
+/**
+ * The new assigned amount for `categoryId` in `month` under `strategy`. `goals` raises it to what
+ * the category's `goal` needs, never lowers it, and leaves a category without one as it is.
+ */
 export function quickAssignAmount(
 	comp: BudgetComputation,
 	month: Month,
 	categoryId: string,
-	strategy: QuickAssignStrategy
+	strategy: QuickAssignStrategy,
+	goal: CategoryGoal | null = null
 ): number {
 	const current = categoryMonth(comp, month, categoryId);
 	switch (strategy) {
+		case 'goals':
+			return goal ? Math.max(current.assigned, goalNeed(goal, month, current)) : current.assigned;
 		case 'last-month':
 			return categoryMonth(comp, addMonths(month, -1), categoryId).assigned;
 		case 'avg-3':

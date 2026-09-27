@@ -5,6 +5,7 @@ import {
 	type BudgetComputation
 } from '$domain/budget-engine';
 import { DomainError } from '$domain/errors';
+import { goalNeed, type CategoryGoal } from '$domain/goal';
 import { isMonth, type Month } from '$domain/month';
 import {
 	quickAssignAmount,
@@ -20,6 +21,9 @@ export interface BudgetCategoryView {
 	name: string;
 	hidden: boolean;
 	carryoverOverspending: boolean;
+	goal: CategoryGoal | null;
+	/** What the goal asks to be assigned this month; `null` without a goal. */
+	goalNeed: number | null;
 	carryover: number;
 	assigned: number;
 	activity: number;
@@ -60,13 +64,18 @@ export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {
 	const comp = compute(db, month);
 	const result = comp.months.get(month)!;
 	const groups = listCategoryTree(db).map((g) => {
-		const categories = g.categories.map((c) => ({
-			id: c.id,
-			name: c.name,
-			hidden: c.hidden,
-			carryoverOverspending: c.carryoverOverspending,
-			...categoryMonth(comp, month, c.id)
-		}));
+		const categories = g.categories.map((c) => {
+			const cm = categoryMonth(comp, month, c.id);
+			return {
+				id: c.id,
+				name: c.name,
+				hidden: c.hidden,
+				carryoverOverspending: c.carryoverOverspending,
+				goal: c.goal,
+				goalNeed: c.goal ? goalNeed(c.goal, month, cm) : null,
+				...cm
+			};
+		});
 		const sum = (key: 'assigned' | 'activity' | 'available') =>
 			categories.reduce((s, c) => s + c[key], 0);
 		return {
@@ -179,7 +188,13 @@ export function applyQuickAssign(db: Db, input: QuickAssignInput): void {
 		for (const id of input.categoryIds) requireAssignable(db, id);
 		const comp = compute(db, input.month);
 		for (const id of input.categoryIds) {
-			writeAssigned(db, id, input.month, quickAssignAmount(comp, input.month, id, input.strategy));
+			const { goal } = getCategory(db, id);
+			writeAssigned(
+				db,
+				id,
+				input.month,
+				quickAssignAmount(comp, input.month, id, input.strategy, goal)
+			);
 		}
 	});
 }
