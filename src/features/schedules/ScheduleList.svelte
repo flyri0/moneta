@@ -31,7 +31,14 @@
 				: s.nextDate === null
 					? m.schedules_ended()
 					: m.schedules_next({ date: formatDate(s.nextDate, getLocale()) });
-		return `${s.accountName} · ${ruleSummary(s)} · ${when}`;
+		const how =
+			s.installmentStart !== null && s.endCount !== null && s.nextDate !== null
+				? m.schedules_installment({
+						n: s.installmentStart + s.nextIndex,
+						total: s.installmentStart + s.endCount - 1
+					})
+				: ruleSummary(s);
+		return `${s.accountName} · ${how} · ${when}`;
 	}
 </script>
 

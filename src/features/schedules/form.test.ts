@@ -71,6 +71,7 @@ const schedule = (over: Partial<ScheduleRow> = {}): ScheduleRow => ({
 	endCount: null,
 	weekend: 'keep',
 	nextIndex: 0,
+	installmentStart: null,
 	nextDate: '2026-08-01',
 	status: 'active',
 	...over
@@ -104,7 +105,8 @@ describe('buildScheduleInput', () => {
 				endDate: null,
 				endCount: null,
 				weekend: 'keep',
-				autoEnter: false
+				autoEnter: false,
+				installments: false
 			}
 		});
 	});
@@ -183,6 +185,17 @@ describe('draftFromSchedule', () => {
 			ctx
 		);
 		expect(draft.txn.date).toBe('2026-09-05');
+	});
+
+	it('keeps numbering installments while the schedule ends after a count', () => {
+		const draft = draftFromSchedule(
+			schedule({ endCount: 12, nextIndex: 3, installmentStart: 1, memo: 'TV' }),
+			ctx
+		);
+		expect(draft).toMatchObject({ installments: true, txn: { memo: 'TV' } });
+		expect(buildScheduleInput(draft, ctx)).toMatchObject({ input: { installments: true } });
+		draft.rule.ends = 'never';
+		expect(buildScheduleInput(draft, ctx)).toMatchObject({ input: { installments: false } });
 	});
 
 	it('rebases from the scheduled date, not the weekend-moved one', () => {

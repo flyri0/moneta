@@ -1,6 +1,12 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
 import { groupBy } from '$domain/group-by';
+import {
+	installmentMemo,
+	MAX_INSTALLMENTS,
+	occurrenceMemo,
+	splitInstallments
+} from '$domain/installments';
 import { MAX_DATE } from '$domain/month';
 import {
 	occurrenceDate,
@@ -16,6 +22,8 @@ import { createTransaction, validateTransaction, type TransactionInput } from '.
 /** A schedule as the form writes it: a transaction without its date, and the rule that dates it. */
 export interface ScheduleInput extends Omit<TransactionInput, 'date' | 'cleared'>, Rule {
 	autoEnter: boolean;
+	/** Whether it keeps numbering its occurrences as installments ("2/12"). Needs `endCount`. */
+	installments?: boolean;
 }
 
 export interface ScheduleSplitRow {
@@ -49,6 +57,8 @@ export interface ScheduleRow extends Rule {
 	autoEnter: boolean;
 	/** How many occurrences were entered or skipped. */
 	nextIndex: number;
+	/** The installment number of occurrence 0, when the schedule pays a purchase in installments. */
+	installmentStart: number | null;
 	nextDate: string | null;
 	status: ScheduleStatus;
 }
@@ -92,7 +102,8 @@ const SELECT_SQL = `SELECT s.id, s.account_id AS accountId, a.name AS accountNam
 	s.transfer_account_id AS transferAccountId, ta.name AS transferAccountName, s.memo,
 	s.is_split AS isSplit, s.start_date AS startDate, s.frequency, s.interval,
 	s.end_date AS endDate, s.end_count AS endCount, s.weekend, s.auto_enter AS autoEnter,
-	s.next_index AS nextIndex, (a.closed = 1 OR COALESCE(ta.closed, 0) = 1) AS paused
+	s.next_index AS nextIndex, s.installment_start AS installmentStart,
+	(a.closed = 1 OR COALESCE(ta.closed, 0) = 1) AS paused
 	FROM schedules s
 	JOIN accounts a ON a.id = s.account_id
 	LEFT JOIN payees p ON p.id = s.payee_id
@@ -164,20 +175,27 @@ type Template = Pick<
 >;
 
 /** The transaction a template makes on `date`. */
-function transactionAt(t: Template, date: string): TransactionInput {
+function transactionAt(t: Template, date: string, memo = t.memo): TransactionInput {
 	return {
 		accountId: t.accountId,
 		date,
 		amount: t.amount,
 		payeeName: t.payeeName,
 		categoryId: t.categoryId,
-		memo: t.memo,
+		memo,
 		splits: t.splits,
 		transferAccountId: t.transferAccountId
 	};
 }
 
-function insert(db: Db, id: string, input: ScheduleInput, createdAt: string, nextIndex = 0): void {
+function insert(
+	db: Db,
+	id: string,
+	input: ScheduleInput,
+	createdAt: string,
+	nextIndex = 0,
+	installmentStart: number | null = null
+): void {
 	validateRule(input);
 	validateTransaction(db, transactionAt(input, input.startDate));
 	const splits = input.splits ?? [];
@@ -185,8 +203,8 @@ function insert(db: Db, id: string, input: ScheduleInput, createdAt: string, nex
 		db,
 		`INSERT INTO schedules (id, account_id, amount, payee_id, category_id, transfer_account_id,
 			memo, is_split, start_date, frequency, interval, end_date, end_count, weekend, auto_enter,
-			next_index, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			next_index, installment_start, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			id,
 			input.accountId,
@@ -204,6 +222,7 @@ function insert(db: Db, id: string, input: ScheduleInput, createdAt: string, nex
 			input.weekend,
 			input.autoEnter ? 1 : 0,
 			nextIndex,
+			input.endCount === null ? null : installmentStart,
 			createdAt
 		]
 	);
@@ -216,13 +235,14 @@ function insert(db: Db, id: string, input: ScheduleInput, createdAt: string, nex
 	}
 }
 
-type Stored = Rule & { nextIndex: number; createdAt: string };
+type Stored = Rule & { nextIndex: number; installmentStart: number | null; createdAt: string };
 
 function requireSchedule(db: Db, id: string): Stored {
 	const row = one<Stored>(
 		db,
 		`SELECT start_date AS startDate, frequency, interval, end_date AS endDate,
-			end_count AS endCount, weekend, next_index AS nextIndex, created_at AS createdAt
+			end_count AS endCount, weekend, next_index AS nextIndex,
+			installment_start AS installmentStart, created_at AS createdAt
 		 FROM schedules WHERE id = ?`,
 		[id]
 	);
@@ -243,7 +263,7 @@ export function createSchedule(db: Db, input: ScheduleInput): string {
  * `endCount` counts the occurrences from there. When the next date is where the schedule picks up
  * anyway (see `resumeDate`) and the cadence is the same, it keeps its place: a month-end day stays
  * put, and occurrences already entered or skipped never come back. Otherwise the rule restarts
- * at the new date.
+ * at the new date. Installment numbers go on from where they were either way.
  */
 export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 	tx(db, () => {
@@ -252,9 +272,10 @@ export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 			input.frequency === stored.frequency &&
 			input.interval === stored.interval &&
 			input.startDate === resumeDate(stored, stored.nextIndex);
+		const start = input.installments ? stored.installmentStart : null;
 		run(db, 'DELETE FROM schedules WHERE id = ?', [id]);
 		if (!keep) {
-			insert(db, id, input, stored.createdAt);
+			insert(db, id, input, stored.createdAt, 0, start === null ? null : start + stored.nextIndex);
 			return;
 		}
 		const endCount = input.endCount === null ? null : input.endCount + stored.nextIndex;
@@ -263,8 +284,53 @@ export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 			id,
 			{ ...input, startDate: stored.startDate, endCount },
 			stored.createdAt,
-			stored.nextIndex
+			stored.nextIndex,
+			start
 		);
+	});
+}
+
+/**
+ * Records a card purchase of `count` installments, one a month from its date: enters the first,
+ * which takes the cents left over, and schedules the rest to be entered on their dates, each
+ * memo numbered ("TV 2/12"). Returns the first installment's transaction id.
+ */
+export function createInstallments(db: Db, input: TransactionInput, count: number): string {
+	return tx(db, () => {
+		if (!Number.isInteger(count) || count < 2 || count > MAX_INSTALLMENTS)
+			throw new DomainError('INVALID_INPUT', 'Installments must be 2 to 99');
+		const account = one<{ type: string }>(db, 'SELECT type FROM accounts WHERE id = ?', [
+			input.accountId
+		]);
+		if (account?.type !== 'credit_card')
+			throw new DomainError('INVALID_INPUT', 'Only card purchases are paid in installments');
+		if (input.transferAccountId || (input.splits?.length ?? 0) > 0)
+			throw new DomainError('INVALID_INPUT', 'Transfers and splits are not paid in installments');
+		if (!Number.isInteger(input.amount) || -input.amount < count)
+			throw new DomainError('INVALID_INPUT', 'Installments need a purchase of a cent each');
+		const { first, rest } = splitInstallments(-input.amount, count);
+		const memo = input.memo ?? '';
+		const transactionId = createTransaction(db, {
+			...input,
+			amount: -first,
+			memo: installmentMemo(memo, 1, count)
+		});
+		const schedule: ScheduleInput = {
+			accountId: input.accountId,
+			amount: -rest,
+			payeeName: input.payeeName ?? null,
+			categoryId: input.categoryId ?? null,
+			memo,
+			startDate: input.date,
+			frequency: 'monthly',
+			interval: 1,
+			endDate: null,
+			endCount: count,
+			weekend: 'keep',
+			autoEnter: true
+		};
+		insert(db, uuidv7(), schedule, nowIso(), 1, 1);
+		return transactionId;
 	});
 }
 
@@ -328,7 +394,8 @@ export function enterDueOccurrences(db: Db, today: string): number {
 		for (const s of listSchedules(db, today)) {
 			if (!s.autoEnter || s.status !== 'active') continue;
 			const due = occurrencesBetween(s, s.nextIndex, today);
-			for (const o of due) createTransaction(db, transactionAt(s, o.date));
+			for (const o of due)
+				createTransaction(db, transactionAt(s, o.date, occurrenceMemo(s, o.index)));
 			if (due.length > 0) advance(db, s.id, due.length);
 			count += due.length;
 		}
@@ -351,7 +418,7 @@ export function upcomingOccurrences(db: Db, query: UpcomingQuery): UpcomingOccur
 				date: o.date,
 				payeeName: s.payeeName,
 				isSplit: s.isSplit,
-				memo: s.memo,
+				memo: occurrenceMemo(s, o.index),
 				autoEnter: s.autoEnter,
 				isNext: o.index === s.nextIndex,
 				due: !s.autoEnter && o.date <= query.today

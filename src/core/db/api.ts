@@ -101,6 +101,12 @@ export const api = {
 		get: read(schedules.getSchedule, ['string', 'string']),
 		upcoming: read(schedules.upcomingOccurrences, ['object']),
 		create: write([...SCHED, 'payees'], schedules.createSchedule, ['object']),
+		// The first installment is entered and the rest scheduled; neither is ever split.
+		createInstallments: write(
+			['schedules', 'transactions', 'payees'],
+			schedules.createInstallments,
+			['object', 'number']
+		),
 		update: write([...SCHED, 'payees'], schedules.updateSchedule, ['string', 'object']),
 		delete: write(SCHED, schedules.deleteSchedule, ['string']),
 		enter: write(['schedules', ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),

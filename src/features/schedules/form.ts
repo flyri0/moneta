@@ -34,6 +34,8 @@ export interface ScheduleDraft {
 	txn: TransactionDraft;
 	rule: RuleDraft;
 	autoEnter: boolean;
+	/** Whether it pays a purchase in installments, numbering what it enters. */
+	installments: boolean;
 }
 
 /** An occurrence the transaction dialog enters: it starts from the template, on `date`. */
@@ -60,7 +62,8 @@ export function newScheduleDraft(accountId: string, date: string): ScheduleDraft
 			endDate: '',
 			endCount: ''
 		},
-		autoEnter: false
+		autoEnter: false,
+		installments: false
 	};
 }
 
@@ -82,7 +85,8 @@ export function draftFromSchedule(schedule: ScheduleRow, ctx: FormContext): Sche
 			endDate: schedule.endDate ?? '',
 			endCount: left === null ? '' : String(left)
 		},
-		autoEnter: schedule.autoEnter
+		autoEnter: schedule.autoEnter,
+		installments: schedule.installmentStart !== null
 	};
 }
 
@@ -129,7 +133,9 @@ export function buildScheduleInput(draft: ScheduleDraft, ctx: FormContext): Sche
 			endDate,
 			endCount,
 			weekend: rule.frequency === 'daily' ? 'keep' : rule.weekend,
-			autoEnter: draft.autoEnter
+			autoEnter: draft.autoEnter,
+			// Numbers count up to the last installment, so they need a count to end after.
+			installments: draft.installments && endCount !== null
 		}
 	};
 }

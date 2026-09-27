@@ -5,6 +5,7 @@
 	import { LAST_ACCOUNT_KEY } from '$client/registry';
 	import { notifyError } from '$client/notify';
 	import type { TransactionInput, TransactionRow } from '$db/repos/transactions';
+	import { occurrenceMemo } from '$domain/installments';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import {
@@ -66,7 +67,11 @@
 		try {
 			const context = await loadFormContext(session.api, session.money);
 			if (entering) {
-				initial = { ...draftFromSchedule(entering.schedule, context).txn, date: entering.date };
+				initial = {
+					...draftFromSchedule(entering.schedule, context).txn,
+					date: entering.date,
+					memo: occurrenceMemo(entering.schedule, entering.index)
+				};
 			} else if (editing) {
 				const pair =
 					editing.transferId && editing.categoryId === null

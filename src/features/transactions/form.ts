@@ -183,7 +183,8 @@ export type FormError =
 	| 'CATEGORY_REQUIRED'
 	| 'SPLIT_LINE_INVALID'
 	| 'SPLIT_TOO_FEW_LINES'
-	| 'SPLIT_SUM_MISMATCH';
+	| 'SPLIT_SUM_MISMATCH'
+	| 'INSTALLMENTS_INVALID';
 
 export type BuildResult = { ok: true; input: TransactionInput } | { ok: false; error: FormError };
 

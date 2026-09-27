@@ -207,6 +207,7 @@ describe('checkBackup rebuilds the budget', () => {
 		],
 		['a text assignment', "UPDATE budget_assignments SET assigned = 'x'"],
 		['a fractional schedule amount', 'UPDATE schedules SET amount = 0.5'],
+		['a fractional installment number', 'UPDATE schedules SET installment_start = 2.5'],
 		['a date that is not a date', "UPDATE transactions SET date = 'zzzz' WHERE memo = 'plain'"],
 		['an impossible date', "UPDATE transactions SET date = '2026-13-45' WHERE memo = 'plain'"],
 		['a far-off year', "UPDATE transactions SET date = '9999-12-31' WHERE memo = 'plain'"],

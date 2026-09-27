@@ -10,8 +10,9 @@ import {
 	listPayees,
 	mergePayee
 } from './payees';
-import { listTransactions } from './transactions';
+import { listTransactions, type TransactionInput } from './transactions';
 import {
+	createInstallments,
 	createSchedule,
 	deleteSchedule,
 	enterDueOccurrences,
@@ -31,6 +32,7 @@ let db: Db;
 let bank: string;
 let savings: string;
 let broker: string;
+let card: string;
 let rent: string;
 let food: string;
 let fun: string;
@@ -41,6 +43,7 @@ beforeEach(async () => {
 	bank = createAccount(db, { ...base, name: 'Bank', type: 'checking' });
 	savings = createAccount(db, { ...base, name: 'Savings', type: 'savings' });
 	broker = createAccount(db, { ...base, name: 'Broker', type: 'investment', onBudget: false });
+	card = createAccount(db, { ...base, name: 'Card', type: 'credit_card' });
 	rent = categoryId(db, 'Rent');
 	food = categoryId(db, 'Food');
 	fun = categoryId(db, 'Fun');
@@ -380,6 +383,130 @@ describe('updateSchedule and deleteSchedule', () => {
 		expect(() => updateSchedule(db, 'nope', rentInput())).toThrow(code('NOT_FOUND'));
 		expect(() => deleteSchedule(db, 'nope')).toThrow(code('NOT_FOUND'));
 		expect(() => getSchedule(db, 'nope', T)).toThrow(code('NOT_FOUND'));
+	});
+});
+
+/** A TV of 1,000.00 bought on the card on T. */
+function tvInput(over: Partial<TransactionInput> = {}): TransactionInput {
+	return {
+		accountId: card,
+		date: T,
+		amount: -100000,
+		payeeName: 'Store',
+		categoryId: fun,
+		memo: 'TV',
+		...over
+	};
+}
+
+describe('createInstallments', () => {
+	it('enters the first installment, with the leftover cents, and schedules the rest monthly', () => {
+		const id = createInstallments(db, tvInput(), 3);
+		expect(listTransactions(db)).toEqual([
+			expect.objectContaining({ id, date: T, amount: -33334, memo: 'TV 1/3', categoryId: fun })
+		]);
+		const [schedule] = listSchedules(db, T);
+		expect(schedule).toMatchObject({
+			accountId: card,
+			amount: -33333,
+			payeeName: 'Store',
+			categoryId: fun,
+			memo: 'TV',
+			startDate: T,
+			frequency: 'monthly',
+			interval: 1,
+			endCount: 3,
+			autoEnter: true,
+			nextIndex: 1,
+			nextDate: '2026-10-24',
+			installmentStart: 1
+		});
+	});
+
+	it('numbers the installments it enters and lists', () => {
+		createInstallments(db, tvInput({ date: '2026-07-31', memo: '' }), 4);
+		expect(
+			upcomingOccurrences(db, { accountId: card, today: T, to: '2027-12-31' }).map((o) => [
+				o.date,
+				o.memo
+			])
+		).toEqual([
+			['2026-08-31', '2/4'],
+			['2026-09-30', '3/4'],
+			['2026-10-31', '4/4']
+		]);
+		expect(enterDueOccurrences(db, T)).toBe(1);
+		expect(listTransactions(db).map((t) => [t.date, t.amount, t.memo])).toEqual([
+			['2026-08-31', -25000, '2/4'],
+			['2026-07-31', -25000, '1/4']
+		]);
+		expect(getAccount(db, card).balance).toBe(-50000);
+	});
+
+	it('keeps the numbers when the schedule is edited in place or restarted', () => {
+		createInstallments(db, tvInput(), 12);
+		const [s] = listSchedules(db, T);
+		const edit = (over: Partial<ScheduleInput>) =>
+			updateSchedule(db, s.id, {
+				accountId: card,
+				amount: -8000,
+				payeeName: 'Store',
+				categoryId: fun,
+				memo: 'TV',
+				startDate: '2026-10-24',
+				frequency: 'monthly',
+				interval: 1,
+				endDate: null,
+				endCount: 11,
+				weekend: 'keep',
+				autoEnter: true,
+				installments: true,
+				...over
+			});
+		edit({});
+		expect(getSchedule(db, s.id, T)).toMatchObject({ nextIndex: 1, installmentStart: 1 });
+		edit({ startDate: '2026-11-01' });
+		expect(getSchedule(db, s.id, T)).toMatchObject({ nextIndex: 0, installmentStart: 2 });
+		expect(upcomingOccurrences(db, { today: T, to: '2026-11-30' })[0].memo).toBe('TV 2/12');
+		edit({ startDate: '2026-11-01', installments: false });
+		expect(getSchedule(db, s.id, T).installmentStart).toBeNull();
+	});
+
+	it('drops the numbers when the schedule stops ending after a count', () => {
+		createInstallments(db, tvInput(), 2);
+		const [s] = listSchedules(db, T);
+		updateSchedule(db, s.id, {
+			...rentInput({ accountId: card, startDate: '2026-10-24', categoryId: fun }),
+			installments: true
+		});
+		expect(getSchedule(db, s.id, T).installmentStart).toBeNull();
+	});
+
+	it('refuses what is not a card purchase in 2 to 99 installments', () => {
+		const bad: [Partial<TransactionInput>, number][] = [
+			[{}, 1],
+			[{}, 100],
+			[{}, 2.5],
+			[{ accountId: bank }, 3],
+			[{ amount: 100000 }, 3],
+			[{ amount: -2 }, 3],
+			[{ payeeName: null, categoryId: null, transferAccountId: bank }, 3],
+			[
+				{
+					categoryId: null,
+					splits: [
+						{ categoryId: fun, amount: -50000 },
+						{ categoryId: food, amount: -50000 }
+					]
+				},
+				3
+			]
+		];
+		for (const [over, count] of bad) {
+			expect(() => createInstallments(db, tvInput(over), count)).toThrow(code('INVALID_INPUT'));
+		}
+		expect(listTransactions(db)).toEqual([]);
+		expect(listSchedules(db, T)).toEqual([]);
 	});
 });
 
