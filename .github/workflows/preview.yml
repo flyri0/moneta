@@ -1,0 +1,162 @@
+name: Preview
+
+# Deploys each pull request to a Netlify preview of its own (https://pr-<number>--<site>.netlify.app),
+# keeps one comment on the pull request up to date with its link, and removes the preview when the
+# pull request closes. Production deploys stay in deploy.yml.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# One run per pull request: a new push cancels the preview still being made for the one before.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PR: ${{ github.event.pull_request.number }}
+  ALIAS: pr-${{ github.event.pull_request.number }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  deploy:
+    name: Deploy preview
+    # Pull requests from forks get no secrets, so they get no preview. Dependabot's do, from the
+    # Dependabot secrets: NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID must be set there too.
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # Shows the preview on the pull request as a deployment, with a "View deployment" button.
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD_SHA }}
+
+      - name: Say the preview is on its way
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/preview-comment.sh "### ⏳ Preview
+
+          Building a preview of ${HEAD_SHA::7}… ([progress]($RUN_URL))"
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Built here rather than by `netlify deploy`, so without the site's environment variables:
+      # signing in to Google only works from addresses registered with it, and every preview has a
+      # new one, so previews leave cloud backups out (no VITE_GOOGLE_CLIENT_ID).
+      - run: pnpm build
+
+      # A draft deploy under a fixed alias, so each pull request keeps one address. Without cloud
+      # backups the token function has nothing to do, so it stays out (an empty functions folder):
+      # the site's Google client secret never meets code that hasn't been merged.
+      - name: Deploy to Netlify
+        id: deploy
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID is missing. Dependabot's pull requests read the Dependabot secrets, not the Actions ones."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/no-functions"
+          pnpm exec netlify deploy --no-build --dir build --functions "$RUNNER_TEMP/no-functions" \
+            --alias "$ALIAS" --message "PR #$PR · ${HEAD_SHA::7}" --json > "$RUNNER_TEMP/deploy.json"
+          site=$(jq -r .site_name "$RUNNER_TEMP/deploy.json")
+          {
+            echo "url=https://$ALIAS--$site.netlify.app"
+            echo "permalink=$(jq -r .deploy_url "$RUNNER_TEMP/deploy.json")"
+            echo "logs=$(jq -r .logs "$RUNNER_TEMP/deploy.json")"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Post the link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.deploy.outputs.url }}
+          PERMALINK: ${{ steps.deploy.outputs.permalink }}
+          LOGS: ${{ steps.deploy.outputs.logs }}
+        run: |
+          .github/scripts/preview-comment.sh "### 🔍 Preview
+
+          | | |
+          | --- | --- |
+          | **Preview** | $URL |
+          | **This commit** | [${HEAD_SHA::7}]($PERMALINK) |
+          | **Deploy log** | [Netlify]($LOGS) |
+
+          Updated on every push. A preview is a site of its own, so its budgets are kept apart from the
+          real app's; cloud backups are left out (Google only signs in from registered addresses)."
+
+      - name: Say the preview failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/preview-comment.sh "### ❌ Preview
+
+          The preview of ${HEAD_SHA::7} failed. See [the run]($RUN_URL)."
+
+  remove:
+    name: Remove preview
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # Only for the comment script. From the pull request's head: main may not have it yet.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          sparse-checkout: .github/scripts
+
+      # Deletes every deploy the pull request made (their messages start "PR #<number> ·"). The list
+      # is newest first, so it stops at deploys older than the pull request.
+      - name: Delete the preview's deploys
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          OPENED: ${{ github.event.pull_request.created_at }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID is missing. Dependabot's pull requests read the Dependabot secrets, not the Actions ones."
+            exit 1
+          fi
+          api=https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys
+          auth="Authorization: Bearer $NETLIFY_AUTH_TOKEN"
+          ids=()
+          for page in $(seq 1 20); do
+            deploys=$(curl -fsS -H "$auth" "$api?per_page=100&page=$page")
+            [ "$(jq length <<< "$deploys")" -eq 0 ] && break
+            mapfile -t -O "${#ids[@]}" ids < <(jq -r --arg title "PR #$PR ·" \
+              '.[] | select(.context != "production" and ((.title // "") | startswith($title))) | .id' \
+              <<< "$deploys")
+            [[ "$(jq -r '.[-1].created_at' <<< "$deploys")" < "$OPENED" ]] && break
+          done
+          for id in "${ids[@]}"; do
+            curl -fsS -X DELETE -H "$auth" "$api/$id" > /dev/null
+          done
+          echo "Deleted ${#ids[@]} deploys."
+
+      - name: Say the preview is gone
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/preview-comment.sh "### 🧹 Preview
+
+          The pull request is closed, so its preview was removed."
