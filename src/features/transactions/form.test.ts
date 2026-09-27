@@ -35,6 +35,7 @@ const category = (
 	sortOrder: 0,
 	hidden: false,
 	carryoverOverspending: false,
+	goal: null,
 	...extra
 });
 

@@ -1,5 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { GOAL_TYPES, type CategoryGoal } from '$domain/goal';
+import { isMonth } from '$domain/month';
 import { groupBy } from '$domain/group-by';
 import { all, one, run, tx, type Db } from '../connection';
 
@@ -10,6 +12,7 @@ export interface CategoryNode {
 	sortOrder: number;
 	hidden: boolean;
 	carryoverOverspending: boolean;
+	goal: CategoryGoal | null;
 }
 
 export interface GroupNode {
@@ -28,6 +31,9 @@ interface CategoryRow {
 	sortOrder: number;
 	hidden: number;
 	carryoverOverspending: number;
+	goalType: CategoryGoal['type'] | null;
+	goalAmount: number | null;
+	goalMonth: string | null;
 }
 
 interface GroupRow {
@@ -39,10 +45,19 @@ interface GroupRow {
 }
 
 const CATEGORY_COLUMNS = `id, group_id AS groupId, name, sort_order AS sortOrder, hidden,
-	carryover_overspending AS carryoverOverspending`;
+	carryover_overspending AS carryoverOverspending, goal_type AS goalType,
+	goal_amount AS goalAmount, goal_month AS goalMonth`;
 
-function toCategory(r: CategoryRow): CategoryNode {
-	return { ...r, hidden: r.hidden === 1, carryoverOverspending: r.carryoverOverspending === 1 };
+function toCategory({ goalType, goalAmount, goalMonth, ...r }: CategoryRow): CategoryNode {
+	return {
+		...r,
+		hidden: r.hidden === 1,
+		carryoverOverspending: r.carryoverOverspending === 1,
+		goal:
+			goalType === null || goalAmount === null
+				? null
+				: { type: goalType, amount: goalAmount, month: goalMonth }
+	};
 }
 
 export function getCategory(db: Db, id: string): CategoryNode {
@@ -162,6 +177,17 @@ export interface CategoryPatch {
 	groupId?: string;
 	hidden?: boolean;
 	carryoverOverspending?: boolean;
+	/** `null` removes the goal. */
+	goal?: CategoryGoal | null;
+}
+
+function requireGoal(goal: CategoryGoal): void {
+	if (!GOAL_TYPES.includes(goal.type))
+		throw new DomainError('INVALID_INPUT', `Unknown goal type ${goal.type}`);
+	if (!Number.isSafeInteger(goal.amount) || goal.amount <= 0)
+		throw new DomainError('INVALID_INPUT', 'A goal needs a positive amount');
+	if (goal.month !== null && (goal.type !== 'target' || !isMonth(goal.month)))
+		throw new DomainError('INVALID_INPUT', `Invalid goal month ${goal.month}`);
 }
 
 export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
@@ -197,6 +223,23 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 			}
 			run(db, 'UPDATE categories SET carryover_overspending = ? WHERE id = ?', [
 				patch.carryoverOverspending ? 1 : 0,
+				id
+			]);
+		}
+
+		if (patch.goal !== undefined) {
+			const goal = patch.goal;
+			if (goal) {
+				requireGoal(goal);
+				const effectiveGroup =
+					patch.groupId !== undefined ? getGroup(db, patch.groupId) : currentGroup;
+				if (effectiveGroup.system === 'income')
+					throw new DomainError('CATEGORY_NOT_ALLOWED', 'Income categories cannot have a goal');
+			}
+			run(db, 'UPDATE categories SET goal_type = ?, goal_amount = ?, goal_month = ? WHERE id = ?', [
+				goal?.type ?? null,
+				goal?.amount ?? null,
+				goal?.month ?? null,
 				id
 			]);
 		}

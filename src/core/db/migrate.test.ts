@@ -145,6 +145,23 @@ describe('migrate', () => {
 		expect(() => run(db, 'UPDATE schedules SET installment_start = 0')).toThrow();
 	});
 
+	it('adds goals to categories, none for the ones there', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 7));
+		db.exec(`
+			INSERT INTO category_groups (id, name) VALUES ('g1', 'Bills');
+			INSERT INTO categories (id, group_id, name) VALUES ('c1', 'g1', 'Rent');
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT id, goal_type, goal_amount, goal_month FROM categories')).toEqual([
+			{ id: 'c1', goal_type: null, goal_amount: null, goal_month: null }
+		]);
+		expect(() => run(db, "UPDATE categories SET goal_type = 'monthly', goal_amount = 0")).toThrow();
+		expect(() => run(db, "UPDATE categories SET goal_type = 'weekly', goal_amount = 1")).toThrow();
+	});
+
 	it('is idempotent', async () => {
 		const db = await createTestDb();
 		migrate(db);

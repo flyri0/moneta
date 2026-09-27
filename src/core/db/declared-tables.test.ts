@@ -213,7 +213,10 @@ const SCENARIOS: Record<string, Scenario[]> = {
 		{ args: (f) => [f.everyday, f.bills] }
 	],
 	'categories.create': [{ args: (f) => [{ groupId: f.bills, name: 'Water' }] }],
-	'categories.update': [{ args: (f) => [f.food, { name: 'Groceries' }] }],
+	'categories.update': [
+		{ args: (f) => [f.food, { name: 'Groceries' }] },
+		{ args: (f) => [f.rent, { goal: { type: 'monthly', amount: 120000, month: null } }] }
+	],
 	'categories.delete': [{ args: (f) => [f.food, f.fun] }, { args: (f) => [f.rent, f.utilities] }],
 	'categories.saveOrder': [
 		{

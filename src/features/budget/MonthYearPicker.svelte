@@ -13,10 +13,13 @@
 
 	let {
 		month,
-		onselect
+		onselect,
+		navigate = true
 	}: {
 		month: Month;
 		onselect?: (month: Month) => void;
+		/** Opens the chosen month's budget; off when the picker only picks a month. */
+		navigate?: boolean;
 	} = $props();
 
 	const today = currentMonth();
@@ -53,7 +56,7 @@
 	function handleSelect(targetMonth: Month) {
 		yearOverride = null;
 		onselect?.(targetMonth);
-		void goto(resolve('/budget/[month]', { month: targetMonth }));
+		if (navigate) void goto(resolve('/budget/[month]', { month: targetMonth }));
 	}
 
 	const monthItems = $derived.by(() => {

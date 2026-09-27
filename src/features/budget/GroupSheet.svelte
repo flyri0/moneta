@@ -102,6 +102,7 @@
 			<QuickAssignButtons
 				categoryIds={group.categories.map((c) => c.id)}
 				{month}
+				hasGoals={group.categories.some((c) => c.goal !== null)}
 				onDone={() => (open = false)}
 			/>
 

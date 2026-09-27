@@ -137,6 +137,55 @@ describe('categories', () => {
 		);
 	});
 
+	it('sets, changes and removes a goal', async () => {
+		const db = await createBudgetDb();
+		const rent = categoryId(db, 'Rent');
+		expect(getCategory(db, rent).goal).toBeNull();
+
+		updateCategory(db, rent, { goal: { type: 'monthly', amount: 120000, month: null } });
+		expect(getCategory(db, rent).goal).toEqual({ type: 'monthly', amount: 120000, month: null });
+
+		updateCategory(db, rent, { goal: { type: 'target', amount: 500000, month: '2026-12' } });
+		expect(getCategory(db, rent).goal).toEqual({
+			type: 'target',
+			amount: 500000,
+			month: '2026-12'
+		});
+		expect(
+			listCategoryTree(db)
+				.flatMap((g) => g.categories)
+				.find((c) => c.id === rent)!.goal
+		).toMatchObject({ type: 'target' });
+
+		updateCategory(db, rent, { goal: null });
+		expect(getCategory(db, rent).goal).toBeNull();
+	});
+
+	it('refuses a goal that makes no sense', async () => {
+		const db = await createBudgetDb();
+		const rent = categoryId(db, 'Rent');
+		const bad = [
+			{ type: 'weekly', amount: 100, month: null },
+			{ type: 'monthly', amount: 0, month: null },
+			{ type: 'monthly', amount: -100, month: null },
+			{ type: 'monthly', amount: 10.5, month: null },
+			{ type: 'monthly', amount: 100, month: '2026-12' },
+			{ type: 'target', amount: 100, month: '2026-13' }
+		];
+		for (const goal of bad)
+			expect(() => updateCategory(db, rent, { goal } as never)).toThrow(code('INVALID_INPUT'));
+		expect(getCategory(db, rent).goal).toBeNull();
+	});
+
+	it('disallows goals on categories in the Income group', async () => {
+		const db = await createBudgetDb();
+		const income = listCategoryTree(db).find((g) => g.system === 'income')!;
+		const salary = income.categories[0].id;
+		expect(() =>
+			updateCategory(db, salary, { goal: { type: 'monthly', amount: 100, month: null } })
+		).toThrow(code('CATEGORY_NOT_ALLOWED'));
+	});
+
 	it('reports how a category is used', async () => {
 		const db = await createBudgetDb();
 		const fun = categoryId(db, 'Fun');

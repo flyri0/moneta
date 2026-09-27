@@ -40,6 +40,13 @@ export function addMonths(month: Month, n: number): Month {
 	return `${String(year).padStart(4, '0')}-${String(mon).padStart(2, '0')}`;
 }
 
+/** Whole months from `from` to `to`; negative when `to` comes first. */
+export function monthDiff(from: Month, to: Month): number {
+	const [fy, fm] = from.split('-').map(Number);
+	const [ty, tm] = to.split('-').map(Number);
+	return (ty - fy) * 12 + (tm - fm);
+}
+
 export function compareMonths(a: Month, b: Month): number {
 	return a < b ? -1 : a > b ? 1 : 0;
 }

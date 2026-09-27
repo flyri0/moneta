@@ -7,13 +7,24 @@
 	import type { QuickAssignStrategy } from '$domain/quick-assign';
 	import { m } from '$i18n/paraglide/messages';
 
-	let { categoryIds, month, onDone }: { categoryIds: string[]; month: Month; onDone: () => void } =
-		$props();
+	let {
+		categoryIds,
+		month,
+		hasGoals = false,
+		onDone
+	}: {
+		categoryIds: string[];
+		month: Month;
+		/** Whether one of the categories has a goal, which offers to fund it. */
+		hasGoals?: boolean;
+		onDone: () => void;
+	} = $props();
 
 	const session = useSession();
 	let error = $state<ActionError | null>(null);
 
 	const STRATEGIES: { strategy: QuickAssignStrategy; label: () => string }[] = [
+		{ strategy: 'goals', label: m.quick_assign_goals },
 		{ strategy: 'last-month', label: m.quick_assign_last_month },
 		{ strategy: 'avg-3', label: () => m.quick_assign_average({ months: 3 }) },
 		{ strategy: 'avg-6', label: () => m.quick_assign_average({ months: 6 }) },
@@ -31,7 +42,7 @@
 <section class="grid gap-2">
 	<h3 class="text-sm font-medium">{m.quick_assign_title()}</h3>
 	<div class="grid grid-cols-2 gap-2">
-		{#each STRATEGIES as { strategy, label } (strategy)}
+		{#each STRATEGIES.filter((s) => hasGoals || s.strategy !== 'goals') as { strategy, label } (strategy)}
 			<Button variant="outline" size="sm" onclick={() => apply(strategy)}>{label()}</Button>
 		{/each}
 	</div>

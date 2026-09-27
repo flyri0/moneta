@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import TargetIcon from '@lucide/svelte/icons/target';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$ui/button';
@@ -24,11 +25,14 @@
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import { formatAmountInput } from '$domain/money';
 	import type { Month } from '$domain/month';
+	import { formatMonth } from '$i18n/formats';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import AvailablePill from './AvailablePill.svelte';
 	import CategoryDelete from './CategoryDelete.svelte';
 	import CategorySettings from './CategorySettings.svelte';
+	import GoalForm from './GoalForm.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
 	import { TONE_PILL } from './tones';
 
@@ -52,7 +56,7 @@
 	const session = useSession();
 
 	/** The sheet's screen: the money first, the rest one tap away. */
-	let view = $state<'main' | 'move' | 'settings' | 'delete'>('main');
+	let view = $state<'main' | 'move' | 'goal' | 'settings' | 'delete'>('main');
 	let assignedText = $state('');
 	let moveAmount = $state('');
 	let moveDirection = $state<'to' | 'from'>('to');
@@ -76,10 +80,24 @@
 		{
 			main: category.name,
 			move: m.budget_move_money(),
+			goal: m.category_goal(),
 			settings: m.category_settings(),
 			delete: m.category_delete_title({ name: category.name })
 		}[view]
 	);
+
+	/** The goal in a few words, for its link: "R$ 400 a month", "Save R$ 5.000 by Dec 2026". */
+	const goalSummary = $derived.by(() => {
+		const goal = category.goal;
+		if (!goal) return m.category_goal_none();
+		const amount = session.format(goal.amount);
+		if (goal.type === 'monthly') return m.category_goal_summary_monthly({ amount });
+		if (goal.month === null) return m.category_goal_summary_target({ amount });
+		return m.category_goal_summary_target_by({
+			amount,
+			month: formatMonth(goal.month, getLocale())
+		});
+	});
 
 	// A derived id changes only when the category does, not on every refresh of the same category.
 	const categoryId = $derived(category.id);
@@ -182,6 +200,11 @@
 								spent: session.format(progress.spent),
 								funded: session.format(progress.funded)
 							})}
+							{#if progress.goal}
+								· {progress.goal.toGo > 0
+									? m.budget_goal_to_go({ amount: session.format(progress.goal.toGo) })
+									: m.budget_goal_met()}
+							{/if}
 						</p>
 					{/if}
 				</div>
@@ -235,7 +258,12 @@
 					<FormMessage {error} />
 				</form>
 
-				<QuickAssignButtons categoryIds={[category.id]} {month} onDone={() => (open = false)} />
+				<QuickAssignButtons
+					categoryIds={[category.id]}
+					{month}
+					hasGoals={category.goal !== null}
+					onDone={() => (open = false)}
+				/>
 			{/if}
 
 			<Separator />
@@ -246,6 +274,12 @@
 						icon={ArrowLeftRightIcon}
 						label={m.budget_move_money()}
 						onclick={() => go('move')}
+					/>
+					<SheetLink
+						icon={TargetIcon}
+						label={m.category_goal()}
+						detail={goalSummary}
+						onclick={() => go('goal')}
 					/>
 				{/if}
 				<SheetLink
@@ -295,6 +329,8 @@
 			<FormMessage {error} />
 			<Button type="submit">{m.budget_move()}</Button>
 		</form>
+	{:else if view === 'goal'}
+		<GoalForm {category} {month} onDone={() => go('main')} />
 	{:else if view === 'settings'}
 		<CategorySettings {category} {groups} />
 	{:else}

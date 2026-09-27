@@ -208,6 +208,27 @@ describe('checkBackup rebuilds the budget', () => {
 		['a text assignment', "UPDATE budget_assignments SET assigned = 'x'"],
 		['a fractional schedule amount', 'UPDATE schedules SET amount = 0.5'],
 		['a fractional installment number', 'UPDATE schedules SET installment_start = 2.5'],
+		[
+			'a fractional goal',
+			"UPDATE categories SET goal_type = 'monthly', goal_amount = 2.5 WHERE name = 'Rent'"
+		],
+		['a goal without an amount', "UPDATE categories SET goal_type = 'monthly' WHERE name = 'Rent'"],
+		['an amount without a goal', "UPDATE categories SET goal_amount = 100 WHERE name = 'Rent'"],
+		[
+			'a month on a monthly goal',
+			`UPDATE categories SET goal_type = 'monthly', goal_amount = 100, goal_month = '2026-05'
+				WHERE name = 'Rent'`
+		],
+		[
+			'a bad goal month',
+			`UPDATE categories SET goal_type = 'target', goal_amount = 100, goal_month = '2026-13'
+				WHERE name = 'Rent'`
+		],
+		[
+			'a goal on an income category',
+			`UPDATE categories SET goal_type = 'monthly', goal_amount = 100
+				WHERE group_id = (SELECT id FROM category_groups WHERE system = 'income')`
+		],
 		['a date that is not a date', "UPDATE transactions SET date = 'zzzz' WHERE memo = 'plain'"],
 		['an impossible date', "UPDATE transactions SET date = '2026-13-45' WHERE memo = 'plain'"],
 		['a far-off year', "UPDATE transactions SET date = '9999-12-31' WHERE memo = 'plain'"],
