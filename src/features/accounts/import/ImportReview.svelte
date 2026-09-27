@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
-	import { Checkbox } from '$ui/checkbox';
-	import { Input } from '$ui/input';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import Delayed from '$components/Delayed.svelte';
@@ -18,15 +16,13 @@
 	import { actionError, runAction, type ActionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
-	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
-	import { getLocale } from '$i18n/paraglide/runtime';
+	import ImportRow from './ImportRow.svelte';
 	import { importHandoff } from './pending.svelte';
 	import {
 		applyRule,
 		fillCategories,
 		importLines,
-		needsCategory,
 		reviewCounts,
 		reviewRows,
 		type ReviewRow
@@ -86,14 +82,12 @@
 		if (rows) applyRule(rows, saved);
 	}
 
-	/** Whether a line's payee was changed from its description, which a rule could remember. */
-	function renamed(row: ReviewRow): boolean {
-		return (
-			row.preview.status === 'new' &&
-			!row.ruleId &&
-			row.payeeName.trim() !== '' &&
-			row.payeeName.trim() !== row.line.description.trim()
-		);
+	/** The lines opened to show their details, by import id. */
+	const open = new SvelteSet<string>();
+
+	function toggle(importId: string) {
+		if (open.has(importId)) open.delete(importId);
+		else open.add(importId);
 	}
 
 	$effect(() => {
@@ -186,79 +180,16 @@
 		aria-label={m.import_lines()}
 	>
 		{#each rows as row, i (row.line.importId)}
-			{@const status = row.preview.status}
-			<div
-				class="grid grid-cols-[auto_1fr_auto] items-start gap-x-3 gap-y-2 px-4 py-3 {row.include
-					? ''
-					: 'opacity-60'}"
-				data-testid="import-row"
-			>
-				<Checkbox
-					class="mt-2"
-					checked={row.include}
-					disabled={status === 'duplicate'}
-					aria-label={m.import_include({ description: row.line.description })}
-					onCheckedChange={(v) => (row.include = v === true)}
-				/>
-				<div class="grid min-w-0 gap-1">
-					{#if status === 'new'}
-						<Input
-							bind:value={row.payeeName}
-							aria-label={m.import_payee({ number: i + 1 })}
-							disabled={!row.include}
-							class="h-8"
-						/>
-					{:else}
-						<span class="truncate py-1 text-sm font-medium">{row.line.description}</span>
-					{/if}
-					<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-						<span class="tabular-nums">{formatDate(row.line.date, getLocale())}</span>
-						{#if status === 'new'}
-							<Badge variant="secondary">{m.import_status_new()}</Badge>
-							{#if row.ruleId}
-								<Badge variant="outline" data-testid="import-rule">{m.import_rule_badge()}</Badge>
-							{/if}
-						{:else if status === 'match' && row.preview.match}
-							<Badge variant="outline" data-testid="import-match">
-								{m.import_status_match({
-									payee: row.preview.match.payeeName ?? m.register_no_payee(),
-									date: formatDate(row.preview.match.date, getLocale())
-								})}
-							</Badge>
-						{:else}
-							<Badge variant="outline">{m.import_status_duplicate()}</Badge>
-						{/if}
-						{#if row.line.memo}<span class="truncate">{row.line.memo}</span>{/if}
-						{#if renamed(row) && row.include}
-							<button
-								type="button"
-								class="font-medium text-primary underline-offset-2 hover:underline"
-								onclick={() => makeRule(row)}
-							>
-								{m.import_make_rule()}
-							</button>
-						{/if}
-					</div>
-				</div>
-				<span
-					class="py-1 text-sm font-semibold tabular-nums {row.line.amount < 0
-						? ''
-						: 'text-emerald-700 dark:text-emerald-400'}"
-				>
-					{session.format(row.line.amount)}
-				</span>
-				{#if status === 'new' && account.onBudget && row.include}
-					<div class="col-start-2 col-end-4">
-						<CategoryCombobox
-							tree={tree.data ?? []}
-							{pending}
-							bind:value={row.categoryId}
-							ariaLabel={m.import_category({ number: i + 1 })}
-							class="w-full {needsCategory(row, account.onBudget) ? 'border-destructive/50' : ''}"
-						/>
-					</div>
-				{/if}
-			</div>
+			<ImportRow
+				bind:row={rows[i]}
+				index={i}
+				onBudget={account.onBudget}
+				tree={tree.data ?? []}
+				{pending}
+				expanded={open.has(row.line.importId)}
+				onToggle={() => toggle(row.line.importId)}
+				onMakeRule={() => makeRule(row)}
+			/>
 		{/each}
 	</section>
 

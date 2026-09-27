@@ -812,5 +812,8 @@
 	"payee_rule_misses": "Doesn't catch “{description}”.",
 	"payees_rules_count": "Rules: {count}",
 	"import_make_rule": "Make a rule",
-	"import_rule_badge": "Rule"
+	"import_rule_badge": "Rule",
+	"import_details": "Details for line {number}",
+	"import_description": "Description",
+	"import_match_details": "Marks this transaction you entered as cleared: {payee} · {date}"
 }

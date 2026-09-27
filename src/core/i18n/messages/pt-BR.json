@@ -812,5 +812,8 @@
 	"payee_rule_misses": "Não pega “{description}”.",
 	"payees_rules_count": "Regras: {count}",
 	"import_make_rule": "Criar regra",
-	"import_rule_badge": "Regra"
+	"import_rule_badge": "Regra",
+	"import_details": "Detalhes da linha {number}",
+	"import_description": "Descrição",
+	"import_match_details": "Marca como compensada esta transação que você lançou: {payee} · {date}"
 }

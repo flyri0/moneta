@@ -61,7 +61,8 @@ test('a rule set on a payee names and categorizes the lines it catches', async (
 	await importCsv(page, ['UBER *TRIP 1,-12.50', 'UBER *EATS 2,-30.00']);
 	const rows = page.getByTestId('import-row');
 	await expect(rows.getByTestId('import-rule')).toHaveCount(2);
-	await expect(rows.nth(0).getByLabel('Payee of line 1')).toHaveValue('Uber');
+	await expect(rows.nth(0).getByTestId('import-payee')).toHaveText('Uber');
+	await expect(rows.nth(0).getByTestId('import-description')).toHaveText('UBER *TRIP 1');
 	await expect(rows.nth(1).getByLabel('Category of line 2', { exact: true })).toHaveText(
 		'Transportation'
 	);
@@ -81,6 +82,7 @@ test('a rule made on the review applies to the other lines, and can be deleted',
 	await onboard(page);
 	await importCsv(page, ['PADARIA X 123,-8.00', 'PADARIA X 456,-9.50', 'MERCADO,-20.00']);
 	const rows = page.getByTestId('import-row');
+	await rows.nth(0).getByRole('button', { name: 'Details for line 1' }).click();
 	await rows.nth(0).getByLabel('Payee of line 1').fill('Padaria');
 	await rows.nth(0).getByRole('button', { name: 'Make a rule' }).click();
 
@@ -91,7 +93,8 @@ test('a rule made on the review applies to the other lines, and can be deleted',
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();
 
-	await expect(rows.nth(1).getByLabel('Payee of line 2')).toHaveValue('Padaria');
+	await expect(rows.nth(1).getByTestId('import-payee')).toHaveText('Padaria');
+	await expect(rows.nth(1).getByTestId('import-description')).toHaveText('PADARIA X 456');
 	await expect(rows.nth(1).getByTestId('import-rule')).toBeVisible();
 	await expect(rows.nth(2).getByTestId('import-rule')).toHaveCount(0);
 	await chooseCombobox(page, 'Category of line 3', 'Groceries', 'Groceries');

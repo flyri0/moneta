@@ -124,6 +124,34 @@ test('maps a CSV once and remembers the columns', async ({ page }) => {
 	await expect(page.getByText('Already imported')).toHaveCount(2);
 });
 
+test('opens a line to show its whole description and edit its payee', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await openChecking(page);
+	const { y, m, d } = today();
+	const long =
+		'PIX ENVIADO MARIA DA SILVA SANTOS OLIVEIRA CPF ***.123.456-** BANCO EXEMPLO AG 0001 CC 12345-6';
+	await importFile(page, {
+		name: 'extrato.csv',
+		mimeType: 'text/csv',
+		buffer: Buffer.from(`Data;Histórico;Valor\n${d}/${m}/${y};${long};-80,00\n`, 'latin1')
+	});
+	await page.getByRole('button', { name: 'Review lines (1)' }).click();
+
+	const row = page.getByTestId('import-row');
+	await expect(row.getByTestId('import-full-description')).toHaveCount(0);
+	const details = row.getByRole('button', { name: 'Details for line 1' });
+	await details.click();
+	await expect(details).toHaveAttribute('aria-expanded', 'true');
+	await expect(row.getByTestId('import-full-description')).toHaveText(long);
+
+	await row.getByLabel('Payee of line 1').fill('Maria');
+	await expect(row.getByTestId('import-payee')).toHaveText('Maria');
+	await expect(row.getByTestId('import-description')).toHaveText(long);
+	await details.click();
+	await expect(row.getByTestId('import-full-description')).toHaveCount(0);
+});
+
 test('says when a file is not a statement', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
