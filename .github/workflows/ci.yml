@@ -1,8 +1,10 @@
 name: CI
 
+# Pushes to other branches are tested through their pull request, so a branch with an open pull
+# request doesn't run everything twice. deploy.yml waits for the run on a push to main.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
