@@ -51,6 +51,8 @@ export interface TransactionRow {
 	isSplit: boolean;
 	/** An account's starting balance, which reports leave out of income and spending. */
 	isOpening: boolean;
+	/** Cleared and checked against the bank's balance when the account was reconciled. */
+	reconciled: boolean;
 	splits: SplitRow[];
 }
 
@@ -157,21 +159,38 @@ export function validateTransaction(db: Db, input: TransactionInput): void {
 
 const INSERT_SQL = `INSERT INTO transactions
 	(id, account_id, date, amount, payee_id, category_id, memo, cleared, transfer_id, is_split,
-	 is_opening)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+	 is_opening, import_id, reconciled)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+/** What an edit keeps of a row it rewrites, as long as the row stays in the same account. */
+interface KeptState {
+	accountId: string;
+	cleared: boolean;
+	importId: string | null;
+	reconciled: boolean;
+}
+
+/** The import id and reconciliation `kept` passes on to a row written in `accountId`. */
+function carried(kept: KeptState | undefined, accountId: string) {
+	const same = kept?.accountId === accountId;
+	return { importId: same ? kept.importId : null, reconciled: same && kept.reconciled };
+}
 
 function write(
 	db: Db,
 	id: string,
 	input: TransactionInput,
-	pairState?: { id: string; cleared: boolean; accountId: string },
+	kept?: { own: KeptState; pair: (KeptState & { id: string }) | null },
 	opening = false
 ): void {
 	const plan = validate(db, input);
 	const memo = input.memo ?? '';
 	const payeeId = plan.pair ? null : getOrCreatePayee(db, input.payeeName);
+	const pairState = kept?.pair;
 	const reusePair = pairState && plan.pair && pairState.accountId === plan.pair.accountId;
 	const pairId = plan.pair ? (reusePair ? pairState.id : uuidv7()) : null;
+	const own = carried(kept?.own, input.accountId);
+	if (own.reconciled && !input.cleared) throw new DomainError('TRANSACTION_RECONCILED');
 
 	run(db, INSERT_SQL, [
 		id,
@@ -184,9 +203,12 @@ function write(
 		input.cleared ? 1 : 0,
 		pairId,
 		plan.splits.length > 0 ? 1 : 0,
-		opening ? 1 : 0
+		opening ? 1 : 0,
+		own.importId,
+		own.reconciled ? 1 : 0
 	]);
 	if (plan.pair && pairId) {
+		const pair = carried(reusePair ? pairState : undefined, plan.pair.accountId);
 		run(db, INSERT_SQL, [
 			pairId,
 			plan.pair.accountId,
@@ -198,7 +220,9 @@ function write(
 			reusePair && pairState.cleared ? 1 : 0,
 			id,
 			0,
-			0
+			0,
+			pair.importId,
+			pair.reconciled ? 1 : 0
 		]);
 	}
 	for (const s of plan.splits) {
@@ -216,12 +240,15 @@ interface RawRow {
 	transferId: string | null;
 	cleared: number;
 	isOpening: number;
+	importId: string | null;
+	reconciled: number;
 }
 
 function getRaw(db: Db, id: string): RawRow {
 	const row = one<RawRow>(
 		db,
-		`SELECT id, account_id AS accountId, transfer_id AS transferId, cleared, is_opening AS isOpening
+		`SELECT id, account_id AS accountId, transfer_id AS transferId, cleared, is_opening AS isOpening,
+			import_id AS importId, reconciled
 		 FROM transactions WHERE id = ?`,
 		[id]
 	);
@@ -256,7 +283,20 @@ export function createStartingBalance(db: Db, input: TransactionInput): string {
 	});
 }
 
-/** Replaces a transaction (and its transfer pair / splits) while keeping its id. */
+function keptState(row: RawRow): KeptState & { id: string } {
+	return {
+		id: row.id,
+		accountId: row.accountId,
+		cleared: row.cleared === 1,
+		importId: row.importId,
+		reconciled: row.reconciled === 1
+	};
+}
+
+/**
+ * Replaces a transaction (and its transfer pair / splits) while keeping its id. A row that stays
+ * in its account keeps its import id and reconciliation; a reconciled one must stay cleared.
+ */
 export function updateTransaction(db: Db, id: string, input: TransactionInput): void {
 	tx(db, () => {
 		const { existing, pair } = getEditable(db, id);
@@ -265,7 +305,7 @@ export function updateTransaction(db: Db, id: string, input: TransactionInput): 
 			db,
 			id,
 			input,
-			pair ? { id: pair.id, cleared: pair.cleared === 1, accountId: pair.accountId } : undefined,
+			{ own: keptState(existing), pair: pair ? keptState(pair) : null },
 			existing.isOpening === 1
 		);
 	});
@@ -278,21 +318,25 @@ export function deleteTransaction(db: Db, id: string): void {
 	});
 }
 
+/** Marks a transaction cleared or not. A reconciled one stays cleared. */
 export function setCleared(db: Db, id: string, cleared: boolean): void {
-	getEditable(db, id);
+	const { existing } = getEditable(db, id);
+	if (!cleared && existing.reconciled === 1) throw new DomainError('TRANSACTION_RECONCILED');
 	run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [cleared ? 1 : 0, id]);
 }
 
-type Row = Omit<TransactionRow, 'cleared' | 'isSplit' | 'isOpening' | 'splits'> & {
+type Row = Omit<TransactionRow, 'cleared' | 'isSplit' | 'isOpening' | 'reconciled' | 'splits'> & {
 	cleared: number;
 	isSplit: number;
 	isOpening: number;
+	reconciled: number;
 };
 
 const SELECT_SQL = `SELECT t.id, t.account_id AS accountId, a.name AS accountName, t.date, t.amount,
 	t.payee_id AS payeeId, p.name AS payeeName, t.category_id AS categoryId, c.name AS categoryName,
 	t.memo, t.cleared, t.transfer_id AS transferId, pt.account_id AS transferAccountId,
-	pa.name AS transferAccountName, t.is_split AS isSplit, t.is_opening AS isOpening
+	pa.name AS transferAccountName, t.is_split AS isSplit, t.is_opening AS isOpening,
+	t.reconciled
 	FROM transactions t
 	JOIN accounts a ON a.id = t.account_id
 	LEFT JOIN payees p ON p.id = t.payee_id
@@ -320,6 +364,7 @@ function attachSplits(db: Db, rows: Row[]): TransactionRow[] {
 		cleared: r.cleared === 1,
 		isSplit: r.isSplit === 1,
 		isOpening: r.isOpening === 1,
+		reconciled: r.reconciled === 1,
 		splits: (byTransaction.get(r.id) ?? []).map((s) => ({
 			id: s.id,
 			categoryId: s.categoryId,

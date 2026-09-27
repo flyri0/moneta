@@ -187,6 +187,14 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	'accounts.rename': [{ args: (f) => [f.bank, 'Main'] }],
 	'accounts.close': [{ args: (f) => [f.spare] }],
 	'accounts.reopen': [{ prepare: (f) => closeAccount(f.db, f.spare), args: (f) => [f.spare] }],
+	'accounts.reconcile': [
+		{
+			args: (f) => [
+				f.bank,
+				{ date: '2026-01-31', balance: 1, adjustment: { categoryId: f.food, memo: 'Adjustment' } }
+			]
+		}
+	],
 	'accounts.delete': [
 		{ args: (f) => [f.spare] },
 		{

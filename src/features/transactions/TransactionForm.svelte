@@ -33,6 +33,7 @@
 		ctx,
 		initial,
 		editingId,
+		reconciled = false,
 		onSave,
 		confirming = $bindable(false),
 		onDone
@@ -40,6 +41,8 @@
 		ctx: FormContext;
 		initial: TransactionDraft;
 		editingId: string | null;
+		/** The transaction being edited was reconciled: it stays cleared while in its account. */
+		reconciled?: boolean;
 		onSave?: (input: TransactionInput) => Promise<unknown>;
 		/** Whether the delete confirmation shows in place of the form (the dialog titles it). */
 		confirming?: boolean;
@@ -55,6 +58,8 @@
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.date);
+	/** A reconciled transaction stays cleared unless it moves to another account. */
+	const lockedCleared = $derived(reconciled && draft.accountId === initial.accountId);
 
 	/** Installments, as typed: only a new card purchase offers them. */
 	let installments = $state('');
@@ -158,8 +163,14 @@
 			</div>
 		{/if}
 
+		{#if reconciled}
+			<Alert.Root data-testid="reconciled-notice">
+				<Alert.Description>{m.transaction_reconciled_notice()}</Alert.Description>
+			</Alert.Root>
+		{/if}
+
 		<div class="flex items-center gap-2">
-			<Checkbox id="txn-cleared" bind:checked={draft.cleared} />
+			<Checkbox id="txn-cleared" bind:checked={draft.cleared} disabled={lockedCleared} />
 			<Label for="txn-cleared">{m.transaction_cleared()}</Label>
 		</div>
 

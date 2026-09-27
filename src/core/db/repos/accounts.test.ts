@@ -1,17 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import { all } from '../connection';
+import { all, run } from '../connection';
 import {
 	closeAccount,
 	createAccount,
 	deleteAccount,
 	getAccount,
 	listAccounts,
+	reconcileAccount,
 	renameAccount,
 	reopenAccount,
 	type CreateAccountInput
 } from './accounts';
-import { createTransaction, listTransactions } from './transactions';
+import { createTransaction, getTransaction, listTransactions } from './transactions';
 import { startingBalanceCategoryId } from './meta';
 import { deleteCategory, listCategoryTree } from './categories';
 
@@ -199,5 +200,92 @@ describe('account lifecycle', () => {
 				categoryId: categoryId(db, 'Food')
 			})
 		).toThrow(code('ACCOUNT_CLOSED'));
+	});
+});
+
+describe('reconcileAccount', () => {
+	async function setup() {
+		const db = await createBudgetDb();
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 10000 })
+		);
+		const food = categoryId(db, 'Food');
+		const cleared = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -2500,
+			categoryId: food,
+			cleared: true
+		});
+		const pending = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-06',
+			amount: -1000,
+			categoryId: food
+		});
+		return { db, bank, food, cleared, pending };
+	}
+
+	it('marks the cleared transactions reconciled when the balance matches', async () => {
+		const { db, bank, cleared, pending } = await setup();
+		reconcileAccount(db, bank, { date: '2026-01-31', balance: 7500 });
+		expect(getTransaction(db, cleared).reconciled).toBe(true);
+		expect(getTransaction(db, pending).reconciled).toBe(false);
+		expect(getAccount(db, bank)).toMatchObject({ reconciledOn: '2026-01-31', balance: 6500 });
+	});
+
+	it('refuses a different balance without an adjustment, and changes nothing', async () => {
+		const { db, bank, cleared } = await setup();
+		expect(() => reconcileAccount(db, bank, { date: '2026-01-31', balance: 7000 })).toThrow(
+			expect.objectContaining({ code: 'RECONCILE_MISMATCH', details: { difference: -500 } })
+		);
+		expect(getTransaction(db, cleared).reconciled).toBe(false);
+		expect(getAccount(db, bank).reconciledOn).toBeNull();
+	});
+
+	it('enters the difference as a cleared, reconciled adjustment', async () => {
+		const { db, bank, food } = await setup();
+		reconcileAccount(db, bank, {
+			date: '2026-01-31',
+			balance: 7000,
+			adjustment: { categoryId: food, memo: 'Reconciliation adjustment' }
+		});
+		const [adjustment] = listTransactions(db, { accountId: bank });
+		expect(adjustment).toMatchObject({
+			date: '2026-01-31',
+			amount: -500,
+			categoryId: food,
+			payeeId: null,
+			memo: 'Reconciliation adjustment',
+			cleared: true,
+			reconciled: true
+		});
+		expect(getAccount(db, bank)).toMatchObject({ clearedBalance: 7000 });
+	});
+
+	it('adjusts an off-budget account without a category', async () => {
+		const db = await createBudgetDb();
+		const broker = createAccount(
+			db,
+			acct({ name: 'Broker', type: 'investment', onBudget: false, startingBalance: 10000 })
+		);
+		reconcileAccount(db, broker, {
+			date: '2026-01-31',
+			balance: 12000,
+			adjustment: { categoryId: null, memo: 'Adjustment' }
+		});
+		expect(getAccount(db, broker)).toMatchObject({ clearedBalance: 12000 });
+	});
+
+	it('refuses a closed account and a bad date', async () => {
+		const { db, bank } = await setup();
+		expect(() => reconcileAccount(db, bank, { date: '31/01/2026', balance: 7500 })).toThrow(
+			code('INVALID_INPUT')
+		);
+		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [bank]);
+		expect(() => reconcileAccount(db, bank, { date: '2026-01-31', balance: 7500 })).toThrow(
+			code('ACCOUNT_CLOSED')
+		);
 	});
 });

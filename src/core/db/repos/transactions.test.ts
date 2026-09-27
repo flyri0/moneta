@@ -563,6 +563,78 @@ describe('listTransactions', () => {
 	});
 });
 
+describe('reconciled and imported transactions', () => {
+	const reconcile = (id: string) =>
+		run(db, 'UPDATE transactions SET reconciled = 1, cleared = 1 WHERE id = ?', [id]);
+	const importIdOf = (id: string) =>
+		all<{ importId: string | null }>(
+			db,
+			'SELECT import_id AS importId FROM transactions WHERE id = ?',
+			[id]
+		)[0].importId;
+	let input: { accountId: string; date: string; amount: number; categoryId: string | null };
+	beforeEach(() => {
+		input = { accountId: bank, date: '2026-01-05', amount: -4500, categoryId: food };
+	});
+
+	it('reads as not reconciled until reconciled', () => {
+		const id = createTransaction(db, { ...input, cleared: true });
+		expect(getTransaction(db, id).reconciled).toBe(false);
+		reconcile(id);
+		expect(getTransaction(db, id).reconciled).toBe(true);
+	});
+
+	it('keeps its import id and reconciliation through an edit in the same account', () => {
+		const id = createTransaction(db, { ...input, cleared: true });
+		run(db, "UPDATE transactions SET import_id = 'ofx:1' WHERE id = ?", [id]);
+		reconcile(id);
+		updateTransaction(db, id, { ...input, categoryId: fun, cleared: true });
+		expect(getTransaction(db, id)).toMatchObject({ categoryId: fun, reconciled: true });
+		expect(importIdOf(id)).toBe('ofx:1');
+	});
+
+	it('drops them when the transaction moves to another account', () => {
+		const id = createTransaction(db, { ...input, cleared: true });
+		run(db, "UPDATE transactions SET import_id = 'ofx:1' WHERE id = ?", [id]);
+		reconcile(id);
+		updateTransaction(db, id, { ...input, accountId: savings, cleared: true });
+		expect(getTransaction(db, id).reconciled).toBe(false);
+		expect(importIdOf(id)).toBeNull();
+	});
+
+	it('keeps them on the other side of a transfer that stays between the same accounts', () => {
+		const id = createTransaction(db, { ...input, categoryId: null, transferAccountId: savings });
+		const pairId = getTransaction(db, id).transferId!;
+		run(db, "UPDATE transactions SET import_id = 'csv:x' WHERE id = ?", [pairId]);
+		reconcile(pairId);
+		updateTransaction(db, id, {
+			...input,
+			categoryId: null,
+			amount: -5000,
+			transferAccountId: savings
+		});
+		expect(getTransaction(db, pairId)).toMatchObject({ amount: 5000, reconciled: true });
+		expect(importIdOf(pairId)).toBe('csv:x');
+	});
+
+	it('refuses to unclear a reconciled transaction', () => {
+		const id = createTransaction(db, { ...input, cleared: true });
+		reconcile(id);
+		expect(() => setCleared(db, id, false)).toThrow(code('TRANSACTION_RECONCILED'));
+		expect(() => updateTransaction(db, id, { ...input, cleared: false })).toThrow(
+			code('TRANSACTION_RECONCILED')
+		);
+		expect(getTransaction(db, id)).toMatchObject({ cleared: true, reconciled: true });
+	});
+
+	it('can still be deleted', () => {
+		const id = createTransaction(db, { ...input, cleared: true });
+		reconcile(id);
+		deleteTransaction(db, id);
+		expect(() => getTransaction(db, id)).toThrow(code('NOT_FOUND'));
+	});
+});
+
 describe('closed accounts stay frozen', () => {
 	// Two offsetting lines leave Bank at 0 so it can be closed.
 	function closeBankWithHistory(): string {

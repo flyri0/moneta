@@ -57,7 +57,9 @@ export const api = {
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
-		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string'])
+		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string']),
+		// An adjustment is one plain transaction, with no payee.
+		reconcile: write(['accounts', 'transactions'], accounts.reconcileAccount, ['string', 'object'])
 	},
 	categories: {
 		tree: read(categories.listCategoryTree, []),

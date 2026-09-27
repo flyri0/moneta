@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import LockIcon from '@lucide/svelte/icons/lock';
 	import { payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
@@ -128,17 +129,30 @@
 		{session.format(row.amount)}
 	</span>
 
-	<button
-		type="button"
-		class="flex size-7 items-center justify-center rounded-full border transition-colors {row.cleared
-			? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
-			: 'border-muted-foreground/30 text-transparent hover:border-muted-foreground/60'}"
-		aria-pressed={row.cleared}
-		aria-label={m.register_cleared()}
-		onclick={toggleCleared}
-	>
-		<CheckIcon class="size-4 stroke-[2.5]" />
-	</button>
+	{#if row.reconciled}
+		<!-- Reconciled rows stay cleared: the lock replaces the toggle. -->
+		<span
+			class="flex size-7 items-center justify-center rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-400"
+			role="img"
+			aria-label={m.register_reconciled()}
+			title={m.register_reconciled()}
+			data-testid="register-reconciled"
+		>
+			<LockIcon class="size-3.5 stroke-[2.5]" />
+		</span>
+	{:else}
+		<button
+			type="button"
+			class="flex size-7 items-center justify-center rounded-full border transition-colors {row.cleared
+				? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
+				: 'border-muted-foreground/30 text-transparent hover:border-muted-foreground/60'}"
+			aria-pressed={row.cleared}
+			aria-label={m.register_cleared()}
+			onclick={toggleCleared}
+		>
+			<CheckIcon class="size-4 stroke-[2.5]" />
+		</button>
+	{/if}
 
 	{#if payee.kind === 'transfer'}
 		<a
