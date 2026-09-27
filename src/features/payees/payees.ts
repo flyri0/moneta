@@ -33,9 +33,9 @@ export function mergeTargets(payees: Payee[], id: string): Payee[] {
 	return payees.filter((p) => p.id !== id);
 }
 
-/** Whether any transaction or schedule uses the payee. */
-export function inUse(payee: Pick<Payee, 'transactions' | 'schedules'>): boolean {
-	return payee.transactions > 0 || payee.schedules > 0;
+/** Whether any transaction, schedule or import rule uses the payee. */
+export function inUse(payee: Pick<Payee, 'transactions' | 'schedules' | 'rules'>): boolean {
+	return payee.transactions > 0 || payee.schedules > 0 || payee.rules > 0;
 }
 
 /** How many payees "Remove unused" would delete. */

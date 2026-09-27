@@ -384,6 +384,7 @@ describe('draftFromTransaction', () => {
 		transferAccountName: null,
 		isSplit: false,
 		isOpening: false,
+		reconciled: false,
 		splits: [],
 		...p
 	});

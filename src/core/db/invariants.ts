@@ -45,6 +45,14 @@ const BROKEN_ROWS: [string, string][] = [
 			WHERE g.system = 'income' AND c.goal_type IS NOT NULL`
 	],
 	[
+		'a reconciled transaction that is not cleared',
+		'SELECT 1 FROM transactions WHERE reconciled = 1 AND cleared = 0'
+	],
+	[
+		'an import id that is not text',
+		"SELECT 1 FROM transactions WHERE typeof(import_id) NOT IN ('text', 'null')"
+	],
+	[
 		'a split transaction without splits',
 		`SELECT 1 FROM transactions t WHERE t.is_split = 1
 			AND NOT EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transaction_id = t.id)`
@@ -91,7 +99,8 @@ const DATES: [string, string, (value: string) => boolean][] = [
 	['schedules', 'start_date', isDate],
 	['schedules', 'end_date', isDate],
 	['budget_assignments', 'month', isMonth],
-	['categories', 'goal_month', isMonth]
+	['categories', 'goal_month', isMonth],
+	['accounts', 'reconciled_on', isDate]
 ];
 
 function damaged(what: string): DomainError {

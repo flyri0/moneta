@@ -172,6 +172,20 @@ export function createCategory(db: Db, input: { groupId: string; name: string })
 	});
 }
 
+/**
+ * Creates a category in an existing group (`{ id }`) or in a new one (`{ name }`), all or nothing.
+ */
+export function createCategoryIn(
+	db: Db,
+	input: { name: string; group: { id: string } | { name: string } }
+): { categoryId: string; groupId: string } {
+	return tx(db, () => {
+		const group = input.group;
+		const groupId = 'id' in group ? group.id : createGroup(db, { name: group.name });
+		return { categoryId: createCategory(db, { groupId, name: input.name }), groupId };
+	});
+}
+
 export interface CategoryPatch {
 	name?: string;
 	groupId?: string;
@@ -311,6 +325,7 @@ export function deleteCategory(db: Db, id: string, reassignTo?: string): void {
 				 ON CONFLICT (category_id, month) DO UPDATE SET assigned = assigned + excluded.assigned`,
 				[reassignTo, id]
 			);
+			run(db, 'UPDATE payee_rules SET category_id = ? WHERE category_id = ?', [reassignTo, id]);
 			run(db, 'UPDATE payees SET default_category_id = ? WHERE default_category_id = ?', [
 				reassignTo,
 				id

@@ -8,15 +8,24 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { inUse, mergeTargets, nameConflict } from '$features/payees/payees';
+	import RuleForm from '$features/payees/RuleForm.svelte';
+	import { ruleDraft, ruleSummary } from '$features/payees/rules';
 	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { GroupNode } from '$db/repos/categories';
+	import type { PayeeRule } from '$db/repos/payee-rules';
 	import type { Payee } from '$db/repos/payees';
 	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
-	/** Renames a payee, sets its default category, merges it into another, or deletes it. */
+	/**
+	 * Renames a payee, sets its default category and its import rules, merges it into another, or
+	 * deletes it.
+	 */
 	let {
 		open = $bindable(false),
 		payee,
@@ -27,8 +36,21 @@
 	const session = useSession();
 	let name = $state('');
 	let mergeTo = $state('');
-	/** The confirmation screen shown in place of the settings, if any. */
-	let confirming = $state<{ kind: 'merge'; target: Payee } | { kind: 'delete' } | null>(null);
+	/** The screen shown in place of the settings, if any: a confirmation or a rule's form. */
+	let confirming = $state<
+		| { kind: 'merge'; target: Payee }
+		| { kind: 'delete' }
+		| { kind: 'rule'; rule: PayeeRule | null }
+		| { kind: 'delete-rule'; rule: PayeeRule }
+		| null
+	>(null);
+	const allRules = useLive(session.client, ['payee_rules', 'payees'], () =>
+		session.api.payeeRules.list()
+	);
+	const rules = $derived((allRules.data ?? []).filter((r) => r.payeeId === payee.id));
+	const categoryNames = $derived(
+		new Map(tree.flatMap((g) => g.categories.map((c) => [c.id, categoryLabel(c)])))
+	);
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
 
@@ -85,11 +107,23 @@
 	function confirmed() {
 		if (!confirming) return;
 		const pending = confirming;
+		if (pending.kind === 'delete-rule') {
+			void act(() => session.api.payeeRules.delete(pending.rule.id), false).then(() => {
+				if (!error) confirm(null);
+			});
+			return;
+		}
+		if (pending.kind === 'rule') return;
 		void act(() =>
 			pending.kind === 'merge'
 				? session.api.payees.merge(payee.id, pending.target.id)
 				: session.api.payees.delete(payee.id)
 		);
+	}
+
+	/** The line under a rule: its category, when it sets one. */
+	function ruleCategory(rule: PayeeRule): string | null {
+		return rule.categoryId ? (categoryNames.get(rule.categoryId) ?? null) : null;
 	}
 </script>
 
@@ -99,14 +133,48 @@
 		? m.payee_merge_title({ name: confirming.target.name })
 		: confirming?.kind === 'delete'
 			? m.payee_delete_title()
-			: payee.name}
+			: confirming?.kind === 'rule'
+				? confirming.rule
+					? m.payee_rule_edit_title()
+					: m.payee_rule_new_title()
+				: confirming?.kind === 'delete-rule'
+					? m.payee_rule_delete_title()
+					: payee.name}
 	onBack={confirming ? () => confirm(null) : undefined}
 >
-	{#if confirming}
+	{#if confirming?.kind === 'rule'}
+		{@const rule = confirming.rule}
+		<RuleForm
+			initial={rule
+				? {
+						kind: rule.kind,
+						text: rule.text,
+						payeeName: payee.name,
+						categoryId: rule.categoryId ?? ''
+					}
+				: { ...ruleDraft(payee.name, payee.name), text: '' }}
+			ruleId={rule?.id ?? null}
+			payee={current.name}
+			{tree}
+			onSaved={() => confirm(null)}
+			onCancel={() => confirm(null)}
+		/>
+		{#if rule}
+			<Button
+				variant="ghost"
+				class="mt-2 w-full text-destructive"
+				onclick={() => confirm({ kind: 'delete-rule', rule })}
+			>
+				{m.payee_rule_delete()}
+			</Button>
+		{/if}
+	{:else if confirming}
 		<ConfirmPanel
 			body={confirming.kind === 'merge'
 				? m.payee_merge_body({ from: payee.name, to: confirming.target.name })
-				: m.payee_delete_body()}
+				: confirming.kind === 'delete-rule'
+					? m.payee_rule_delete_body()
+					: m.payee_delete_body()}
 			confirmLabel={confirming.kind === 'merge' ? m.payee_merge_button() : m.delete()}
 			{error}
 			{busy}
@@ -152,6 +220,39 @@
 					placeholder={m.payee_default_none()}
 				/>
 				<p class="text-xs text-muted-foreground">{m.payee_default_category_hint()}</p>
+			</div>
+
+			<div class="grid gap-2" data-testid="payee-rules">
+				<div class="flex items-center justify-between gap-2">
+					<span class="text-sm font-medium">{m.payee_rules()}</span>
+					<Button variant="outline" size="sm" onclick={() => confirm({ kind: 'rule', rule: null })}>
+						<PlusIcon />
+						{m.payee_rule_add()}
+					</Button>
+				</div>
+				{#if rules.length > 0}
+					<ul class="divide-y rounded-lg border">
+						{#each rules as rule (rule.id)}
+							<li class="flex items-center justify-between gap-2 px-3 py-2">
+								<div class="grid min-w-0 gap-0.5">
+									<span class="truncate text-sm" data-testid="payee-rule">{ruleSummary(rule)}</span>
+									{#if ruleCategory(rule)}
+										<span class="truncate text-xs text-muted-foreground">{ruleCategory(rule)}</span>
+									{/if}
+								</div>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									aria-label={m.payee_rule_edit()}
+									onclick={() => confirm({ kind: 'rule', rule })}
+								>
+									<PencilIcon />
+								</Button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				<p class="text-xs text-muted-foreground">{m.payee_rules_hint()}</p>
 			</div>
 
 			<Separator />

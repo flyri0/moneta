@@ -45,7 +45,8 @@ export function formatAmountInput(minor: number, fmt: MoneyFormat): string {
 		.replace('−', '-');
 }
 
-function decimalSeparator(locale: string): string {
+/** The decimal separator `locale` writes numbers with. */
+export function decimalSeparator(locale: string): string {
 	const part = numberFormat(locale)
 		.formatToParts(1.5)
 		.find((p) => p.type === 'decimal');

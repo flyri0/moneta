@@ -34,6 +34,7 @@ describe('migrate', () => {
 			'categories',
 			'category_groups',
 			'meta',
+			'payee_rules',
 			'payees',
 			'schedule_splits',
 			'schedules',
@@ -160,6 +161,51 @@ describe('migrate', () => {
 		]);
 		expect(() => run(db, "UPDATE categories SET goal_type = 'monthly', goal_amount = 0")).toThrow();
 		expect(() => run(db, "UPDATE categories SET goal_type = 'weekly', goal_amount = 1")).toThrow();
+	});
+
+	it('adds import ids and reconciliation, none for the rows there', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 8));
+		db.exec(`
+			INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+				('a1', 'Bank', 'checking', 1, '2026-01-01');
+			INSERT INTO transactions (id, account_id, date, amount, cleared) VALUES
+				('t1', 'a1', '2026-01-02', -10, 1), ('t2', 'a1', '2026-01-03', -20, 0);
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT id, import_id, reconciled FROM transactions ORDER BY id')).toEqual([
+			{ id: 't1', import_id: null, reconciled: 0 },
+			{ id: 't2', import_id: null, reconciled: 0 }
+		]);
+		expect(all(db, 'SELECT reconciled_on, csv_format FROM accounts')).toEqual([
+			{ reconciled_on: null, csv_format: null }
+		]);
+		run(db, "UPDATE transactions SET import_id = 'ofx:1' WHERE id = 't1'");
+		expect(() => run(db, "UPDATE transactions SET import_id = 'ofx:1' WHERE id = 't2'")).toThrow();
+		expect(() => run(db, 'UPDATE transactions SET reconciled = 2')).toThrow();
+	});
+
+	it('adds payee rules, which go with their payee', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 9));
+		db.exec("INSERT INTO payees (id, name) VALUES ('p1', 'Uber')");
+		migrate(db);
+		run(
+			db,
+			"INSERT INTO payee_rules (id, payee_id, kind, text) VALUES ('r1', 'p1', 'starts', 'UBER')"
+		);
+		expect(() =>
+			run(db, "INSERT INTO payee_rules (id, payee_id, kind, text) VALUES ('r2', 'p1', 'ends', 'x')")
+		).toThrow();
+		expect(() =>
+			run(db, "INSERT INTO payee_rules (id, payee_id, kind, text) VALUES ('r3', 'p1', 'is', ' ')")
+		).toThrow();
+		run(db, "DELETE FROM payees WHERE id = 'p1'");
+		expect(all(db, 'SELECT id FROM payee_rules')).toEqual([]);
 	});
 
 	it('is idempotent', async () => {

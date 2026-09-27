@@ -12,7 +12,8 @@ export type Table =
 	| 'transaction_splits'
 	| 'budget_assignments'
 	| 'schedules'
-	| 'schedule_splits';
+	| 'schedule_splits'
+	| 'payee_rules';
 
 export const ALL_TABLES: readonly Table[] = [
 	'meta',
@@ -24,7 +25,8 @@ export const ALL_TABLES: readonly Table[] = [
 	'transaction_splits',
 	'budget_assignments',
 	'schedules',
-	'schedule_splits'
+	'schedule_splits',
+	'payee_rules'
 ];
 
 /** Per-connection settings. Must run outside any transaction. */

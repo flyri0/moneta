@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest';
 import type { Payee } from '$db/repos/payees';
 import { filterPayees, mergeTargets, nameConflict, unusedCount } from './payees';
 
-const payee = (id: string, name: string, transactions = 1, schedules = 0): Payee => ({
+const payee = (id: string, name: string, transactions = 1, schedules = 0, rules = 0): Payee => ({
 	id,
 	name,
 	defaultCategoryId: null,
 	lastCategoryId: null,
 	transactions,
 	schedules,
+	rules,
 	lastUsed: transactions ? '2026-01-01' : null
 });
 
@@ -56,5 +57,11 @@ describe('unusedCount', () => {
 describe('unusedCount with schedules', () => {
 	it('does not count a payee that a schedule uses', () => {
 		expect(unusedCount([payee('a', 'Rent', 0, 1), payee('b', 'Old', 0)])).toBe(1);
+	});
+});
+
+describe('unusedCount with rules', () => {
+	it('does not count a payee that a rule uses', () => {
+		expect(unusedCount([payee('a', 'Uber', 0, 0, 1), payee('b', 'Old', 0)])).toBe(1);
 	});
 });

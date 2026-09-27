@@ -8,6 +8,7 @@ import { createGroup, deleteCategory, listCategoryTree } from './repos/categorie
 import { startingBalanceCategoryId } from './repos/meta';
 import { getOrCreatePayee, setPayeeDefaultCategory } from './repos/payees';
 import { createSchedule, type ScheduleInput } from './repos/schedules';
+import { createRule } from './repos/payee-rules';
 import { createTransaction } from './repos/transactions';
 import { categoryId, createBudgetDb, createTestDb } from './testing';
 
@@ -187,6 +188,39 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	'accounts.rename': [{ args: (f) => [f.bank, 'Main'] }],
 	'accounts.close': [{ args: (f) => [f.spare] }],
 	'accounts.reopen': [{ prepare: (f) => closeAccount(f.db, f.spare), args: (f) => [f.spare] }],
+	'accounts.reconcile': [
+		{
+			args: (f) => [
+				f.bank,
+				{ date: '2026-01-31', balance: 1, adjustment: { categoryId: f.food, memo: 'Adjustment' } }
+			]
+		}
+	],
+	'imports.commit': [
+		{
+			args: (f) => [
+				f.bank,
+				{
+					lines: [
+						{
+							importId: 'ofx:1',
+							date: '2026-01-20',
+							amount: -1000,
+							payeeName: 'Brand new payee',
+							memo: '',
+							categoryId: f.food,
+							matchId: null
+						}
+					],
+					csvFormat: '{}'
+				}
+			]
+		}
+	],
+	'categories.createIn': [
+		{ args: (f) => [{ name: 'Internet', group: { id: f.bills } }] },
+		{ args: () => [{ name: 'Vet', group: { name: 'Pets' } }] }
+	],
 	'accounts.delete': [
 		{ args: (f) => [f.spare] },
 		{
@@ -217,7 +251,15 @@ const SCENARIOS: Record<string, Scenario[]> = {
 		{ args: (f) => [f.food, { name: 'Groceries' }] },
 		{ args: (f) => [f.rent, { goal: { type: 'monthly', amount: 120000, month: null } }] }
 	],
-	'categories.delete': [{ args: (f) => [f.food, f.fun] }, { args: (f) => [f.rent, f.utilities] }],
+	'categories.delete': [
+		{ args: (f) => [f.food, f.fun] },
+		{ args: (f) => [f.rent, f.utilities] },
+		{
+			prepare: (f) =>
+				createRule(f.db, { payeeName: 'Landlord', kind: 'is', text: 'RENT', categoryId: f.rent }),
+			args: (f) => [f.rent, f.utilities]
+		}
+	],
 	'categories.saveOrder': [
 		{
 			args: (f) => [
@@ -229,7 +271,33 @@ const SCENARIOS: Record<string, Scenario[]> = {
 		}
 	],
 	'payees.rename': [{ args: (f) => [f.market, 'Mercado'] }],
-	'payees.merge': [{ args: (f) => [f.landlord, f.market] }],
+	'payees.merge': [
+		{
+			prepare: (f) =>
+				createRule(f.db, { payeeName: 'Landlord', kind: 'is', text: 'RENT', categoryId: null }),
+			args: (f) => [f.landlord, f.market]
+		}
+	],
+	'payeeRules.create': [
+		{ args: () => [{ payeeName: 'Uber', kind: 'starts', text: 'UBER', categoryId: null }] }
+	],
+	'payeeRules.update': [
+		{
+			prepare: (f) =>
+				createRule(f.db, { payeeName: 'Landlord', kind: 'is', text: 'RENT', categoryId: null }),
+			args: (f) => [
+				all<{ id: string }>(f.db, 'SELECT id FROM payee_rules')[0].id,
+				{ payeeName: 'New landlord', kind: 'is', text: 'RENT', categoryId: null }
+			]
+		}
+	],
+	'payeeRules.delete': [
+		{
+			prepare: (f) =>
+				createRule(f.db, { payeeName: 'Landlord', kind: 'is', text: 'RENT', categoryId: null }),
+			args: (f) => [all<{ id: string }>(f.db, 'SELECT id FROM payee_rules')[0].id]
+		}
+	],
 	'payees.setDefaultCategory': [{ args: (f) => [f.landlord, f.rent] }],
 	'payees.delete': [{ args: (f) => [f.unused] }],
 	'payees.deleteUnused': [{ args: () => [] }],

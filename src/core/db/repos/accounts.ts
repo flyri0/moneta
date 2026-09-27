@@ -1,8 +1,9 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { isDate } from '$domain/month';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
 import { ensureStartingBalanceCategory } from './meta';
-import { createStartingBalance } from './transactions';
+import { createStartingBalance, createTransaction } from './transactions';
 
 export type AccountType =
 	'checking' | 'savings' | 'cash' | 'credit_card' | 'investment' | 'loan' | 'other';
@@ -16,6 +17,8 @@ export interface Account {
 	sortOrder: number;
 	balance: number;
 	clearedBalance: number;
+	/** The date of the last reconciliation, if any. */
+	reconciledOn: string | null;
 }
 
 export interface CreateAccountInput {
@@ -31,6 +34,7 @@ export interface CreateAccountInput {
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
 
 const SELECT_SQL = `SELECT a.id, a.name, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
+	a.reconciled_on AS reconciledOn,
 	COALESCE(SUM(t.amount), 0) AS balance,
 	COALESCE(SUM(CASE WHEN t.cleared = 1 THEN t.amount END), 0) AS clearedBalance
 	FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id`;
@@ -115,5 +119,42 @@ export function deleteAccount(db: Db, id: string): void {
 		if (one(db, 'SELECT 1 AS x FROM transactions WHERE account_id = ?', [id]))
 			throw new DomainError('ACCOUNT_HAS_TRANSACTIONS');
 		run(db, 'DELETE FROM accounts WHERE id = ?', [id]);
+	});
+}
+
+export interface ReconcileInput {
+	/** The date of the bank's balance. */
+	date: string;
+	/** The balance the bank shows, which the cleared balance must match. */
+	balance: number;
+	/** Enters the difference as a cleared transaction (with a category on budget). */
+	adjustment?: { categoryId: string | null; memo: string };
+}
+
+/**
+ * Checks the cleared balance against the bank's and marks every cleared transaction reconciled.
+ * A difference needs an adjustment, or it throws RECONCILE_MISMATCH with `{ difference }`.
+ */
+export function reconcileAccount(db: Db, id: string, input: ReconcileInput): void {
+	tx(db, () => {
+		const account = getAccount(db, id);
+		if (account.closed) throw new DomainError('ACCOUNT_CLOSED');
+		if (!isDate(input.date)) throw new DomainError('INVALID_INPUT', `Invalid date ${input.date}`);
+		if (!Number.isSafeInteger(input.balance))
+			throw new DomainError('INVALID_INPUT', 'Balance must be an integer');
+		const difference = input.balance - account.clearedBalance;
+		if (difference !== 0) {
+			if (!input.adjustment) throw new DomainError('RECONCILE_MISMATCH', undefined, { difference });
+			createTransaction(db, {
+				accountId: id,
+				date: input.date,
+				amount: difference,
+				categoryId: input.adjustment.categoryId,
+				memo: input.adjustment.memo,
+				cleared: true
+			});
+		}
+		run(db, 'UPDATE transactions SET reconciled = 1 WHERE account_id = ? AND cleared = 1', [id]);
+		run(db, 'UPDATE accounts SET reconciled_on = ? WHERE id = ?', [input.date, id]);
 	});
 }

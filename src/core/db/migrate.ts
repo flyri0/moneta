@@ -8,6 +8,8 @@ import openingTransactions from './migrations/0005_opening_transactions.sql?raw'
 import startingBalancePayee from './migrations/0006_starting_balance_payee.sql?raw';
 import scheduleInstallments from './migrations/0007_schedule_installments.sql?raw';
 import categoryGoals from './migrations/0008_category_goals.sql?raw';
+import importReconcile from './migrations/0009_import_reconcile.sql?raw';
+import payeeRules from './migrations/0010_payee_rules.sql?raw';
 
 export const MIGRATIONS: readonly string[] = [
 	init,
@@ -17,7 +19,9 @@ export const MIGRATIONS: readonly string[] = [
 	openingTransactions,
 	startingBalancePayee,
 	scheduleInstallments,
-	categoryGoals
+	categoryGoals,
+	importReconcile,
+	payeeRules
 ];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

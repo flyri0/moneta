@@ -22,7 +22,10 @@
 					? m.payees_transactions_one()
 					: m.payees_transactions({ count: payee.transactions });
 		const category = payee.defaultCategoryId && categoryNames.get(payee.defaultCategoryId);
-		return category ? `${count} · ${m.payees_default({ category })}` : count;
+		const parts = [count];
+		if (category) parts.push(m.payees_default({ category }));
+		if (payee.rules > 0) parts.push(m.payees_rules_count({ count: payee.rules }));
+		return parts.join(' · ');
 	}
 </script>
 

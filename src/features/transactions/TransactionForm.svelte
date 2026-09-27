@@ -27,12 +27,14 @@
 		installmentPlan
 	} from '$features/transactions/installments';
 	import TransactionFields from './TransactionFields.svelte';
+	import { NewCategories, categoryValues, withCategoryIds } from './new-categories';
 
 	/** `onSave`, when given, replaces the create/update write (entering a scheduled occurrence). */
 	let {
 		ctx,
 		initial,
 		editingId,
+		reconciled = false,
 		onSave,
 		confirming = $bindable(false),
 		onDone
@@ -40,6 +42,8 @@
 		ctx: FormContext;
 		initial: TransactionDraft;
 		editingId: string | null;
+		/** The transaction being edited was reconciled: it stays cleared while in its account. */
+		reconciled?: boolean;
 		onSave?: (input: TransactionInput) => Promise<unknown>;
 		/** Whether the delete confirmation shows in place of the form (the dialog titles it). */
 		confirming?: boolean;
@@ -52,9 +56,12 @@
 	let draft = $state(structuredClone(initial));
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
+	const pending = new NewCategories();
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.date);
+	/** A reconciled transaction stays cleared unless it moves to another account. */
+	const lockedCleared = $derived(reconciled && draft.accountId === initial.accountId);
 
 	/** Installments, as typed: only a new card purchase offers them. */
 	let installments = $state('');
@@ -96,15 +103,18 @@
 			return;
 		}
 		busy = true;
-		error = await runAction(() =>
-			onSave
-				? onSave(input)
+		error = await runAction(async () => {
+			// Categories picked by a new name are created first, then used by their ids.
+			const ids = await pending.resolve(session.api, categoryValues(input));
+			const saved = withCategoryIds(input, ids);
+			await (onSave
+				? onSave(saved)
 				: editingId
-					? session.api.transactions.update(editingId, input)
+					? session.api.transactions.update(editingId, saved)
 					: count > 1
-						? session.api.schedules.createInstallments(input, count)
-						: session.api.transactions.create(input)
-		);
+						? session.api.schedules.createInstallments(saved, count)
+						: session.api.transactions.create(saved));
+		});
 		busy = false;
 		if (!error) onDone(input.accountId);
 	}
@@ -135,7 +145,7 @@
 	/>
 {:else}
 	<form class="grid gap-4" onsubmit={save}>
-		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} />
+		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} />
 
 		{#if installable}
 			<div class="grid gap-2">
@@ -158,8 +168,14 @@
 			</div>
 		{/if}
 
+		{#if reconciled}
+			<Alert.Root data-testid="reconciled-notice">
+				<Alert.Description>{m.transaction_reconciled_notice()}</Alert.Description>
+			</Alert.Root>
+		{/if}
+
 		<div class="flex items-center gap-2">
-			<Checkbox id="txn-cleared" bind:checked={draft.cleared} />
+			<Checkbox id="txn-cleared" bind:checked={draft.cleared} disabled={lockedCleared} />
 			<Label for="txn-cleared">{m.transaction_cleared()}</Label>
 		</div>
 

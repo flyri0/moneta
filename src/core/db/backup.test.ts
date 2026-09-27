@@ -229,6 +229,21 @@ describe('checkBackup rebuilds the budget', () => {
 			`UPDATE categories SET goal_type = 'monthly', goal_amount = 100
 				WHERE group_id = (SELECT id FROM category_groups WHERE system = 'income')`
 		],
+		[
+			'a reconciled transaction that is not cleared',
+			"UPDATE transactions SET reconciled = 1, cleared = 0 WHERE memo = 'plain'"
+		],
+		[
+			'an import id that is not text',
+			"UPDATE transactions SET import_id = X'01' WHERE memo = 'plain'"
+		],
+		[
+			'a payee rule without text',
+			`PRAGMA ignore_check_constraints = ON;
+			INSERT INTO payees (id, name) VALUES ('p-rule', 'Uber');
+			INSERT INTO payee_rules (id, payee_id, kind, text) VALUES ('r1', 'p-rule', 'starts', '  ')`
+		],
+		['a bad reconciliation date', "UPDATE accounts SET reconciled_on = 'yesterday'"],
 		['a date that is not a date', "UPDATE transactions SET date = 'zzzz' WHERE memo = 'plain'"],
 		['an impossible date', "UPDATE transactions SET date = '2026-13-45' WHERE memo = 'plain'"],
 		['a far-off year', "UPDATE transactions SET date = '9999-12-31' WHERE memo = 'plain'"],

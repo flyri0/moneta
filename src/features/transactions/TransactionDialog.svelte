@@ -125,6 +125,7 @@
 					{ctx}
 					{initial}
 					editingId={occurrence ? null : (transaction?.id ?? null)}
+					reconciled={!occurrence && !!transaction?.reconciled}
 					{onSave}
 					bind:confirming
 					onDone={(savedAccountId) => {

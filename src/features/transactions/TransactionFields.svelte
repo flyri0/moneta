@@ -7,8 +7,10 @@
 	import { Combobox, type ComboboxGroup } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
 	import { useSession } from '$client/app-state.svelte';
-	import { groupLabel, categoryLabel, accountOptionLabel } from '$i18n/labels';
+	import { accountOptionLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
+	import CategoryCombobox from './CategoryCombobox.svelte';
+	import type { NewCategories } from './new-categories';
 	import {
 		canSplit,
 		categoryMode,
@@ -23,13 +25,21 @@
 
 	/**
 	 * The fields a transaction and a schedule share: account, date, payee or transfer, amount,
-	 * category or split lines, and memo. `dateLabel` names the date field.
+	 * category or split lines, and memo. `dateLabel` names the date field. A category picked by a
+	 * name that doesn't exist yet goes into `pending`.
 	 */
 	let {
 		ctx,
 		draft = $bindable(),
-		dateLabel
-	}: { ctx: FormContext; draft: TransactionDraft; dateLabel: string } = $props();
+		dateLabel,
+		pending
+	}: {
+		ctx: FormContext;
+		draft: TransactionDraft;
+		dateLabel: string;
+		/** New categories picked in the form, created when it saves. */
+		pending: NewCategories;
+	} = $props();
 
 	const session = useSession();
 	// The form re-creates these fields (with {#key}) for every draft it opens.
@@ -75,12 +85,6 @@
 	});
 	const mode = $derived(categoryMode(draft, ctx));
 	const options = $derived(categoryOptions(draft, ctx));
-	const categoryGroups = $derived(
-		options.map((g) => ({
-			heading: groupLabel(g),
-			items: g.categories.map((c) => ({ value: c.id, label: categoryLabel(c) }))
-		}))
-	);
 	const splittable = $derived(canSplit(draft, ctx));
 	const remaining = $derived(draft.splits ? splitRemaining(draft, ctx.money) : 0);
 	const isTransfer = $derived(transferTarget(draft, ctx) !== null);
@@ -131,17 +135,14 @@
 	label: string,
 	className?: string
 )}
-	<Combobox
+	<CategoryCombobox
 		{id}
 		ariaLabel={label}
-		groups={categoryGroups}
-		emptyOption={{
-			value: '',
-			label: m.transaction_choose_category()
-		}}
+		tree={ctx.tree}
+		{options}
+		{pending}
 		{value}
 		onSelect={onChange}
-		placeholder={m.transaction_choose_category()}
 		class={className}
 	/>
 {/snippet}

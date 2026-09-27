@@ -48,6 +48,10 @@ exemplo, e nada do que você fizer lá é salvo.
 - **Contas e transações.** Contas do orçamento e de acompanhamento, cartões de crédito cujos
   pagamentos não mexem no orçamento, transações divididas, transferências entre contas e
   favorecidos que você pode renomear em todo lugar, mesclar e associar a uma categoria padrão.
+- **Extratos bancários.** Importe extratos OFX e CSV: o que você já lançou é correspondido em
+  vez de duplicado, um extrato importado duas vezes não acrescenta nada, e a categoria de
+  costume de cada favorecido volta sozinha. Concilie uma conta com o saldo do banco para
+  travar o que foi conferido.
 - **Transações agendadas.** Únicas, diárias, semanais, mensais ou anuais, com uma regra para
   datas que caem no fim de semana. São lançadas sozinhas ou com um toque, e cada conta mostra
   o que vem nos próximos 30 dias.
@@ -227,7 +231,8 @@ src/core/client/       lado da thread principal: cliente RPC, live queries, tab 
 src/core/i18n/         catálogos de mensagens (en, pt-BR), mensagens de erro, rótulos e formatos
 src/features/          módulos de funcionalidades (lógica de tela + componentes Svelte juntos):
   budget/              grade do orçamento, painéis de categoria/grupo, ordem, progresso, visualização
-  accounts/            lista de contas, extrato, diálogos de criação de contas
+  accounts/            lista de contas, extrato, diálogos de criação de contas, conciliação,
+                       importação de extratos (import/: leitores de OFX e CSV, revisão)
   transactions/        diálogo de transação, validação de formulário
   schedules/           tela de agendamentos, formulário, resumo da repetição
   reports/             cards e páginas dos relatórios, layout do painel, intervalos de datas

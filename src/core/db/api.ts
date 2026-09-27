@@ -12,6 +12,8 @@ import * as schedules from './repos/schedules';
 import * as budget from './repos/budget';
 import * as reports from './repos/reports';
 import * as demo from './repos/demo';
+import * as imports from './repos/imports';
+import * as payeeRules from './repos/payee-rules';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -57,7 +59,9 @@ export const api = {
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
-		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string'])
+		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string']),
+		// An adjustment is one plain transaction, with no payee.
+		reconcile: write(['accounts', 'transactions'], accounts.reconcileAccount, ['string', 'object'])
 	},
 	categories: {
 		tree: read(categories.listCategoryTree, []),
@@ -70,9 +74,11 @@ export const api = {
 		]),
 		usage: read(categories.categoryUsage, ['string']),
 		create: write(['categories'], categories.createCategory, ['object']),
+		// With a group that doesn't exist yet, it creates that group too.
+		createIn: write(['categories', 'category_groups'], categories.createCategoryIn, ['object']),
 		update: write(['categories'], categories.updateCategory, ['string', 'object']),
 		delete: write(
-			['categories', 'budget_assignments', ...TXN, ...SCHED],
+			['categories', 'budget_assignments', 'payee_rules', ...TXN, ...SCHED],
 			categories.deleteCategory,
 			['string', 'string?']
 		),
@@ -81,10 +87,20 @@ export const api = {
 	payees: {
 		list: read(payees.listPayees, []),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
-		merge: write(['payees', 'transactions', 'schedules'], payees.mergePayee, ['string', 'string']),
+		merge: write(['payees', 'transactions', 'schedules', 'payee_rules'], payees.mergePayee, [
+			'string',
+			'string'
+		]),
 		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
 		delete: write(['payees'], payees.deletePayee, ['string']),
 		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
+	},
+	payeeRules: {
+		list: read(payeeRules.listRules, []),
+		// A rule may name a payee that doesn't exist yet, which it creates.
+		create: write(['payee_rules', 'payees'], payeeRules.createRule, ['object']),
+		update: write(['payee_rules', 'payees'], payeeRules.updateRule, ['string', 'object']),
+		delete: write(['payee_rules'], payeeRules.deleteRule, ['string'])
 	},
 	transactions: {
 		list: read(transactions.listTransactions, ['object?']),
@@ -95,6 +111,15 @@ export const api = {
 			'string'
 		]),
 		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
+	},
+	imports: {
+		preview: read(imports.previewImport, ['string', 'array']),
+		csvFormat: read(imports.getCsvFormat, ['string']),
+		// New lines create payees; matched ones only change their own row.
+		commit: write(['transactions', 'payees', 'accounts'], imports.importTransactions, [
+			'string',
+			'object'
+		])
 	},
 	schedules: {
 		list: read(schedules.listSchedules, ['string']),
