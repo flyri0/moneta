@@ -9,5 +9,6 @@ export default defineConfig({
 		env: { VITE_GOOGLE_CLIENT_ID: 'e2e-client-id' }
 	},
 	testMatch: '**/*.e2e.{ts,js}',
-	use: { baseURL: 'http://localhost:4173' }
+	// Screen transitions would slow every test down; e2e/motion.e2e.ts turns them back on.
+	use: { baseURL: 'http://localhost:4173', reducedMotion: 'reduce' }
 });

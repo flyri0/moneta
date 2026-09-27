@@ -4,6 +4,7 @@
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 	import { tick } from 'svelte';
 	import { flip } from 'svelte/animate';
+	import { motionDuration } from '$client/motion.svelte';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
@@ -128,7 +129,7 @@
 			aria-label={groupLabel(group)}
 			data-order-group={group.id}
 			data-order-row
-			animate:flip={{ duration: 150 }}
+			animate:flip={{ duration: motionDuration(150) }}
 		>
 			<div class="flex items-center gap-2 bg-muted/60 px-3 py-2 font-medium" data-order-header>
 				{@render grip({ kind: 'group', id: group.id, label: groupLabel(group) })}
@@ -158,7 +159,7 @@
 						data-order-category={category.id}
 						data-order-row
 						data-testid="order-category"
-						animate:flip={{ duration: 150 }}
+						animate:flip={{ duration: motionDuration(150) }}
 					>
 						{@render grip({ kind: 'category', id: category.id, label: category.name })}
 						<span class="flex-1 truncate">{category.name}</span>

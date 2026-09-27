@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { afterNavigate, goto, preloadCode } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate, preloadCode } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
@@ -25,6 +25,8 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runWhenIdle } from '$client/idle';
 	import { pendingLoads } from '$client/pending';
+	import { motion } from '$client/motion.svelte';
+	import { loadsSettled, navigationKind } from '$client/navigation-kind';
 	import { useLive } from '$client/live.svelte';
 	import { persistQuietly } from '$client/persistence';
 	import {
@@ -210,6 +212,33 @@
 	// A shorter page can reset the scroll without a scroll event.
 	afterNavigate(trackScroll);
 
+	/** The screen change animating, so an older one that ends late leaves the newer one alone. */
+	let transition: ViewTransition | null = null;
+
+	// Every screen change animates here and nowhere else (see navigationKind). The new screen is
+	// given a moment to load, so the animation ends on its content rather than its placeholders.
+	onNavigate((navigation) => {
+		const kind = navigationKind(navigation.from?.route.id, navigation.to?.route.id);
+		if (kind === 'none' || motion.reduced || !('startViewTransition' in document)) return;
+		return new Promise<void>((ready) => {
+			const root = document.documentElement;
+			root.dataset.nav = kind;
+			const current = document.startViewTransition(async () => {
+				ready();
+				await navigation.complete.catch(() => {});
+				await loadsSettled(pendingLoads, 200);
+			});
+			transition = current;
+			current.ready.catch(() => {});
+			const done = () => {
+				if (transition !== current) return;
+				transition = null;
+				delete root.dataset.nav;
+			};
+			current.finished.then(done, done);
+		});
+	});
+
 	// Each screen's code is loaded and compiled while the app sits idle, so a tap on the nav only
 	// has to render. On a phone that compile is most of the wait. The add dialog's code comes last;
 	// it still mounts only when first opened.
@@ -307,7 +336,7 @@
 			id="sidebar"
 			data-collapsed={collapsed}
 			style:width={sidebarWidth}
-			class="sticky top-[var(--app-top,0px)] z-40 hidden h-[calc(100dvh-var(--app-top,0px))] shrink-0 border-r bg-sidebar text-sidebar-foreground md:block {dragging
+			class="sticky top-[var(--app-top,0px)] z-40 hidden h-[calc(100dvh-var(--app-top,0px))] shrink-0 border-r bg-sidebar text-sidebar-foreground [view-transition-name:app-sidebar] md:block {dragging
 				? ''
 				: 'transition-[width] duration-200'}"
 		>
@@ -411,7 +440,7 @@
 		onclick={() => (adding = true)}
 		aria-label={m.add_transaction()}
 		data-compact={compact}
-		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-11 items-center rounded-full bg-primary pr-3.5 pl-3 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-3 md:hidden"
+		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-11 items-center rounded-full bg-primary pr-3.5 pl-3 text-primary-foreground shadow-lg transition-[padding] duration-200 [view-transition-name:app-fab] data-[compact=true]:pr-3 md:hidden"
 	>
 		<PlusIcon class="size-5 shrink-0" />
 		<span
@@ -425,7 +454,7 @@
 	</button>
 
 	<nav
-		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+		class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] [view-transition-name:app-bottom-nav] md:hidden"
 		aria-label={m.nav_label()}
 		data-scroll-inset="bottom"
 	>

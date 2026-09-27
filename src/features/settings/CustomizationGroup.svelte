@@ -8,12 +8,19 @@
 	import SettingsRow from './SettingsRow.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { ACCENT_SWATCH, accentLabel, readAccent } from '$client/accent';
+	import type { MotionSetting } from '$client/motion';
+	import { motion } from '$client/motion.svelte';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale, locales, setLocale, type Locale } from '$i18n/paraglide/runtime';
 
 	let { title = m.settings_customization() }: { title?: string } = $props();
 
 	const LANGUAGE_NAMES: Record<Locale, string> = { en: 'English', 'pt-BR': 'Português (Brasil)' };
+
+	const MOTION_LABELS: Record<MotionSetting, () => string> = {
+		system: m.settings_motion_system,
+		reduce: m.settings_motion_reduce
+	};
 
 	const desktop = new MediaQuery('min-width: 768px');
 	const accent = $derived(readAccent(theme.current));
@@ -42,6 +49,27 @@
 	<SettingsRow label={m.settings_theme()}>
 		{#snippet control()}
 			<ThemeToggle />
+		{/snippet}
+	</SettingsRow>
+
+	<SettingsRow label={m.settings_motion()} labelFor="settings-motion">
+		{#snippet control()}
+			<Select.Root
+				type="single"
+				value={motion.setting}
+				onValueChange={(v) => {
+					if (v) motion.set(v as MotionSetting);
+				}}
+			>
+				<Select.Trigger id="settings-motion" size="sm" class="h-8 w-auto">
+					{MOTION_LABELS[motion.setting]()}
+				</Select.Trigger>
+				<Select.Content>
+					{#each Object.entries(MOTION_LABELS) as [value, label] (value)}
+						<Select.Item {value} label={label()}>{label()}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		{/snippet}
 	</SettingsRow>
 

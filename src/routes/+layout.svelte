@@ -5,6 +5,7 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { page } from '$app/state';
 	import { DEFAULT_ACCENT } from '$client/accent';
+	import { motion } from '$client/motion.svelte';
 	import '$client/install.svelte';
 	import { Toaster } from '$ui/sonner';
 	import Boot from '$components/app/Boot.svelte';
@@ -15,6 +16,13 @@
 
 	// The app is a client-only SPA, so the document is always there.
 	document.documentElement.lang = getLocale();
+
+	// Set before the first paint, then kept up with the setting and the system.
+	function applyMotion() {
+		document.documentElement.dataset.motion = motion.reduced ? 'reduce' : 'full';
+	}
+	applyMotion();
+	$effect(applyMotion);
 
 	/**
 	 * The welcome, sign-in callback and error pages are not the app: they open no database and claim

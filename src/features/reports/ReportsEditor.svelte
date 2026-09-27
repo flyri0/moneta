@@ -4,6 +4,7 @@
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { flip } from 'svelte/animate';
+	import { motionDuration } from '$client/motion.svelte';
 	import { Button } from '$ui/button';
 	import { Switch } from '$ui/switch';
 	import { shouldMove } from '$features/budget/sortable';
@@ -101,7 +102,7 @@
 					: ''}"
 				data-report-row={id}
 				data-testid="report-row"
-				animate:flip={{ duration: 150 }}
+				animate:flip={{ duration: motionDuration(150) }}
 			>
 				{@render grip({ kind: 'card', id, label: title })}
 				<span class="min-w-0 flex-1 truncate {shown ? '' : 'text-muted-foreground'}">{title}</span>

@@ -65,6 +65,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Feedback has three places, nothing else: (1) a form's or dialog's error shows inline in `FormMessage` (`$components/FormMessage.svelte`), just above its buttons, unexpected ones with "Copy details" and no toast; (2) a section that fails to load shows the same `FormMessage` inside it; (3) toasts only for what has no form: background work, a result the screen doesn't show (restored, copied), failed inline edits (`runActionToast`). Persistent notices that belong to the content use `Alert`.
 - Destructive actions ask through `ConfirmPanel` (a dialog's own screen, with a back button) or `ConfirmDialog` (no dialog of its own). Only deleting a budget and replacing one on restore keep their countdown.
 - Every app page starts with `PageHeader` (`$components/PageHeader.svelte`), before the page's column: title, back link, actions (`size="sm"`, icon plus a label from `md:`) and a toolbar for search and filters. It sticks to the top.
+- Motion: animate only `transform`, `opacity` or `clip-path`, with the `--motion-*` durations and `--ease-out` (`layout.css`); never a transition per item of a list. `data-motion` on the document (`$client/motion.svelte.ts`: the Settings choice or the system's `prefers-reduced-motion`) ends every CSS animation at once when reduced, and `motion-reduce:`/`motion-safe:` follow it; animations run from script take `motionDuration(ms)`. Screen changes animate only in `AppShell` (`onNavigate`, `navigationKind`); bars fill with `bar-fill` and `--fill`.
 
 ## Testing
 

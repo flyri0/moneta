@@ -125,8 +125,8 @@
 											<span class="font-medium">{row.name}</span>
 											<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
 												<span
-													class="block h-full rounded-full {bar}"
-													style="width: {(row.amount / max) * 100}%"
+													class="block h-full bar-fill rounded-full {bar}"
+													style="--fill: {(row.amount / max) * 100}%"
 												></span>
 											</span>
 										</span>
@@ -144,8 +144,8 @@
 											</span>
 											<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
 												<span
-													class="block h-full rounded-full {bar}"
-													style="width: {(row.amount / max) * 100}%"
+													class="block h-full bar-fill rounded-full {bar}"
+													style="--fill: {(row.amount / max) * 100}%"
 												></span>
 											</span>
 										</button>

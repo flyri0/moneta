@@ -4,6 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
+	import { fresh } from '$client/fresh.svelte';
 	import { runActionToast } from '$client/notify';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
@@ -36,6 +37,7 @@
 		? 'md:grid-cols-[6.5rem_1fr_1fr_1fr_1fr_7.5rem_auto]'
 		: 'md:grid-cols-[6.5rem_1fr_1fr_1fr_7.5rem_auto]'}"
 	data-testid="register-row"
+	data-fresh={fresh.id === row.id}
 >
 	<span class="hidden text-sm text-muted-foreground tabular-nums md:block">
 		{formatDate(row.date, getLocale())}

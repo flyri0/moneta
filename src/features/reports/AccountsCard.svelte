@@ -101,8 +101,8 @@
 					</span>
 					<span class="block h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
 						<span
-							class="block h-full rounded-full {account.debt ? DEBT : ASSET}"
-							style="width: {(account.amount / max) * 100}%"
+							class="block h-full bar-fill rounded-full {account.debt ? DEBT : ASSET}"
+							style="--fill: {(account.amount / max) * 100}%"
 						></span>
 					</span>
 				</li>

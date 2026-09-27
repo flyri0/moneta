@@ -4,6 +4,10 @@
 @import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
+/* Motion follows `data-motion` on the document (the setting and the system's preference), not
+   the media query alone. */
+@custom-variant motion-reduce (&:where([data-motion='reduce'], [data-motion='reduce'] *));
+@custom-variant motion-safe (&:where([data-motion='full'], [data-motion='full'] *));
 
 :root {
 	--background: var(--color-white);
@@ -389,5 +393,128 @@
 	}
 	to {
 		transform: translateX(250%);
+	}
+}
+
+/*
+ * Motion. Animate transform, opacity or clip-path only, with these durations; script-run
+ * animations take theirs from motionDuration. Screen changes animate in AppShell alone.
+ */
+:root {
+	--motion-fast: 150ms;
+	--motion-normal: 220ms;
+	--ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Reduced motion: every animation and transition ends at once. Not 0, so animationend still
+   fires (dialogs wait for it to unmount). */
+[data-motion='reduce'],
+[data-motion='reduce'] *,
+[data-motion='reduce'] *::before,
+[data-motion='reduce'] *::after {
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	animation-delay: 0s !important;
+	transition-duration: 0.01ms !important;
+	transition-delay: 0s !important;
+	scroll-behavior: auto !important;
+}
+
+/* Screen changes (see navigationKind): the page moves, the app's frame stays put. */
+::view-transition-old(app-sidebar),
+::view-transition-old(app-bottom-nav),
+::view-transition-old(app-fab) {
+	display: none;
+}
+
+::view-transition-group(app-sidebar),
+::view-transition-group(app-bottom-nav),
+::view-transition-group(app-fab),
+::view-transition-new(app-sidebar),
+::view-transition-new(app-bottom-nav),
+::view-transition-new(app-fab) {
+	animation: none;
+}
+
+:root[data-nav='fade']::view-transition-old(root) {
+	animation: page-fade-out var(--motion-fast) var(--ease-out) both;
+}
+
+:root[data-nav='fade']::view-transition-new(root) {
+	animation: page-fade-in var(--motion-fast) var(--ease-out) both;
+}
+
+:root[data-nav='forward']::view-transition-old(root) {
+	animation: page-out-start var(--motion-normal) var(--ease-out) both;
+}
+
+:root[data-nav='forward']::view-transition-new(root) {
+	animation: page-in-end var(--motion-normal) var(--ease-out) both;
+}
+
+:root[data-nav='back']::view-transition-old(root) {
+	animation: page-out-end var(--motion-normal) var(--ease-out) both;
+}
+
+:root[data-nav='back']::view-transition-new(root) {
+	animation: page-in-start var(--motion-normal) var(--ease-out) both;
+}
+
+@keyframes page-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes page-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes page-in-end {
+	from {
+		opacity: 0;
+		transform: translateX(24px);
+	}
+}
+
+@keyframes page-in-start {
+	from {
+		opacity: 0;
+		transform: translateX(-24px);
+	}
+}
+
+@keyframes page-out-start {
+	to {
+		opacity: 0;
+		transform: translateX(-24px);
+	}
+}
+
+@keyframes page-out-end {
+	to {
+		opacity: 0;
+		transform: translateX(24px);
+	}
+}
+
+/* A bar's fill, set with --fill (a percentage). Clipped rather than sized, so a new value slides
+   in without laying the page out again, and both ends stay round. */
+@utility bar-fill {
+	width: 100%;
+	clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0 round 9999px);
+	transition: clip-path var(--motion-normal) var(--ease-out);
+}
+
+/* The transaction just saved, lit up for a moment in its register. */
+[data-fresh='true'] {
+	animation: fresh-row 1.2s var(--ease-out);
+}
+
+@keyframes fresh-row {
+	from {
+		background-color: color-mix(in oklab, var(--primary) 18%, transparent);
 	}
 }

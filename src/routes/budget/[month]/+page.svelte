@@ -12,6 +12,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
+	import Pulse from '$components/Pulse.svelte';
 	import AddGroupDialog from '$features/budget/AddGroupDialog.svelte';
 	import BudgetGrid from '$features/budget/BudgetGrid.svelte';
 	import CategorySheet from '$features/budget/CategorySheet.svelte';
@@ -23,6 +24,7 @@
 	import { RTA_CHIP, RTA_ICON } from '$features/budget/tones';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { motion } from '$client/motion.svelte';
 	import { actionError } from '$client/notify';
 	import {
 		allCollapsed,
@@ -62,8 +64,7 @@
 	});
 
 	function showRta() {
-		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		rtaCard?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
+		rtaCard?.scrollIntoView({ behavior: motion.reduced ? 'auto' : 'smooth', block: 'center' });
 		rtaCard?.querySelector('button')?.focus({ preventScroll: true });
 	}
 
@@ -105,7 +106,9 @@ spans the row, so the chip joins the actions below it instead. -->
 			]}"
 		>
 			<RtaIcon class="size-3.5 shrink-0" aria-hidden="true" />
-			{session.format(view.data.readyToAssign)}
+			<Pulse value={view.data.readyToAssign} scope={view.data.month}>
+				{session.format(view.data.readyToAssign)}
+			</Pulse>
 		</button>
 	{/if}
 {/snippet}

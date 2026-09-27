@@ -84,8 +84,8 @@
 				</span>
 				<span class="block h-1.5 overflow-hidden rounded-full bg-muted">
 					<span
-						class="block h-full rounded-full {segmentClass(i < 5 ? i + 1 : null)}"
-						style="width: {(row.amount / Math.max(1, total)) * 100}%"
+						class="block h-full bar-fill rounded-full {segmentClass(i < 5 ? i + 1 : null)}"
+						style="--fill: {(row.amount / Math.max(1, total)) * 100}%"
 					></span>
 				</span>
 				{#if progress && progress.paid > 0}

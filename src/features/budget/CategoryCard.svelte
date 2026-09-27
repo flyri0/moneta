@@ -45,7 +45,10 @@
 	</div>
 	{#if !untouched}
 		<div class="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-			<div class="h-full rounded-full {TONE_BAR[tone]}" style="width: {progress.percent}%"></div>
+			<div
+				class="h-full bar-fill rounded-full {TONE_BAR[tone]}"
+				style="--fill: {progress.percent}%"
+			></div>
 		</div>
 		<p class="text-xs text-muted-foreground tabular-nums" data-testid="progress">{caption}</p>
 	{/if}

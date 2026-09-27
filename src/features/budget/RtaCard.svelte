@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import Pulse from '$components/Pulse.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
 	import { rtaTone, type RtaTone } from '$features/budget/view';
@@ -54,7 +55,9 @@
 				class="text-2xl font-bold tracking-tight tabular-nums {RTA_TEXT[tone]}"
 				data-testid="rta-amount"
 			>
-				{session.format(view.readyToAssign)}
+				<Pulse value={view.readyToAssign} scope={view.month} class="origin-left">
+					{session.format(view.readyToAssign)}
+				</Pulse>
 			</span>
 			<span class="text-sm {RTA_TEXT[tone]}" data-testid="rta-hint">{HINTS[tone]()}</span>
 		</div>

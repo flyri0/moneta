@@ -6,6 +6,7 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { markFresh } from '$client/fresh.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { TransactionInput } from '$db/repos/transactions';
 	import { isFarFuture, todayIso } from '$domain/month';
@@ -69,15 +70,20 @@
 			return;
 		}
 		busy = true;
-		error = await runAction(() =>
-			onSave
+		let saved: unknown = null;
+		error = await runAction(async () => {
+			saved = await (onSave
 				? onSave(input)
 				: editingId
 					? session.api.transactions.update(editingId, input)
-					: session.api.transactions.create(input)
-		);
+					: session.api.transactions.create(input));
+		});
 		busy = false;
-		if (!error) onDone(input.accountId);
+		if (error) return;
+		// Creating returns the new id; its register row lights up for a moment.
+		const savedId = typeof saved === 'string' ? saved : editingId;
+		if (savedId) markFresh(savedId);
+		onDone(input.accountId);
 	}
 
 	function confirm(next: boolean) {
