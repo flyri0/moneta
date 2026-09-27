@@ -2,6 +2,7 @@
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
+	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -20,6 +21,11 @@
 		type TransactionDraft
 	} from '$features/transactions/form';
 	import { FORM_ERRORS } from '$features/transactions/form-errors';
+	import {
+		canInstall,
+		installmentCount,
+		installmentPlan
+	} from '$features/transactions/installments';
 	import TransactionFields from './TransactionFields.svelte';
 
 	/** `onSave`, when given, replaces the create/update write (entering a scheduled occurrence). */
@@ -50,6 +56,22 @@
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.date);
 
+	/** Installments, as typed: only a new card purchase offers them. */
+	let installments = $state('');
+	const installable = $derived(!editingId && !onSave && canInstall(draft, ctx));
+	const plan = $derived(installable ? installmentPlan(draft, ctx, installments) : null);
+	const planText = $derived.by(() => {
+		if (!plan) return '';
+		const amount = session.format(plan.rest);
+		return plan.first === plan.rest
+			? m.transaction_installments_plan({ count: plan.count, amount })
+			: m.transaction_installments_plan_first({
+					first: session.format(plan.first),
+					count: plan.count - 1,
+					amount
+				});
+	});
+
 	/** Split lines that don't add up yet keep Save disabled. */
 	const blocked = $derived(
 		draft.splits !== null && canSplit(draft, ctx) && splitRemaining(draft, ctx.money) !== 0
@@ -63,6 +85,11 @@
 			return;
 		}
 		const input = result.input;
+		const count = installable ? installmentCount(draft, ctx, installments) : 1;
+		if (count === null) {
+			error = { message: FORM_ERRORS.INSTALLMENTS_INVALID() };
+			return;
+		}
 		// A year typed wrong would stretch every budget computation to it: ask once.
 		if (isFarFuture(input.date, todayIso()) && farDate !== input.date) {
 			farDate = input.date;
@@ -74,7 +101,9 @@
 				? onSave(input)
 				: editingId
 					? session.api.transactions.update(editingId, input)
-					: session.api.transactions.create(input)
+					: count > 1
+						? session.api.schedules.createInstallments(input, count)
+						: session.api.transactions.create(input)
 		);
 		busy = false;
 		if (!error) onDone(input.accountId);
@@ -107,6 +136,27 @@
 {:else}
 	<form class="grid gap-4" onsubmit={save}>
 		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} />
+
+		{#if installable}
+			<div class="grid gap-2">
+				<Label for="txn-installments">{m.transaction_installments()}</Label>
+				<div class="flex items-center gap-3">
+					<Input
+						id="txn-installments"
+						class="w-20"
+						bind:value={installments}
+						inputmode="numeric"
+						autocomplete="off"
+						placeholder="1"
+					/>
+					{#if plan}
+						<span class="text-sm text-muted-foreground tabular-nums" data-testid="installment-plan">
+							{planText}
+						</span>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<div class="flex items-center gap-2">
 			<Checkbox id="txn-cleared" bind:checked={draft.cleared} />

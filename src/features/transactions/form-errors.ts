@@ -9,5 +9,6 @@ export const FORM_ERRORS: Record<FormError, () => string> = {
 	CATEGORY_REQUIRED: m.error_category_required,
 	SPLIT_LINE_INVALID: m.form_error_split_line_invalid,
 	SPLIT_TOO_FEW_LINES: m.error_split_too_few_lines,
-	SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch
+	SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch,
+	INSTALLMENTS_INVALID: m.form_error_installments_invalid
 };
