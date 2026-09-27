@@ -1,6 +1,8 @@
 import { DomainError } from '$domain/errors';
 import { addDays } from '$domain/month';
+import { matchRule } from '$domain/payee-rules';
 import { all, one, run, tx, type Db } from '../connection';
+import { listRules } from './payee-rules';
 import { createTransaction } from './transactions';
 
 /** A line of a bank statement, ready to import. */
@@ -24,10 +26,12 @@ export interface ImportPreview {
 	status: ImportStatus;
 	/** The transaction a `match` would mark imported and cleared. */
 	match: { id: string; date: string; payeeName: string | null; memo: string } | null;
-	/** The payee a `new` line would get: its description, trimmed. */
+	/** The payee a `new` line would get: a rule's, else its description, trimmed. */
 	payeeName: string;
-	/** The category the payee usually gets, for on-budget accounts. */
+	/** A rule's category, else the one the payee usually gets, for on-budget accounts. */
 	categoryId: string | null;
+	/** The payee rule that caught the line's description, if any. */
+	ruleId: string | null;
 }
 
 /** How far apart a statement line and a transaction entered by hand may be dated to match. */
@@ -99,11 +103,12 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 	);
 	const used = new Set<string>();
 	const categories = onBudget ? suggestedCategories(db) : new Map<string, string>();
+	const rules = listRules(db);
 
 	return lines.map((line) => {
 		const payeeName = line.description.trim();
 		if (imported.has(line.importId)) {
-			return { status: 'duplicate', match: null, payeeName, categoryId: null };
+			return { status: 'duplicate', match: null, payeeName, categoryId: null, ruleId: null };
 		}
 		imported.add(line.importId);
 		let best: Candidate | null = null;
@@ -120,14 +125,20 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 				status: 'match',
 				match: { id, date, payeeName: matchPayee, memo },
 				payeeName,
-				categoryId: null
+				categoryId: null,
+				ruleId: null
 			};
 		}
+		const rule = matchRule(rules, line.description);
+		const payee = rule?.payeeName ?? payeeName;
 		return {
 			status: 'new',
 			match: null,
-			payeeName,
-			categoryId: categories.get(payeeName.toLocaleLowerCase()) ?? null
+			payeeName: payee,
+			categoryId: onBudget
+				? (rule?.categoryId ?? categories.get(payee.toLocaleLowerCase()) ?? null)
+				: null,
+			ruleId: rule?.id ?? null
 		};
 	});
 }

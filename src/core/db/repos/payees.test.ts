@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { run, tx, type Db } from '../connection';
 import { createAccount } from './accounts';
+import { createRule, listRules } from './payee-rules';
 import { createTransaction, getTransaction } from './transactions';
 import {
 	deletePayee,
@@ -150,6 +151,15 @@ describe('mergePayee', () => {
 		expect(payee('C').defaultCategoryId).toBe(food);
 	});
 
+	it("moves the source's rules to the target", () => {
+		spend('Amzn');
+		spend('Amazon');
+		createRule(db, { payeeName: 'Amzn', kind: 'starts', text: 'AMZN', categoryId: null });
+		mergePayee(db, payee('Amzn').id, payee('Amazon').id);
+		expect(listRules(db).map((r) => r.payeeName)).toEqual(['Amazon']);
+		expect(payee('Amazon').rules).toBe(1);
+	});
+
 	it('refuses merging into itself or a missing payee', () => {
 		spend('Mercado');
 		const id = payee('Mercado').id;
@@ -184,6 +194,12 @@ describe('deleting payees', () => {
 		expect(listPayees(db).some((p) => p.id === unused)).toBe(false);
 		expect(() => deletePayee(db, payee('Mercado').id)).toThrow(code('PAYEE_IN_USE'));
 		expect(() => deletePayee(db, 'missing')).toThrow(code('NOT_FOUND'));
+	});
+
+	it('keeps payees that only rules use', () => {
+		createRule(db, { payeeName: 'Uber', kind: 'starts', text: 'UBER', categoryId: null });
+		expect(deleteUnusedPayees(db)).toBe(0);
+		expect(() => deletePayee(db, payee('Uber').id)).toThrow(code('PAYEE_IN_USE'));
 	});
 
 	it('deletes every unused payee, starting balance names included', () => {

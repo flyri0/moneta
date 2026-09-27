@@ -9,6 +9,7 @@ import {
 	type ImportLine,
 	type StatementLine
 } from './imports';
+import { createRule } from './payee-rules';
 import { setPayeeDefaultCategory, getOrCreatePayee } from './payees';
 import { createTransaction, getTransaction, listTransactions } from './transactions';
 
@@ -70,7 +71,8 @@ describe('previewImport', () => {
 			status: 'new',
 			match: null,
 			payeeName: 'mercado bom',
-			categoryId: fun
+			categoryId: fun,
+			ruleId: null
 		});
 		expect(unknown).toMatchObject({ status: 'new', categoryId: null });
 	});
@@ -78,6 +80,34 @@ describe('previewImport', () => {
 	it("prefers the payee's default category", () => {
 		setPayeeDefaultCategory(db, getOrCreatePayee(db, 'Mercado Bom')!, food);
 		expect(previewImport(db, bank, [line()])[0].categoryId).toBe(food);
+	});
+
+	it("gives a rule's payee and category to the lines it catches", () => {
+		const rule = createRule(db, {
+			payeeName: 'Uber',
+			kind: 'starts',
+			text: 'UBER',
+			categoryId: fun
+		});
+		const [caught, other] = previewImport(db, bank, [
+			line({ description: 'UBER *TRIP 8H2K' }),
+			line({ description: 'Padaria', importId: 'ofx:2' })
+		]);
+		expect(caught).toMatchObject({ payeeName: 'Uber', categoryId: fun, ruleId: rule });
+		expect(other).toMatchObject({ payeeName: 'Padaria', ruleId: null });
+	});
+
+	it("falls back to the rule payee's usual category", () => {
+		createRule(db, { payeeName: 'Uber', kind: 'starts', text: 'UBER', categoryId: null });
+		setPayeeDefaultCategory(db, getOrCreatePayee(db, 'Uber')!, food);
+		expect(previewImport(db, bank, [line({ description: 'UBER *EATS' })])[0]).toMatchObject({
+			payeeName: 'Uber',
+			categoryId: food
+		});
+		expect(previewImport(db, broker, [line({ description: 'UBER *EATS' })])[0]).toMatchObject({
+			payeeName: 'Uber',
+			categoryId: null
+		});
 	});
 
 	it('suggests no category in an off-budget account', () => {

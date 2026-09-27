@@ -10,6 +10,8 @@
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import Delayed from '$components/Delayed.svelte';
 	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
+	import RuleDialog from '$features/payees/RuleDialog.svelte';
+	import { ruleDraft, type RuleDraft, type SavedRule } from '$features/payees/rules';
 	import { NewCategories, withCategoryIds } from '$features/transactions/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
@@ -21,6 +23,7 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import { importHandoff } from './pending.svelte';
 	import {
+		applyRule,
 		fillCategories,
 		importLines,
 		needsCategory,
@@ -59,6 +62,39 @@
 	let busy = $state(false);
 	let bulkCategory = $state('');
 	const pending = new NewCategories();
+	const payees = useLive(session.client, ['payees'], () => session.api.payees.list());
+	const payeeNames = $derived((payees.data ?? []).map((p) => p.name));
+
+	/** The rule being made from a line, and that line's description. */
+	let ruleOpen = $state(false);
+	let rule = $state<{ initial: RuleDraft; sample: string } | null>(null);
+
+	function makeRule(row: ReviewRow) {
+		rule = {
+			initial: ruleDraft(
+				row.line.description,
+				row.payeeName.trim(),
+				NewCategories.isToken(row.categoryId) ? '' : row.categoryId
+			),
+			sample: row.line.description
+		};
+		ruleOpen = true;
+	}
+
+	/** A rule made here applies at once to the other lines it catches. */
+	function ruleSaved(saved: SavedRule) {
+		if (rows) applyRule(rows, saved);
+	}
+
+	/** Whether a line's payee was changed from its description, which a rule could remember. */
+	function renamed(row: ReviewRow): boolean {
+		return (
+			row.preview.status === 'new' &&
+			!row.ruleId &&
+			row.payeeName.trim() !== '' &&
+			row.payeeName.trim() !== row.line.description.trim()
+		);
+	}
 
 	$effect(() => {
 		const statement = lines;
@@ -179,6 +215,9 @@
 						<span class="tabular-nums">{formatDate(row.line.date, getLocale())}</span>
 						{#if status === 'new'}
 							<Badge variant="secondary">{m.import_status_new()}</Badge>
+							{#if row.ruleId}
+								<Badge variant="outline" data-testid="import-rule">{m.import_rule_badge()}</Badge>
+							{/if}
 						{:else if status === 'match' && row.preview.match}
 							<Badge variant="outline" data-testid="import-match">
 								{m.import_status_match({
@@ -190,6 +229,15 @@
 							<Badge variant="outline">{m.import_status_duplicate()}</Badge>
 						{/if}
 						{#if row.line.memo}<span class="truncate">{row.line.memo}</span>{/if}
+						{#if renamed(row) && row.include}
+							<button
+								type="button"
+								class="font-medium text-primary underline-offset-2 hover:underline"
+								onclick={() => makeRule(row)}
+							>
+								{m.import_make_rule()}
+							</button>
+						{/if}
 					</div>
 				</div>
 				<span
@@ -233,4 +281,15 @@
 			</Button>
 		</div>
 	</div>
+{/if}
+
+{#if rule}
+	<RuleDialog
+		bind:open={ruleOpen}
+		initial={rule.initial}
+		sample={rule.sample}
+		tree={tree.data ?? []}
+		{payeeNames}
+		onSaved={ruleSaved}
+	/>
 {/if}

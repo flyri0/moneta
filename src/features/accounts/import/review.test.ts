@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ImportPreview, StatementLine } from '$db/repos/imports';
-import { fillCategories, importLines, reviewCounts, reviewRows } from './review';
+import { applyRule, fillCategories, importLines, reviewCounts, reviewRows } from './review';
 
 const line = (n: number): StatementLine => ({
 	date: '2026-01-05',
@@ -14,6 +14,7 @@ const preview = (status: ImportPreview['status'], over: Partial<ImportPreview> =
 	match: null,
 	payeeName: 'Shop',
 	categoryId: null,
+	ruleId: null,
 	...over
 });
 
@@ -77,5 +78,40 @@ describe('review', () => {
 			expect.objectContaining({ importId: 'ofx:3', categoryId: null, matchId: 't9' })
 		]);
 		expect(importLines(r, false)[0].categoryId).toBeNull();
+	});
+});
+
+describe('applyRule', () => {
+	const rule = {
+		id: 'r1',
+		kind: 'starts' as const,
+		text: 'shop',
+		payeeName: 'The Shop',
+		categoryId: 'fun'
+	};
+
+	it('gives the rule to new lines it catches that keep their payee', () => {
+		const r = rows();
+		r[0].payeeName = 'Renamed by hand';
+		r[1].payeeName = 'the shop';
+		applyRule(r, rule);
+		expect(r.map((x) => [x.payeeName, x.categoryId, x.ruleId])).toEqual([
+			['Renamed by hand', 'food', null],
+			['The Shop', 'fun', 'r1'],
+			['Shop', '', null],
+			['Shop', '', null]
+		]);
+	});
+
+	it("keeps a line's category when the rule has none", () => {
+		const r = rows();
+		applyRule(r, { ...rule, categoryId: null });
+		expect(r[0]).toMatchObject({ payeeName: 'The Shop', categoryId: 'food', ruleId: 'r1' });
+	});
+
+	it('leaves lines it does not catch', () => {
+		const r = rows();
+		applyRule(r, { ...rule, kind: 'is', text: 'Shop' });
+		expect(r.every((x) => x.ruleId === null)).toBe(true);
 	});
 });

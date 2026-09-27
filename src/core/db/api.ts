@@ -13,6 +13,7 @@ import * as budget from './repos/budget';
 import * as reports from './repos/reports';
 import * as demo from './repos/demo';
 import * as imports from './repos/imports';
+import * as payeeRules from './repos/payee-rules';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -77,7 +78,7 @@ export const api = {
 		createIn: write(['categories', 'category_groups'], categories.createCategoryIn, ['object']),
 		update: write(['categories'], categories.updateCategory, ['string', 'object']),
 		delete: write(
-			['categories', 'budget_assignments', ...TXN, ...SCHED],
+			['categories', 'budget_assignments', 'payee_rules', ...TXN, ...SCHED],
 			categories.deleteCategory,
 			['string', 'string?']
 		),
@@ -86,10 +87,20 @@ export const api = {
 	payees: {
 		list: read(payees.listPayees, []),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
-		merge: write(['payees', 'transactions', 'schedules'], payees.mergePayee, ['string', 'string']),
+		merge: write(['payees', 'transactions', 'schedules', 'payee_rules'], payees.mergePayee, [
+			'string',
+			'string'
+		]),
 		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
 		delete: write(['payees'], payees.deletePayee, ['string']),
 		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
+	},
+	payeeRules: {
+		list: read(payeeRules.listRules, []),
+		// A rule may name a payee that doesn't exist yet, which it creates.
+		create: write(['payee_rules', 'payees'], payeeRules.createRule, ['object']),
+		update: write(['payee_rules', 'payees'], payeeRules.updateRule, ['string', 'object']),
+		delete: write(['payee_rules'], payeeRules.deleteRule, ['string'])
 	},
 	transactions: {
 		list: read(transactions.listTransactions, ['object?']),

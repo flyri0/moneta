@@ -38,6 +38,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	RECONCILE_MISMATCH: m.error_reconcile_mismatch,
 	STATEMENT_UNREADABLE: m.error_statement_unreadable,
 	STATEMENT_EMPTY: m.error_statement_empty,
+	RULE_EXISTS: m.error_rule_exists,
 	CLOUD_AUTH_NEEDED: m.error_cloud_auth_needed,
 	CLOUD_PERMISSION_DENIED: m.error_cloud_permission_denied,
 	CLOUD_POPUP_BLOCKED: m.error_cloud_popup_blocked,

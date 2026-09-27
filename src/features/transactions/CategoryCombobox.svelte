@@ -25,6 +25,7 @@
 		onSelect,
 		id,
 		ariaLabel,
+		emptyLabel = m.transaction_choose_category(),
 		class: className
 	}: {
 		tree: GroupNode[];
@@ -40,6 +41,8 @@
 		onSelect?: (value: string) => void;
 		id?: string;
 		ariaLabel?: string;
+		/** What choosing no category is called. */
+		emptyLabel?: string;
 		class?: string;
 	} = $props();
 
@@ -113,7 +116,7 @@
 			className
 		)}
 	>
-		<span class="truncate">{selectedLabel ?? m.transaction_choose_category()}</span>
+		<span class="truncate">{selectedLabel ?? emptyLabel}</span>
 		<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 	</Popover.Trigger>
 	<Popover.Content
@@ -131,9 +134,9 @@
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
 				{#if naming === null}
 					<Command.Group>
-						<Command.Item value={m.transaction_choose_category()} onSelect={() => choose('')}>
+						<Command.Item value={emptyLabel} onSelect={() => choose('')}>
 							<CheckIcon class={cn('mr-2 size-4', value === '' ? 'opacity-100' : 'opacity-0')} />
-							<span class="text-muted-foreground italic">{m.transaction_choose_category()}</span>
+							<span class="text-muted-foreground italic">{emptyLabel}</span>
 						</Command.Item>
 					</Command.Group>
 					{#each offered as group (group.id)}

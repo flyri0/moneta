@@ -1,4 +1,5 @@
 import type { ImportLine, ImportPreview, StatementLine } from '$db/repos/imports';
+import { matchRule, type RuleKind } from '$domain/payee-rules';
 
 /** A statement line on the review screen, with what the user chose for it. */
 export interface ReviewRow {
@@ -9,6 +10,8 @@ export interface ReviewRow {
 	payeeName: string;
 	/** The category of a new line ('' for none yet). */
 	categoryId: string;
+	/** The payee rule that set its payee, if any. */
+	ruleId: string | null;
 }
 
 /** The rows to review: every line but duplicates included, with the suggested categories. */
@@ -18,7 +21,8 @@ export function reviewRows(lines: StatementLine[], previews: ImportPreview[]): R
 		preview: previews[i],
 		include: previews[i].status !== 'duplicate',
 		payeeName: previews[i].payeeName,
-		categoryId: previews[i].categoryId ?? ''
+		categoryId: previews[i].categoryId ?? '',
+		ruleId: previews[i].ruleId
 	}));
 }
 
@@ -59,4 +63,31 @@ export function importLines(rows: ReviewRow[], onBudget: boolean): ImportLine[] 
 			categoryId: onBudget && r.preview.status === 'new' ? r.categoryId || null : null,
 			matchId: r.preview.match?.id ?? null
 		}));
+}
+
+/** A rule as `applyRule` needs it. */
+export interface ReviewRule {
+	id: string;
+	kind: RuleKind;
+	text: string;
+	payeeName: string;
+	categoryId: string | null;
+}
+
+/**
+ * Gives a rule made during the review to the new lines it catches whose payee is still the one the
+ * preview gave them. A line the user already renamed keeps its payee; the rule's category, when it
+ * has one, replaces the line's.
+ */
+export function applyRule(rows: ReviewRow[], rule: ReviewRule): void {
+	for (const row of rows) {
+		if (row.preview.status !== 'new' || !matchRule([rule], row.line.description)) continue;
+		const untouched = row.payeeName === row.preview.payeeName;
+		const renamedToIt =
+			row.payeeName.trim().toLocaleLowerCase() === rule.payeeName.toLocaleLowerCase();
+		if (!untouched && !renamedToIt) continue;
+		row.payeeName = rule.payeeName;
+		if (rule.categoryId) row.categoryId = rule.categoryId;
+		row.ruleId = rule.id;
+	}
 }
