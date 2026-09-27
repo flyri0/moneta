@@ -72,9 +72,9 @@ export async function pickDate(
 			.nth(m - 1)
 			.click();
 	}
-	// Click day in calendar
+	// Click the day in this month: the grid also shows the neighbours' days (Aug 30 before Sep 1).
 	await popover
-		.locator('[data-slot="calendar-day"]')
+		.locator('[data-slot="calendar-day"]:not([data-outside-month])')
 		.filter({ hasText: new RegExp(`^${d}$`) })
 		.first()
 		.click();

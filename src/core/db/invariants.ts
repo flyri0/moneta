@@ -23,7 +23,8 @@ const BROKEN_ROWS: [string, string][] = [
 	[
 		'a schedule number that is not an integer',
 		`SELECT 1 FROM schedules WHERE typeof(amount) <> 'integer' OR typeof(next_index) <> 'integer'
-			OR typeof(interval) <> 'integer' OR typeof(end_count) NOT IN ('integer', 'null')`
+			OR typeof(interval) <> 'integer' OR typeof(end_count) NOT IN ('integer', 'null')
+			OR typeof(installment_start) NOT IN ('integer', 'null')`
 	],
 	[
 		'a schedule split amount that is not an integer',

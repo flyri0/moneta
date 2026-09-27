@@ -6,6 +6,7 @@ import schedules from './migrations/0003_schedules.sql?raw';
 import payeeIndex from './migrations/0004_transactions_payee_index.sql?raw';
 import openingTransactions from './migrations/0005_opening_transactions.sql?raw';
 import startingBalancePayee from './migrations/0006_starting_balance_payee.sql?raw';
+import scheduleInstallments from './migrations/0007_schedule_installments.sql?raw';
 
 export const MIGRATIONS: readonly string[] = [
 	init,
@@ -13,7 +14,8 @@ export const MIGRATIONS: readonly string[] = [
 	schedules,
 	payeeIndex,
 	openingTransactions,
-	startingBalancePayee
+	startingBalancePayee,
+	scheduleInstallments
 ];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

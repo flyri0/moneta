@@ -127,6 +127,24 @@ describe('migrate', () => {
 		expect(all(db, 'SELECT id FROM payees')).toEqual([{ id: 'p1' }]);
 	});
 
+	it('adds installment numbering to schedules, off for the ones there', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 6));
+		db.exec(`
+			INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+				('a1', 'Bank', 'checking', 1, '2026-01-01');
+			INSERT INTO schedules (id, account_id, amount, start_date, frequency, created_at)
+				VALUES ('s1', 'a1', -10, '2026-02-01', 'monthly', '2026-01-01');
+		`);
+		migrate(db);
+		expect(all(db, 'SELECT id, installment_start FROM schedules')).toEqual([
+			{ id: 's1', installment_start: null }
+		]);
+		expect(() => run(db, 'UPDATE schedules SET installment_start = 0')).toThrow();
+	});
+
 	it('is idempotent', async () => {
 		const db = await createTestDb();
 		migrate(db);

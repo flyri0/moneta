@@ -22,6 +22,7 @@ interface Fixture {
 	bank: string;
 	savings: string;
 	spare: string;
+	card: string;
 	bills: string;
 	everyday: string;
 	rent: string;
@@ -74,12 +75,19 @@ async function fixture(): Promise<Fixture> {
 		startingBalance: 0
 	});
 	const spare = createAccount(db, { ...base, name: 'Spare', type: 'cash', startingBalance: 0 });
+	const card = createAccount(db, {
+		...base,
+		name: 'Card',
+		type: 'credit_card',
+		startingBalance: 0
+	});
 	const [bills, everyday] = listCategoryTree(db).filter((g) => !g.system);
 	const f = {
 		db,
 		bank,
 		savings,
 		spare,
+		card,
 		bills: bills.id,
 		everyday: everyday.id,
 		rent: categoryId(db, 'Rent'),
@@ -273,6 +281,20 @@ const SCENARIOS: Record<string, Scenario[]> = {
 						{ categoryId: f.fun, amount: -50000 }
 					]
 				})
+			]
+		}
+	],
+	'schedules.createInstallments': [
+		{
+			args: (f) => [
+				{
+					accountId: f.card,
+					date: '2026-01-20',
+					amount: -120000,
+					payeeName: 'Store',
+					categoryId: f.fun
+				},
+				12
 			]
 		}
 	],
