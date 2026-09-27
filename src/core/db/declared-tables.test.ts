@@ -195,6 +195,27 @@ const SCENARIOS: Record<string, Scenario[]> = {
 			]
 		}
 	],
+	'imports.commit': [
+		{
+			args: (f) => [
+				f.bank,
+				{
+					lines: [
+						{
+							importId: 'ofx:1',
+							date: '2026-01-20',
+							amount: -1000,
+							payeeName: 'Brand new payee',
+							memo: '',
+							categoryId: f.food,
+							matchId: null
+						}
+					],
+					csvFormat: '{}'
+				}
+			]
+		}
+	],
 	'accounts.delete': [
 		{ args: (f) => [f.spare] },
 		{

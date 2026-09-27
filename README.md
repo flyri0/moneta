@@ -47,6 +47,10 @@ nothing you do there is saved.
 - **Accounts and transactions.** Budget and tracking accounts, credit cards whose payments
   don't touch the budget, split transactions, transfers between accounts, and payees you can
   rename everywhere, merge, and give a default category.
+- **Bank statements.** Import OFX and CSV statements: lines you already entered are matched
+  instead of doubled, a statement imported twice adds nothing, and each payee's usual category
+  comes back by itself. Reconcile an account against the bank's balance to lock what was
+  checked.
 - **Scheduled transactions.** One-off, daily, weekly, monthly or yearly, with a rule for dates
   that fall on a weekend. They are entered by themselves or with a tap, and each account shows
   what is coming in the next 30 days.
@@ -222,7 +226,8 @@ src/core/client/       main-thread side: RPC client, live queries, tab lock, bud
 src/core/i18n/         message catalogs (en, pt-BR), error messages, labels and formats
 src/features/          feature modules (colocated screen logic + Svelte components):
   budget/              budget grid, category & group sheets, order, progress, view
-  accounts/            account list, register, account creation dialogs
+  accounts/            account list, register, account creation dialogs, reconciliation,
+                       statement import (import/: OFX and CSV parsers, review)
   transactions/        transaction entry dialog, form validation
   schedules/           schedules screen, schedule form, rule summaries
   reports/             report cards and pages, overview layout, date ranges

@@ -19,8 +19,10 @@
 	}: {
 		title: string | Snippet;
 		subtitle?: Snippet;
-		/** The page one level up (a route without parameters), and its name. */
-		back?: { route: '/accounts' | '/reports'; label: string };
+		/** The page one level up, and its name. */
+		back?:
+			| { route: '/accounts' | '/reports'; label: string }
+			| { route: '/accounts/[id]'; id: string; label: string };
 		actions?: Snippet;
 		toolbar?: Snippet;
 		/** The max width of the page's column, so the header lines up with it. */
@@ -36,7 +38,9 @@
 	<div class="mx-auto grid gap-3 px-3 py-3 md:px-6 {width}">
 		{#if back}
 			<a
-				href={resolve(back.route)}
+				href={back.route === '/accounts/[id]'
+					? resolve(back.route, { id: back.id })
+					: resolve(back.route)}
 				class="-mb-2 inline-flex items-center gap-1 justify-self-start rounded-md py-0.5 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ChevronLeftIcon class="size-4" />

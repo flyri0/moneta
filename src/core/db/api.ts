@@ -12,6 +12,7 @@ import * as schedules from './repos/schedules';
 import * as budget from './repos/budget';
 import * as reports from './repos/reports';
 import * as demo from './repos/demo';
+import * as imports from './repos/imports';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -97,6 +98,15 @@ export const api = {
 			'string'
 		]),
 		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean'])
+	},
+	imports: {
+		preview: read(imports.previewImport, ['string', 'array']),
+		csvFormat: read(imports.getCsvFormat, ['string']),
+		// New lines create payees; matched ones only change their own row.
+		commit: write(['transactions', 'payees', 'accounts'], imports.importTransactions, [
+			'string',
+			'object'
+		])
 	},
 	schedules: {
 		list: read(schedules.listSchedules, ['string']),
