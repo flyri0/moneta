@@ -504,6 +504,8 @@
 	"backup_change_intro": "Os backups feitos antes continuam com a senha e a chave de recuperação antigas.",
 	"backup_password_changed": "Senha dos backups trocada.",
 	"backup_password": "Senha",
+	"password_show": "Mostrar senha",
+	"password_hide": "Ocultar senha",
 	"backup_password_confirm": "Confirme a senha",
 	"backup_password_short": "Use pelo menos {min} caracteres.",
 	"backup_password_mismatch": "As senhas não são iguais.",

@@ -2,8 +2,8 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
-	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
+	import PasswordInput from '$components/PasswordInput.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { fileTarget } from '$features/backup/file-target';
@@ -127,25 +127,21 @@
 			{#if changing}<p class="text-sm text-muted-foreground">{m.backup_change_intro()}</p>{/if}
 			<div class="grid gap-1.5">
 				<Label for="backup-password">{m.backup_password()}</Label>
-				<Input
-					id="backup-password"
-					type="password"
-					bind:value={password}
-					autocomplete="new-password"
-				/>
-				{#if strength !== null}
-					<div class="flex items-center gap-2" data-testid="password-strength">
-						<div class="grid flex-1 grid-cols-4 gap-1" aria-hidden="true">
-							{#each [1, 2, 3, 4] as bar (bar)}
-								<span
-									class="h-1 rounded-full {strength >= bar
-										? strength >= MIN_PASSWORD_STRENGTH
-											? 'bg-emerald-600 dark:bg-emerald-400'
-											: 'bg-destructive'
-										: 'bg-muted'}"
-								></span>
-							{/each}
-						</div>
+				<PasswordInput id="backup-password" bind:value={password} autocomplete="new-password" />
+				<!-- Always there, empty until the password is rated, so nothing moves as it fills. -->
+				<div class="flex min-h-4 items-center gap-2" data-testid="password-strength">
+					<div class="grid flex-1 grid-cols-4 gap-1" aria-hidden="true">
+						{#each [1, 2, 3, 4] as bar (bar)}
+							<span
+								class="h-1 rounded-full {strength !== null && strength >= bar
+									? strength >= MIN_PASSWORD_STRENGTH
+										? 'bg-emerald-600 dark:bg-emerald-400'
+										: 'bg-destructive'
+									: 'bg-muted'}"
+							></span>
+						{/each}
+					</div>
+					{#if strength !== null}
 						<span class="text-xs text-muted-foreground">
 							{strength >= 4
 								? m.backup_strength_strong()
@@ -153,15 +149,14 @@
 									? m.backup_strength_good()
 									: m.backup_strength_weak()}
 						</span>
-					</div>
-				{/if}
+					{/if}
+				</div>
 				<p class="text-xs text-muted-foreground">{m.backup_password_hint()}</p>
 			</div>
 			<div class="grid gap-1.5">
 				<Label for="backup-password-confirm">{m.backup_password_confirm()}</Label>
-				<Input
+				<PasswordInput
 					id="backup-password-confirm"
-					type="password"
 					bind:value={confirm}
 					autocomplete="new-password"
 				/>

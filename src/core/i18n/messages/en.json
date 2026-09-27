@@ -504,6 +504,8 @@
 	"backup_change_intro": "Backups made before keep their old password and recovery key.",
 	"backup_password_changed": "Backup password changed.",
 	"backup_password": "Password",
+	"password_show": "Show password",
+	"password_hide": "Hide password",
 	"backup_password_confirm": "Confirm password",
 	"backup_password_short": "Use at least {min} characters.",
 	"backup_password_mismatch": "The passwords don't match.",

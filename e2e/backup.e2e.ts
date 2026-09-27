@@ -104,6 +104,29 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	);
 });
 
+test('shows the password on request, and the strength bar before anything is typed', async ({
+	page
+}) => {
+	await onboard(page);
+	await openSettings(page);
+	await page.getByRole('switch', { name: 'Encrypt backups' }).click();
+	const dialog = page.getByRole('dialog');
+	const strength = dialog.getByTestId('password-strength');
+	await expect(strength).toBeVisible();
+	await expect(strength).toHaveText('');
+
+	const password = dialog.getByLabel('Password', { exact: true });
+	await password.fill('correct horse');
+	await expect(password).toHaveAttribute('type', 'password');
+	await expect(strength).not.toHaveText('');
+	const show = dialog.getByRole('button', { name: 'Show password' }).first();
+	await show.click();
+	await expect(password).toHaveAttribute('type', 'text');
+	await dialog.getByRole('button', { name: 'Hide password' }).click();
+	await expect(password).toHaveAttribute('type', 'password');
+	await expect(dialog.getByLabel('Confirm password')).toHaveAttribute('type', 'password');
+});
+
 test('encrypts backups once set up, and restores them with the password or the recovery key', async ({
 	page,
 	browser
