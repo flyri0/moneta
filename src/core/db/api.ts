@@ -73,6 +73,8 @@ export const api = {
 		]),
 		usage: read(categories.categoryUsage, ['string']),
 		create: write(['categories'], categories.createCategory, ['object']),
+		// With a group that doesn't exist yet, it creates that group too.
+		createIn: write(['categories', 'category_groups'], categories.createCategoryIn, ['object']),
 		update: write(['categories'], categories.updateCategory, ['string', 'object']),
 		delete: write(
 			['categories', 'budget_assignments', ...TXN, ...SCHED],

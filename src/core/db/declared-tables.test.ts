@@ -216,6 +216,10 @@ const SCENARIOS: Record<string, Scenario[]> = {
 			]
 		}
 	],
+	'categories.createIn': [
+		{ args: (f) => [{ name: 'Internet', group: { id: f.bills } }] },
+		{ args: () => [{ name: 'Vet', group: { name: 'Pets' } }] }
+	],
 	'accounts.delete': [
 		{ args: (f) => [f.spare] },
 		{

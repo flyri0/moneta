@@ -9,7 +9,8 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import Delayed from '$components/Delayed.svelte';
-	import CategoryPicker from '$features/transactions/CategoryPicker.svelte';
+	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
+	import { NewCategories, withCategoryIds } from '$features/transactions/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';
@@ -57,6 +58,7 @@
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 	let bulkCategory = $state('');
+	const pending = new NewCategories();
 
 	$effect(() => {
 		const statement = lines;
@@ -79,10 +81,18 @@
 	async function commit() {
 		if (!rows) return;
 		busy = true;
-		const input = { lines: importLines(rows, account.onBudget), csvFormat };
+		const lines = importLines(rows, account.onBudget);
 		let done: { created: number; matched: number } | null = null;
 		error = await runAction(async () => {
-			done = await session.api.imports.commit(account.id, input);
+			// Categories picked by a new name are created first, then used by their ids.
+			const ids = await pending.resolve(
+				session.api,
+				lines.map((l) => l.categoryId)
+			);
+			done = await session.api.imports.commit(account.id, {
+				lines: lines.map((l) => withCategoryIds(l, ids)),
+				csvFormat
+			});
 		});
 		busy = false;
 		if (error || !done) return;
@@ -117,8 +127,9 @@
 				{m.import_missing_categories({ count: counts.missing })}
 			</p>
 			<div class="flex gap-2">
-				<CategoryPicker
+				<CategoryCombobox
 					tree={tree.data ?? []}
+					{pending}
 					bind:value={bulkCategory}
 					ariaLabel={m.import_category_for_rest()}
 					class="min-w-0 flex-1"
@@ -190,8 +201,9 @@
 				</span>
 				{#if status === 'new' && account.onBudget && row.include}
 					<div class="col-start-2 col-end-4">
-						<CategoryPicker
+						<CategoryCombobox
 							tree={tree.data ?? []}
+							{pending}
 							bind:value={row.categoryId}
 							ariaLabel={m.import_category({ number: i + 1 })}
 							class="w-full {needsCategory(row, account.onBudget) ? 'border-destructive/50' : ''}"

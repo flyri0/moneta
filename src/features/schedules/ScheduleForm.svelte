@@ -30,6 +30,11 @@
 	import { FORM_ERRORS } from '$features/transactions/form-errors';
 	import TransactionFields from '$features/transactions/TransactionFields.svelte';
 	import {
+		NewCategories,
+		categoryValues,
+		withCategoryIds
+	} from '$features/transactions/new-categories';
+	import {
 		buildScheduleInput,
 		draftRuleSummary,
 		FREQUENCY_LABELS,
@@ -64,6 +69,7 @@
 	let draft = $state(structuredClone(initial));
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
+	const pending = new NewCategories();
 
 	const ERRORS: Record<ScheduleFormError, () => string> = {
 		...FORM_ERRORS,
@@ -128,11 +134,14 @@
 			return;
 		}
 		busy = true;
-		error = await runAction(() =>
-			editingId
-				? session.api.schedules.update(editingId, input)
-				: session.api.schedules.create(input)
-		);
+		error = await runAction(async () => {
+			// Categories picked by a new name are created first, then used by their ids.
+			const ids = await pending.resolve(session.api, categoryValues(input));
+			const saved = withCategoryIds(input, ids);
+			await (editingId
+				? session.api.schedules.update(editingId, saved)
+				: session.api.schedules.create(saved));
+		});
 		// An automatic schedule that is already due is entered now, not when the app next opens.
 		if (!error && input.autoEnter && !session.isDemo)
 			await enterAndReport(() => session.api.schedules.enterDue(todayIso()));
@@ -157,7 +166,7 @@
 
 <form class="grid gap-4" onsubmit={save}>
 	{#if view === 'main'}
-		<TransactionFields {ctx} bind:draft={draft.txn} dateLabel={m.schedule_next_date()} />
+		<TransactionFields {ctx} bind:draft={draft.txn} dateLabel={m.schedule_next_date()} {pending} />
 
 		<div class="flex items-center justify-between gap-4 rounded-lg border p-3">
 			<div class="grid gap-1">

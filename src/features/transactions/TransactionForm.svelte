@@ -27,6 +27,7 @@
 		installmentPlan
 	} from '$features/transactions/installments';
 	import TransactionFields from './TransactionFields.svelte';
+	import { NewCategories, categoryValues, withCategoryIds } from './new-categories';
 
 	/** `onSave`, when given, replaces the create/update write (entering a scheduled occurrence). */
 	let {
@@ -55,6 +56,7 @@
 	let draft = $state(structuredClone(initial));
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
+	const pending = new NewCategories();
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.date);
@@ -101,15 +103,18 @@
 			return;
 		}
 		busy = true;
-		error = await runAction(() =>
-			onSave
-				? onSave(input)
+		error = await runAction(async () => {
+			// Categories picked by a new name are created first, then used by their ids.
+			const ids = await pending.resolve(session.api, categoryValues(input));
+			const saved = withCategoryIds(input, ids);
+			await (onSave
+				? onSave(saved)
 				: editingId
-					? session.api.transactions.update(editingId, input)
+					? session.api.transactions.update(editingId, saved)
 					: count > 1
-						? session.api.schedules.createInstallments(input, count)
-						: session.api.transactions.create(input)
-		);
+						? session.api.schedules.createInstallments(saved, count)
+						: session.api.transactions.create(saved));
+		});
 		busy = false;
 		if (!error) onDone(input.accountId);
 	}
@@ -140,7 +145,7 @@
 	/>
 {:else}
 	<form class="grid gap-4" onsubmit={save}>
-		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} />
+		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} />
 
 		{#if installable}
 			<div class="grid gap-2">

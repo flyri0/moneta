@@ -783,5 +783,10 @@
 	"import_category_for_rest": "Category for the rest",
 	"import_apply_category": "Apply",
 	"import_commit": "Import ({count})",
-	"import_done": "Imported: {created} new, {matched} matched."
+	"import_done": "Imported: {created} new, {matched} matched.",
+	"category_create": "Create category \"{name}\"",
+	"category_add_to": "Add \"{name}\" to…",
+	"category_group_search": "Search or name a new group...",
+	"category_new_group": "New group \"{name}\"",
+	"category_new_in_group": "{category} · {group}"
 }

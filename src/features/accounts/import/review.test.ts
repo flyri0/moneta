@@ -47,6 +47,12 @@ describe('review', () => {
 		expect(reviewCounts(r, true)).toEqual({ create: 1, match: 1, missing: 0 });
 	});
 
+	it('counts a category still to be created as chosen', () => {
+		const r = rows();
+		r[1].categoryId = 'new-category:1';
+		expect(reviewCounts(r, true).missing).toBe(0);
+	});
+
 	it('fills the missing categories only', () => {
 		const r = rows();
 		fillCategories(r, 'fun', true);

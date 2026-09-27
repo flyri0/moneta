@@ -4,6 +4,7 @@ import { all, run } from '../connection';
 import {
 	categoryUsage,
 	createCategory,
+	createCategoryIn,
 	createGroup,
 	deleteCategory,
 	deleteGroup,
@@ -361,5 +362,44 @@ describe('categories', () => {
 		expect(() =>
 			saveCategoryOrder(db, [{ groupId: bills.id, categoryIds: [income.categories[0].id] }])
 		).toThrow(code('CATEGORY_NOT_ALLOWED'));
+	});
+});
+
+describe('createCategoryIn', () => {
+	it('adds a category to an existing group', async () => {
+		const db = await createBudgetDb();
+		const bills = listCategoryTree(db).find((g) => g.name === 'Bills')!;
+		const { categoryId: id, groupId } = createCategoryIn(db, {
+			name: ' Internet ',
+			group: { id: bills.id }
+		});
+		expect(groupId).toBe(bills.id);
+		expect(getCategory(db, id)).toMatchObject({ name: 'Internet', groupId: bills.id });
+	});
+
+	it('creates the group first when given a name', async () => {
+		const db = await createBudgetDb();
+		const { categoryId: id, groupId } = createCategoryIn(db, {
+			name: 'Vet',
+			group: { name: 'Pets' }
+		});
+		const group = listCategoryTree(db).find((g) => g.id === groupId)!;
+		expect(group).toMatchObject({ name: 'Pets', categories: [{ id, name: 'Vet' }] });
+	});
+
+	it('adds to the income group', async () => {
+		const db = await createBudgetDb();
+		const income = listCategoryTree(db).find((g) => g.system === 'income')!;
+		const { categoryId: id } = createCategoryIn(db, { name: 'Bonus', group: { id: income.id } });
+		expect(getCategory(db, id).groupId).toBe(income.id);
+	});
+
+	it('creates nothing when the category has no name', async () => {
+		const db = await createBudgetDb();
+		const before = listCategoryTree(db).length;
+		expect(() => createCategoryIn(db, { name: ' ', group: { name: 'Pets' } })).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+		expect(listCategoryTree(db)).toHaveLength(before);
 	});
 });

@@ -6,7 +6,8 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import CategoryPicker from '$features/transactions/CategoryPicker.svelte';
+	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/transactions/new-categories';
 	import { isDebtType } from '$features/accounts/account-form';
 	import { checkBalance, shownBalance } from '$features/accounts/reconcile';
 	import { useSession } from '$client/app-state.svelte';
@@ -45,6 +46,7 @@
 	let balance = $state(0);
 	let categoryId = $state('');
 	let busy = $state(false);
+	const pending = new NewCategories();
 	let error = $state<ActionError | null>(null);
 
 	const debt = $derived(isDebtType(account.type));
@@ -63,7 +65,18 @@
 
 	async function reconcile(input: Parameters<typeof session.api.accounts.reconcile>[1]) {
 		busy = true;
-		error = await runAction(() => session.api.accounts.reconcile(account.id, input));
+		error = await runAction(async () => {
+			// A category picked by a new name is created first.
+			const adjustment = input.adjustment;
+			const ids = await pending.resolve(session.api, [adjustment?.categoryId]);
+			const categoryId = adjustment?.categoryId
+				? (ids.get(adjustment.categoryId) ?? adjustment.categoryId)
+				: null;
+			await session.api.accounts.reconcile(
+				account.id,
+				adjustment ? { ...input, adjustment: { ...adjustment, categoryId } } : input
+			);
+		});
 		busy = false;
 		if (!error) open = false;
 	}
@@ -175,9 +188,10 @@
 			{#if account.onBudget}
 				<div class="grid gap-2">
 					<Label for="reconcile-category">{m.reconcile_adjustment_category()}</Label>
-					<CategoryPicker
+					<CategoryCombobox
 						id="reconcile-category"
 						tree={tree.data ?? []}
+						{pending}
 						bind:value={categoryId}
 						ariaLabel={m.reconcile_adjustment_category()}
 					/>

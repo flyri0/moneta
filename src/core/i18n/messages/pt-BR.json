@@ -783,5 +783,10 @@
 	"import_category_for_rest": "Categoria para as demais",
 	"import_apply_category": "Aplicar",
 	"import_commit": "Importar ({count})",
-	"import_done": "Importado: {created} novas, {matched} correspondidas."
+	"import_done": "Importado: {created} novas, {matched} correspondidas.",
+	"category_create": "Criar categoria \"{name}\"",
+	"category_add_to": "Adicionar \"{name}\" a…",
+	"category_group_search": "Busque ou dê nome a um novo grupo...",
+	"category_new_group": "Novo grupo \"{name}\"",
+	"category_new_in_group": "{category} · {group}"
 }
