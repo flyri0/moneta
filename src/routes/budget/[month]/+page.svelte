@@ -236,6 +236,7 @@ spans the row, so the chip joins the actions below it instead. -->
 				month={data.month}
 				{model}
 				groups={view.data.groups}
+				readyToAssign={view.data.readyToAssign}
 			/>
 		{/if}
 		{#if group}

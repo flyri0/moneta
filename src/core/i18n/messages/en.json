@@ -283,6 +283,7 @@
 	"budget_overspent_by": "Overspent by {amount}",
 	"budget_group_overspent": "Overspent categories: {count}",
 	"budget_cover_from_rta": "Cover from Ready to Assign",
+	"budget_cover_part_from_rta": "Cover {amount} from Ready to Assign",
 	"budget_cover_from_category": "Take from another category",
 	"budget_move_money": "Move money",
 	"budget_move_to": "Move to…",

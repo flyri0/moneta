@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
 import {
 	availableTone,
+	coverableFromReady,
 	gridModel,
 	moveTargets,
 	overspentCategories,
@@ -160,5 +161,26 @@ describe('overspentCount', () => {
 	it('never counts income', () => {
 		const income = group('Income', [cat('Salary', { available: -1 })], { system: 'income' });
 		expect(overspentCount(income)).toBe(0);
+	});
+});
+
+describe('coverableFromReady', () => {
+	const over = cat('Groceries', { available: -14000 });
+
+	it('covers all of it when Ready to Assign has enough', () => {
+		expect(coverableFromReady(over, 90000)).toBe(14000);
+	});
+
+	it('covers only what Ready to Assign has', () => {
+		expect(coverableFromReady(over, 4000)).toBe(4000);
+	});
+
+	it('covers nothing when Ready to Assign is empty or negative', () => {
+		expect(coverableFromReady(over, 0)).toBe(0);
+		expect(coverableFromReady(over, -500)).toBe(0);
+	});
+
+	it('covers nothing that is not overspent', () => {
+		expect(coverableFromReady(cat('Rent', { available: 100 }), 90000)).toBe(0);
 	});
 });

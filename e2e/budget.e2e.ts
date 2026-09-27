@@ -233,6 +233,47 @@ test.describe('on a phone', () => {
 		await expect(page.getByTestId('rta-amount')).toHaveText('$760.00');
 	});
 
+	test('covers overspending from another category once Ready to Assign runs short', async ({
+		page
+	}) => {
+		await onboard(page);
+		await categoryRow(page, 'Household').getByRole('button', { name: 'Household' }).click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('960');
+		await sheet.getByRole('button', { name: 'Save' }).first().click();
+		await expect(sheet).toBeHidden();
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		const dialog = page.getByRole('dialog');
+		await chooseCombobox(dialog, 'Account', 'Checking', 'Checking');
+		await chooseCombobox(dialog, 'Payee', 'Market', 'Market');
+		await dialog.getByLabel('Amount', { exact: true }).fill('100');
+		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden();
+
+		// $40 left to assign: it covers part, and never the whole $100.
+		await page.getByTestId('overspent-alert').getByRole('button', { name: 'Review' }).click();
+		const callout = sheet.getByTestId('overspent-callout');
+		await expect(callout.getByRole('button', { name: 'Cover from Ready to Assign' })).toHaveCount(
+			0
+		);
+		await callout.getByRole('button', { name: 'Cover $40.00 from Ready to Assign' }).click();
+		await expect(callout).toContainText('Overspent by $60.00');
+		await expect(sheet.getByLabel('Assigned this month')).toHaveValue('40.00');
+		await expect(callout.getByRole('button', { name: /Ready to Assign/ })).toHaveCount(0);
+		await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
+
+		await callout.getByRole('button', { name: 'Take from another category' }).click();
+		await expect(sheet.getByLabel('Amount to move')).toHaveValue('60.00');
+		await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
+		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
+		await expect(sheet).toBeHidden();
+		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$0.00');
+		await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$900.00');
+		await expect(page.getByTestId('overspent-alert')).toBeHidden();
+	});
+
 	test('collapses a group from the card list', async ({ page }) => {
 		await onboard(page);
 		await expect(categoryRow(page, 'Groceries')).toBeVisible();

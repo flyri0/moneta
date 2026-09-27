@@ -46,6 +46,17 @@ export function overspentCategories(model: GridModel): BudgetCategoryView[] {
 	].filter(isOverspent);
 }
 
+/**
+ * How much of a category's overspending Ready to Assign can cover without going negative: covering
+ * past it would only move the problem to Ready to Assign.
+ */
+export function coverableFromReady(
+	category: Pick<BudgetCategoryView, 'available'>,
+	readyToAssign: number
+): number {
+	return Math.max(0, Math.min(-category.available, readyToAssign));
+}
+
 /** Ready to Assign's state. Zero is the goal of a zero-based budget; anything else needs a look. */
 export type RtaTone = 'assigned' | 'unassigned' | 'overassigned';
 

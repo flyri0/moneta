@@ -15,7 +15,12 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { categoryProgress } from '$features/budget/progress';
-	import { isOverspent, moveTargets, type GridModel } from '$features/budget/view';
+	import {
+		coverableFromReady,
+		isOverspent,
+		moveTargets,
+		type GridModel
+	} from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import { formatAmountInput } from '$domain/money';
 	import type { Month } from '$domain/month';
@@ -32,13 +37,16 @@
 		category,
 		month,
 		model,
-		groups
+		groups,
+		readyToAssign
 	}: {
 		open: boolean;
 		category: BudgetCategoryView;
 		month: Month;
 		model: GridModel;
 		groups: BudgetGroupView[];
+		/** The month's Ready to Assign, which caps what it can cover. */
+		readyToAssign: number;
 	} = $props();
 
 	const session = useSession();
@@ -61,6 +69,9 @@
 	);
 	const progress = $derived(categoryProgress(category));
 	const overspent = $derived(!isIncome && isOverspent(category));
+	// Ready to Assign leads only when it covers all of it; otherwise moving money does.
+	const fromReady = $derived(overspent ? coverableFromReady(category, readyToAssign) : 0);
+	const readyCoversAll = $derived(fromReady === -category.available);
 	const title = $derived(
 		{
 			main: category.name,
@@ -96,15 +107,19 @@
 		coverError = null;
 	}
 
+	/**
+	 * Assigns what Ready to Assign can spare. Covering it all closes the sheet; covering part leaves
+	 * it open on the rest, which then has to come from another category.
+	 */
 	async function coverFromReady() {
+		const assigned = category.assigned + fromReady;
+		const all = readyCoversAll;
 		coverError = await runAction(() =>
-			session.api.budget.quickAssign({
-				month,
-				categoryIds: [category.id],
-				strategy: 'cover-overspending'
-			})
+			session.api.budget.setAssigned(category.id, month, assigned)
 		);
-		if (!coverError) open = false;
+		if (coverError) return;
+		if (all) open = false;
+		else assignedText = formatAmountInput(assigned, session.money);
 	}
 
 	/** The move form, set to take exactly the overspent amount from a category still to choose. */
@@ -181,10 +196,26 @@
 							{m.budget_overspent_by({ amount: session.format(-category.available) })}
 						</p>
 						<div class="grid gap-2 sm:grid-cols-2">
-							<Button size="sm" onclick={coverFromReady}>{m.budget_cover_from_rta()}</Button>
-							<Button size="sm" variant="outline" onclick={coverFromCategory}>
-								{m.budget_cover_from_category()}
-							</Button>
+							{#if readyCoversAll}
+								<Button size="sm" onclick={coverFromReady}>{m.budget_cover_from_rta()}</Button>
+								<Button size="sm" variant="outline" onclick={coverFromCategory}>
+									{m.budget_cover_from_category()}
+								</Button>
+							{:else}
+								<Button size="sm" class="sm:col-span-full" onclick={coverFromCategory}>
+									{m.budget_cover_from_category()}
+								</Button>
+								{#if fromReady > 0}
+									<Button
+										size="sm"
+										variant="outline"
+										class="sm:col-span-full"
+										onclick={coverFromReady}
+									>
+										{m.budget_cover_part_from_rta({ amount: session.format(fromReady) })}
+									</Button>
+								{/if}
+							{/if}
 						</div>
 						<FormMessage error={coverError} />
 					</section>

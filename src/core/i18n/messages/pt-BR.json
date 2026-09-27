@@ -283,6 +283,7 @@
 	"budget_overspent_by": "{amount} gastos a mais",
 	"budget_group_overspent": "Categorias com gasto a mais: {count}",
 	"budget_cover_from_rta": "Cobrir com o Pronto para atribuir",
+	"budget_cover_part_from_rta": "Cobrir {amount} com o Pronto para atribuir",
 	"budget_cover_from_category": "Tirar de outra categoria",
 	"budget_move_money": "Mover dinheiro",
 	"budget_move_to": "Mover para…",
