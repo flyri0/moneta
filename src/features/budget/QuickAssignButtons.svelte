@@ -3,6 +3,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { Month } from '$domain/month';
 	import type { QuickAssignStrategy } from '$domain/quick-assign';
 	import { m } from '$i18n/paraglide/messages';
@@ -33,9 +34,12 @@
 		{ strategy: 'clear', label: m.quick_assign_clear }
 	];
 
-	async function apply(strategy: QuickAssignStrategy) {
-		error = await runAction(() => session.api.budget.quickAssign({ month, categoryIds, strategy }));
-		if (!error) onDone();
+	async function apply(strategy: QuickAssignStrategy, label: string) {
+		const call = session.api.budget.quickAssign({ month, categoryIds, strategy });
+		error = await runAction(() => call);
+		if (error) return;
+		onDone();
+		offerUndo(session.client, call, m.budget_quick_assigned({ strategy: label }));
 	}
 </script>
 
@@ -43,7 +47,8 @@
 	<h3 class="text-sm font-medium">{m.quick_assign_title()}</h3>
 	<div class="grid grid-cols-2 gap-2">
 		{#each STRATEGIES.filter((s) => hasGoals || s.strategy !== 'goals') as { strategy, label } (strategy)}
-			<Button variant="outline" size="sm" onclick={() => apply(strategy)}>{label()}</Button>
+			<Button variant="outline" size="sm" onclick={() => apply(strategy, label())}>{label()}</Button
+			>
 		{/each}
 	</div>
 	<FormMessage {error} />

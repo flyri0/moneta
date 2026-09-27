@@ -790,6 +790,8 @@
 	"category_new_group": "New group \"{name}\"",
 	"category_new_in_group": "{category} · {group}",
 	"error_rule_exists": "Another rule already catches that text the same way.",
+	"error_undo_unavailable": "This can no longer be undone.",
+	"error_undo_conflict": "This can't be undone anymore: something it changed was changed again since.",
 	"payee_rule_kind_starts": "Starts with",
 	"payee_rule_kind_contains": "Contains",
 	"payee_rule_kind_is": "Is exactly",
@@ -815,5 +817,11 @@
 	"import_rule_badge": "Rule",
 	"import_details": "Details for line {number}",
 	"import_description": "Description",
-	"import_match_details": "Marks this transaction you entered as cleared: {payee} · {date}"
+	"import_match_details": "Marks this transaction you entered as cleared: {payee} · {date}",
+	"undo": "Undo",
+	"undo_done": "Undone.",
+	"transaction_deleted": "Transaction deleted.",
+	"budget_moved": "Moved {amount} from {from} to {to}.",
+	"budget_quick_assigned": "Quick assign: {strategy}.",
+	"transaction_delete_body": "It leaves the register and the budget. You can undo it right after."
 }

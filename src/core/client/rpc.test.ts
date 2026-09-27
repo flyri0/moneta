@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRpcClient, RpcError, type Endpoint } from './rpc';
 import { createDispatcher } from '$db/dispatcher';
-import { createBudgetDb } from '$db/testing';
+import { categoryId, createBudgetDb, loadSqlite } from '$db/testing';
 import type { Db } from '$db/connection';
 import type { Table } from '$db/connection';
+import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 
 const channels: MessageChannel[] = [];
 afterEach(() => {
@@ -14,11 +15,12 @@ afterEach(() => {
 });
 
 /** Wires a client to a dispatcher over a real MessageChannel, like the worker does. */
-function connect(db: Db | null) {
+function connect(db: Db | null, sqlite3?: Sqlite3Static) {
 	const channel = new MessageChannel();
 	channels.push(channel);
 	const dispatch = createDispatcher({
 		getDb: () => db,
+		sqlite3,
 		system: {
 			open: async () => {},
 			close: () => {},
@@ -82,6 +84,24 @@ describe('createRpcClient', () => {
 			startingDate: '2026-01-01'
 		});
 		expect(seen).toHaveLength(1);
+	});
+
+	it("keeps each undoable call's token by its promise", async () => {
+		const db = await createBudgetDb();
+		const client = connect(db, await loadSqlite());
+		const move = client.api.budget.moveMoney({
+			fromCategoryId: categoryId(db, 'Food'),
+			toCategoryId: categoryId(db, 'Fun'),
+			month: '2026-01',
+			amount: 500
+		});
+		const plain = client.api.meta.update({ name: 'Home' });
+		await Promise.all([move, plain]);
+		const token = client.undoToken(move);
+		expect(typeof token).toBe('string');
+		expect(client.undoToken(plain)).toBeNull();
+		await client.api.undo.apply(token!);
+		expect(db.selectValue('SELECT COUNT(*) FROM budget_assignments')).toBe(0);
 	});
 
 	it('is not mistaken for a thenable', async () => {

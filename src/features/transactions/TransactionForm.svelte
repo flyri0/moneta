@@ -8,6 +8,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { TransactionInput } from '$db/repos/transactions';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import { formatDate } from '$i18n/formats';
@@ -128,15 +129,18 @@
 		if (!editingId || busy) return;
 		const id = editingId;
 		busy = true;
-		error = await runAction(() => session.api.transactions.delete(id));
+		const call = session.api.transactions.delete(id);
+		error = await runAction(() => call);
 		busy = false;
-		if (!error) onDone(null);
+		if (error) return;
+		onDone(null);
+		offerUndo(session.client, call, m.transaction_deleted());
 	}
 </script>
 
 {#if confirming}
 	<ConfirmPanel
-		body={m.confirm_cannot_undo()}
+		body={m.transaction_delete_body()}
 		confirmLabel={m.delete()}
 		{error}
 		{busy}

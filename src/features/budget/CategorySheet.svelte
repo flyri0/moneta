@@ -15,6 +15,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import { categoryProgress } from '$features/budget/progress';
 	import {
 		coverableFromReady,
@@ -171,10 +172,13 @@
 		}
 		const [fromCategoryId, toCategoryId] =
 			moveDirection === 'to' ? [category.id, otherId] : [otherId, category.id];
-		error = await runAction(() =>
-			session.api.budget.moveMoney({ fromCategoryId, toCategoryId, month, amount })
-		);
-		if (!error) open = false;
+		const other = targets.find((t) => t.id === otherId)?.name ?? '';
+		const [from, to] = moveDirection === 'to' ? [category.name, other] : [other, category.name];
+		const call = session.api.budget.moveMoney({ fromCategoryId, toCategoryId, month, amount });
+		error = await runAction(() => call);
+		if (error) return;
+		open = false;
+		offerUndo(session.client, call, m.budget_moved({ amount: session.format(amount), from, to }));
 	}
 </script>
 

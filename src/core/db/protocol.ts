@@ -13,7 +13,8 @@ export interface RpcErrorPayload {
 }
 
 export type CallResponse =
-	| { id: number; ok: true; data: unknown; changed: Table[] }
+	// `undo` is the token that takes the write back (`undo.apply`), for an undoable one.
+	| { id: number; ok: true; data: unknown; changed: Table[]; undo?: string }
 	| { id: number; ok: false; error: RpcErrorPayload };
 
 /** The buffer under `value` when `value` is bytes that fill it, so it can be handed over whole. */
