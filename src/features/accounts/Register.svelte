@@ -73,6 +73,12 @@
 	let dialogOpen = $state(false);
 	let editing = $state<TransactionRow | null>(null);
 
+	/** A long press starts selecting with that row, or adds it to the rows already chosen. */
+	function startWith(selection: RegisterSelection, row: TransactionRow) {
+		selection.start();
+		selection.select(row.id);
+	}
+
 	function edit(row: TransactionRow | null) {
 		editing = row;
 		dialogOpen = true;
@@ -94,6 +100,8 @@
 				selecting={selection?.active}
 				selected={selection?.has(row.id)}
 				onSelect={(r) => selection?.toggle(r.id)}
+				onLongPress={selection && ((r) => startWith(selection, r))}
+				highlighted={selection?.changed.has(row.id)}
 			/>
 		{:else}
 			{#if rows.data && filtered}
@@ -130,7 +138,7 @@
 	</Button>
 {/if}
 
-{#if selection?.active}
+{#if selection}
 	<SelectionBar {selection} rows={rows.data ?? []} />
 {/if}
 

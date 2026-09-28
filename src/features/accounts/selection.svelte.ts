@@ -1,5 +1,8 @@
 import { SvelteSet } from 'svelte/reactivity';
 
+/** How long rows a bulk action changed stay marked, in ms. */
+export const CHANGED_MS = 1600;
+
 /**
  * The register's selection, owned by the page so its header can turn it on. While `active`, rows
  * show a checkbox and a bar at the bottom acts on the chosen ones.
@@ -7,6 +10,9 @@ import { SvelteSet } from 'svelte/reactivity';
 export class RegisterSelection {
 	active = $state(false);
 	readonly ids = new SvelteSet<string>();
+	/** The rows the last action changed, marked for a moment after it. */
+	readonly changed = new SvelteSet<string>();
+	#changedTimer: ReturnType<typeof setTimeout> | undefined;
 
 	get count(): number {
 		return this.ids.size;
@@ -24,6 +30,19 @@ export class RegisterSelection {
 	stop(): void {
 		this.active = false;
 		this.ids.clear();
+	}
+
+	/** Leaves selection after an action on `ids`, marking them as changed for a moment. */
+	finish(ids: Iterable<string>): void {
+		this.stop();
+		clearTimeout(this.#changedTimer);
+		this.changed.clear();
+		for (const id of ids) this.changed.add(id);
+		this.#changedTimer = setTimeout(() => this.changed.clear(), CHANGED_MS);
+	}
+
+	select(id: string): void {
+		this.ids.add(id);
 	}
 
 	toggle(id: string): void {

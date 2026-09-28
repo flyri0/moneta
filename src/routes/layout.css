@@ -391,3 +391,14 @@
 		transform: translateX(250%);
 	}
 }
+
+/* A register row a bulk action just changed, fading back from a tint. */
+@utility animate-row-flash {
+	animation: row-flash 1.6s ease-out;
+}
+
+@keyframes row-flash {
+	from {
+		background-color: color-mix(in oklch, var(--primary) 18%, transparent);
+	}
+}

@@ -2,7 +2,6 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import CircleIcon from '@lucide/svelte/icons/circle';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
-	import ListChecksIcon from '@lucide/svelte/icons/list-checks';
 	import TagIcon from '@lucide/svelte/icons/tag';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -25,8 +24,9 @@
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
-	 * The actions on the register's chosen rows, at the bottom of the screen: set their category or
-	 * date, mark them cleared or not, delete them. Each one can be undone from its toast.
+	 * While `selection` is active, the actions on the register's chosen rows, at the bottom of the screen: set their category or
+	 * date, mark them cleared or not, delete them. Each one ends the selection and can be undone
+	 * from its toast.
 	 */
 	let { selection, rows }: { selection: RegisterSelection; rows: TransactionRow[] } = $props();
 
@@ -42,19 +42,48 @@
 	let date = $state(todayIso());
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
+	// Taken when a dialog opens: the selection ends before it has finished closing.
+	let count = $state(0);
+	let reconciled = $state(false);
 	const pending = new NewCategories();
 
 	const ids = $derived([...selection.ids]);
 	const none = $derived(ids.length === 0);
-	const reconciled = $derived(rows.some((r) => r.reconciled && selection.has(r.id)));
+	const listed = $derived(rows.map((r) => r.id));
+	const allChosen = $derived(listed.length > 0 && listed.every((id) => selection.has(id)));
+	/** With every chosen row cleared already, the bar offers to unclear them instead. */
+	const allCleared = $derived(
+		!none && rows.filter((r) => selection.has(r.id)).every((r) => r.cleared)
+	);
+	const actions = $derived([
+		{ key: 'category', icon: TagIcon, label: m.bulk_category_short(), run: () => edit('category') },
+		{ key: 'date', icon: CalendarIcon, label: m.bulk_date_short(), run: () => edit('date') },
+		allCleared
+			? { key: 'cleared', icon: CircleIcon, label: m.bulk_unclear(), run: () => setCleared(false) }
+			: {
+					key: 'cleared',
+					icon: CircleCheckIcon,
+					label: m.bulk_clear(),
+					run: () => setCleared(true)
+				},
+		{
+			key: 'delete',
+			icon: Trash2Icon,
+			label: m.delete(),
+			run: confirmDelete,
+			destructive: true
+		}
+	]);
 
 	// The floating add button would sit on the bar.
 	$effect(() => {
+		if (!selection.active) return;
 		fab.hidden = true;
 		return () => (fab.hidden = false);
 	});
 
 	function edit(what: 'category' | 'date') {
+		count = ids.length;
 		editing = what;
 		categoryId = '';
 		date = todayIso();
@@ -68,10 +97,12 @@
 			: m.bulk_changed({ count: changed });
 	}
 
-	/** Applies a change; the rows stay chosen for the next one. */
+	/** Applies a change, then leaves selection with the changed rows marked for a moment. */
 	async function change(update: BulkChange): Promise<void> {
-		const call = session.api.transactions.updateMany(ids, update);
+		const chosen = ids;
+		const call = session.api.transactions.updateMany(chosen, update);
 		const result = await call;
+		selection.finish(chosen);
 		offerUndo(session.client, call, changedMessage(result));
 	}
 
@@ -100,105 +131,72 @@
 		return runActionToast(() => change({ cleared }));
 	}
 
+	function confirmDelete() {
+		count = ids.length;
+		reconciled = rows.some((r) => r.reconciled && selection.has(r.id));
+		deleting = true;
+	}
+
 	async function remove() {
 		const call = session.api.transactions.deleteMany(ids);
 		const { changed } = await call;
+		selection.stop();
 		offerUndo(session.client, call, m.bulk_deleted({ count: changed }));
 	}
 </script>
 
-<div
-	class="fixed inset-x-3 bottom-[calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-0.5 rounded-xl border bg-background/95 p-1.5 shadow-lg backdrop-blur md:sticky md:inset-x-auto md:bottom-4"
-	role="toolbar"
-	aria-label={m.bulk_actions()}
-	data-testid="selection-bar"
->
-	<Button
-		variant="ghost"
-		size="icon-sm"
-		aria-label={m.select_done()}
-		onclick={() => selection.stop()}
+{#if selection.active}
+	<!-- The bar lays itself out by its own width: it sits next to a resizable sidebar on desktops. -->
+	<div
+		class="@container fixed inset-x-3 bottom-[calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-40 rounded-xl border bg-background/95 shadow-lg backdrop-blur md:sticky md:inset-x-auto md:bottom-4"
+		role="toolbar"
+		aria-label={m.bulk_actions()}
+		data-testid="selection-bar"
 	>
-		<XIcon />
-	</Button>
-	<span class="min-w-0 flex-1 truncate px-1 text-sm font-medium">
-		<!-- Phones have room for the number alone. -->
-		<span class="tabular-nums sm:hidden" aria-hidden="true">{ids.length}</span>
-		<span class="sr-only sm:not-sr-only" data-testid="selection-count">
-			{m.bulk_selected({ count: ids.length })}
-		</span>
-	</span>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 md:px-3"
-		aria-label={m.select_all()}
-		onclick={() => selection.toggleAll(rows.map((r) => r.id))}
-	>
-		<ListChecksIcon />
-		<span class="hidden lg:inline">{m.select_all()}</span>
-	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 md:px-3"
-		aria-label={m.bulk_category()}
-		disabled={none}
-		onclick={() => edit('category')}
-	>
-		<TagIcon />
-		<span class="hidden md:inline">{m.bulk_category()}</span>
-	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 md:px-3"
-		aria-label={m.bulk_date()}
-		disabled={none}
-		onclick={() => edit('date')}
-	>
-		<CalendarIcon />
-		<span class="hidden md:inline">{m.bulk_date()}</span>
-	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 md:px-3"
-		aria-label={m.bulk_cleared()}
-		disabled={none}
-		onclick={() => setCleared(true)}
-	>
-		<CircleCheckIcon />
-		<span class="hidden lg:inline">{m.bulk_cleared()}</span>
-	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 md:px-3"
-		aria-label={m.bulk_uncleared()}
-		disabled={none}
-		onclick={() => setCleared(false)}
-	>
-		<CircleIcon />
-		<span class="hidden lg:inline">{m.bulk_uncleared()}</span>
-	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="px-2 text-destructive hover:text-destructive md:px-3"
-		aria-label={m.delete()}
-		disabled={none}
-		onclick={() => (deleting = true)}
-	>
-		<Trash2Icon />
-		<span class="hidden md:inline">{m.delete()}</span>
-	</Button>
-</div>
+		<div class="flex flex-col gap-1 p-1.5 @3xl:flex-row @3xl:items-center">
+			<div class="flex min-w-0 items-center gap-1 @3xl:flex-1">
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label={m.select_done()}
+					onclick={() => selection.stop()}
+				>
+					<XIcon />
+				</Button>
+				<span
+					class="min-w-0 flex-1 truncate px-1 text-sm font-medium tabular-nums"
+					data-testid="selection-count"
+				>
+					{m.bulk_selected({ count: ids.length })}
+				</span>
+				<Button variant="ghost" size="sm" onclick={() => selection.toggleAll(listed)}>
+					{allChosen ? m.select_none() : m.select_all()}
+				</Button>
+			</div>
+			<div class="flex gap-0.5 border-t pt-1 @3xl:border-t-0 @3xl:pt-0">
+				{#each actions as action (action.key)}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-auto min-w-0 flex-auto flex-col gap-1 px-1 py-1.5 text-[0.6875rem] @3xl:h-8 @3xl:flex-none @3xl:flex-row @3xl:gap-1.5 @3xl:px-3 @3xl:py-0 @3xl:text-sm {action.destructive
+							? 'text-destructive hover:text-destructive'
+							: ''}"
+						disabled={none}
+						onclick={action.run}
+					>
+						<action.icon />
+						<span class="max-w-full truncate">{action.label}</span>
+					</Button>
+				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
 
 <ResponsiveDialog
 	bind:open={dialogOpen}
 	title={editing === 'date' ? m.bulk_date() : m.bulk_category()}
-	description={m.bulk_selected({ count: ids.length })}
+	description={m.bulk_selected({ count })}
 >
 	<form class="grid gap-4" onsubmit={apply}>
 		{#if editing === 'category'}
@@ -228,7 +226,7 @@
 
 <ConfirmDialog
 	bind:open={deleting}
-	title={m.bulk_delete_title({ count: ids.length })}
+	title={m.bulk_delete_title({ count })}
 	body={reconciled ? `${m.bulk_delete_body()} ${m.bulk_delete_reconciled()}` : m.bulk_delete_body()}
 	confirmLabel={m.delete()}
 	onConfirm={remove}

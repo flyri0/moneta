@@ -4,6 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import { Checkbox } from '$ui/checkbox';
+	import { longPress } from '$features/accounts/long-press';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
@@ -15,7 +16,8 @@
 
 	/**
 	 * `showAccount` adds the row's account, for lists that span every account. While `selecting`,
-	 * a checkbox leads the row and tapping the payee chooses it instead of opening it.
+	 * a checkbox leads the row and tapping anywhere on it chooses it instead of opening it; holding
+	 * a finger on it calls `onLongPress`. `highlighted` marks a row an action just changed.
 	 */
 	let {
 		row,
@@ -23,7 +25,9 @@
 		onEdit,
 		selecting = false,
 		selected = false,
-		onSelect
+		onSelect,
+		onLongPress,
+		highlighted = false
 	}: {
 		row: TransactionRow;
 		showAccount?: boolean;
@@ -31,6 +35,8 @@
 		selecting?: boolean;
 		selected?: boolean;
 		onSelect?: (row: TransactionRow) => void;
+		onLongPress?: (row: TransactionRow) => void;
+		highlighted?: boolean;
 	} = $props();
 
 	const session = useSession();
@@ -41,13 +47,28 @@
 	async function toggleCleared() {
 		await runActionToast(() => session.api.transactions.setCleared(row.id, !row.cleared));
 	}
+
+	/** While selecting, a tap anywhere but on the row's own controls and links chooses it. */
+	function choose(event: MouseEvent) {
+		if (!selecting || (event.target as Element).closest('a, button')) return;
+		onSelect?.(row);
+	}
 </script>
 
+<!-- The checkbox is the keyboard's way to choose a row; tapping the rest of it is a shortcut. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div
-	class="flex items-center gap-3 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40 {selected
-		? 'bg-primary/5'
-		: ''}"
+	class={[
+		'flex items-center gap-3 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40',
+		selected && 'bg-primary/5',
+		selecting && 'cursor-pointer',
+		highlighted && 'motion-safe:animate-row-flash',
+		onLongPress && '[-webkit-touch-callout:none] pointer-coarse:select-none'
+	]}
 	data-testid="register-row"
+	data-highlighted={highlighted || undefined}
+	onclick={choose}
+	{@attach onLongPress && longPress(() => onLongPress(row))}
 >
 	{#if selecting}
 		<Checkbox
@@ -85,14 +106,7 @@
 			{/if}
 		{/snippet}
 
-		{#if selecting}
-			<button
-				type="button"
-				class="min-w-0 truncate text-left text-sm font-medium"
-				aria-pressed={selected}
-				onclick={() => onSelect?.(row)}>{@render payeeText()}</button
-			>
-		{:else if onEdit}
+		{#if onEdit && !selecting}
 			<button
 				type="button"
 				class="min-w-0 truncate text-left text-sm font-medium hover:underline"
@@ -162,7 +176,6 @@
 		{#if row.reconciled}
 			<!-- Reconciled rows stay cleared: the lock replaces the toggle. -->
 			<span
-				class:invisible={selecting}
 				class="flex size-7 items-center justify-center rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-400"
 				role="img"
 				aria-label={m.register_reconciled()}
@@ -172,9 +185,11 @@
 				<LockIcon class="size-3.5 stroke-[2.5]" />
 			</span>
 		{:else}
+			<!-- While selecting it only shows the state, and a tap on it chooses the row. -->
 			<button
 				type="button"
-				class:invisible={selecting}
+				disabled={selecting}
+				class:pointer-events-none={selecting}
 				class="flex size-7 items-center justify-center rounded-full border transition-colors {row.cleared
 					? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
 					: 'border-muted-foreground/30 text-transparent hover:border-muted-foreground/60'}"

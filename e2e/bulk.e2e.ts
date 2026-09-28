@@ -29,28 +29,40 @@ test('changes the category of several transactions, then clears them', async ({ 
 	await page.getByRole('button', { name: 'Select', exact: true }).click();
 	const bar = page.getByTestId('selection-bar');
 	await page.getByRole('checkbox', { name: 'Select Market, -$10.00' }).click();
-	await rows.filter({ hasText: 'Bakery' }).getByRole('button', { name: 'Bakery' }).click();
+	await rows.filter({ hasText: 'Bakery' }).getByText('Bakery').click();
 	await expect(bar.getByTestId('selection-count')).toHaveText('Selected: 2');
 
-	await bar.getByRole('button', { name: 'Set category' }).click();
+	await bar.getByRole('button', { name: 'Category' }).click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Category', 'Household', 'Household');
 	await dialog.getByRole('button', { name: 'Apply' }).click();
 	await expect(dialog).toBeHidden();
 	await expect(toasts).toContainText('Transactions changed: 2.');
+	// The action ends the selection and marks the rows it changed.
+	await expect(bar).toBeHidden();
+	await expect(rows.filter({ hasText: 'Market' })).toHaveAttribute('data-highlighted', 'true');
 	await expect(rows.filter({ hasText: 'Market' })).toContainText('Household');
 	await expect(rows.filter({ hasText: 'Bakery' })).toContainText('Household');
 	await expect(rows.filter({ hasText: 'Cafe' })).toContainText('Groceries');
 
-	// The rows stay chosen for the next action.
-	await bar.getByRole('button', { name: 'Mark cleared' }).click();
-	await bar.getByRole('button', { name: 'Done selecting' }).click();
-	await expect(bar).toBeHidden();
+	// Cleared or not stays in sight while choosing, and one button flips it.
 	const cleared = (payee: string) =>
 		rows.filter({ hasText: payee }).getByRole('button', { name: 'Cleared' });
+	await page.getByRole('button', { name: 'Select', exact: true }).click();
+	await rows.filter({ hasText: 'Market' }).click();
+	await rows.filter({ hasText: 'Bakery' }).click();
+	await expect(cleared('Market')).toBeVisible();
+	await bar.getByRole('button', { name: 'Clear', exact: true }).click();
+	await expect(bar).toBeHidden();
 	await expect(cleared('Market')).toHaveAttribute('aria-pressed', 'true');
 	await expect(cleared('Bakery')).toHaveAttribute('aria-pressed', 'true');
 	await expect(cleared('Cafe')).toHaveAttribute('aria-pressed', 'false');
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click();
+	await rows.filter({ hasText: 'Market' }).click();
+	await bar.getByRole('button', { name: 'Unclear' }).click();
+	await expect(cleared('Market')).toHaveAttribute('aria-pressed', 'false');
+	await expect(cleared('Bakery')).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('deletes several transactions and brings them back', async ({ page }) => {
@@ -61,6 +73,9 @@ test('deletes several transactions and brings them back', async ({ page }) => {
 	const bar = page.getByTestId('selection-bar');
 	await bar.getByRole('button', { name: 'Select all' }).click();
 	await expect(bar.getByTestId('selection-count')).toHaveText('Selected: 4');
+	await bar.getByRole('button', { name: 'Select none' }).click();
+	await expect(bar.getByTestId('selection-count')).toHaveText('Selected: 0');
+	await bar.getByRole('button', { name: 'Select all' }).click();
 	await page.getByRole('checkbox', { name: /^Select Starting balance/ }).click();
 	await bar.getByRole('button', { name: 'Delete' }).click();
 	const dialog = page.getByRole('dialog');
@@ -68,7 +83,7 @@ test('deletes several transactions and brings them back', async ({ page }) => {
 	await dialog.getByRole('button', { name: 'Delete' }).click();
 	await expect(dialog).toBeHidden();
 	await expect(rows).toHaveCount(1);
-	await expect(bar.getByTestId('selection-count')).toHaveText('Selected: 0');
+	await expect(bar).toBeHidden();
 
 	const toasts = page.getByRole('region', { name: /Notifications/ });
 	await expect(toasts).toContainText('Transactions deleted: 3.');
@@ -93,5 +108,49 @@ test.describe('on a phone', () => {
 		expect(box!.y + box!.height).toBeLessThanOrEqual(nav!.y);
 		expect(box!.x).toBeGreaterThanOrEqual(0);
 		expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+		// Every action says what it does.
+		for (const name of ['Category', 'Date', 'Clear', 'Delete'])
+			await expect(bar.getByRole('button', { name, exact: true })).toBeVisible();
+	});
+});
+
+test.describe('with a touch screen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+	test('holding a transaction starts selecting with it', async ({ page }) => {
+		await withThree(page);
+		const row = page.getByTestId('register-row').filter({ hasText: 'Cafe' });
+		const box = (await row.boundingBox())!;
+		const point = { clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 };
+		const touch = { ...point, pointerType: 'touch', isPrimary: true, bubbles: true };
+		await row.dispatchEvent('pointerdown', touch);
+		await page.waitForTimeout(600);
+		await row.dispatchEvent('pointerup', touch);
+		await row.dispatchEvent('click', { ...point, bubbles: true });
+
+		const bar = page.getByTestId('selection-bar');
+		await expect(bar.getByTestId('selection-count')).toHaveText('Selected: 1');
+		await expect(page.getByRole('checkbox', { name: /^Select Cafe/ })).toBeChecked();
+		// The release didn't open the transaction, nor take the row back.
+		await expect(page.getByRole('dialog')).toBeHidden();
+	});
+});
+
+test.describe('on a narrow desktop', () => {
+	test.use({ viewport: { width: 900, height: 800 } });
+
+	test('fits the bar in the column', async ({ page }) => {
+		await withThree(page);
+		await page.getByRole('button', { name: 'Select', exact: true }).click();
+		const bar = page.getByTestId('selection-bar');
+		await expect(bar).toBeVisible();
+		const fits = await bar.evaluate((node) => {
+			const inner = [...node.querySelectorAll('*')].every(
+				(child) => child.scrollWidth <= child.clientWidth || child.clientWidth === 0
+			);
+			const page = document.documentElement.scrollWidth <= window.innerWidth;
+			return inner && node.scrollWidth <= node.clientWidth && page;
+		});
+		expect(fits).toBe(true);
 	});
 });
