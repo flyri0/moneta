@@ -3,7 +3,11 @@
 	import { Combobox } from '$ui/combobox';
 	import { Label } from '$ui/label';
 	import FormMessage from '$components/FormMessage.svelte';
-	import { defaultOnBudget, signedStartingBalance } from '$features/accounts/account-form';
+	import {
+		defaultOnBudget,
+		parseBillingDays,
+		signedStartingBalance
+	} from '$features/accounts/account-form';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError } from '$client/notify';
@@ -12,6 +16,7 @@
 	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import AccountFields from './AccountFields.svelte';
+	import BillingDaysFields from './BillingDaysFields.svelte';
 	import AccountTypePicker from './AccountTypePicker.svelte';
 
 	/** Picks an account type, then its fields, and creates it. Starts blank each time it mounts. */
@@ -32,6 +37,8 @@
 	let date = $state(todayIso());
 	// Empty until the user picks one: the starting balance category, created again if it is gone.
 	let categoryId = $state('');
+	let closingDay = $state('');
+	let dueDay = $state('');
 	let error = $state<ActionError | null>(null);
 
 	const categoryGroups = $derived(
@@ -58,6 +65,11 @@
 			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
+		const billing = type === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
+		if (billing === 'invalid') {
+			error = { message: m.form_error_billing_days_invalid() };
+			return;
+		}
 		let id = '';
 		error = await runAction(async () => {
 			id = await session.api.accounts.create({
@@ -66,7 +78,8 @@
 				onBudget,
 				startingBalance: signedStartingBalance(type, typed),
 				startingDate: date,
-				startingBalanceCategoryId: categoryId || undefined
+				startingBalanceCategoryId: categoryId || undefined,
+				billing
 			});
 		});
 		if (!error) onCreated(id);
@@ -86,6 +99,9 @@
 			idPrefix="new-account"
 			onChangeType={() => (step = 1)}
 		/>
+		{#if type === 'credit_card'}
+			<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="new-account" />
+		{/if}
 		{#if onBudget}
 			<div class="grid gap-2">
 				<Label for="new-account-category">{m.account_starting_category()}</Label>

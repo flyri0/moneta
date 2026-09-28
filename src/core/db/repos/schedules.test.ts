@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
-import { closeAccount, createAccount, deleteAccount, getAccount } from './accounts';
+import { closeAccount, createAccount, deleteAccount, getAccount, setBillingDays } from './accounts';
 import { categoryUsage, deleteCategory } from './categories';
 import {
 	deletePayee,
@@ -421,6 +421,32 @@ describe('createInstallments', () => {
 			nextDate: '2026-10-24',
 			installmentStart: 1
 		});
+	});
+
+	it('puts every installment on its bill’s due date when the card has billing days', () => {
+		setBillingDays(db, card, { closingDay: 5, dueDay: 15 });
+		const id = createInstallments(db, tvInput(), 3);
+		expect(listTransactions(db)).toEqual([
+			expect.objectContaining({ id, date: '2026-10-15', amount: -33334, memo: 'TV 1/3' })
+		]);
+		expect(
+			upcomingOccurrences(db, { accountId: card, today: T, to: '2027-12-31' }).map((o) => [
+				o.date,
+				o.memo
+			])
+		).toEqual([
+			['2026-11-15', 'TV 2/3'],
+			['2026-12-15', 'TV 3/3']
+		]);
+		expect(enterDueOccurrences(db, '2026-11-14')).toBe(0);
+		expect(enterDueOccurrences(db, '2026-11-15')).toBe(1);
+	});
+
+	it('counts a purchase on the closing day on the next bill', () => {
+		setBillingDays(db, card, { closingDay: 24, dueDay: 2 });
+		createInstallments(db, tvInput(), 2);
+		expect(listTransactions(db)[0].date).toBe('2026-11-02');
+		expect(listSchedules(db, T)[0].nextDate).toBe('2026-12-02');
 	});
 
 	it('numbers the installments it enters and lists', () => {

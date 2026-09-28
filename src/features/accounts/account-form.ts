@@ -1,4 +1,5 @@
 import type { Account, AccountType } from '$db/repos/accounts';
+import type { BillingDays } from '$domain/card-bill';
 
 export type AccountCategoryKey = 'budget' | 'tracking';
 
@@ -39,6 +40,24 @@ export function isDebtType(type: AccountType): boolean {
 /** Turns what the user typed into a signed balance: an amount owed becomes negative. */
 export function signedStartingBalance(type: AccountType, typed: number): number {
 	return isDebtType(type) && typed !== 0 ? -typed : typed;
+}
+
+function parseDay(text: string): number | null {
+	const trimmed = text.trim();
+	if (!/^\d{1,2}$/.test(trimmed)) return null;
+	const day = Number(trimmed);
+	return day >= 1 && day <= 31 ? day : null;
+}
+
+/**
+ * A card's closing and due days, as typed: null when both are blank, 'invalid' when only one is
+ * given or either isn't a day from 1 to 31.
+ */
+export function parseBillingDays(closing: string, due: string): BillingDays | null | 'invalid' {
+	if (closing.trim() === '' && due.trim() === '') return null;
+	const closingDay = parseDay(closing);
+	const dueDay = parseDay(due);
+	return closingDay === null || dueDay === null ? 'invalid' : { closingDay, dueDay };
 }
 
 export type AccountSectionKey = 'onBudget' | 'offBudget' | 'closed';

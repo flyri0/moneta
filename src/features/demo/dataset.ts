@@ -375,7 +375,8 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				type: 'credit_card',
 				onBudget: true,
 				startingBalance: 0,
-				startingDate: opened
+				startingDate: opened,
+				billing: { closingDay: 5, dueDay: 15 }
 			}
 		],
 		transactions: [],

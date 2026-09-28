@@ -6,6 +6,7 @@ import {
 	defaultOnBudget,
 	isDebtType,
 	onBudgetLocked,
+	parseBillingDays,
 	signedStartingBalance
 } from './account-form';
 
@@ -65,6 +66,8 @@ describe('accountSections', () => {
 		balance: 0,
 		clearedBalance: 0,
 		reconciledOn: null,
+		closingDay: null,
+		dueDay: null,
 		...p
 	});
 
@@ -84,5 +87,28 @@ describe('accountSections', () => {
 
 	it('leaves out empty sections', () => {
 		expect(accountSections([account({ name: 'Bank' })]).map((s) => s.key)).toEqual(['onBudget']);
+	});
+});
+
+describe('parseBillingDays', () => {
+	it('reads both days', () => {
+		expect(parseBillingDays(' 5 ', '15')).toEqual({ closingDay: 5, dueDay: 15 });
+		expect(parseBillingDays('31', '1')).toEqual({ closingDay: 31, dueDay: 1 });
+	});
+
+	it('is null when both are blank', () => {
+		expect(parseBillingDays('', '  ')).toBeNull();
+	});
+
+	it('is invalid with only one day, or a day that is not 1 to 31', () => {
+		for (const [closing, due] of [
+			['5', ''],
+			['', '15'],
+			['0', '15'],
+			['5', '32'],
+			['5.5', '15'],
+			['x', '15']
+		])
+			expect(parseBillingDays(closing, due)).toBe('invalid');
 	});
 });

@@ -62,6 +62,7 @@ export const api = {
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
+		setBilling: write(['accounts'], accounts.setBillingDays, ['string', 'object?']),
 		delete: write(['accounts', ...SCHED], accounts.deleteAccount, ['string']),
 		// An adjustment is one plain transaction, with no payee.
 		reconcile: write(['accounts', 'transactions'], accounts.reconcileAccount, ['string', 'object'])

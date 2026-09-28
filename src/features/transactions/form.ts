@@ -32,7 +32,9 @@ export interface TransactionDraft {
 	splits: SplitDraft[] | null; // null when not split
 }
 
-export type FormAccount = Pick<Account, 'id' | 'name' | 'type' | 'onBudget' | 'closed'>;
+/** What the form needs of an account. A card's billing days date its installments. */
+export type FormAccount = Pick<Account, 'id' | 'name' | 'type' | 'onBudget' | 'closed'> &
+	Partial<Pick<Account, 'closingDay' | 'dueDay'>>;
 
 /** What the form needs of a payee: its name and the categories it suggests. */
 export type FormPayee = Pick<Payee, 'id' | 'name' | 'defaultCategoryId' | 'lastCategoryId'>;

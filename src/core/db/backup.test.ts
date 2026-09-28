@@ -96,6 +96,12 @@ async function fullBudget(): Promise<Db> {
 	const base = { onBudget: true, startingBalance: 0, startingDate: '2026-01-01' };
 	const bank = createAccount(db, { ...base, name: 'Bank', type: 'checking' });
 	const savings = createAccount(db, { ...base, name: 'Savings', type: 'savings' });
+	createAccount(db, {
+		...base,
+		name: 'Visa',
+		type: 'credit_card',
+		billing: { closingDay: 5, dueDay: 15 }
+	});
 	const food = categoryId(db, 'Food');
 	const fun = categoryId(db, 'Fun');
 	createTransaction(db, {
@@ -244,6 +250,12 @@ describe('checkBackup rebuilds the budget', () => {
 			INSERT INTO payee_rules (id, payee_id, kind, text) VALUES ('r1', 'p-rule', 'starts', '  ')`
 		],
 		['a bad reconciliation date', "UPDATE accounts SET reconciled_on = 'yesterday'"],
+		['a fractional billing day', "UPDATE accounts SET closing_day = 5.5 WHERE name = 'Visa'"],
+		['a closing day without a due day', "UPDATE accounts SET due_day = NULL WHERE name = 'Visa'"],
+		[
+			'billing days on an account that is not a card',
+			"UPDATE accounts SET closing_day = 5, due_day = 15 WHERE name = 'Bank'"
+		],
 		['a date that is not a date', "UPDATE transactions SET date = 'zzzz' WHERE memo = 'plain'"],
 		['an impossible date', "UPDATE transactions SET date = '2026-13-45' WHERE memo = 'plain'"],
 		['a far-off year', "UPDATE transactions SET date = '9999-12-31' WHERE memo = 'plain'"],

@@ -49,6 +49,12 @@ const BROKEN_ROWS: [string, string][] = [
 		'SELECT 1 FROM transactions WHERE reconciled = 1 AND cleared = 0'
 	],
 	[
+		'billing days that are not whole days, not paired or not on a credit card',
+		`SELECT 1 FROM accounts WHERE typeof(closing_day) NOT IN ('integer', 'null')
+			OR typeof(due_day) NOT IN ('integer', 'null') OR (closing_day IS NULL) <> (due_day IS NULL)
+			OR (closing_day IS NOT NULL AND type <> 'credit_card')`
+	],
+	[
 		'an import id that is not text',
 		"SELECT 1 FROM transactions WHERE typeof(import_id) NOT IN ('text', 'null')"
 	],

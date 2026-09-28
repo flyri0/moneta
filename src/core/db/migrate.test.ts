@@ -208,6 +208,22 @@ describe('migrate', () => {
 		expect(all(db, 'SELECT id FROM payee_rules')).toEqual([]);
 	});
 
+	it('adds billing days to accounts, none for the ones there', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 10));
+		db.exec(`INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+			('a1', 'Card', 'credit_card', 1, '2026-01-01')`);
+		migrate(db);
+		expect(all(db, 'SELECT closing_day, due_day FROM accounts')).toEqual([
+			{ closing_day: null, due_day: null }
+		]);
+		run(db, 'UPDATE accounts SET closing_day = 5, due_day = 15');
+		expect(() => run(db, 'UPDATE accounts SET closing_day = 0')).toThrow();
+		expect(() => run(db, 'UPDATE accounts SET due_day = 32')).toThrow();
+	});
+
 	it('is idempotent', async () => {
 		const db = await createTestDb();
 		migrate(db);

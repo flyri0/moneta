@@ -1,4 +1,5 @@
 import { uuidv7 } from 'uuidv7';
+import { installmentDueDate } from '$domain/card-bill';
 import { DomainError } from '$domain/errors';
 import { groupBy } from '$domain/group-by';
 import {
@@ -293,15 +294,18 @@ export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 /**
  * Records a card purchase of `count` installments, one a month from its date: enters the first,
  * which takes the cents left over, and schedules the rest to be entered on their dates, each
- * memo numbered ("TV 2/12"). Returns the first installment's transaction id.
+ * memo numbered ("TV 2/12"). A card with billing days puts every installment, the first too, on
+ * its bill's due date instead. Returns the first installment's transaction id.
  */
 export function createInstallments(db: Db, input: TransactionInput, count: number): string {
 	return tx(db, () => {
 		if (!Number.isInteger(count) || count < 2 || count > MAX_INSTALLMENTS)
 			throw new DomainError('INVALID_INPUT', 'Installments must be 2 to 99');
-		const account = one<{ type: string }>(db, 'SELECT type FROM accounts WHERE id = ?', [
-			input.accountId
-		]);
+		const account = one<{ type: string; closingDay: number | null; dueDay: number | null }>(
+			db,
+			'SELECT type, closing_day AS closingDay, due_day AS dueDay FROM accounts WHERE id = ?',
+			[input.accountId]
+		);
 		if (account?.type !== 'credit_card')
 			throw new DomainError('INVALID_INPUT', 'Only card purchases are paid in installments');
 		if (input.transferAccountId || (input.splits?.length ?? 0) > 0)
@@ -310,8 +314,19 @@ export function createInstallments(db: Db, input: TransactionInput, count: numbe
 			throw new DomainError('INVALID_INPUT', 'Installments need a purchase of a cent each');
 		const { first, rest } = splitInstallments(-input.amount, count);
 		const memo = input.memo ?? '';
+		// The schedule steps a month at a time from the first due date. A due day past the end of
+		// that month (the 31st in September) stays on the shorter day, still in the right month.
+		const date =
+			account.closingDay !== null && account.dueDay !== null
+				? installmentDueDate(
+						{ closingDay: account.closingDay, dueDay: account.dueDay },
+						input.date,
+						0
+					)
+				: input.date;
 		const transactionId = createTransaction(db, {
 			...input,
+			date,
 			amount: -first,
 			memo: installmentMemo(memo, 1, count)
 		});
@@ -321,7 +336,7 @@ export function createInstallments(db: Db, input: TransactionInput, count: numbe
 			payeeName: input.payeeName ?? null,
 			categoryId: input.categoryId ?? null,
 			memo,
-			startDate: input.date,
+			startDate: date,
 			frequency: 'monthly',
 			interval: 1,
 			endDate: null,

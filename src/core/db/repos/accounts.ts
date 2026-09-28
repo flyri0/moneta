@@ -1,4 +1,5 @@
 import { uuidv7 } from 'uuidv7';
+import { validateBillingDays, type BillingDays } from '$domain/card-bill';
 import { DomainError } from '$domain/errors';
 import { isDate } from '$domain/month';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
@@ -19,6 +20,9 @@ export interface Account {
 	clearedBalance: number;
 	/** The date of the last reconciliation, if any. */
 	reconciledOn: string | null;
+	/** A credit card's billing days (both or neither), which date its installments. */
+	closingDay: number | null;
+	dueDay: number | null;
 }
 
 export interface CreateAccountInput {
@@ -29,12 +33,14 @@ export interface CreateAccountInput {
 	startingDate: string; // YYYY-MM-DD
 	/** Where an on-budget starting balance goes; the starting balance category when left out. */
 	startingBalanceCategoryId?: string | null;
+	/** When a credit card's bill closes and is due. Only credit cards have them. */
+	billing?: BillingDays | null;
 }
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
 
 const SELECT_SQL = `SELECT a.id, a.name, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
-	a.reconciled_on AS reconciledOn,
+	a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay,
 	COALESCE(SUM(t.amount), 0) AS balance,
 	COALESCE(SUM(CASE WHEN t.cleared = 1 THEN t.amount END), 0) AS clearedBalance
 	FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id`;
@@ -74,6 +80,7 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 			 VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM accounts), ?)`,
 			[id, name, input.type, onBudget ? 1 : 0, nowIso()]
 		);
+		if (input.billing) writeBillingDays(db, id, input.type, input.billing);
 		if (input.startingBalance !== 0) {
 			createStartingBalance(db, {
 				accountId: id,
@@ -96,6 +103,24 @@ export function renameAccount(db: Db, id: string, name: string): void {
 		const trimmed = requireName(name);
 		run(db, 'UPDATE accounts SET name = ? WHERE id = ?', [trimmed, id]);
 	});
+}
+
+function writeBillingDays(db: Db, id: string, type: AccountType, days: BillingDays | null): void {
+	if (days) {
+		if (type !== 'credit_card')
+			throw new DomainError('INVALID_INPUT', 'Only credit cards have billing days');
+		validateBillingDays(days);
+	}
+	run(db, 'UPDATE accounts SET closing_day = ?, due_day = ? WHERE id = ?', [
+		days?.closingDay ?? null,
+		days?.dueDay ?? null,
+		id
+	]);
+}
+
+/** Sets a credit card's closing and due days, or clears them when `days` is left out. */
+export function setBillingDays(db: Db, id: string, days?: BillingDays): void {
+	tx(db, () => writeBillingDays(db, id, getAccount(db, id).type, days ?? null));
 }
 
 export function closeAccount(db: Db, id: string): void {

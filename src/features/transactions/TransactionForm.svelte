@@ -71,13 +71,17 @@
 	const planText = $derived.by(() => {
 		if (!plan) return '';
 		const amount = session.format(plan.rest);
-		return plan.first === plan.rest
-			? m.transaction_installments_plan({ count: plan.count, amount })
-			: m.transaction_installments_plan_first({
-					first: session.format(plan.first),
-					count: plan.count - 1,
-					amount
-				});
+		const split =
+			plan.first === plan.rest
+				? m.transaction_installments_plan({ count: plan.count, amount })
+				: m.transaction_installments_plan_first({
+						first: session.format(plan.first),
+						count: plan.count - 1,
+						amount
+					});
+		if (!plan.firstDate) return split;
+		const date = formatDate(plan.firstDate, getLocale());
+		return `${split} · ${m.transaction_installments_first_due({ date })}`;
 	});
 
 	/** Split lines that don't add up yet keep Save disabled. */

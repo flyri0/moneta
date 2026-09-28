@@ -5,7 +5,16 @@ import { canInstall, installmentCount, installmentPlan } from './installments';
 const ctx: FormContext = {
 	accounts: [
 		{ id: 'visa', name: 'Visa', type: 'credit_card', onBudget: true, closed: false },
-		{ id: 'bank', name: 'Bank', type: 'checking', onBudget: true, closed: false }
+		{ id: 'bank', name: 'Bank', type: 'checking', onBudget: true, closed: false },
+		{
+			id: 'master',
+			name: 'Master',
+			type: 'credit_card',
+			onBudget: true,
+			closed: false,
+			closingDay: 5,
+			dueDay: 15
+		}
 	],
 	payees: [],
 	tree: [],
@@ -50,8 +59,23 @@ describe('installmentCount', () => {
 
 describe('installmentPlan', () => {
 	it('splits the total, the first installment taking the leftover cents', () => {
-		expect(installmentPlan(draft(), ctx, '3')).toEqual({ count: 3, first: 33334, rest: 33333 });
-		expect(installmentPlan(draft(), ctx, '4')).toEqual({ count: 4, first: 25000, rest: 25000 });
+		expect(installmentPlan(draft(), ctx, '3')).toEqual({
+			count: 3,
+			first: 33334,
+			rest: 33333,
+			firstDate: null
+		});
+		expect(installmentPlan(draft(), ctx, '4')).toMatchObject({ first: 25000, rest: 25000 });
+	});
+
+	it('dates the first installment on its bill’s due date when the card has billing days', () => {
+		expect(installmentPlan(draft({ accountId: 'master' }), ctx, '3')?.firstDate).toBe('2026-10-15');
+		expect(
+			installmentPlan(draft({ accountId: 'master', date: '2026-09-04' }), ctx, '3')?.firstDate
+		).toBe('2026-09-15');
+		expect(installmentPlan(draft({ accountId: 'master', date: '' }), ctx, '3')?.firstDate).toBe(
+			null
+		);
 	});
 
 	it('is null for a single payment or an amount it cannot read', () => {

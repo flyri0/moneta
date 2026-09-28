@@ -10,10 +10,14 @@
 	import { runAction, type ActionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
+	import { parseBillingDays } from '$features/accounts/account-form';
+	import BillingDaysFields from './BillingDaysFields.svelte';
 
 	let { open = $bindable(false), account }: { open: boolean; account: Account } = $props();
 	const session = useSession();
 	let name = $state('');
+	let closingDay = $state('');
+	let dueDay = $state('');
 	let confirming = $state(false);
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
@@ -21,6 +25,8 @@
 	$effect(() => {
 		if (!open) return;
 		name = account.name;
+		closingDay = account.closingDay?.toString() ?? '';
+		dueDay = account.dueDay?.toString() ?? '';
 		confirming = false;
 		error = null;
 	});
@@ -41,6 +47,17 @@
 	function rename(event: SubmitEvent) {
 		event.preventDefault();
 		void act(() => session.api.accounts.rename(account.id, name));
+	}
+
+	/** Saves a card's billing days; both left blank clears them. */
+	function saveBilling(event: SubmitEvent) {
+		event.preventDefault();
+		const days = parseBillingDays(closingDay, dueDay);
+		if (days === 'invalid') {
+			error = { message: m.form_error_billing_days_invalid() };
+			return;
+		}
+		void act(() => session.api.accounts.setBilling(account.id, days ?? undefined));
 	}
 </script>
 
@@ -67,6 +84,12 @@
 					<Button type="submit" variant="outline">{m.save()}</Button>
 				</div>
 			</form>
+			{#if account.type === 'credit_card'}
+				<form class="grid gap-2" onsubmit={saveBilling}>
+					<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="account" />
+					<Button type="submit" variant="outline" class="justify-self-end">{m.save()}</Button>
+				</form>
+			{/if}
 			<Separator />
 			{#if account.closed}
 				<Button

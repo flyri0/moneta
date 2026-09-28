@@ -1,4 +1,6 @@
+import { installmentDueDate } from '$domain/card-bill';
 import { MAX_INSTALLMENTS, splitInstallments } from '$domain/installments';
+import { isDate } from '$domain/month';
 import { parseAmount } from '$domain/money';
 import type { FormContext, TransactionDraft } from './form';
 
@@ -39,6 +41,8 @@ export interface InstallmentPlan {
 	first: number;
 	/** Each of the others. Positive. */
 	rest: number;
+	/** When the first is due, for a card with billing days; null otherwise. */
+	firstDate: string | null;
 }
 
 /** What each installment comes to, for the form to show; null for a single payment. */
@@ -50,5 +54,14 @@ export function installmentPlan(
 	const count = installmentCount(draft, ctx, text);
 	const total = parseAmount(draft.amount, ctx.money);
 	if (count === null || count < 2 || total === null || total <= 0) return null;
-	return { count, ...splitInstallments(total, count) };
+	const account = ctx.accounts.find((a) => a.id === draft.accountId);
+	const firstDate =
+		account?.closingDay != null && account.dueDay != null && isDate(draft.date)
+			? installmentDueDate(
+					{ closingDay: account.closingDay, dueDay: account.dueDay },
+					draft.date,
+					0
+				)
+			: null;
+	return { count, ...splitInstallments(total, count), firstDate };
 }

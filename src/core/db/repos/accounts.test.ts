@@ -10,6 +10,7 @@ import {
 	reconcileAccount,
 	renameAccount,
 	reopenAccount,
+	setBillingDays,
 	type CreateAccountInput
 } from './accounts';
 import { createTransaction, getTransaction, listTransactions } from './transactions';
@@ -200,6 +201,50 @@ describe('account lifecycle', () => {
 				categoryId: categoryId(db, 'Food')
 			})
 		).toThrow(code('ACCOUNT_CLOSED'));
+	});
+});
+
+describe('billing days', () => {
+	it('records a card’s closing and due days when it is created', async () => {
+		const db = await createBudgetDb();
+		const card = createAccount(
+			db,
+			acct({ name: 'Visa', type: 'credit_card', billing: { closingDay: 5, dueDay: 15 } })
+		);
+		expect(getAccount(db, card)).toMatchObject({ closingDay: 5, dueDay: 15 });
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		expect(getAccount(db, bank)).toMatchObject({ closingDay: null, dueDay: null });
+	});
+
+	it('sets and clears them later', async () => {
+		const db = await createBudgetDb();
+		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
+		setBillingDays(db, card, { closingDay: 28, dueDay: 7 });
+		expect(getAccount(db, card)).toMatchObject({ closingDay: 28, dueDay: 7 });
+		setBillingDays(db, card);
+		expect(getAccount(db, card)).toMatchObject({ closingDay: null, dueDay: null });
+	});
+
+	it('refuses them on anything but a credit card', async () => {
+		const db = await createBudgetDb();
+		const days = { closingDay: 5, dueDay: 15 };
+		expect(() =>
+			createAccount(db, acct({ name: 'Bank', type: 'checking', billing: days }))
+		).toThrow(code('INVALID_INPUT'));
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		expect(() => setBillingDays(db, bank, days)).toThrow(code('INVALID_INPUT'));
+	});
+
+	it('refuses days outside 1 to 31', async () => {
+		const db = await createBudgetDb();
+		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
+		expect(() => setBillingDays(db, card, { closingDay: 0, dueDay: 15 })).toThrow(
+			code('INVALID_INPUT')
+		);
+		expect(() => setBillingDays(db, card, { closingDay: 5, dueDay: 32 })).toThrow(
+			code('INVALID_INPUT')
+		);
+		expect(getAccount(db, card).closingDay).toBeNull();
 	});
 });
 
