@@ -19,7 +19,7 @@ test('shows the register with balances, cleared toggles and search', async ({ pa
 	);
 
 	await page.getByRole('searchbox').fill('nothing like this');
-	await expect(page.getByText('No transactions.')).toBeVisible();
+	await expect(page.getByText('Nothing matches this search or these dates.')).toBeVisible();
 	await page.getByRole('searchbox').fill('');
 	await expect(row).toHaveCount(1);
 });

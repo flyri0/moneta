@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ReportBody from './ReportBody.svelte';
 	import { untrack } from 'svelte';
+	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -65,7 +67,7 @@
 		{#if payees.error}
 			<FormMessage error={actionError(payees.error)} />
 		{:else if payees.data && report.rows.length === 0}
-			<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
+			<EmptyState icon={ChartColumnIcon} description={m.reports_spending_empty()} />
 		{:else if report.rows.length > 0}
 			<StatTile
 				value={session.format(report.total)}

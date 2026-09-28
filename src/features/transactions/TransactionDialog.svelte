@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Button } from '$ui/button';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { LAST_ACCOUNT_KEY } from '$client/registry';
@@ -15,6 +14,8 @@
 		type TransactionDraft
 	} from '$features/transactions/form';
 	import { loadFormContext } from '$features/transactions/context';
+	import AddAccountForm from '$features/accounts/AddAccountForm.svelte';
+	import NoOpenAccounts from '$features/accounts/NoOpenAccounts.svelte';
 	import { draftFromSchedule, type OccurrenceToEnter } from '$features/schedules/form';
 	import TransactionForm from './TransactionForm.svelte';
 
@@ -39,6 +40,7 @@
 	let ctx = $state.raw<FormContext | null>(null);
 	let initial = $state.raw<TransactionDraft | null>(null);
 	let confirming = $state(false);
+	let addingAccount = $state(false);
 
 	function readLastAccount(): string | null {
 		try {
@@ -64,6 +66,7 @@
 		ctx = null;
 		initial = null;
 		confirming = false;
+		addingAccount = false;
 		try {
 			const context = await loadFormContext(session.api, session.money);
 			if (entering) {
@@ -109,14 +112,20 @@
 
 <ResponsiveDialog
 	bind:open
-	title={confirming
-		? m.transaction_delete_title()
-		: occurrence
-			? m.schedule_enter_title()
-			: transaction
-				? m.transaction_edit_title()
-				: m.transaction_add_title()}
-	onBack={confirming ? () => (confirming = false) : undefined}
+	title={addingAccount
+		? m.accounts_add()
+		: confirming
+			? m.transaction_delete_title()
+			: occurrence
+				? m.schedule_enter_title()
+				: transaction
+					? m.transaction_edit_title()
+					: m.transaction_add_title()}
+	onBack={addingAccount
+		? () => (addingAccount = false)
+		: confirming
+			? () => (confirming = false)
+			: undefined}
 >
 	{#if ctx && initial}
 		{#if ctx.accounts.some((a) => !a.closed)}
@@ -134,9 +143,10 @@
 					}}
 				/>
 			{/key}
+		{:else if addingAccount}
+			<AddAccountForm onCreated={(id) => void load(transaction, id, occurrence)} />
 		{:else}
-			<p class="text-muted-foreground">{m.transaction_no_accounts()}</p>
-			<Button variant="outline" onclick={() => (open = false)}>{m.close()}</Button>
+			<NoOpenAccounts hasClosed={ctx.accounts.length > 0} onAdd={() => (addingAccount = true)} />
 		{/if}
 	{:else}
 		<p class="text-muted-foreground" role="status">{m.startup_loading()}</p>

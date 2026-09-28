@@ -230,7 +230,7 @@
 
 		<!-- Keyed so that switching accounts (e.g. the transfer link) starts paging over. -->
 		{#key accountId}
-			<Register {accountId} {filters} {selection} />
+			<Register {accountId} {filters} {selection} canAdd={!account.data.closed} />
 		{/key}
 	{:else if !account.data}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs">

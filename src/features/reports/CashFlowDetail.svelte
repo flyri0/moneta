@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ReportBody from './ReportBody.svelte';
 	import CashFlowChart from './CashFlowChart.svelte';
+	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetFlowChart from './NetFlowChart.svelte';
@@ -69,9 +71,7 @@
 	{#if flow.error}
 		<FormMessage error={actionError(flow.error)} />
 	{:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
-		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-			{m.reports_income_expense_empty()}
-		</p>
+		<EmptyState framed icon={ChartColumnIcon} description={m.reports_income_expense_empty()} />
 	{:else if flow.data}
 		<dl
 			class="grid grid-cols-2 gap-2 rounded-xl border bg-card p-4 text-card-foreground sm:grid-cols-4"

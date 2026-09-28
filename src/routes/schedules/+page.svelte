@@ -1,6 +1,8 @@
 <script lang="ts">
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$ui/button';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
@@ -42,9 +44,17 @@
 	{#if schedules.error && !schedules.data}
 		<FormMessage error={actionError(schedules.error)} />
 	{:else if schedules.data?.length === 0}
-		<div class="rounded-xl border bg-card p-8 text-center text-card-foreground shadow-xs">
-			<p class="text-sm text-muted-foreground">{m.schedules_empty()}</p>
-		</div>
+		<EmptyState
+			framed
+			icon={CalendarClockIcon}
+			title={m.schedules_empty_title()}
+			description={m.schedules_empty()}
+		>
+			<Button size="sm" onclick={() => open(null)}>
+				<PlusIcon />
+				{m.schedules_add()}
+			</Button>
+		</EmptyState>
 	{:else if schedules.data}
 		<ScheduleList schedules={schedules.data} onOpen={open} />
 	{:else}

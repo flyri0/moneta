@@ -84,7 +84,7 @@ test('onboarding can start with no account', async ({ page }) => {
 
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
-	await expect(page.getByText('No accounts yet.')).toBeVisible();
+	await expect(page.getByText('No accounts yet')).toBeVisible();
 });
 
 test('a second tab waits until it takes over', async ({ context }) => {

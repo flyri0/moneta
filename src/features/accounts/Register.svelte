@@ -1,5 +1,10 @@
 <script lang="ts">
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import ReceiptIcon from '@lucide/svelte/icons/receipt';
+	import SearchXIcon from '@lucide/svelte/icons/search-x';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { Button } from '$ui/button';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import RegisterRow from '$features/accounts/RegisterRow.svelte';
@@ -17,13 +22,20 @@
 	/**
 	 * The paged transaction list of one account, or of every account (showing each row's account)
 	 * without `accountId`, narrowed by `filters` (whose controls sit in the page header). Rows open
-	 * in the edit dialog, or, while `selection` is active, are chosen for its bar.
+	 * in the edit dialog, or, while `selection` is active, are chosen for its bar. With no rows it
+	 * offers to add one (unless `canAdd` is false, as on a closed account) or to clear the filters.
 	 */
 	let {
 		accountId,
 		filters,
-		selection
-	}: { accountId?: string; filters: RegisterFilters; selection?: RegisterSelection } = $props();
+		selection,
+		canAdd = true
+	}: {
+		accountId?: string;
+		filters: RegisterFilters;
+		selection?: RegisterSelection;
+		canAdd?: boolean;
+	} = $props();
 
 	const session = useSession();
 
@@ -56,11 +68,12 @@
 			})
 	);
 	const hasMore = $derived((rows.data?.length ?? 0) >= pages * PAGE_SIZE);
+	const filtered = $derived(!!(filters.search || filters.from || filters.to));
 
 	let dialogOpen = $state(false);
 	let editing = $state<TransactionRow | null>(null);
 
-	function edit(row: TransactionRow) {
+	function edit(row: TransactionRow | null) {
 		editing = row;
 		dialogOpen = true;
 	}
@@ -83,8 +96,27 @@
 				onSelect={(r) => selection?.toggle(r.id)}
 			/>
 		{:else}
-			{#if rows.data}
-				<p class="p-8 text-center text-sm text-muted-foreground">{m.register_empty()}</p>
+			{#if rows.data && filtered}
+				<EmptyState class="py-8" icon={SearchXIcon} description={m.register_no_results()}>
+					<Button size="sm" variant="outline" onclick={() => filters.clear()}>
+						<XIcon />
+						{m.register_clear_filters()}
+					</Button>
+				</EmptyState>
+			{:else if rows.data}
+				<EmptyState
+					class="py-8"
+					icon={ReceiptIcon}
+					title={m.register_empty()}
+					description={m.register_empty_body()}
+				>
+					{#if canAdd}
+						<Button size="sm" onclick={() => edit(null)}>
+							<PlusIcon />
+							{m.register_add()}
+						</Button>
+					{/if}
+				</EmptyState>
 			{:else}
 				<LoadingRows rows={8} />
 			{/if}

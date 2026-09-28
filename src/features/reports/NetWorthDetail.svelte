@@ -2,6 +2,8 @@
 	import ReportBody from './ReportBody.svelte';
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
+	import ChartLineIcon from '@lucide/svelte/icons/chart-line';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
@@ -94,9 +96,7 @@
 	{#if series.error || flow.error}
 		<FormMessage error={actionError(series.error ?? flow.error)} />
 	{:else if series.data && points.length === 0}
-		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-			{m.reports_net_worth_empty()}
-		</p>
+		<EmptyState framed icon={ChartLineIcon} description={m.reports_net_worth_empty()} />
 	{:else if stat && last}
 		<div class="grid gap-4 rounded-xl border bg-card p-4 text-card-foreground">
 			<StatTile

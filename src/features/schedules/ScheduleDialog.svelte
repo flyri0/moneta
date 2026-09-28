@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Button } from '$ui/button';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError } from '$client/notify';
@@ -7,6 +6,8 @@
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import { loadFormContext } from '$features/transactions/context';
+	import AddAccountForm from '$features/accounts/AddAccountForm.svelte';
+	import NoOpenAccounts from '$features/accounts/NoOpenAccounts.svelte';
 	import type { FormContext } from '$features/transactions/form';
 	import {
 		draftFromSchedule,
@@ -27,20 +28,24 @@
 	let ctx = $state.raw<FormContext | null>(null);
 	let initial = $state.raw<ScheduleDraft | null>(null);
 	let view = $state<ScheduleView>('main');
+	let addingAccount = $state(false);
 
 	const title = $derived(
-		{
-			main: schedule ? m.schedule_edit_title() : m.schedule_add_title(),
-			repeat: m.schedule_frequency(),
-			delete: m.schedule_delete_title(),
-			'enter-many': m.schedule_enter_many_title()
-		}[view]
+		addingAccount
+			? m.accounts_add()
+			: {
+					main: schedule ? m.schedule_edit_title() : m.schedule_add_title(),
+					repeat: m.schedule_frequency(),
+					delete: m.schedule_delete_title(),
+					'enter-many': m.schedule_enter_many_title()
+				}[view]
 	);
 
 	async function load(editing: ScheduleRow | null, preferredAccount: string | undefined) {
 		ctx = null;
 		initial = null;
 		view = 'main';
+		addingAccount = false;
 		try {
 			const context = await loadFormContext(session.api, session.money);
 			if (editing) {
@@ -63,7 +68,15 @@
 	});
 </script>
 
-<ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => (view = 'main')}>
+<ResponsiveDialog
+	bind:open
+	{title}
+	onBack={addingAccount
+		? () => (addingAccount = false)
+		: view === 'main'
+			? undefined
+			: () => (view = 'main')}
+>
 	{#if ctx && initial}
 		{#if ctx.accounts.some((a) => !a.closed)}
 			{#key initial}
@@ -75,9 +88,10 @@
 					onDone={() => (open = false)}
 				/>
 			{/key}
+		{:else if addingAccount}
+			<AddAccountForm onCreated={(id) => void load(schedule, id)} />
 		{:else}
-			<p class="text-muted-foreground">{m.transaction_no_accounts()}</p>
-			<Button variant="outline" onclick={() => (open = false)}>{m.close()}</Button>
+			<NoOpenAccounts hasClosed={ctx.accounts.length > 0} onAdd={() => (addingAccount = true)} />
 		{/if}
 	{:else}
 		<p class="text-muted-foreground" role="status">{m.startup_loading()}</p>

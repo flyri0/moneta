@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ReportBody from './ReportBody.svelte';
 	import { untrack } from 'svelte';
+	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -78,7 +80,7 @@
 		{#if spending.error}
 			<FormMessage error={actionError(spending.error)} />
 		{:else if spending.data && report.rows.length === 0}
-			<p class="text-sm text-muted-foreground">{m.reports_spending_empty()}</p>
+			<EmptyState icon={ChartPieIcon} description={m.reports_spending_empty()} />
 		{:else if report.rows.length > 0}
 			<div class="flex flex-wrap items-end justify-between gap-3">
 				<StatTile

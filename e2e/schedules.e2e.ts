@@ -15,9 +15,9 @@ test('schedules a monthly bill, forecasts it and enters it', async ({ page }) =>
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
 	await expect(page.getByRole('heading', { name: 'Schedules' })).toBeVisible();
-	await expect(page.getByText('No schedules yet.')).toBeVisible();
+	await expect(page.getByText('No schedules yet')).toBeVisible();
 
-	await page.getByRole('button', { name: 'Add schedule' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Payee', 'Landlord', 'Landlord');
 	await dialog.getByLabel('Amount', { exact: true }).fill('400');
@@ -60,7 +60,7 @@ test('edits the repeat rule on its own screen and deletes a schedule', async ({ 
 	await onboard(page);
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
-	await page.getByRole('button', { name: 'Add schedule' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
 	await dialog.getByLabel('Amount', { exact: true }).fill('30');
@@ -86,14 +86,14 @@ test('edits the repeat rule on its own screen and deletes a schedule', async ({ 
 	await expect(dialog.getByRole('heading', { name: 'Delete this schedule?' })).toBeVisible();
 	await dialog.getByRole('button', { name: 'Delete schedule' }).click();
 	await expect(dialog).toBeHidden();
-	await expect(page.getByText('No schedules yet.')).toBeVisible();
+	await expect(page.getByText('No schedules yet')).toBeVisible();
 });
 
 /** Adds an automatic $2,000 paycheck from "Employer" to Checking, next on `date`. */
 async function addAutomaticPaycheck(page: import('@playwright/test').Page, date: string) {
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
-	await page.getByRole('button', { name: 'Add schedule' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Payee', 'Employer', 'Employer');
 	await dialog.getByRole('button', { name: 'Inflow' }).click();
@@ -146,7 +146,7 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	await onboard(page);
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
-	await page.getByRole('button', { name: 'Add schedule' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
 	const dialog = page.getByRole('dialog');
 	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
 	await dialog.getByLabel('Amount', { exact: true }).fill('10');

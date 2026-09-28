@@ -3,12 +3,14 @@
 	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import ChevronsDownUpIcon from '@lucide/svelte/icons/chevrons-down-up';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { Skeleton } from '$ui/skeleton';
 	import Delayed from '$components/Delayed.svelte';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
@@ -215,6 +217,18 @@ spans the row, so the chip joins the actions below it instead. -->
 	{#if view.data && model}
 		{#if editingOrder}
 			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
+		{:else if model.groups.length === 0 && model.hidden.length === 0}
+			<EmptyState
+				framed
+				icon={LayoutGridIcon}
+				title={m.budget_empty_title()}
+				description={m.budget_empty_body()}
+			>
+				<Button size="sm" onclick={() => (addingGroup = true)}>
+					<PlusIcon />
+					{m.budget_add_group()}
+				</Button>
+			</EmptyState>
 		{:else}
 			<BudgetGrid
 				{model}

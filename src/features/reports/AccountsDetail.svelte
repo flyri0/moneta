@@ -3,6 +3,8 @@
 	import { LineChart } from 'layerchart';
 	import { resolve } from '$app/paths';
 	import * as Chart from '$ui/chart';
+	import WalletIcon from '@lucide/svelte/icons/wallet';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
@@ -109,9 +111,7 @@
 	{#if accounts.error || history.error}
 		<FormMessage error={actionError(accounts.error ?? history.error)} />
 	{:else if accounts.data && breakdown.assets.length + breakdown.debts.length === 0}
-		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-			{m.reports_accounts_empty()}
-		</p>
+		<EmptyState framed icon={WalletIcon} description={m.reports_accounts_empty()} />
 	{:else if accounts.data}
 		<div class="grid gap-4 lg:grid-cols-2 lg:items-start">
 			{#each sections as section (section.key)}

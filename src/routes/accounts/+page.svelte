@@ -1,6 +1,8 @@
 <script lang="ts">
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
+	import EmptyState from '$components/EmptyState.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AccountList from '$features/accounts/AccountList.svelte';
@@ -54,9 +56,17 @@
 	{/if}
 
 	{#if accounts.data?.length === 0}
-		<div class="rounded-xl border bg-card p-8 text-center text-card-foreground shadow-xs">
-			<p class="text-sm text-muted-foreground">{m.accounts_empty()}</p>
-		</div>
+		<EmptyState
+			framed
+			icon={WalletIcon}
+			title={m.accounts_empty()}
+			description={m.accounts_empty_body()}
+		>
+			<Button size="sm" onclick={() => (adding = true)}>
+				<PlusIcon />
+				{m.accounts_add()}
+			</Button>
+		</EmptyState>
 	{:else if !accounts.data && !accounts.error}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows rows={4} /></div>
 	{/if}

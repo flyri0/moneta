@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import { Button } from '$ui/button';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
@@ -100,9 +102,10 @@
 				<LoadingRows rows={3} />
 			</div>
 		{:else if backups?.length === 0}
-			<p class="text-sm text-muted-foreground">
-				{m.cloud_restore_empty({ provider: provider.name })}
-			</p>
+			<EmptyState
+				icon={CloudIcon}
+				description={m.cloud_restore_empty({ provider: provider.name })}
+			/>
 		{:else if backups}
 			<ul
 				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground"

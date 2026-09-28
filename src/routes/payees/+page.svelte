@@ -1,9 +1,13 @@
 <script lang="ts">
 	import EraserIcon from '@lucide/svelte/icons/eraser';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import SearchXIcon from '@lucide/svelte/icons/search-x';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
+	import EmptyState from '$components/EmptyState.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import PayeeDialog from '$features/payees/PayeeDialog.svelte';
@@ -70,16 +74,24 @@
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">
 	{#if payees.data?.length === 0}
-		<div class="rounded-xl border bg-card p-8 text-center text-card-foreground shadow-xs">
-			<p class="text-sm text-muted-foreground">{m.payees_empty()}</p>
-		</div>
+		<EmptyState
+			framed
+			icon={UsersIcon}
+			title={m.payees_empty_title()}
+			description={m.payees_empty()}
+		/>
 	{:else if payees.data}
 		{#if shown.length === 0}
-			<div class="rounded-xl border bg-card p-8 text-center text-card-foreground shadow-xs">
-				<p class="text-sm text-muted-foreground">
-					{m.payees_no_results({ query: search.trim() })}
-				</p>
-			</div>
+			<EmptyState
+				framed
+				icon={SearchXIcon}
+				description={m.payees_no_results({ query: search.trim() })}
+			>
+				<Button size="sm" variant="outline" onclick={() => (search = '')}>
+					<XIcon />
+					{m.payees_clear_search()}
+				</Button>
+			</EmptyState>
 		{:else}
 			<PayeeList payees={shown} {categoryNames} onOpen={open} />
 		{/if}

@@ -2,6 +2,8 @@
 	import ReportBody from './ReportBody.svelte';
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
+	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
+	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
@@ -97,9 +99,7 @@
 	{#if rows.error}
 		<FormMessage error={actionError(rows.error)} />
 	{:else if rows.data && trends.categories.length === 0}
-		<p class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-			{m.reports_spending_empty()}
-		</p>
+		<EmptyState framed icon={ChartColumnIcon} description={m.reports_spending_empty()} />
 	{:else if rows.data && last}
 		<ReportSection title={m.reports_category_trends()}>
 			{#snippet actions()}

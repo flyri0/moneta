@@ -31,7 +31,7 @@ test('lists the transactions of every account', async ({ page }) => {
 	await expect(rows.filter({ hasText: 'Rainy day' })).toContainText('$250.00');
 
 	await page.getByRole('searchbox').fill('nothing like this');
-	await expect(page.getByText('No transactions.')).toBeVisible();
+	await expect(page.getByText('Nothing matches this search or these dates.')).toBeVisible();
 	// The account's own name, any case, and amounts match too.
 	await page.getByRole('searchbox').fill('RAINY');
 	await expect(rows).toHaveCount(1);
