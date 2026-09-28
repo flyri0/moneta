@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useSession } from '$client/app-state.svelte';
 	import { segmentClass, type Segment } from '$features/reports/spending';
+	import { numberFormat } from '$domain/intl-cache';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
@@ -24,7 +25,7 @@
 
 	const session = useSession();
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
 	const parts = $derived([
 		...segments.map((s) => ({ ...s, color: s.color as number | null })),

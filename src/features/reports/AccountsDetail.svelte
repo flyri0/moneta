@@ -10,6 +10,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { monthOf, todayIso } from '$domain/month';
+	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth } from '$i18n/formats';
 	import { accountTypeLabel } from '$i18n/labels';
 	import {
@@ -57,7 +58,7 @@
 		}))
 	);
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
 	);
 	const sections = $derived([
 		{

@@ -7,6 +7,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
+	import { numberFormat } from '$domain/intl-cache';
 	import { fillMonths, lastMonths, savingsRate } from '$features/reports/cash-flow';
 	import { SPENDING_TABLES } from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
@@ -24,7 +25,7 @@
 	const net = $derived(current.income - current.spending);
 	const rate = $derived(savingsRate(rows));
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
 	);
 </script>
 

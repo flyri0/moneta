@@ -9,6 +9,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
+	import { numberFormat } from '$domain/intl-cache';
 	import { todayIso } from '$domain/month';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
@@ -68,7 +69,7 @@
 	});
 
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
 </script>
 

@@ -9,6 +9,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
+	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth } from '$i18n/formats';
 	import { axisMonthLabel } from '$features/reports/net-worth';
 	import { type DateRange, reportMonths } from '$features/reports/range';
@@ -84,7 +85,7 @@
 	const shown = $derived(expanded ? table : table.slice(0, ROWS));
 	const colorOf = $derived(new Map(trends.series.map((s) => [s.key, s.color])));
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), {
+		numberFormat(getLocale(), {
 			style: 'percent',
 			maximumFractionDigits: 0,
 			signDisplay: 'exceptZero'

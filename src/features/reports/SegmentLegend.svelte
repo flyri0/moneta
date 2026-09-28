@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useSession } from '$client/app-state.svelte';
 	import { segmentClass, type TopSegments } from '$features/reports/spending';
+	import { numberFormat } from '$domain/intl-cache';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/** The stacked bar's key on a card: each coloured part, then the folded remainder. */
@@ -17,7 +18,7 @@
 
 	const session = useSession();
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
 	);
 </script>
 

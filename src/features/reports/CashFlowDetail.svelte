@@ -9,6 +9,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
+	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
 	import { type DateRange, reportMonths } from '$features/reports/range';
@@ -48,7 +49,7 @@
 	const shown = $derived(expanded ? table : table.slice(0, ROWS));
 
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
 	const signed = (minor: number) =>
 		minor > 0 ? `+${session.format(minor)}` : session.format(minor);

@@ -4,6 +4,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
+	import { numberFormat } from '$domain/intl-cache';
 	import { accountTypeLabel } from '$i18n/labels';
 	import { accountBreakdown } from '$features/reports/accounts-breakdown';
 	import { m } from '$i18n/paraglide/messages';
@@ -31,7 +32,7 @@
 	const max = $derived(Math.max(1, ...all.map((a) => a.amount)));
 	const whole = $derived(breakdown.totalAssets + breakdown.totalDebts);
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 0 })
 	);
 	const ASSET = 'bg-emerald-500 dark:bg-emerald-400';
 	const DEBT = 'bg-red-500 dark:bg-red-400';

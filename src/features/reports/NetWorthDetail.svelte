@@ -10,6 +10,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { monthOf, todayIso } from '$domain/month';
+	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
 	import {
@@ -69,7 +70,7 @@
 
 	const config = { netWorth: { label: m.reports_net_worth(), color: 'var(--chart-1)' } };
 	const percent = $derived(
-		new Intl.NumberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
+		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
 	const signed = (minor: number) =>
 		minor > 0 ? `+${session.format(minor)}` : session.format(minor);
