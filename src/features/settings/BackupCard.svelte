@@ -3,12 +3,12 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import FormMessage from '$components/FormMessage.svelte';
+	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import * as Alert from '$ui/alert';
-	import { Input } from '$ui/input';
-	import { Switch } from '$ui/switch';
 	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
 	import CheckPasswordDialog from './CheckPasswordDialog.svelte';
-	import CloudBackupGroup from './CloudBackupGroup.svelte';
+	import CloudBackupRow from './CloudBackupRow.svelte';
+	import EncryptionSheet from './EncryptionSheet.svelte';
 	import RestoreDialog from './RestoreDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
@@ -25,6 +25,11 @@
 	import { formatDateTime } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 
+	/**
+	 * The backup card of Settings: when the last backup was, back up or restore now, and a row for
+	 * each part used less often (automatic backup, encryption, saved copies, exports), which opens
+	 * it in a sheet showing its state on the row.
+	 */
 	const app = getApp();
 	const session = useSession();
 	/** The demo is never saved: backing it up, restoring into it or exporting it makes no sense. */
@@ -33,12 +38,20 @@
 	let restoring = $state(false);
 	let picked = $state<File | null>(null);
 	let chosen = $state('');
+	let fileInput = $state<HTMLInputElement>();
+	/** Which sheet is open. */
+	let cloudOpen = $state(false);
+	let encryptionOpen = $state(false);
+	let copiesOpen = $state(false);
+	let exportsOpen = $state(false);
+	/** The setup was opened from the automatic backup, which comes back once it is done. */
+	let resumeCloud = false;
 	/** Whether backups are encrypted; null until the worker says. */
 	let encrypted = $state<boolean | null>(null);
 	let settingUp = $state(false);
 	let changing = $state(false);
 	let checking = $state(false);
-	/** Why the saved copies or the encryption setting couldn't be loaded, shown in the section. */
+	/** Why the saved copies or the encryption setting couldn't be loaded, shown in their sheet. */
 	let copiesError = $state<ActionError | null>(null);
 	let encryptionError = $state<ActionError | null>(null);
 
@@ -71,11 +84,16 @@
 		return () => (current = false);
 	});
 
+	function setUpEncryption(change: boolean, fromCloud = false) {
+		changing = change;
+		resumeCloud = fromCloud;
+		settingUp = true;
+	}
+
 	/** Turning it on goes through the setup; turning it off only drops the key. */
 	function toggleEncryption(on: boolean) {
 		if (on) {
-			changing = false;
-			settingUp = true;
+			setUpEncryption(false);
 			return;
 		}
 		const cloud = cloudBackup.provider;
@@ -96,94 +114,95 @@
 		// Backups to the cloud may have stopped for want of encryption.
 		if (cloudBackup.connection && cloudBackup.status.kind === 'failed')
 			void runActionToast(() => cloudBackup.backUpNow(session.api));
+		// Back to connecting, which has to start from a click.
+		if (resumeCloud) cloudOpen = true;
+		resumeCloud = false;
 	}
 
 	/** Restores a saved copy next to the open budget, which is left as it is. */
 	async function restoreCopy(bytes: Uint8Array) {
 		const restored = await restoreAll(session.api, localStorage, bytes, session.file);
+		copiesOpen = false;
 		app.show(session.client, restored.file, restored.meta);
 		toast.success(m.backup_copy_restored());
 		void goto(resolve('/budget/[month]', { month: currentMonth() }));
 	}
 </script>
 
-{#if demo}
-	<Alert.Root data-testid="backup-demo">
-		<Alert.Description>{m.backup_demo()}</Alert.Description>
-	</Alert.Root>
-{/if}
-
-<SettingsGroup title={m.settings_backup()} description={m.backup_hint()}>
+<SettingsGroup title={m.settings_backup()} description={m.backup_hint()} testId="backup-card">
+	{#if demo}
+		<div class="px-4 py-3">
+			<Alert.Root data-testid="backup-demo">
+				<Alert.Description>{m.backup_demo()}</Alert.Description>
+			</Alert.Root>
+		</div>
+	{/if}
 	<p class="px-4 py-3 text-sm text-muted-foreground" data-testid="last-backup">
 		{session.meta.lastBackupAt
 			? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
 			: m.backup_never()}
 	</p>
 	<SettingsRow label={m.backup_now()} disabled={demo} onclick={() => backUpNow(session.api)} />
-	<SettingsRow stacked label={m.backup_restore()} labelFor="restore-file" disabled={demo}>
-		{#snippet control()}
-			<Input
-				id="restore-file"
-				type="file"
-				bind:value={chosen}
-				accept={BACKUP_ACCEPT}
-				disabled={demo}
-				onchange={pick}
-			/>
-		{/snippet}
-	</SettingsRow>
+	<SettingsRow label={m.backup_restore()} disabled={demo} onclick={() => fileInput?.click()} />
+	<CloudBackupRow
+		bind:open={cloudOpen}
+		{encrypted}
+		disabled={demo}
+		onNeedEncryption={() => setUpEncryption(false, true)}
+		onRestore={(file) => {
+			picked = file;
+			restoring = true;
+		}}
+	/>
+	<SettingsRow
+		label={m.backup_encryption()}
+		value={encrypted === null
+			? undefined
+			: encrypted
+				? m.backup_encryption_on()
+				: m.backup_encryption_off()}
+		disabled={demo}
+		onclick={() => (encryptionOpen = true)}
+	/>
+	{#if copies.length > 0 || copiesError}
+		<SettingsRow
+			label={m.backup_copies()}
+			value={copies.length > 0 ? String(copies.length) : undefined}
+			disabled={demo}
+			onclick={() => (copiesOpen = true)}
+		/>
+	{/if}
+	<SettingsRow label={m.backup_exports()} disabled={demo} onclick={() => (exportsOpen = true)} />
 </SettingsGroup>
 
-<CloudBackupGroup
-	{encrypted}
+<!-- The row above opens the picker; the label lets tests and assistive tech reach the input. -->
+<input
+	bind:this={fileInput}
+	type="file"
+	class="hidden"
+	aria-label={m.backup_restore()}
+	bind:value={chosen}
+	accept={BACKUP_ACCEPT}
 	disabled={demo}
-	onNeedEncryption={() => {
-		changing = false;
-		settingUp = true;
-	}}
-	onRestore={(file) => {
-		picked = file;
-		restoring = true;
-	}}
+	onchange={pick}
 />
 
-<SettingsGroup title={m.backup_encryption()}>
-	<SettingsRow
-		label={m.backup_encrypt()}
-		labelFor="encrypt-backups"
-		hint={encrypted ? m.backup_encrypt_on_hint() : m.backup_encrypt_off_hint()}
-		disabled={demo}
-	>
-		{#snippet control()}
-			<Switch
-				id="encrypt-backups"
-				disabled={encrypted === null || demo}
-				bind:checked={() => encrypted === true, toggleEncryption}
-			/>
-		{/snippet}
-	</SettingsRow>
-	{#if encrypted}
-		<SettingsRow
-			label={m.backup_change_password()}
-			disabled={demo}
-			onclick={() => {
-				changing = true;
-				settingUp = true;
-			}}
-		/>
-		<SettingsRow
-			label={m.backup_check_password()}
-			disabled={demo}
-			onclick={() => (checking = true)}
-		/>
-	{/if}
-	{#if encryptionError}
-		<div class="px-4 py-3"><FormMessage error={encryptionError} /></div>
-	{/if}
-</SettingsGroup>
+<EncryptionSheet
+	bind:open={encryptionOpen}
+	{encrypted}
+	error={encryptionError}
+	disabled={demo}
+	onToggle={toggleEncryption}
+	onChange={() => setUpEncryption(true)}
+	onCheck={() => (checking = true)}
+/>
 
-{#if copies.length > 0 || copiesError}
-	<SettingsGroup title={m.backup_copies()} description={m.backup_copies_hint()}>
+<ResponsiveDialog
+	bind:open={copiesOpen}
+	title={m.backup_copies()}
+	description={m.backup_copies_hint()}
+>
+	<SettingsGroup>
 		{#if copies.length > 0}
 			<CopyList api={session.api} {copies} name={session.meta.name} onRestore={restoreCopy} />
 		{/if}
@@ -191,23 +210,26 @@
 			<div class="px-4 py-3"><FormMessage error={copiesError} /></div>
 		{/if}
 	</SettingsGroup>
-{/if}
+</ResponsiveDialog>
 
-<SettingsGroup
+<ResponsiveDialog
+	bind:open={exportsOpen}
 	title={m.backup_exports()}
 	description={encrypted ? m.backup_exports_hint_encrypted() : m.backup_exports_hint()}
 >
-	<SettingsRow
-		label={m.backup_export_csv()}
-		disabled={demo}
-		onclick={() => runActionToast(() => exportTransactionsCsv(session))}
-	/>
-	<SettingsRow
-		label={m.backup_export_json()}
-		disabled={demo}
-		onclick={() => runActionToast(() => exportBudgetJson(session))}
-	/>
-</SettingsGroup>
+	<SettingsGroup>
+		<SettingsRow
+			label={m.backup_export_csv()}
+			disabled={demo}
+			onclick={() => runActionToast(() => exportTransactionsCsv(session))}
+		/>
+		<SettingsRow
+			label={m.backup_export_json()}
+			disabled={demo}
+			onclick={() => runActionToast(() => exportBudgetJson(session))}
+		/>
+	</SettingsGroup>
+</ResponsiveDialog>
 
 <RestoreDialog bind:open={restoring} file={picked} />
 <BackupEncryptionSetup bind:open={settingUp} {changing} ondone={encryptionSet} />

@@ -15,6 +15,7 @@
 		label,
 		labelFor,
 		hint,
+		warn = false,
 		value,
 		control,
 		onclick,
@@ -27,6 +28,8 @@
 		/** Set when `control` holds a single labelled input, so the name labels it. */
 		labelFor?: string;
 		hint?: string;
+		/** Shows the hint as a problem, in red. */
+		warn?: boolean;
 		value?: string;
 		control?: Snippet;
 		onclick?: () => void;
@@ -48,7 +51,9 @@
 		{:else}
 			<span class="text-sm font-medium">{label}</span>
 		{/if}
-		{#if hint}<span class="text-xs text-muted-foreground">{hint}</span>{/if}
+		{#if hint}
+			<span class={cn('text-xs', warn ? 'text-destructive' : 'text-muted-foreground')}>{hint}</span>
+		{/if}
 	</div>
 {/snippet}
 

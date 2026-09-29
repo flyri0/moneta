@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page, type Route } from '@playwright/test';
 import { fakeDrive } from '../src/features/backup/cloud/fake-drive';
-import { nextStep, onboard, openSettings, spend, startApp } from './helpers';
+import { nextStep, onboard, openBackupPart, openSettings, spend, startApp } from './helpers';
 
 const CORS = {
 	'access-control-allow-origin': '*',
@@ -40,15 +40,22 @@ async function routeGoogle(context: BrowserContext, drive = fakeDrive()) {
 	return drive;
 }
 
-async function turnOnEncryption(page: Page): Promise<void> {
-	await page.getByRole('switch', { name: 'Encrypt backups' }).click();
-	const dialog = page.getByRole('dialog');
+/** Goes through the encryption setup, once it is open. */
+async function setUpEncryption(page: Page): Promise<void> {
+	// Its title changes with each step; the sheet that opened it may still be closing.
+	const dialog = page.getByRole('dialog').filter({ hasNotText: 'Automatic backup' }).last();
 	await dialog.getByLabel('Password', { exact: true }).fill('correct horse');
 	await dialog.getByLabel('Confirm password').fill('correct horse');
 	await dialog.getByRole('button', { name: 'Next' }).click();
 	await dialog.getByLabel('I saved my recovery key').click();
 	await dialog.getByRole('button', { name: 'Turn on' }).click();
 	await expect(dialog).toBeHidden();
+}
+
+async function turnOnEncryption(page: Page): Promise<void> {
+	const sheet = await openBackupPart(page, 'Encryption');
+	await sheet.getByRole('switch', { name: 'Encrypt backups' }).click();
+	await setUpEncryption(page);
 }
 
 /** Clicks what opens the sign-in popup, and waits for the popup to answer and close. */
@@ -77,18 +84,24 @@ test('backs up to Google Drive by itself once connected, encrypted', async ({ pa
 	await onboard(page);
 	await openSettings(page);
 
-	// Encryption comes first: connecting without it opens the setup.
-	const connect = page.getByRole('button', { name: /Connect Google Drive/ });
+	const row = page.getByTestId('backup-card').getByRole('button', { name: /^Automatic backup/ });
+	await expect(row).toContainText('Off');
+
+	// Encryption comes first: connecting without it opens the setup, which then comes back here.
+	const sheet = await openBackupPart(page, 'Automatic backup');
+	const connect = sheet.getByRole('button', { name: /Connect Google Drive/ });
 	await expect(connect).toContainText('Turn on backup encryption first.');
 	await connect.click();
-	await expect(page.getByRole('dialog')).toBeVisible();
-	await page.keyboard.press('Escape');
-	await turnOnEncryption(page);
+	await setUpEncryption(page);
+	await expect(sheet).toBeVisible();
 
 	// One sign-in in a popup, then the first backup.
 	await signIn(page, connect);
-	await expect(page.getByText('me@example.com')).toBeVisible();
-	await expect(page.getByTestId('cloud-status')).toContainText('Last backup to Google Drive:');
+	await expect(sheet.getByText('me@example.com')).toBeVisible();
+	await expect(sheet.getByTestId('cloud-status')).toContainText('Last backup to Google Drive:');
+	await page.keyboard.press('Escape');
+	await expect(row).toContainText('Google Drive');
+	await expect(row).toContainText('Last backup to Google Drive:');
 	expect(drive.backups()).toHaveLength(1);
 	const [saved] = [...drive.state.files.values()].filter(
 		(f) => f.appProperties.moneta === 'backup'
@@ -110,9 +123,14 @@ test('backs up to Google Drive by itself once connected, encrypted', async ({ pa
 	drive.state.validToken = 'revoked';
 	drive.state.refresh = { status: 400, error: 'invalid_grant' };
 	await openSettings(page);
-	await page.getByRole('button', { name: 'Back up to Google Drive now' }).click();
-	const alert = page.getByTestId('cloud-error');
+	await openBackupPart(page, 'Automatic backup');
+	await sheet.getByRole('button', { name: 'Back up to Google Drive now' }).click();
+	const alert = sheet.getByTestId('cloud-error');
 	await expect(alert).toContainText('Moneta lost access to your cloud storage.');
+	// The card says so too, without opening anything.
+	await page.keyboard.press('Escape');
+	await expect(row).toContainText('Moneta lost access to your cloud storage.');
+	await openBackupPart(page, 'Automatic backup');
 	drive.state.refresh = { status: 200, error: '' };
 	drive.state.validToken = 'access-9';
 	await signIn(page, alert.getByRole('button', { name: 'Connect again' }));
@@ -128,8 +146,9 @@ test('restores a backup from Google Drive on a new device', async ({ browser }) 
 	await onboard(page, 'Trip');
 	await openSettings(page);
 	await turnOnEncryption(page);
-	await signIn(page, page.getByRole('button', { name: /Connect Google Drive/ }));
-	await expect(page.getByTestId('cloud-status')).toContainText('Last backup to Google Drive:');
+	const sheet = await openBackupPart(page, 'Automatic backup');
+	await signIn(page, sheet.getByRole('button', { name: /Connect Google Drive/ }));
+	await expect(sheet.getByTestId('cloud-status')).toContainText('Last backup to Google Drive:');
 	await first.close();
 
 	// Another browser: restore it during onboarding, with the password.

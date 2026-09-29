@@ -78,11 +78,17 @@ test('turns backups and exports off in Settings', async ({ page }) => {
 	await tryDemo(page);
 	await openSettings(page);
 
-	await expect(page.getByTestId('backup-demo')).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Back up now' })).toBeDisabled();
+	const card = page.getByTestId('backup-card');
+	await expect(card.getByTestId('backup-demo')).toBeVisible();
+	// Nothing on the backup card runs or opens.
+	const rows = card.getByRole('button');
+	await expect(rows).toHaveText([
+		/^Back up now/,
+		/^Restore from a backup/,
+		/^Automatic backup/,
+		/^Encryption/,
+		/^Exports/
+	]);
+	for (const row of await rows.all()) await expect(row).toBeDisabled();
 	await expect(page.getByLabel('Restore from a backup')).toBeDisabled();
-	await expect(page.getByRole('button', { name: /Connect Google Drive/ })).toBeDisabled();
-	await expect(page.getByRole('switch', { name: 'Encrypt backups' })).toBeDisabled();
-	await expect(page.getByRole('button', { name: 'Transactions (CSV)' })).toBeDisabled();
-	await expect(page.getByRole('button', { name: 'Whole budget (JSON)' })).toBeDisabled();
 });

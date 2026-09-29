@@ -159,6 +159,17 @@ export async function openSettings(page: Page): Promise<void> {
 	await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 }
 
+/** Opens one part of the settings' backup card (`Encryption`, `Exports`…): its row opens a sheet. */
+export async function openBackupPart(page: Page, name: string): Promise<Locator> {
+	await page
+		.getByTestId('backup-card')
+		.getByRole('button', { name: new RegExp(`^${name}`) })
+		.click();
+	const sheet = page.getByRole('dialog', { name });
+	await expect(sheet).toBeVisible();
+	return sheet;
+}
+
 /** Deletes a budget through its confirmation: type the name, tap, wait, tap again. */
 export async function deleteBudget(page: Page, name: string): Promise<void> {
 	await page.getByRole('button', { name: `Delete ${name}` }).click();

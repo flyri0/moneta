@@ -5,11 +5,12 @@
 	let {
 		title,
 		description,
+		testId,
 		children
-	}: { title?: string; description?: string; children: Snippet } = $props();
+	}: { title?: string; description?: string; testId?: string; children: Snippet } = $props();
 </script>
 
-<section class="grid gap-1.5">
+<section class="grid gap-1.5" data-testid={testId}>
 	{#if title}
 		<h2 class="px-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</h2>
 	{/if}

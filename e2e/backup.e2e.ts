@@ -7,6 +7,7 @@ import {
 	fillNewBudget,
 	nextStep,
 	onboard,
+	openBackupPart,
 	openSettings,
 	startApp
 } from './helpers';
@@ -82,7 +83,9 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	await expect(page.getByTestId('rta-amount')).toHaveText('$250.00');
 	await openSettings(page);
 	await expect(files.getByRole('listitem')).toHaveText([/Work/, /Home/]);
-	await expect(page.getByTestId('budget-copies').getByRole('listitem')).toHaveCount(1);
+	const copies = await openBackupPart(page, 'Saved copies');
+	await expect(copies.getByTestId('budget-copies').getByRole('listitem')).toHaveCount(1);
+	await page.keyboard.press('Escape');
 
 	// A backup from before .moneta is a single .sqlite file, always added as a new budget.
 	const legacy = testInfo.outputPath('home.sqlite');
@@ -109,8 +112,9 @@ test('shows the password on request, and the strength bar before anything is typ
 }) => {
 	await onboard(page);
 	await openSettings(page);
-	await page.getByRole('switch', { name: 'Encrypt backups' }).click();
-	const dialog = page.getByRole('dialog');
+	const sheet = await openBackupPart(page, 'Encryption');
+	await sheet.getByRole('switch', { name: 'Encrypt backups' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Encrypt backups' });
 	const strength = dialog.getByTestId('password-strength');
 	await expect(strength).toBeVisible();
 	await expect(strength).toHaveText('');
@@ -133,7 +137,9 @@ test('encrypts backups once set up, and restores them with the password or the r
 }, testInfo) => {
 	await onboard(page);
 	await openSettings(page);
-	const encrypt = page.getByRole('switch', { name: 'Encrypt backups' });
+	const card = page.getByTestId('backup-card');
+	const sheet = await openBackupPart(page, 'Encryption');
+	const encrypt = sheet.getByRole('switch', { name: 'Encrypt backups' });
 	await expect(encrypt).not.toBeChecked();
 
 	// Setup: a password typed twice, then a recovery key that must be saved first.
@@ -157,22 +163,28 @@ test('encrypts backups once set up, and restores them with the password or the r
 	await dialog.getByLabel('I saved my recovery key').click();
 	await dialog.getByRole('button', { name: 'Turn on' }).click();
 	await expect(dialog).toBeHidden();
-	await expect(encrypt).toBeChecked();
-	// Exports aren't backups: they stay plain, and the page says so.
-	await expect(page.getByText(/exports? (are|is) not encrypted/i)).toBeVisible();
+	await expect(card.getByRole('button', { name: /^Encryption/ })).toContainText('On');
+	// Exports aren't backups: they stay plain, and their sheet says so.
+	const exports = await openBackupPart(page, 'Exports');
+	await expect(exports.getByText(/exports? (are|is) not encrypted/i)).toBeVisible();
+	await page.keyboard.press('Escape');
 
 	// The key stays on this device.
 	await page.reload();
 	await openSettings(page);
+	await openBackupPart(page, 'Encryption');
 	await expect(encrypt).toBeChecked();
 
-	await page.getByRole('button', { name: 'Check password' }).click();
-	await dialog.getByLabel('Password').fill('wrong horse');
-	await dialog.getByRole('button', { name: 'Check' }).click();
-	await expect(dialog.getByRole('status')).toHaveText("That's not the password your backups use.");
-	await dialog.getByLabel('Password').fill('correct horse');
-	await dialog.getByRole('button', { name: 'Check' }).click();
-	await expect(dialog.getByRole('status')).toHaveText("That's the right password.");
+	// Checking the password takes the sheet's place.
+	await sheet.getByRole('button', { name: 'Check password' }).click();
+	const check = page.getByRole('dialog', { name: 'Check password' });
+	await expect(sheet).toBeHidden();
+	await check.getByLabel('Password').fill('wrong horse');
+	await check.getByRole('button', { name: 'Check', exact: true }).click();
+	await expect(check.getByRole('status')).toHaveText("That's not the password your backups use.");
+	await check.getByLabel('Password').fill('correct horse');
+	await check.getByRole('button', { name: 'Check', exact: true }).click();
+	await expect(check.getByRole('status')).toHaveText("That's the right password.");
 	await page.keyboard.press('Escape');
 
 	// Backing up doesn't ask, and the file shows nothing but the encryption settings.
@@ -217,8 +229,10 @@ test('encrypts backups once set up, and restores them with the password or the r
 	await clean.close();
 
 	// Turned off, backups are plain again.
+	await openBackupPart(page, 'Encryption');
 	await encrypt.click();
 	await expect(encrypt).not.toBeChecked();
+	await page.keyboard.press('Escape');
 	const plain = testInfo.outputPath('plain.moneta');
 	await download(page, 'Back up now', plain);
 	expect(JSON.parse(strFromU8(unzipSync(await readFile(plain))['moneta.json']))).toMatchObject({
@@ -230,6 +244,16 @@ test('encrypts backups once set up, and restores them with the password or the r
 test('exports transactions as CSV and the budget as JSON', async ({ page }, testInfo) => {
 	await onboard(page);
 	await openSettings(page);
+	// The backup card holds what is used often; the rest is a row away, in its own sheet.
+	await expect(page.getByTestId('backup-card').getByRole('button')).toHaveText([
+		/^Back up now/,
+		/^Restore from a backup/,
+		/^Automatic backup/,
+		/^Encryption\s*Off/,
+		/^Exports/
+	]);
+	await expect(page.getByRole('button', { name: 'Transactions (CSV)' })).toHaveCount(0);
+	await openBackupPart(page, 'Exports');
 	const csv = testInfo.outputPath('home.csv');
 	await download(page, 'Transactions (CSV)', csv);
 	expect(await readFile(csv, 'utf8')).toContain(',Checking,,,Starting Balance,,1000.00,cleared');
