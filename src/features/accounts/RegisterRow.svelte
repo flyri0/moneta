@@ -15,9 +15,9 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/**
-	 * `showAccount` adds the row's account, for lists that span every account. While `selecting`,
-	 * a checkbox leads the row and tapping anywhere on it chooses it instead of opening it; holding
-	 * a finger on it calls `onLongPress`. `highlighted` marks a row an action just changed.
+	 * `showAccount` adds the row's account, for lists that span every account. Tapping anywhere on
+	 * the row opens it (`onEdit`). While `selecting`, a checkbox leads the row and a tap chooses it
+	 * instead; holding a finger on it calls `onLongPress`. `highlighted` marks a row an action just changed.
 	 */
 	let {
 		row,
@@ -48,20 +48,26 @@
 		await runActionToast(() => session.api.transactions.setCleared(row.id, !row.cleared));
 	}
 
-	/** While selecting, a tap anywhere but on the row's own controls and links chooses it. */
+	/**
+	 * A tap anywhere but on the row's own controls and links: it chooses the row while selecting and
+	 * opens it otherwise. The payee's button stays the way in from the keyboard.
+	 */
 	function choose(event: MouseEvent) {
-		if (!selecting || (event.target as Element).closest('a, button')) return;
-		onSelect?.(row);
+		if ((event.target as Element).closest('a, button')) return;
+		if (selecting) onSelect?.(row);
+		// Not when the tap ends a drag that selected some text, e.g. to copy the memo.
+		else if (onEdit && !getSelection()?.toString()) onEdit(row);
 	}
 </script>
 
-<!-- The checkbox is the keyboard's way to choose a row; tapping the rest of it is a shortcut. -->
+<!-- The checkbox is the keyboard's way to choose a row, and the payee's button to open it; tapping
+the rest of the row is a shortcut. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div
 	class={[
 		'flex items-center gap-3 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40',
 		selected && 'bg-primary/5',
-		selecting && 'cursor-pointer',
+		(selecting || onEdit) && 'cursor-pointer',
 		highlighted && 'motion-safe:animate-row-flash',
 		onLongPress && '[-webkit-touch-callout:none] pointer-coarse:select-none'
 	]}
@@ -190,7 +196,7 @@
 				type="button"
 				disabled={selecting}
 				class:pointer-events-none={selecting}
-				class="flex size-7 items-center justify-center rounded-full border transition-colors {row.cleared
+				class="relative flex size-7 items-center justify-center rounded-full border transition-colors after:absolute after:-inset-1.5 {row.cleared
 					? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
 					: 'border-muted-foreground/30 text-transparent hover:border-muted-foreground/60'}"
 				aria-pressed={row.cleared}

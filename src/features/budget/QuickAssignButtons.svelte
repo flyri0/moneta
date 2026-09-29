@@ -47,7 +47,12 @@
 	<h3 class="text-sm font-medium">{m.quick_assign_title()}</h3>
 	<div class="grid grid-cols-2 gap-2">
 		{#each STRATEGIES.filter((s) => hasGoals || s.strategy !== 'goals') as { strategy, label } (strategy)}
-			<Button variant="outline" size="sm" onclick={() => apply(strategy, label())}>{label()}</Button
+			<!-- Half a phone's width is short for some labels ("Média gasta (12 meses)"): they wrap. -->
+			<Button
+				variant="outline"
+				size="sm"
+				class="h-auto min-h-8 py-1.5 whitespace-normal"
+				onclick={() => apply(strategy, label())}>{label()}</Button
 			>
 		{/each}
 	</div>

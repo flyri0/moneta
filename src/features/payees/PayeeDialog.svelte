@@ -6,10 +6,12 @@
 	import { Label } from '$ui/label';
 	import { Separator } from '$ui/separator';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { inUse, mergeTargets, nameConflict } from '$features/payees/payees';
 	import RuleForm from '$features/payees/RuleForm.svelte';
 	import { ruleDraft, ruleSummary } from '$features/payees/rules';
@@ -231,23 +233,27 @@
 					</Button>
 				</div>
 				{#if rules.length > 0}
-					<ul class="divide-y rounded-lg border">
+					<ul class="divide-y overflow-hidden rounded-lg border">
 						{#each rules as rule (rule.id)}
-							<li class="flex items-center justify-between gap-2 px-3 py-2">
-								<div class="grid min-w-0 gap-0.5">
-									<span class="truncate text-sm" data-testid="payee-rule">{ruleSummary(rule)}</span>
-									{#if ruleCategory(rule)}
-										<span class="truncate text-xs text-muted-foreground">{ruleCategory(rule)}</span>
-									{/if}
-								</div>
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									aria-label={m.payee_rule_edit()}
+							<li>
+								<button
+									type="button"
+									class="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
 									onclick={() => confirm({ kind: 'rule', rule })}
 								>
-									<PencilIcon />
-								</Button>
+									<span class="grid min-w-0 gap-0.5">
+										<span class="truncate text-sm" data-testid="payee-rule"
+											>{ruleSummary(rule)}</span
+										>
+										{#if ruleCategory(rule)}
+											<span class="truncate text-xs text-muted-foreground"
+												>{ruleCategory(rule)}</span
+											>
+										{/if}
+									</span>
+									<PencilIcon class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+									<span class="sr-only">{m.payee_rule_edit()}</span>
+								</button>
 							</li>
 						{/each}
 					</ul>
@@ -279,9 +285,14 @@
 
 			{#if !inUse(current)}
 				<div class="grid gap-1">
-					<Button variant="destructive" onclick={() => confirm({ kind: 'delete' })}>
-						{m.payee_delete()}
-					</Button>
+					<div class="-mx-2 grid">
+						<SheetLink
+							icon={Trash2Icon}
+							label={m.payee_delete()}
+							destructive
+							onclick={() => confirm({ kind: 'delete' })}
+						/>
+					</div>
 					<p class="text-xs text-muted-foreground">{m.payee_delete_hint()}</p>
 				</div>
 			{:else}

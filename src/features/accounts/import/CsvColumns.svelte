@@ -14,12 +14,14 @@
 		table,
 		format = $bindable(),
 		digits,
-		onContinue
+		onContinue,
+		onCancel
 	}: {
 		table: string[][];
 		format: CsvFormat;
 		digits: number;
 		onContinue: () => void;
+		onCancel: () => void;
 	} = $props();
 
 	const session = useSession();
@@ -226,7 +228,14 @@
 		{/if}
 	</div>
 
-	<Button disabled={result.lines.length === 0} onclick={onContinue}>
-		{m.import_review({ count: result.lines.length })}
-	</Button>
+	<div class="grid grid-cols-2 gap-2">
+		<Button variant="outline" onclick={onCancel}>{m.cancel()}</Button>
+		<Button
+			class="h-auto min-h-9 py-1.5 whitespace-normal"
+			disabled={result.lines.length === 0}
+			onclick={onContinue}
+		>
+			{m.import_review({ count: result.lines.length })}
+		</Button>
+	</div>
 </div>

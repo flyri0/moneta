@@ -5,6 +5,7 @@ import { createAccount } from './accounts';
 import { createRule, listRules } from './payee-rules';
 import { createTransaction, getTransaction } from './transactions';
 import {
+	createPayee,
 	deletePayee,
 	deleteUnusedPayees,
 	getOrCreatePayee,
@@ -92,6 +93,30 @@ describe('listPayees on a long history', () => {
 		const elapsed = performance.now() - start;
 		expect(payees.find((p) => p.name === 'Payee 7')?.lastCategoryId).toBe(food);
 		expect(elapsed).toBeLessThan(500);
+	});
+});
+
+describe('createPayee', () => {
+	it('creates a payee with a trimmed name and no transactions', () => {
+		const id = createPayee(db, { name: '  Bakery ' });
+		expect(payee('Bakery')).toEqual(
+			expect.objectContaining({ id, transactions: 0, defaultCategoryId: null })
+		);
+	});
+
+	it('stores the default category', () => {
+		createPayee(db, { name: 'Bakery', defaultCategoryId: food });
+		expect(payee('Bakery').defaultCategoryId).toBe(food);
+	});
+
+	it('refuses a blank name, a taken one or an unknown category', () => {
+		spend('Amazon');
+		expect(() => createPayee(db, { name: '  ' })).toThrow(code('INVALID_INPUT'));
+		expect(() => createPayee(db, { name: 'AMAZON' })).toThrow(code('PAYEE_EXISTS'));
+		expect(() => createPayee(db, { name: 'Bakery', defaultCategoryId: 'missing' })).toThrow(
+			code('NOT_FOUND')
+		);
+		expect(listPayees(db).map((p) => p.name)).toEqual(['Amazon']);
 	});
 });
 

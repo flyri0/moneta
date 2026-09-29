@@ -46,6 +46,27 @@ export function getOrCreatePayee(db: Db, name: string | null | undefined): strin
 	return id;
 }
 
+/** Creates a payee no transaction uses yet, optionally with a default category. Returns its id. */
+export function createPayee(
+	db: Db,
+	input: { name: string; defaultCategoryId?: string | null }
+): string {
+	const name = input.name.trim();
+	if (!name) throw new DomainError('INVALID_INPUT', 'Payee name is required');
+	if (one(db, 'SELECT 1 AS x FROM payees WHERE name = ?', [name]))
+		throw new DomainError('PAYEE_EXISTS');
+	const categoryId = input.defaultCategoryId || null;
+	if (categoryId && !one(db, 'SELECT 1 AS x FROM categories WHERE id = ?', [categoryId]))
+		throw new DomainError('NOT_FOUND', `Category ${categoryId} not found`);
+	const id = uuidv7();
+	run(db, 'INSERT INTO payees (id, name, default_category_id) VALUES (?, ?, ?)', [
+		id,
+		name,
+		categoryId
+	]);
+	return id;
+}
+
 interface PayeeRow {
 	id: string;
 	name: string;

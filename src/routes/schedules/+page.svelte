@@ -33,9 +33,9 @@
 
 <PageHeader title={m.nav_schedules()}>
 	{#snippet actions()}
-		<Button size="sm" aria-label={m.schedules_add()} onclick={() => open(null)}>
+		<Button size="sm" onclick={() => open(null)}>
 			<PlusIcon />
-			<span class="hidden md:inline">{m.schedules_add()}</span>
+			{m.schedules_add()}
 		</Button>
 	{/snippet}
 </PageHeader>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -63,13 +64,15 @@
 								{m.settings_budget_open()}
 							</Button>
 						{/if}
+						<!-- Quiet, and only an icon, so the name keeps the row: the red confirm comes next. -->
 						<Button
-							variant="destructive"
-							size="sm"
+							variant="outline"
+							size="icon-sm"
+							class="text-destructive hover:text-destructive"
 							aria-label={m.settings_budget_delete_named({ name })}
 							onclick={() => askToDelete(budget.file, name)}
 						>
-							{m.delete()}
+							<Trash2Icon />
 						</Button>
 					{/snippet}
 				</SettingsRow>

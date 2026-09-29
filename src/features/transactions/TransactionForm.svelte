@@ -4,8 +4,10 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
@@ -195,15 +197,21 @@
 			</Alert.Root>
 		{/if}
 
+		{#if editingId}
+			<div class="-mx-2 grid">
+				<SheetLink
+					icon={Trash2Icon}
+					label={m.transaction_delete()}
+					destructive
+					onclick={() => confirm(true)}
+				/>
+			</div>
+		{/if}
+
 		<FormMessage {error} />
 
-		<div class="flex flex-wrap justify-end gap-2">
-			{#if editingId}
-				<Button variant="destructive" class="mr-auto" onclick={() => confirm(true)}>
-					{m.delete()}
-				</Button>
-			{/if}
-			<Button variant="ghost" onclick={() => onDone(null)}>{m.cancel()}</Button>
+		<div class="grid grid-cols-2 gap-2">
+			<Button variant="outline" onclick={() => onDone(null)}>{m.cancel()}</Button>
 			<Button type="submit" disabled={busy || blocked}>
 				{askingFar ? m.save_anyway() : m.save()}
 			</Button>

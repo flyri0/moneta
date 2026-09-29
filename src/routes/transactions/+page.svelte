@@ -12,7 +12,7 @@
 </script>
 
 <PageHeader title={m.nav_transactions()}>
-	{#snippet actions()}<SelectButton {selection} />{/snippet}
+	{#snippet actions()}<SelectButton {selection} labelled />{/snippet}
 	{#snippet toolbar()}<RegisterToolbar {filters} />{/snippet}
 </PageHeader>
 

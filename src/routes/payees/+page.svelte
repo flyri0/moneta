@@ -1,5 +1,6 @@
 <script lang="ts">
 	import EraserIcon from '@lucide/svelte/icons/eraser';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
 	import UsersIcon from '@lucide/svelte/icons/users';
@@ -10,6 +11,7 @@
 	import EmptyState from '$components/EmptyState.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
+	import AddPayeeDialog from '$features/payees/AddPayeeDialog.svelte';
 	import PayeeDialog from '$features/payees/PayeeDialog.svelte';
 	import PayeeList from '$features/payees/PayeeList.svelte';
 	import { filterPayees, unusedCount } from '$features/payees/payees';
@@ -30,6 +32,9 @@
 	let search = $state('');
 	let dialogOpen = $state(false);
 	let selected = $state<Payee | null>(null);
+	let adding = $state(false);
+	/** A payee just created, whose dialog opens once the live list has it. */
+	let created = $state<string | null>(null);
 	let removing = $state(false);
 
 	const all = $derived(payees.data ?? []);
@@ -43,16 +48,21 @@
 		selected = payee;
 		dialogOpen = true;
 	}
+
+	$effect(() => {
+		const payee = created && all.find((p) => p.id === created);
+		if (!payee) return;
+		created = null;
+		open(payee);
+	});
 </script>
 
 <PageHeader title={m.nav_payees()}>
 	{#snippet actions()}
-		{#if unused > 0}
-			<Button variant="outline" size="sm" onclick={() => (removing = true)}>
-				<EraserIcon />
-				{m.payees_remove_unused({ count: unused })}
-			</Button>
-		{/if}
+		<Button size="sm" onclick={() => (adding = true)}>
+			<PlusIcon />
+			{m.payees_add()}
+		</Button>
 	{/snippet}
 	{#snippet toolbar()}
 		{#if payees.data && payees.data.length > 0}
@@ -79,7 +89,12 @@
 			icon={UsersIcon}
 			title={m.payees_empty_title()}
 			description={m.payees_empty()}
-		/>
+		>
+			<Button size="sm" onclick={() => (adding = true)}>
+				<PlusIcon />
+				{m.payees_add()}
+			</Button>
+		</EmptyState>
 	{:else if payees.data}
 		{#if shown.length === 0}
 			<EmptyState
@@ -95,11 +110,28 @@
 		{:else}
 			<PayeeList payees={shown} {categoryNames} onOpen={open} />
 		{/if}
+		{#if unused > 0 && !search.trim()}
+			<div class="flex items-center justify-between gap-3 px-1">
+				<span class="text-sm text-muted-foreground">
+					{m.payees_unused_count({ count: unused })}
+				</span>
+				<Button variant="outline" size="sm" onclick={() => (removing = true)}>
+					<EraserIcon />
+					{m.payees_remove_unused()}
+				</Button>
+			</div>
+		{/if}
 	{:else if !payees.error}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows /></div>
 	{/if}
 </div>
 
+<AddPayeeDialog
+	bind:open={adding}
+	payees={all}
+	tree={tree.data ?? []}
+	onCreated={(id) => (created = id)}
+/>
 {#if selected}
 	<PayeeDialog bind:open={dialogOpen} payee={selected} payees={all} tree={tree.data ?? []} />
 {/if}

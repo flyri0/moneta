@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { MediaQuery } from 'svelte/reactivity';
 	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import ChevronsDownUpIcon from '@lucide/svelte/icons/chevrons-down-up';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
@@ -43,6 +44,8 @@
 
 	let { data }: PageProps = $props();
 	const session = useSession();
+	// On phones the month goes below the title and actions, which then line up with other pages'.
+	const desktop = new MediaQuery('min-width: 768px');
 	const view = useLive(session.client, BUDGET_TABLES, () => session.api.budget.month(data.month));
 	const model = $derived(view.data ? gridModel(view.data) : null);
 	const overspent = $derived(model ? overspentCategories(model) : []);
@@ -101,7 +104,7 @@
 </script>
 
 <!-- Beside the month on desktop, where its fixed width keeps the arrows still. On phones the month
-spans the row, so the chip joins the actions below it instead. -->
+spans a row of its own, so the chip joins the actions instead. -->
 {#snippet rtaChip(display: string)}
 	{#if showRtaChip && view.data}
 		<button
@@ -119,12 +122,16 @@ spans the row, so the chip joins the actions below it instead. -->
 	{/if}
 {/snippet}
 
-<PageHeader>
-	{#snippet title()}
-		<div class="flex min-w-0 items-center gap-2">
-			<div class="min-w-0 flex-1 md:flex-none"><MonthPicker month={data.month} /></div>
-			{@render rtaChip('hidden md:inline-flex')}
-		</div>
+{#snippet monthTitle()}
+	<div class="flex min-w-0 items-center gap-2">
+		<MonthPicker month={data.month} />
+		{@render rtaChip('hidden md:inline-flex')}
+	</div>
+{/snippet}
+
+<PageHeader title={desktop.current ? monthTitle : m.nav_budget()}>
+	{#snippet toolbar()}
+		{#if !desktop.current}<MonthPicker month={data.month} heading="h2" />{/if}
 	{/snippet}
 	{#snippet actions()}
 		{@render rtaChip('inline-flex md:hidden')}

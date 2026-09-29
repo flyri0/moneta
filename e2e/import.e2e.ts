@@ -124,6 +124,23 @@ test('maps a CSV once and remembers the columns', async ({ page }) => {
 	await expect(page.getByText('Already imported')).toHaveCount(2);
 });
 
+test('leaves the CSV columns step without importing', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await openChecking(page);
+	const account = page.url();
+	const { y, m, d } = today();
+	await importFile(page, {
+		name: 'extrato.csv',
+		mimeType: 'text/csv',
+		buffer: Buffer.from(`Data;Histórico;Valor\n${d}/${m}/${y};Café;-5,00\n`, 'latin1')
+	});
+	await expect(page.getByTestId('csv-preview')).toBeVisible();
+	await page.getByRole('button', { name: 'Cancel' }).click();
+	await expect(page).toHaveURL(account);
+	await expect(page.getByTestId('register-row')).toHaveCount(1);
+});
+
 test('opens a line to show its whole description and edit its payee', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Accounts' }).first().click();

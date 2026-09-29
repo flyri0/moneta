@@ -3,7 +3,9 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import { Separator } from '$ui/separator';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
@@ -110,9 +112,14 @@
 				</div>
 			{/if}
 			<div class="grid gap-1">
-				<Button variant="destructive" onclick={() => confirm(true)}>
-					{m.account_delete()}
-				</Button>
+				<div class="-mx-2 grid">
+					<SheetLink
+						icon={Trash2Icon}
+						label={m.account_delete()}
+						destructive
+						onclick={() => confirm(true)}
+					/>
+				</div>
 				<p class="text-xs text-muted-foreground">{m.account_delete_hint()}</p>
 			</div>
 			<FormMessage {error} />

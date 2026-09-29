@@ -30,9 +30,9 @@
 
 <PageHeader title={m.nav_accounts()}>
 	{#snippet actions()}
-		<Button size="sm" aria-label={m.accounts_add()} onclick={() => (adding = true)}>
+		<Button size="sm" onclick={() => (adding = true)}>
 			<PlusIcon />
-			<span class="hidden md:inline">{m.accounts_add()}</span>
+			{m.accounts_add()}
 		</Button>
 	{/snippet}
 </PageHeader>

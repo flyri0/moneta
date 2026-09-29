@@ -42,14 +42,9 @@
 <PageHeader title={m.nav_reports()}>
 	{#snippet actions()}
 		{#if !editing}
-			<Button
-				variant="outline"
-				size="sm"
-				aria-label={m.reports_customize()}
-				onclick={() => (editing = true)}
-			>
+			<Button variant="outline" size="sm" onclick={() => (editing = true)}>
 				<SlidersHorizontalIcon />
-				<span class="hidden md:inline">{m.reports_customize()}</span>
+				{m.reports_customize()}
 			</Button>
 		{/if}
 	{/snippet}

@@ -89,7 +89,12 @@
 					<Badge variant="outline" data-testid="import-rule">{m.import_rule_badge()}</Badge>
 				{/if}
 			{:else if status === 'match' && row.preview.match}
-				<Badge variant="outline" data-testid="import-match">
+				<!-- The matched payee is what tells a right match from a wrong one, so it wraps. -->
+				<Badge
+					variant="outline"
+					class="h-auto max-w-full shrink whitespace-normal"
+					data-testid="import-match"
+				>
 					{m.import_status_match({
 						payee: row.preview.match.payeeName ?? m.register_no_payee(),
 						date: formatDate(row.preview.match.date, getLocale())

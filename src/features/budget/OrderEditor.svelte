@@ -113,12 +113,10 @@
 {/snippet}
 
 <div class="grid gap-3 p-3">
-	<div class="flex items-center justify-between gap-2">
-		<p class="text-sm text-muted-foreground">{m.order_hint()}</p>
-		<div class="flex gap-2">
-			<Button variant="ghost" onclick={onDone}>{m.cancel()}</Button>
-			<Button onclick={save}>{m.save()}</Button>
-		</div>
+	<p class="text-sm text-muted-foreground">{m.order_hint()}</p>
+	<div class="flex justify-end gap-2">
+		<Button variant="ghost" onclick={onDone}>{m.cancel()}</Button>
+		<Button onclick={save}>{m.save()}</Button>
 	</div>
 	<FormMessage {error} />
 	{#each layout as group, gi (group.id)}

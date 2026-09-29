@@ -16,6 +16,7 @@
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
 	import { type DateRange, monthsCovered } from '$features/reports/range';
+	import { revealBelowTable } from '$features/reports/reveal';
 	import {
 		amountInCategory,
 		byGroup,
@@ -191,11 +192,16 @@
 				</table>
 
 				{#if category}
+					<!-- Comes into view each time another row opens it. -->
 					<section
 						class="grid gap-2"
 						aria-label={m.reports_category_transactions({ category: category.name })}
+						{@attach (node) => {
+							void selected;
+							revealBelowTable(node);
+						}}
 					>
-						<h3 class="text-sm font-medium">
+						<h3 class="text-sm font-medium outline-none" tabindex="-1">
 							{m.reports_category_transactions({ category: category.name })}
 						</h3>
 						<ul class="grid text-sm">

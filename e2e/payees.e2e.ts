@@ -72,7 +72,8 @@ test('renames, merges, sets defaults for and removes payees', async ({ page }) =
 
 	// Unused payees go in one step.
 	await sidebar.getByRole('link', { name: 'Payees' }).click();
-	await page.getByRole('button', { name: 'Remove unused (1)' }).click();
+	await expect(page.getByText('Unused payees: 1')).toBeVisible();
+	await page.getByRole('button', { name: 'Remove unused' }).click();
 	await dialog.getByRole('button', { name: 'Remove', exact: true }).click();
 	await expect(dialog).toBeHidden();
 	await expect(rows.filter({ hasText: 'Typo shop' })).toHaveCount(0);
@@ -82,6 +83,32 @@ test('renames, merges, sets defaults for and removes payees', async ({ page }) =
 	await expect(rows).toHaveCount(1);
 	await page.getByRole('searchbox').fill('nothing like this');
 	await expect(page.getByText('No payees match “nothing like this”.')).toBeVisible();
+});
+
+test('creates a payee with a default category, then opens it', async ({ page }) => {
+	await onboard(page);
+	await page.goto('/payees');
+	await expect(page.getByText('No payees yet')).toBeVisible();
+
+	// The empty screen offers the same button as the header.
+	await page.getByTestId('empty-state').getByRole('button', { name: 'New payee' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Payee name').fill('  Bakery ');
+	await chooseCombobox(dialog, 'Default category', 'Groceries', 'Groceries');
+	await dialog.getByRole('button', { name: 'New payee' }).click();
+
+	// Its own dialog opens next, for its rules.
+	await expect(dialog.getByRole('heading', { name: 'Bakery' })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 10000 });
+	const rows = page.getByTestId('payee-row');
+	await expect(rows.filter({ hasText: 'Bakery' })).toContainText('Default: Groceries');
+
+	// A name that's taken can't be created again.
+	await page.getByRole('button', { name: 'New payee' }).click();
+	await dialog.getByLabel('Payee name').fill('bakery');
+	await expect(dialog.getByText('A payee with this name already exists.')).toBeVisible();
+	await expect(dialog.getByRole('button', { name: 'New payee' })).toBeDisabled();
 });
 
 test.describe('on a phone', () => {

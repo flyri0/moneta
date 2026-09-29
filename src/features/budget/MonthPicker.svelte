@@ -11,7 +11,15 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import MonthYearPicker from './MonthYearPicker.svelte';
 
-	let { month }: { month: Month } = $props();
+	/** Previous and next month around the month's name, which opens a month and year picker. */
+	let {
+		month,
+		heading = 'h1'
+	}: {
+		month: Month;
+		/** The name's element: the page's title, or `h2` below a title of its own. */
+		heading?: 'h1' | 'h2';
+	} = $props();
 	let open = $state(false);
 </script>
 
@@ -24,7 +32,8 @@
 	>
 		<ChevronLeftIcon />
 	</Button>
-	<h1
+	<svelte:element
+		this={heading}
 		class="min-w-0 flex-1 truncate text-center text-lg font-semibold capitalize md:w-56 md:flex-none"
 		data-testid="month-label"
 	>
@@ -51,7 +60,7 @@
 				/>
 			</Popover.Content>
 		</Popover.Root>
-	</h1>
+	</svelte:element>
 	<Button
 		variant="ghost"
 		size="icon"

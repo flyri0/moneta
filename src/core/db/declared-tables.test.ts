@@ -271,6 +271,7 @@ const SCENARIOS: Record<string, Scenario[]> = {
 			]
 		}
 	],
+	'payees.create': [{ args: (f) => [{ name: 'Bakery', defaultCategoryId: f.food }] }],
 	'payees.rename': [{ args: (f) => [f.market, 'Mercado'] }],
 	'payees.merge': [
 		{

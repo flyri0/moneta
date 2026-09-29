@@ -129,19 +129,25 @@ test('collapses a group and remembers it across reloads', async ({ page }) => {
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('puts the Ready to Assign chip with the actions, leaving the month arrows still', async ({
+	test('puts the month below the title and actions, and the chip with the actions', async ({
 		page
 	}) => {
 		await onboard(page);
 		const header = page.getByTestId('page-header');
+		const title = header.getByRole('heading', { name: 'Budget', level: 1 });
+		const collapse = header.getByRole('button', { name: 'Collapse all' });
 		const next = header.getByRole('link', { name: 'Next month' });
+		const titleBox = (await title.boundingBox())!;
 		const before = (await next.boundingBox())!;
+		// The actions share the title's row, as on other pages, and the month has its own below.
+		expect(Math.abs((await collapse.boundingBox())!.y - titleBox.y)).toBeLessThan(titleBox.height);
+		expect(before.y).toBeGreaterThanOrEqual(titleBox.y + titleBox.height);
 
 		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 		const chip = header.getByTestId('rta-chip').filter({ visible: true });
 		await expect(chip).toHaveText('$1,000.00');
 		expect(await next.boundingBox()).toEqual(before);
-		expect((await chip.boundingBox())!.y).toBeGreaterThanOrEqual(before.y + before.height);
+		expect((await chip.boundingBox())!.y + 1).toBeLessThan(before.y);
 	});
 
 	test('assigns and moves money from the category sheet', async ({ page }) => {

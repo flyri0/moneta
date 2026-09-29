@@ -99,7 +99,13 @@
 			balance={review.balance}
 		/>
 	{:else if pending.kind === 'csv' && format}
-		<CsvColumns table={pending.table} bind:format {digits} onContinue={toReview} />
+		<CsvColumns
+			table={pending.table}
+			bind:format
+			{digits}
+			onContinue={toReview}
+			onCancel={() => goto(resolve('/accounts/[id]', { id: accountId }))}
+		/>
 	{:else}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs">
 			<LoadingRows rows={6} />

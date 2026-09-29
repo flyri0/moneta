@@ -236,7 +236,7 @@
 									<Button
 										size="sm"
 										variant="outline"
-										class="sm:col-span-full"
+										class="h-auto min-h-8 py-1.5 whitespace-normal sm:col-span-full"
 										onclick={coverFromReady}
 									>
 										{m.budget_cover_part_from_rta({ amount: session.format(fromReady) })}

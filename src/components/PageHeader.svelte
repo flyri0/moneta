@@ -7,7 +7,8 @@
 	 * The top of every app page, placed before the page's column and stuck below the demo banner
 	 * as the page scrolls: an optional way back, the title (text, or a snippet that renders its own
 	 * `h1`), the page's actions, and a toolbar row for search and filters. Actions are `size="sm"`
-	 * buttons with an icon and a label shown from `md:` up.
+	 * buttons with an icon and a label; the label hides below `md:` only where several actions share
+	 * a phone's row.
 	 */
 	let {
 		title,

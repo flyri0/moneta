@@ -302,6 +302,19 @@ test.describe('on a phone', () => {
 		await expect(page.getByTestId('spending-table')).toContainText('Groceries');
 	});
 
+	test("brings a category's transactions into view when it opens", async ({ page }) => {
+		await page.goto('/');
+		await page.getByRole('button', { name: /demo|demonstra/i }).click();
+		await page.waitForURL(/\/budget\//);
+		await page.goto('/reports/spending');
+		// The last category shown, the furthest from its drill-down below the table.
+		const rows = page.getByTestId('spending-table').locator('tbody button[aria-pressed]');
+		await rows.last().click();
+		const drill = page.getByRole('region', { name: /^Transactions in / });
+		await expect(drill.getByRole('heading')).toBeInViewport();
+		await expect(drill.getByRole('heading')).toBeFocused();
+	});
+
 	for (const [locale, width] of [
 		['en', 393],
 		['pt-BR', 393],

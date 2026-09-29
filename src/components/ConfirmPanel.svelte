@@ -36,9 +36,11 @@
 	{#if body}<p class="text-sm text-muted-foreground">{body}</p>{/if}
 	{@render children?.()}
 	<FormMessage {error} />
+	<!-- Long confirm labels ("Lançar ajuste e conciliar") wrap rather than spill out of their half. -->
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" disabled={busy} onclick={onCancel}>{m.cancel()}</Button>
 		<Button
+			class="h-auto min-h-9 py-1.5 whitespace-normal"
 			variant={destructive ? 'destructive' : 'default'}
 			disabled={busy || disabled}
 			onclick={onConfirm}

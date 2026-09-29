@@ -47,6 +47,12 @@ test('lists the transactions of every account', async ({ page }) => {
 		.getByRole('button', { name: 'Starting balance' })
 		.click();
 	await expect(dialog).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(dialog).toBeHidden();
+
+	// A tap anywhere on the row opens it too, not only on the payee.
+	await rows.filter({ hasText: 'Rainy day' }).getByTestId('register-amount').click();
+	await expect(dialog).toBeVisible();
 });
 
 test.describe('on a phone', () => {
@@ -76,6 +82,18 @@ test.describe('on a phone', () => {
 		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 		await expect(page.getByRole('dialog')).toBeHidden();
 		await expect(bar.getByRole('button', { name: 'More' })).toHaveAttribute('aria-current', 'page');
+	});
+
+	test('keeps the dates behind a button, and in sight once one is set', async ({ page }) => {
+		await onboard(page);
+		await page.goto('/transactions');
+		const dates = page.getByRole('button', { name: 'Dates' });
+		await expect(page.getByLabel('From')).toBeHidden();
+		await dates.click();
+		await expect(dates).toHaveAttribute('aria-expanded', 'true');
+		await expect(page.getByLabel('From')).toBeVisible();
+		await dates.click();
+		await expect(page.getByLabel('From')).toBeHidden();
 	});
 
 	test('shrinks the add-transaction button to its icon on scroll', async ({ page }) => {

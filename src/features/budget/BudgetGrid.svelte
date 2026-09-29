@@ -46,7 +46,7 @@
 {#snippet chevron(group: BudgetGroupView, open: boolean)}
 	<button
 		type="button"
-		class="-ml-1 cursor-pointer rounded p-0.5 text-muted-foreground hover:text-foreground"
+		class="relative -ml-1 cursor-pointer rounded p-0.5 text-muted-foreground after:absolute after:-inset-y-2 after:-right-1 after:-left-2 hover:text-foreground"
 		aria-expanded={open}
 		aria-label={toggleLabel(group, open)}
 		onclick={() => onToggleGroup(group.id)}
@@ -222,7 +222,7 @@
 						{@render chevron(group, open)}
 						<button
 							type="button"
-							class="min-w-0 flex-1 cursor-pointer truncate text-left hover:text-foreground"
+							class="-my-2 min-w-0 flex-1 cursor-pointer truncate py-2 text-left hover:text-foreground"
 							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
 						>
 						{@render overspentBadge(group)}

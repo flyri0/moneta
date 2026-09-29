@@ -16,6 +16,7 @@
 	import { formatDate } from '$i18n/formats';
 	import { NO_PAYEE, payeeSlices } from '$features/reports/payees';
 	import { type DateRange, monthsCovered } from '$features/reports/range';
+	import { revealBelowTable } from '$features/reports/reveal';
 	import { SPENDING_TABLES, segmentClass, topSlices, withShares } from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -161,11 +162,16 @@
 				</table>
 
 				{#if payee}
+					<!-- Comes into view each time another row opens it. -->
 					<section
 						class="grid gap-2"
 						aria-label={m.reports_payee_transactions({ payee: payee.label })}
+						{@attach (node) => {
+							void selected;
+							revealBelowTable(node);
+						}}
 					>
-						<h3 class="text-sm font-medium">
+						<h3 class="text-sm font-medium outline-none" tabindex="-1">
 							{m.reports_payee_transactions({ payee: payee.label })}
 						</h3>
 						<ul class="grid text-sm">

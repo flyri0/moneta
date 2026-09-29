@@ -90,6 +90,7 @@ export const api = {
 	},
 	payees: {
 		list: read(payees.listPayees, []),
+		create: write(['payees'], payees.createPayee, ['object']),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
 		merge: write(['payees', 'transactions', 'schedules', 'payee_rules'], payees.mergePayee, [
 			'string',

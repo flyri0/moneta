@@ -217,8 +217,8 @@
 			</div>
 		{/if}
 		<FormMessage {error} />
-		<div class="flex justify-end gap-2">
-			<Button variant="ghost" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
+		<div class="grid grid-cols-2 gap-2">
+			<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
 			<Button type="submit" disabled={busy}>{m.bulk_apply()}</Button>
 		</div>
 	</form>
