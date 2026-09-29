@@ -180,6 +180,21 @@ export interface QuickAssignInput {
 	strategy: QuickAssignStrategy;
 }
 
+/** Each category's assigned amount under `strategy`, and what it is now. */
+function quickAssignAmounts(
+	db: Db,
+	comp: BudgetComputation,
+	month: Month,
+	categoryIds: string[],
+	strategy: QuickAssignStrategy
+): { id: string; current: number; next: number }[] {
+	return categoryIds.map((id) => ({
+		id,
+		current: categoryMonth(comp, month, id).assigned,
+		next: quickAssignAmount(comp, month, id, strategy, getCategory(db, id).goal)
+	}));
+}
+
 export function applyQuickAssign(db: Db, input: QuickAssignInput): void {
 	requireMonth(input.month);
 	if (!QUICK_ASSIGN_STRATEGIES.includes(input.strategy))
@@ -187,14 +202,46 @@ export function applyQuickAssign(db: Db, input: QuickAssignInput): void {
 	tx(db, () => {
 		for (const id of input.categoryIds) requireAssignable(db, id);
 		const comp = compute(db, input.month);
-		for (const id of input.categoryIds) {
-			const { goal } = getCategory(db, id);
-			writeAssigned(
-				db,
-				id,
-				input.month,
-				quickAssignAmount(comp, input.month, id, input.strategy, goal)
-			);
+		for (const { id, next } of quickAssignAmounts(
+			db,
+			comp,
+			input.month,
+			input.categoryIds,
+			input.strategy
+		)) {
+			writeAssigned(db, id, input.month, next);
 		}
 	});
+}
+
+/** A quick-assign strategy and the categories' assigned total it would leave. */
+export interface QuickAssignOption {
+	strategy: QuickAssignStrategy;
+	assigned: number;
+}
+
+export interface QuickAssignPreview {
+	/** The categories' assigned total now. */
+	assigned: number;
+	/** Only the strategies that would change some category, in `QUICK_ASSIGN_STRATEGIES` order. */
+	options: QuickAssignOption[];
+}
+
+/** What each quick-assign strategy would leave assigned to `categoryIds` in `month`. */
+export function previewQuickAssign(
+	db: Db,
+	input: { month: Month; categoryIds: string[] }
+): QuickAssignPreview {
+	requireMonth(input.month);
+	for (const id of input.categoryIds) requireAssignable(db, id);
+	const comp = compute(db, input.month);
+	let assigned = 0;
+	for (const id of input.categoryIds) assigned += categoryMonth(comp, input.month, id).assigned;
+	const options: QuickAssignOption[] = [];
+	for (const strategy of QUICK_ASSIGN_STRATEGIES) {
+		const amounts = quickAssignAmounts(db, comp, input.month, input.categoryIds, strategy);
+		if (amounts.every((a) => a.next === a.current)) continue;
+		options.push({ strategy, assigned: amounts.reduce((sum, a) => sum + a.next, 0) });
+	}
+	return { assigned, options };
 }

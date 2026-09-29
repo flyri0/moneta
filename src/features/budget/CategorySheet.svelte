@@ -5,6 +5,7 @@
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import ZapIcon from '@lucide/svelte/icons/zap';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -36,7 +37,7 @@
 	import CategoryDelete from './CategoryDelete.svelte';
 	import CategorySettings from './CategorySettings.svelte';
 	import GoalForm from './GoalForm.svelte';
-	import QuickAssignButtons from './QuickAssignButtons.svelte';
+	import QuickAssign from './QuickAssign.svelte';
 	import { AMOUNT_TEXT, TONE_PILL } from './tones';
 
 	let {
@@ -59,7 +60,7 @@
 	const session = useSession();
 
 	/** The sheet's screen: the money first, the rest one tap away. */
-	let view = $state<'main' | 'move' | 'goal' | 'settings' | 'delete'>('main');
+	let view = $state<'main' | 'quick' | 'move' | 'goal' | 'settings' | 'delete'>('main');
 	let assignedText = $state('');
 	let moveAmount = $state('');
 	let moveDirection = $state<'to' | 'from'>('to');
@@ -82,6 +83,7 @@
 	const title = $derived(
 		{
 			main: category.name,
+			quick: m.quick_assign_title(),
 			move: m.budget_move_money(),
 			goal: m.category_goal(),
 			settings: m.category_settings(),
@@ -274,19 +276,13 @@
 					</div>
 					<FormMessage {error} />
 				</form>
-
-				<QuickAssignButtons
-					categoryIds={[category.id]}
-					{month}
-					hasGoals={category.goal !== null}
-					onDone={() => (open = false)}
-				/>
 			{/if}
 
 			<Separator />
 
 			<nav class="-mx-2 grid gap-0.5">
 				{#if !isIncome}
+					<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
 					<SheetLink
 						icon={ArrowLeftRightIcon}
 						label={m.budget_move_money()}
@@ -313,6 +309,8 @@
 				/>
 			</nav>
 		</div>
+	{:else if view === 'quick'}
+		<QuickAssign categoryIds={[category.id]} {month} onDone={() => (open = false)} />
 	{:else if view === 'move'}
 		<form class="grid gap-3" onsubmit={move}>
 			<div class="grid grid-cols-2 gap-2">

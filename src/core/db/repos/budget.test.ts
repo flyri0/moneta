@@ -8,6 +8,7 @@ import {
 	applyQuickAssign,
 	getBudgetMonth,
 	moveMoney,
+	previewQuickAssign,
 	setAssigned,
 	type BudgetMonthView
 } from './budget';
@@ -233,6 +234,47 @@ describe('assigning money', () => {
 		const view = getBudgetMonth(db, '2026-01');
 		expect(cat(view, 'Food').assigned).toBe(30000);
 		expect(cat(view, 'Rent').assigned).toBe(120000);
+	});
+});
+
+describe('previewQuickAssign', () => {
+	it('lists what each strategy would leave assigned, skipping those that change nothing', () => {
+		setAssigned(db, food, '2026-01', 30000);
+		setAssigned(db, rent, '2026-01', 120000);
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-10',
+			amount: -24000,
+			categoryId: food
+		});
+		setAssigned(db, food, '2026-02', 30000);
+		const preview = previewQuickAssign(db, { month: '2026-02', categoryIds: [food, rent] });
+		expect(preview).toEqual({
+			assigned: 30000,
+			options: [
+				{ strategy: 'last-month', assigned: 150000 },
+				{ strategy: 'avg-3', assigned: 8000 },
+				{ strategy: 'avg-6', assigned: 4000 },
+				{ strategy: 'avg-12', assigned: 2000 },
+				{ strategy: 'clear', assigned: 0 }
+			]
+		});
+	});
+
+	it('offers to fund goals and cover overspending only when they would', () => {
+		updateCategory(db, rent, { goal: { type: 'monthly', amount: 120000, month: null } });
+		createTransaction(db, { accountId: bank, date: '2026-01-10', amount: -5000, categoryId: food });
+		const preview = previewQuickAssign(db, { month: '2026-01', categoryIds: [food, rent] });
+		expect(preview.options).toEqual([
+			{ strategy: 'goals', assigned: 120000 },
+			{ strategy: 'cover-overspending', assigned: 5000 }
+		]);
+	});
+
+	it('refuses income categories', () => {
+		expect(() =>
+			previewQuickAssign(db, { month: '2026-01', categoryIds: [categoryId(db, 'Salário')] })
+		).toThrow(code('CATEGORY_NOT_ALLOWED'));
 	});
 });
 

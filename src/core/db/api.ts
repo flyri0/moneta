@@ -168,7 +168,8 @@ export const api = {
 		moveMoney: write(['budget_assignments'], budget.moveMoney, ['object'], { undo: true }),
 		quickAssign: write(['budget_assignments'], budget.applyQuickAssign, ['object'], {
 			undo: true
-		})
+		}),
+		previewQuickAssign: read(budget.previewQuickAssign, ['object'])
 	},
 	reports: {
 		spending: read(reports.spendingByCategory, ['object']),

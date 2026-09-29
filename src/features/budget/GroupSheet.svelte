@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import ZapIcon from '@lucide/svelte/icons/zap';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -17,7 +18,7 @@
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import GroupDelete from './GroupDelete.svelte';
-	import QuickAssignButtons from './QuickAssignButtons.svelte';
+	import QuickAssign from './QuickAssign.svelte';
 
 	/** `group` is the grid's (visible categories only); `groups` is every group, in full. */
 	let {
@@ -29,8 +30,8 @@
 
 	const session = useSession();
 
-	/** The sheet's screen: quick-assign and new categories first, the rest one tap away. */
-	let view = $state<'main' | 'settings' | 'delete'>('main');
+	/** The sheet's screen: new categories first, the rest one tap away. */
+	let view = $state<'main' | 'quick' | 'settings' | 'delete'>('main');
 	let name = $state('');
 	let hidden = $state(false);
 	let newCategory = $state('');
@@ -39,6 +40,7 @@
 	const title = $derived(
 		{
 			main: groupLabel(group),
+			quick: m.quick_assign_title(),
 			settings: m.group_settings(),
 			delete: m.group_delete_title({ name: groupLabel(group) })
 		}[view]
@@ -99,13 +101,6 @@
 <ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
 	{#if view === 'main'}
 		<div class="grid gap-5">
-			<QuickAssignButtons
-				categoryIds={group.categories.map((c) => c.id)}
-				{month}
-				hasGoals={group.categories.some((c) => c.goal !== null)}
-				onDone={() => (open = false)}
-			/>
-
 			<form class="grid gap-2" onsubmit={addCategory}>
 				<Label for="group-new-category">{m.group_add_category()}</Label>
 				<div class="flex gap-2">
@@ -122,6 +117,7 @@
 				<Separator />
 
 				<nav class="-mx-2 grid gap-0.5">
+					<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
 					<SheetLink
 						icon={SettingsIcon}
 						label={m.group_settings()}
@@ -136,6 +132,12 @@
 				</nav>
 			{/if}
 		</div>
+	{:else if view === 'quick'}
+		<QuickAssign
+			categoryIds={group.categories.map((c) => c.id)}
+			{month}
+			onDone={() => (open = false)}
+		/>
 	{:else if view === 'settings'}
 		<div class="grid gap-3">
 			<div class="grid divide-y rounded-lg border">
