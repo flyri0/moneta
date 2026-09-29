@@ -88,6 +88,10 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 	await groceries.getByTestId('assigned').fill('100');
 	await groceries.getByTestId('assigned').press('Enter');
 	await expect(groceries.getByTestId('available')).toHaveText('$100.00');
+	const dining = categoryRow(page, 'Dining Out');
+	await dining.getByTestId('assigned').fill('50');
+	await dining.getByTestId('assigned').press('Enter');
+	await expect(dining.getByTestId('available')).toHaveText('$50.00');
 
 	await groceries.getByRole('button', { name: 'Groceries' }).click();
 	const categorySheet = page.getByRole('dialog');
@@ -103,7 +107,11 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
 
 	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
-	await page.getByRole('dialog').getByRole('button', { name: 'Clear' }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Quick assign' }).click();
+	// The total leaves the hidden category out.
+	await expect(page.getByRole('dialog').getByText('$50.00', { exact: true })).toBeVisible();
+	await page.getByRole('dialog').getByRole('button', { name: 'Clear $0.00' }).click();
+	await expect(dining.getByTestId('available')).toHaveText('$0.00');
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
 });
 
@@ -194,7 +202,10 @@ test.describe('on a phone', () => {
 		const groceries = categoryRow(page, 'Groceries');
 		await groceries.getByRole('button', { name: 'Groceries' }).click();
 		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Quick assign' }).click();
+		await expect(sheet.getByRole('button', { name: 'Clear' })).toBeHidden();
 		await expect(sheet.getByRole('button', { name: 'Fund goals' })).toBeHidden();
+		await sheet.getByRole('button', { name: 'Back' }).click();
 		await sheet.getByRole('button', { name: /^Goal/ }).click();
 		await expect(sheet.getByRole('heading', { name: 'Goal' })).toBeVisible();
 		await sheet.getByLabel('Amount').fill('400');
@@ -210,7 +221,8 @@ test.describe('on a phone', () => {
 		await expect(groceries.getByTestId('goal-tick')).toBeAttached();
 
 		await groceries.getByRole('button', { name: 'Groceries' }).click();
-		await sheet.getByRole('button', { name: 'Fund goals' }).click();
+		await sheet.getByRole('button', { name: 'Quick assign' }).click();
+		await sheet.getByRole('button', { name: 'Fund goals $400.00' }).click();
 		await expect(sheet).toBeHidden();
 		await expect(groceries.getByTestId('available')).toHaveText('$400.00');
 		await expect(groceries.getByTestId('progress')).toHaveText('$0.00 of $400.00 spent');
@@ -219,6 +231,8 @@ test.describe('on a phone', () => {
 		await sheet.getByRole('button', { name: /^Goal/ }).click();
 		await sheet.getByRole('button', { name: 'Remove goal' }).click();
 		await expect(sheet.getByRole('button', { name: /^Goal/ })).toContainText('None');
+		await sheet.getByRole('button', { name: 'Quick assign' }).click();
+		await expect(sheet.getByRole('button', { name: 'Clear $0.00' })).toBeVisible();
 		await expect(sheet.getByRole('button', { name: 'Fund goals' })).toBeHidden();
 	});
 
