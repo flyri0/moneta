@@ -2,14 +2,14 @@
 	import { untrack } from 'svelte';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
 	import FormMessage from '$components/FormMessage.svelte';
+	import GroupCombobox from '$features/categories/GroupCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { CategoryPatch } from '$db/repos/categories';
-	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
 	/** A category's settings. Each field saves on its own: switches when flipped, the name on change. */
@@ -21,7 +21,7 @@
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.id ?? ''
 	);
 	const isIncome = $derived(groups.find((g) => g.id === currentGroupId)?.system === 'income');
-	const selectedGroup = $derived(userGroups.find((g) => g.id === groupId));
+	const pending = new NewCategories();
 
 	let name = $state('');
 	let groupId = $state('');
@@ -54,6 +54,18 @@
 		if (error) reset();
 	}
 
+	/** Moves the category to another group, creating it first when it was picked by a new name. */
+	async function moveTo(value: string) {
+		if (value === currentGroupId) return;
+		let id = value;
+		error = await runAction(async () => {
+			id = (await pending.resolve(session.api, [value])).get(value) ?? value;
+			await session.api.categories.update(category.id, { groupId: id });
+		});
+		if (error) reset();
+		else groupId = id;
+	}
+
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
 	function saveName() {
 		if (name.trim() === '' || name.trim() === category.name) {
@@ -74,22 +86,14 @@
 		{#if !isIncome}
 			<div class="grid gap-2 p-3">
 				<Label for="category-group">{m.category_group()}</Label>
-				<Select.Root
-					type="single"
+				<GroupCombobox
+					id="category-group"
+					groups={userGroups}
+					{pending}
 					bind:value={groupId}
-					onValueChange={(value) => value !== currentGroupId && save({ groupId: value })}
-				>
-					<Select.Trigger id="category-group" class="w-full">
-						{selectedGroup ? groupLabel(selectedGroup) : ''}
-					</Select.Trigger>
-					<Select.Content>
-						{#each userGroups as group (group.id)}
-							<Select.Item value={group.id} label={groupLabel(group)}>
-								{groupLabel(group)}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
+					onSelect={moveTo}
+					ariaLabel={m.category_group()}
+				/>
 			</div>
 		{/if}
 		<div class="flex min-h-12 items-center justify-between gap-4 p-3">

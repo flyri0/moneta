@@ -4,8 +4,8 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
-	import type { NewCategories } from '$features/transactions/new-categories';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import type { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import type { GroupNode } from '$db/repos/categories';
 	import { formatDate } from '$i18n/formats';

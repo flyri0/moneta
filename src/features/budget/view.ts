@@ -111,19 +111,26 @@ export function gridModel(view: BudgetMonthView): GridModel {
 	return { groups, hidden };
 }
 
-export interface CategoryChoice {
+export interface CategoryChoiceGroup {
 	id: string;
 	name: string;
-	group: Pick<BudgetGroupView, 'name' | 'system'>;
+	system: BudgetGroupView['system'];
+	categories: { id: string; name: string }[];
 }
 
-/** Visible categories to move money to or from, excluding `exceptId` and system groups. */
-export function moveTargets(model: GridModel, exceptId: string): CategoryChoice[] {
+/**
+ * Visible categories to move money to or from, by group, excluding `exceptId` and system groups.
+ */
+export function moveTargets(model: GridModel, exceptId: string): CategoryChoiceGroup[] {
 	return model.groups
 		.filter((g) => !g.system)
-		.flatMap((g) =>
-			g.categories
+		.map((g) => ({
+			id: g.id,
+			name: g.name,
+			system: g.system,
+			categories: g.categories
 				.filter((c) => c.id !== exceptId)
-				.map((c) => ({ id: c.id, name: c.name, group: { name: g.name, system: g.system } }))
-		);
+				.map((c) => ({ id: c.id, name: c.name }))
+		}))
+		.filter((g) => g.categories.length > 0);
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { categoryRow, chooseCombobox, chooseSelect, onboard } from './helpers';
+import { categoryRow, chooseCombobox, onboard } from './helpers';
 
 test('shows the month with Ready to Assign and the starter categories', async ({ page }) => {
 	await onboard(page);
@@ -160,7 +160,7 @@ test.describe('on a phone', () => {
 
 		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
 		await sheet.getByRole('button', { name: 'Move money' }).click();
-		await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
+		await chooseCombobox(sheet, 'Other category', 'Household', 'Household');
 		await sheet.getByLabel('Amount to move').fill('55');
 		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
@@ -334,7 +334,7 @@ test.describe('on a phone', () => {
 
 		await callout.getByRole('button', { name: 'Take from another category' }).click();
 		await expect(sheet.getByLabel('Amount to move')).toHaveValue('60.00');
-		await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
+		await chooseCombobox(sheet, 'Other category', 'Household', 'Household');
 		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
 		await expect(sheet).toBeHidden();
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$0.00');
@@ -412,7 +412,7 @@ test('deletes a category in use after choosing where its money goes', async ({ p
 	const remove = sheet.getByRole('button', { name: 'Delete category' });
 	await expect(remove).toBeDisabled();
 
-	await chooseCombobox(sheet, 'Move everything to', 'Everyday · Household', 'Household');
+	await chooseCombobox(sheet, 'Move everything to', 'Household', 'Household');
 	await remove.click();
 	await expect(sheet).toBeHidden();
 	await expect(categoryRow(page, 'Groceries')).toHaveCount(0);
@@ -428,7 +428,7 @@ test('deletes a group after moving its categories to another group', async ({ pa
 	const remove = sheet.getByRole('button', { name: 'Delete group' });
 	await expect(remove).toBeDisabled();
 
-	await chooseSelect(sheet, 'Move its categories to', 'Bills');
+	await chooseCombobox(sheet, 'Move its categories to', 'Bills', 'Bills');
 	await remove.click();
 	await expect(sheet).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Everyday', exact: true })).toHaveCount(0);

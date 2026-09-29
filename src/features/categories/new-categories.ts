@@ -12,17 +12,26 @@ interface Pending {
 	id: string | null;
 }
 
-const PREFIX = 'new-category:';
+interface PendingGroup {
+	token: string;
+	name: string;
+}
 
-/** The part of the API that creates categories. */
-export type CreatesCategories = { categories: Pick<ClientApi['categories'], 'createIn'> };
+const PREFIX = 'new-category:';
+const GROUP_PREFIX = 'new-group:';
+
+/** The part of the API that creates categories and groups. */
+export type CreatesCategories = {
+	categories: Pick<ClientApi['categories'], 'createIn' | 'createGroup'>;
+};
 
 /**
- * Categories (and groups) picked in a form but not created yet. A picker's value holds a token
- * for each one; saving the form creates them (`resolve`) and swaps the tokens for their ids.
+ * Categories and groups picked in a form but not created yet. A picker's value holds a token for
+ * each one; saving the form creates them (`resolve`) and swaps the tokens for their ids.
  */
 export class NewCategories {
 	#pending: Pending[] = [];
+	#pendingGroups: PendingGroup[] = [];
 	/** New groups already created, by folded name. */
 	#groups = new Map<string, string>();
 
@@ -38,22 +47,42 @@ export class NewCategories {
 		return token;
 	}
 
-	/** Whether `value` is a token for a category not created yet. */
-	static isToken(value: string | null | undefined): boolean {
-		return !!value?.startsWith(PREFIX);
+	/** The token for a new group named `name`, the same one when picked again. */
+	addGroup(name: string): string {
+		const trimmed = name.trim();
+		const found = this.#pendingGroups.find((g) => foldText(g.name) === foldText(trimmed));
+		if (found) return found.token;
+		const token = `${GROUP_PREFIX}${this.#pendingGroups.length + 1}`;
+		this.#pendingGroups.push({ token, name: trimmed });
+		return token;
 	}
 
-	/** A token's name, with its new group's (`{ group }` in `format`) when the group is new too. */
+	/** Whether `value` is a token for a category or a group not created yet. */
+	static isToken(value: string | null | undefined): boolean {
+		return !!value && (value.startsWith(PREFIX) || value.startsWith(GROUP_PREFIX));
+	}
+
+	/** Whether `value` is a token for a group not created yet. */
+	static isGroupToken(value: string | null | undefined): boolean {
+		return !!value?.startsWith(GROUP_PREFIX);
+	}
+
+	/**
+	 * A token's name. A category's comes with its new group's (`{ group }` in `format`) when the
+	 * group is new too.
+	 */
 	label(token: string, format: (category: string, group: string) => string): string | null {
+		const group = this.#pendingGroups.find((g) => g.token === token);
+		if (group) return group.name;
 		const pending = this.#pending.find((p) => p.token === token);
 		if (!pending) return null;
 		return 'name' in pending.group ? format(pending.name, pending.group.name) : pending.name;
 	}
 
 	/**
-	 * Creates the categories behind the tokens among `values`, once each, and returns their ids by
-	 * token. A new group is created with its first category and reused by the next ones. After a
-	 * failure, calling it again creates only what is still missing.
+	 * Creates the categories and groups behind the tokens among `values`, once each, and returns
+	 * their ids by token. A new group is created once, with its first category or on its own, and
+	 * reused by the next ones. After a failure, calling it again creates only what is still missing.
 	 */
 	async resolve(
 		api: CreatesCategories,
@@ -61,6 +90,17 @@ export class NewCategories {
 	): Promise<Map<string, string>> {
 		const ids = new Map<string, string>();
 		for (const value of new Set(values)) {
+			const group = this.#pendingGroups.find((g) => g.token === value);
+			if (group) {
+				const key = foldText(group.name);
+				let id = this.#groups.get(key);
+				if (id === undefined) {
+					id = await api.categories.createGroup({ name: group.name });
+					this.#groups.set(key, id);
+				}
+				ids.set(group.token, id);
+				continue;
+			}
 			const pending = this.#pending.find((p) => p.token === value);
 			if (!pending) continue;
 			if (pending.id === null) {

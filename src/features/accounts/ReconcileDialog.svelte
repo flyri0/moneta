@@ -6,8 +6,8 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
-	import { NewCategories } from '$features/transactions/new-categories';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { isDebtType } from '$features/accounts/account-form';
 	import { checkBalance, shownBalance } from '$features/accounts/reconcile';
 	import { useSession } from '$client/app-state.svelte';

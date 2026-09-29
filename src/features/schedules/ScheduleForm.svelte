@@ -33,7 +33,7 @@
 		NewCategories,
 		categoryValues,
 		withCategoryIds
-	} from '$features/transactions/new-categories';
+	} from '$features/categories/new-categories';
 	import {
 		buildScheduleInput,
 		draftRuleSummary,

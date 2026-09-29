@@ -15,7 +15,16 @@ function fakeApi(fail = new Set<string>()) {
 			return { categoryId: `c${n}`, groupId: 'id' in input.group ? input.group.id : `g${n}` };
 		}
 	);
-	return { api: { categories: { createIn } } as unknown as CreatesCategories, createIn };
+	const createGroup = vi.fn(async (input: { name: string }) => {
+		if (fail.has(input.name)) throw new Error('offline');
+		n++;
+		return `g${n}`;
+	});
+	return {
+		api: { categories: { createIn, createGroup } } as unknown as CreatesCategories,
+		createIn,
+		createGroup
+	};
 }
 
 const both = (c: string, g: string) => `${c} · ${g}`;
@@ -70,6 +79,63 @@ describe('NewCategories', () => {
 		expect(createIn.mock.calls.map(([input]) => input.name)).toEqual(['B']);
 		expect(ids.get(a)).toBe('c1');
 		expect(ids.get(b)).toBe('c1');
+	});
+});
+
+describe('NewCategories groups', () => {
+	it('gives one token per group name, told apart from categories', () => {
+		const pending = new NewCategories();
+		const pets = pending.addGroup('Pets');
+		expect(pending.addGroup(' pets ')).toBe(pets);
+		expect(pending.addGroup('Home')).not.toBe(pets);
+		expect(NewCategories.isToken(pets)).toBe(true);
+		expect(NewCategories.isGroupToken(pets)).toBe(true);
+		expect(NewCategories.isGroupToken(pending.add('Vet', { id: 'g1' }))).toBe(false);
+		expect(pending.label(pets, both)).toBe('Pets');
+	});
+
+	it('creates a new group once, shared with categories added to a group of that name', async () => {
+		const pending = new NewCategories();
+		const pets = pending.addGroup('Pets');
+		const vet = pending.add('Vet', { name: 'pets' });
+		const { api, createIn, createGroup } = fakeApi();
+
+		const ids = await pending.resolve(api, [pets, vet]);
+		expect(ids).toEqual(
+			new Map([
+				[pets, 'g1'],
+				[vet, 'c2']
+			])
+		);
+		expect(createGroup).toHaveBeenCalledTimes(1);
+		expect(createIn.mock.calls.map(([input]) => input)).toEqual([
+			{ name: 'Vet', group: { id: 'g1' } }
+		]);
+
+		await pending.resolve(api, [pets]);
+		expect(createGroup).toHaveBeenCalledTimes(1);
+	});
+
+	it('reuses a group a category created', async () => {
+		const pending = new NewCategories();
+		const vet = pending.add('Vet', { name: 'Pets' });
+		const pets = pending.addGroup('Pets');
+		const { api, createGroup } = fakeApi();
+
+		const ids = await pending.resolve(api, [vet, pets]);
+		expect(ids.get(pets)).toBe('g1');
+		expect(createGroup).not.toHaveBeenCalled();
+	});
+
+	it('creates the group again after a failure', async () => {
+		const pending = new NewCategories();
+		const pets = pending.addGroup('Pets');
+		await expect(pending.resolve(fakeApi(new Set(['Pets'])).api, [pets])).rejects.toThrow(
+			'offline'
+		);
+		const { api, createGroup } = fakeApi();
+		expect((await pending.resolve(api, [pets])).get(pets)).toBe('g1');
+		expect(createGroup).toHaveBeenCalledTimes(1);
 	});
 });
 

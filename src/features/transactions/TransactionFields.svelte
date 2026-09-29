@@ -9,8 +9,8 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { accountOptionLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
-	import CategoryCombobox from './CategoryCombobox.svelte';
-	import type { NewCategories } from './new-categories';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import type { NewCategories } from '$features/categories/new-categories';
 	import {
 		canSplit,
 		categoryMode,

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
-	import { Combobox } from '$ui/combobox';
 	import { Label } from '$ui/label';
 	import FormMessage from '$components/FormMessage.svelte';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import {
 		defaultOnBudget,
 		isDebtType,
@@ -14,7 +15,6 @@
 	import { runAction, type ActionError } from '$client/notify';
 	import type { AccountType } from '$db/repos/accounts';
 	import { todayIso } from '$domain/month';
-	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import AccountFields from './AccountFields.svelte';
 	import BillingDaysFields from './BillingDaysFields.svelte';
@@ -41,17 +41,7 @@
 	let closingDay = $state('');
 	let dueDay = $state('');
 	let error = $state<ActionError | null>(null);
-
-	const categoryGroups = $derived(
-		(tree.data ?? [])
-			.map((g) => ({
-				heading: groupLabel(g),
-				items: g.categories
-					.filter((c) => !c.hidden)
-					.map((c) => ({ value: c.id, label: categoryLabel(c) }))
-			}))
-			.filter((g) => g.items.length > 0)
-	);
+	const pending = new NewCategories();
 
 	function selectType(selectedType: AccountType) {
 		type = selectedType;
@@ -73,13 +63,15 @@
 		}
 		let id = '';
 		error = await runAction(async () => {
+			// A category picked by a new name is created first.
+			const ids = await pending.resolve(session.api, [categoryId]);
 			id = await session.api.accounts.create({
 				name,
 				type,
 				onBudget,
 				startingBalance: signedStartingBalance(type, typed),
 				startingDate: date,
-				startingBalanceCategoryId: categoryId || undefined,
+				startingBalanceCategoryId: (ids.get(categoryId) ?? categoryId) || undefined,
 				billing
 			});
 		});
@@ -106,13 +98,15 @@
 		{#if onBudget}
 			<div class="grid gap-2">
 				<Label for="new-account-category">{m.account_starting_category()}</Label>
-				<Combobox
+				<CategoryCombobox
 					id="new-account-category"
 					ariaLabel={m.account_starting_category()}
-					groups={categoryGroups}
+					tree={tree.data ?? []}
+					{pending}
 					value={categoryId || (startingCategory.data ?? '')}
 					onSelect={(id) => (categoryId = id)}
-					placeholder={m.register_starting_balance()}
+					emptyLabel={m.register_starting_balance()}
+					allowEmpty={false}
 				/>
 				{#if isDebtType(type)}
 					<p class="text-xs text-muted-foreground">{m.account_starting_debt_hint()}</p>

@@ -30,6 +30,18 @@ async function newCategory(
 	await expect(popover).toBeHidden();
 }
 
+/** Names a new group in a group combobox. */
+async function newGroup(container: Locator, label: string, name: string) {
+	await container.getByLabel(label, { exact: true }).click();
+	const popover = container.page().locator('[data-slot="popover-content"][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill(name);
+	await popover
+		.locator('[data-slot="command-item"]')
+		.filter({ hasText: `New group "${name}"` })
+		.click();
+	await expect(popover).toBeHidden();
+}
+
 async function startTransaction(page: Page, payee: string, amount: string) {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
 	const dialog = page.getByRole('dialog');
@@ -159,4 +171,87 @@ test('creates a category on the import review and uses it for the rest', async (
 
 	await openBudget(page);
 	await expect(categoryRow(page, 'Pet').getByTestId('available')).toHaveText('-$42.50');
+});
+
+test("creates a category for a new account's starting balance", async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Add account' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Cash' }).click();
+	await dialog.getByLabel('Account name').fill('Wallet');
+	await dialog.getByLabel('Current balance').fill('50');
+	await newCategory(dialog, 'Starting balance category', 'Gifts', { new: 'Windfalls' });
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Wallet' })
+		.getByRole('link')
+		.click();
+	await expect(page.getByTestId('register-row')).toContainText('Gifts');
+	await openBudget(page);
+	await expect(categoryRow(page, 'Gifts').getByTestId('available')).toHaveText('$50.00');
+});
+
+test("creates a payee's default category", async ({ page }) => {
+	await onboard(page);
+	const dialog = await startTransaction(page, 'Corner Shop', '10');
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page.getByRole('link', { name: 'Payees' }).first().click();
+	const row = page.getByTestId('payee-row').filter({ hasText: 'Corner Shop' });
+	await row.click();
+	await newCategory(dialog, 'Default category', 'Snacks', { existing: 'Everyday' });
+	await expect(row).toContainText('Default: Snacks');
+});
+
+test('moves money to a new category', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByLabel('Assigned this month').fill('100');
+	await sheet.getByRole('button', { name: 'Save' }).first().click();
+	await expect(sheet).toBeHidden();
+
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	await sheet.getByRole('button', { name: 'Move money' }).click();
+	await newCategory(sheet, 'Other category', 'Travel', { new: 'Trips' });
+	await sheet.getByLabel('Amount to move').fill('40');
+	await sheet.getByRole('button', { name: 'Move', exact: true }).click();
+	await expect(sheet).toBeHidden();
+
+	await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$60.00');
+	await expect(categoryRow(page, 'Travel').getByTestId('available')).toHaveText('$40.00');
+});
+
+test('moves a category to a new group from its settings', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await newGroup(sheet, 'Group', 'Food');
+	await expect(sheet.getByLabel('Group', { exact: true })).toHaveText('Food');
+	await page.keyboard.press('Escape');
+
+	const group = page.getByTestId('group-card').filter({ hasText: 'Food' });
+	await expect(group.getByTestId('category-row').filter({ hasText: 'Groceries' })).toHaveCount(1);
+});
+
+test("moves a deleted group's categories to a new group", async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Delete group' }).click();
+	await newGroup(sheet, 'Move its categories to', 'Daily');
+	await sheet.getByRole('button', { name: 'Delete group' }).click();
+	await expect(sheet).toBeHidden();
+
+	const group = page.getByTestId('group-card').filter({ hasText: 'Daily' });
+	await expect(group.getByTestId('category-row').filter({ hasText: 'Groceries' })).toHaveCount(1);
+	await expect(page.getByRole('button', { name: 'Everyday', exact: true })).toHaveCount(0);
 });

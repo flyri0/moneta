@@ -1,16 +1,16 @@
 <script lang="ts">
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
-	import { Combobox } from '$ui/combobox';
 	import { Label } from '$ui/label';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError, actionError } from '$client/notify';
 	import { moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
-	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -41,14 +41,13 @@
 	const incomeGroup = $derived(groups.find((g) => g.system === 'income'));
 	const isIncome = $derived(incomeGroup?.categories.some((c) => c.id === category.id) ?? false);
 	const targets = $derived(
-		isIncome
-			? (incomeGroup?.categories
-					.filter((c) => c.id !== category.id)
-					.map((c) => ({ value: c.id, label: c.name })) ?? [])
+		isIncome && incomeGroup
+			? [{ ...incomeGroup, categories: incomeGroup.categories.filter((c) => c.id !== category.id) }]
 			: moveTargets(model, category.id)
-					.filter((t) => !t.group.system)
-					.map((t) => ({ value: t.id, label: `${groupLabel(t.group)} · ${t.name}` }))
 	);
+	/** The groups a category created to take this one's place can go in. */
+	const userGroups = $derived(groups.filter((g) => !g.system && !g.hidden));
+	const pending = new NewCategories();
 
 	let reassignTo = $state('');
 	let busy = $state(false);
@@ -60,9 +59,12 @@
 	async function remove() {
 		if (!ready || busy) return;
 		busy = true;
-		error = await runAction(() =>
-			session.api.categories.delete(category.id, used ? reassignTo : undefined)
-		);
+		error = await runAction(async () => {
+			if (!used) return session.api.categories.delete(category.id);
+			// A category picked by a new name is created first.
+			const ids = await pending.resolve(session.api, [reassignTo]);
+			await session.api.categories.delete(category.id, ids.get(reassignTo) ?? reassignTo);
+		});
 		busy = false;
 		if (!error) onDone();
 	}
@@ -98,13 +100,18 @@
 		</Alert.Root>
 		<div class="grid gap-2">
 			<Label for="category-reassign">{m.category_delete_move_to()}</Label>
-			<Combobox
+			<CategoryCombobox
 				id="category-reassign"
 				class="w-full"
 				ariaLabel={m.category_delete_move_to()}
-				items={targets}
+				tree={groups}
+				options={targets}
+				newIn={userGroups}
+				{pending}
 				bind:value={reassignTo}
-				placeholder={m.category_delete_choose()}
+				emptyLabel={m.category_delete_choose()}
+				allowEmpty={false}
+				creatable={!isIncome}
 			/>
 		</div>
 	{/if}

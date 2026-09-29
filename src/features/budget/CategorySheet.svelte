@@ -8,11 +8,12 @@
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import { Combobox } from '$ui/combobox';
 	import { Separator } from '$ui/separator';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
@@ -28,7 +29,6 @@
 	import { formatAmountInput } from '$domain/money';
 	import type { Month } from '$domain/month';
 	import { formatMonth } from '$i18n/formats';
-	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import AvailablePill from './AvailablePill.svelte';
@@ -70,9 +70,9 @@
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.system === 'income'
 	);
 	const targets = $derived(isIncome ? [] : moveTargets(model, category.id));
-	const targetItems = $derived(
-		targets.map((t) => ({ value: t.id, label: `${groupLabel(t.group)} · ${t.name}` }))
-	);
+	/** The groups a category created to move money with can go in. */
+	const userGroups = $derived(groups.filter((g) => !g.system && !g.hidden));
+	const pending = new NewCategories();
 	const progress = $derived(categoryProgress(category));
 	const overspent = $derived(!isIncome && isOverspent(category));
 	// Ready to Assign leads only when it covers all of it; otherwise moving money does.
@@ -171,13 +171,22 @@
 			error = { message: m.budget_move_choose_category() };
 			return;
 		}
-		const [fromCategoryId, toCategoryId] =
-			moveDirection === 'to' ? [category.id, otherId] : [otherId, category.id];
-		const other = targets.find((t) => t.id === otherId)?.name ?? '';
+		const other =
+			targets.flatMap((g) => g.categories).find((c) => c.id === otherId)?.name ??
+			pending.label(otherId, (name) => name) ??
+			'';
 		const [from, to] = moveDirection === 'to' ? [category.name, other] : [other, category.name];
-		const call = session.api.budget.moveMoney({ fromCategoryId, toCategoryId, month, amount });
-		error = await runAction(() => call);
-		if (error) return;
+		let call = null as ReturnType<typeof session.api.budget.moveMoney> | null;
+		error = await runAction(async () => {
+			// A category picked by a new name is created first.
+			const ids = await pending.resolve(session.api, [otherId]);
+			const otherCategoryId = ids.get(otherId) ?? otherId;
+			const [fromCategoryId, toCategoryId] =
+				moveDirection === 'to' ? [category.id, otherCategoryId] : [otherCategoryId, category.id];
+			call = session.api.budget.moveMoney({ fromCategoryId, toCategoryId, month, amount });
+			await call;
+		});
+		if (error || !call) return;
 		open = false;
 		offerUndo(session.client, call, m.budget_moved({ amount: session.format(amount), from, to }));
 	}
@@ -317,12 +326,14 @@
 				>
 			</div>
 			<div class="grid min-w-0 grid-cols-[1fr_7rem] gap-2">
-				<Combobox
+				<CategoryCombobox
 					class="w-full min-w-0"
-					items={targetItems}
-					emptyOption={{ value: '', label: m.budget_move_other() }}
+					tree={groups}
+					options={targets}
+					newIn={userGroups}
+					{pending}
 					bind:value={otherId}
-					placeholder={m.budget_move_other()}
+					emptyLabel={m.budget_move_other()}
 					ariaLabel={m.budget_move_other()}
 				/>
 				<Input

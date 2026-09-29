@@ -5,8 +5,8 @@
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import FormMessage from '$components/FormMessage.svelte';
-	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
-	import { NewCategories } from '$features/transactions/new-categories';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { GroupNode } from '$db/repos/categories';

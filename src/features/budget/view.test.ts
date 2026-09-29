@@ -129,22 +129,28 @@ describe('gridModel', () => {
 });
 
 describe('moveTargets', () => {
-	it('lists the other visible categories with their group', () => {
-		const model = gridModel(month([group('Bills', [cat('Rent'), cat('Power')])]));
+	it('lists the other visible categories by group', () => {
+		const model = gridModel(
+			month([
+				group('Bills', [cat('Rent'), cat('Power')]),
+				group('Fun', [cat('Games'), cat('Old', { hidden: true })])
+			])
+		);
 		expect(moveTargets(model, 'Rent')).toEqual([
-			{ id: 'Power', name: 'Power', group: { name: 'Bills', system: null } }
+			{ id: 'Bills', name: 'Bills', system: null, categories: [{ id: 'Power', name: 'Power' }] },
+			{ id: 'Fun', name: 'Fun', system: null, categories: [{ id: 'Games', name: 'Games' }] }
 		]);
 	});
 
-	it('excludes categories belonging to system groups', () => {
+	it('leaves out system groups and groups left empty', () => {
 		const model = gridModel(
 			month([
 				group('Income', [cat('Salary')], { system: 'income' }),
-				group('Bills', [cat('Rent'), cat('Power')])
+				group('Bills', [cat('Rent')]),
+				group('Fun', [cat('Games')])
 			])
 		);
-		const targets = moveTargets(model, 'Rent');
-		expect(targets.map((t) => t.name)).toEqual(['Power']);
+		expect(moveTargets(model, 'Rent').map((g) => g.id)).toEqual(['Fun']);
 	});
 });
 

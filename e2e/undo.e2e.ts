@@ -41,7 +41,7 @@ test('takes back moved money', async ({ page }) => {
 
 	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
 	await sheet.getByRole('button', { name: 'Move money' }).click();
-	await chooseCombobox(sheet, 'Other category', 'Everyday · Household', 'Household');
+	await chooseCombobox(sheet, 'Other category', 'Household', 'Household');
 	await sheet.getByLabel('Amount to move').fill('30');
 	await sheet.getByRole('button', { name: 'Move', exact: true }).click();
 	await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$30.00');

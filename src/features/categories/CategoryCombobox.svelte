@@ -5,12 +5,13 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
 	import * as Popover from '$ui/popover';
-	import type { GroupNode } from '$db/repos/categories';
 	import { foldText } from '$domain/search';
 	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
-	import { NewCategories } from './new-categories';
+	import GroupItems from './GroupItems.svelte';
+	import { NewCategories, type NewCategoryGroup } from './new-categories';
+	import type { PickerGroup, PickerTreeGroup } from './picker';
 
 	/**
 	 * Picks a category. Typing a name no category has offers to create it: a second step picks its
@@ -20,29 +21,33 @@
 	let {
 		tree,
 		options,
+		newIn,
 		pending,
 		value = $bindable(''),
 		onSelect,
 		id,
 		ariaLabel,
 		emptyLabel = m.transaction_choose_category(),
+		allowEmpty = true,
+		creatable = true,
 		class: className
 	}: {
-		tree: GroupNode[];
+		tree: PickerTreeGroup[];
 		/** The groups and categories to offer; the tree's visible categories when left out. */
-		options?: {
-			id: string;
-			name: string;
-			system: GroupNode['system'];
-			categories: { id: string; name: string }[];
-		}[];
+		options?: PickerTreeGroup[];
+		/** The groups a new category can go in; the tree's visible groups when left out. */
+		newIn?: PickerGroup[];
 		pending: NewCategories;
 		value?: string;
 		onSelect?: (value: string) => void;
 		id?: string;
 		ariaLabel?: string;
-		/** What choosing no category is called. */
+		/** What choosing no category is called, and what the field shows while empty. */
 		emptyLabel?: string;
+		/** Whether choosing no category is offered. */
+		allowEmpty?: boolean;
+		/** Whether a typed name can become a new category. */
+		creatable?: boolean;
 		class?: string;
 	} = $props();
 
@@ -67,13 +72,12 @@
 			}))
 		).filter((g) => g.categories.length > 0)
 	);
-	const groups = $derived(tree.filter((g) => !g.hidden));
+	const groups = $derived(newIn ?? tree.filter((g) => !g.hidden));
 
 	const typed = $derived(search.trim());
 	const categoryExists = $derived(
 		offered.some((g) => g.categories.some((c) => foldText(categoryLabel(c)) === foldText(typed)))
 	);
-	const groupExists = $derived(groups.some((g) => foldText(groupLabel(g)) === foldText(typed)));
 
 	const selectedLabel = $derived.by(() => {
 		for (const g of offered) {
@@ -91,6 +95,10 @@
 		value = next;
 		open = false;
 		onSelect?.(next);
+	}
+
+	function createIn(group: NewCategoryGroup) {
+		if (naming !== null) choose(pending.add(naming, group));
 	}
 
 	function startCreating() {
@@ -133,12 +141,14 @@
 			>
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
 				{#if naming === null}
-					<Command.Group>
-						<Command.Item value={emptyLabel} onSelect={() => choose('')}>
-							<CheckIcon class={cn('mr-2 size-4', value === '' ? 'opacity-100' : 'opacity-0')} />
-							<span class="text-muted-foreground italic">{emptyLabel}</span>
-						</Command.Item>
-					</Command.Group>
+					{#if allowEmpty}
+						<Command.Group>
+							<Command.Item value={emptyLabel} onSelect={() => choose('')}>
+								<CheckIcon class={cn('mr-2 size-4', value === '' ? 'opacity-100' : 'opacity-0')} />
+								<span class="text-muted-foreground italic">{emptyLabel}</span>
+							</Command.Item>
+						</Command.Group>
+					{/if}
 					{#each offered as group (group.id)}
 						<Command.Group heading={groupLabel(group)}>
 							{#each group.categories as category (category.id)}
@@ -155,7 +165,7 @@
 							{/each}
 						</Command.Group>
 					{/each}
-					{#if typed && !categoryExists}
+					{#if creatable && typed && !categoryExists}
 						<Command.Separator />
 						<Command.Group>
 							<Command.Item
@@ -180,35 +190,12 @@
 							<span>{m.back()}</span>
 						</Command.Item>
 					</Command.Group>
-					<Command.Group heading={m.category_add_to({ name: naming })}>
-						{#each groups as group (group.id)}
-							<Command.Item
-								value={`${groupLabel(group)} ${group.id}`}
-								keywords={[groupLabel(group)]}
-								onSelect={() => naming !== null && choose(pending.add(naming, { id: group.id }))}
-							>
-								<span class="ml-6">{groupLabel(group)}</span>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-					{#if typed && !groupExists}
-						<Command.Separator />
-						<Command.Group>
-							<Command.Item
-								value={`new group ${typed}`}
-								keywords={[typed]}
-								onSelect={() => naming !== null && choose(pending.add(naming, { name: typed }))}
-								class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-							>
-								<div
-									class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
-								>
-									<PlusIcon class="size-3.5 stroke-[2.5]" />
-								</div>
-								<span class="truncate">{m.category_new_group({ name: typed })}</span>
-							</Command.Item>
-						</Command.Group>
-					{/if}
+					<GroupItems
+						{groups}
+						{typed}
+						heading={m.category_add_to({ name: naming })}
+						onPick={createIn}
+					/>
 				{/if}
 			</Command.List>
 		</Command.Root>

@@ -12,8 +12,8 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { fab } from '$components/app/fab.svelte';
-	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
-	import { NewCategories } from '$features/transactions/new-categories';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import type { RegisterSelection } from '$features/accounts/selection.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';

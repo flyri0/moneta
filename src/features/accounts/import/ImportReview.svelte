@@ -6,10 +6,10 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import Delayed from '$components/Delayed.svelte';
-	import CategoryCombobox from '$features/transactions/CategoryCombobox.svelte';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import RuleDialog from '$features/payees/RuleDialog.svelte';
 	import { ruleDraft, type RuleDraft, type SavedRule } from '$features/payees/rules';
-	import { NewCategories, withCategoryIds } from '$features/transactions/new-categories';
+	import { NewCategories, withCategoryIds } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';

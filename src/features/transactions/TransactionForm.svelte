@@ -30,7 +30,11 @@
 		installmentPlan
 	} from '$features/transactions/installments';
 	import TransactionFields from './TransactionFields.svelte';
-	import { NewCategories, categoryValues, withCategoryIds } from './new-categories';
+	import {
+		NewCategories,
+		categoryValues,
+		withCategoryIds
+	} from '$features/categories/new-categories';
 
 	/** `onSave`, when given, replaces the create/update write (entering a scheduled occurrence). */
 	let {

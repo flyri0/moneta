@@ -2,12 +2,12 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Alert from '$ui/alert';
 	import { Label } from '$ui/label';
-	import * as Select from '$ui/select';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import GroupCombobox from '$features/categories/GroupCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetGroupView } from '$db/repos/budget';
-	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -34,15 +34,21 @@
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
 
-	const target = $derived(targets.find((g) => g.id === moveTo));
-	const ready = $derived(count === 0 || target !== undefined);
+	const pending = new NewCategories();
+
+	const ready = $derived(
+		count === 0 || targets.some((g) => g.id === moveTo) || NewCategories.isGroupToken(moveTo)
+	);
 
 	async function remove() {
 		if (!ready || busy) return;
 		busy = true;
-		error = await runAction(() =>
-			session.api.categories.deleteGroup(groupId, count > 0 ? moveTo : undefined)
-		);
+		error = await runAction(async () => {
+			if (count === 0) return session.api.categories.deleteGroup(groupId);
+			// A group picked by a new name is created first.
+			const ids = await pending.resolve(session.api, [moveTo]);
+			await session.api.categories.deleteGroup(groupId, ids.get(moveTo) ?? moveTo);
+		});
 		busy = false;
 		if (!error) onDone();
 	}
@@ -63,25 +69,19 @@
 			<TriangleAlertIcon class="size-4" />
 			<Alert.Title>{m.group_delete_has_categories({ count })}</Alert.Title>
 			<Alert.Description>
-				{targets.length > 0 ? m.group_delete_has_categories_body() : m.error_group_not_empty()}
+				{m.group_delete_has_categories_body()}
 			</Alert.Description>
 		</Alert.Root>
-		{#if targets.length > 0}
-			<div class="grid gap-2">
-				<Label for="group-move-to">{m.group_delete_move_to()}</Label>
-				<Select.Root type="single" bind:value={moveTo}>
-					<Select.Trigger id="group-move-to" class="w-full">
-						{target ? groupLabel(target) : m.group_delete_choose()}
-					</Select.Trigger>
-					<Select.Content>
-						{#each targets as group (group.id)}
-							<Select.Item value={group.id} label={groupLabel(group)}>
-								{groupLabel(group)}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-		{/if}
+		<div class="grid gap-2">
+			<Label for="group-move-to">{m.group_delete_move_to()}</Label>
+			<GroupCombobox
+				id="group-move-to"
+				groups={targets}
+				{pending}
+				bind:value={moveTo}
+				placeholder={m.group_delete_choose()}
+				ariaLabel={m.group_delete_move_to()}
+			/>
+		</div>
 	{/if}
 </ConfirmPanel>

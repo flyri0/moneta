@@ -9,6 +9,8 @@
 	import SheetLink from '$components/SheetLink.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories } from '$features/categories/new-categories';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
@@ -21,7 +23,7 @@
 	import type { GroupNode } from '$db/repos/categories';
 	import type { PayeeRule } from '$db/repos/payee-rules';
 	import type { Payee } from '$db/repos/payees';
-	import { categoryLabel, groupLabel } from '$i18n/labels';
+	import { categoryLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -70,16 +72,7 @@
 	const targets = $derived(
 		mergeTargets(payees, payee.id).map((p) => ({ value: p.id, label: p.name }))
 	);
-	const categoryGroups = $derived(
-		tree
-			.map((g) => ({
-				heading: groupLabel(g),
-				items: g.categories
-					.filter((c) => !c.hidden || c.id === current.defaultCategoryId)
-					.map((c) => ({ value: c.id, label: categoryLabel(c) }))
-			}))
-			.filter((g) => g.items.length > 0)
-	);
+	const pending = new NewCategories();
 
 	/** Runs a write and shows its error inline; `close` shuts the dialog once it succeeds. */
 	async function act(fn: () => Promise<unknown>, close = true) {
@@ -99,6 +92,14 @@
 		event.preventDefault();
 		if (conflict) return;
 		void act(() => session.api.payees.rename(payee.id, name));
+	}
+
+	/** Saves the default category, creating it first when it was picked by a new name. */
+	function setDefaultCategory(id: string) {
+		void act(async () => {
+			const ids = await pending.resolve(session.api, [id]);
+			await session.api.payees.setDefaultCategory(payee.id, (ids.get(id) ?? id) || undefined);
+		}, false);
 	}
 
 	function askMerge(targetId: string) {
@@ -211,16 +212,15 @@
 
 			<div class="grid gap-2">
 				<Label for="payee-category">{m.payee_default_category()}</Label>
-				<Combobox
+				<CategoryCombobox
 					id="payee-category"
 					class="w-full"
 					ariaLabel={m.payee_default_category()}
-					groups={categoryGroups}
-					emptyOption={{ value: '', label: m.payee_default_none() }}
+					{tree}
+					{pending}
 					value={current.defaultCategoryId ?? ''}
-					onSelect={(id) =>
-						act(() => session.api.payees.setDefaultCategory(payee.id, id || undefined), false)}
-					placeholder={m.payee_default_none()}
+					onSelect={setDefaultCategory}
+					emptyLabel={m.payee_default_none()}
 				/>
 				<p class="text-xs text-muted-foreground">{m.payee_default_category_hint()}</p>
 			</div>
