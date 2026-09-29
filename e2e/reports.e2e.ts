@@ -262,8 +262,9 @@ test('scopes the full reports with a period, a custom one too', async ({ page })
 	const dialog = page.getByRole('dialog');
 	const today = new Date();
 	const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+	// Up to today, where the spending is: a fixed end day would miss it late in the month.
 	await pickDate(dialog, 'From', `${month}-01`);
-	await pickDate(dialog, 'To', `${month}-28`);
+	await pickDate(dialog, 'To', `${month}-${String(today.getDate()).padStart(2, '0')}`);
 	await dialog.getByRole('button', { name: 'Apply' }).click();
 	await expect(dialog).toBeHidden();
 
