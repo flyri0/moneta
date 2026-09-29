@@ -12,7 +12,7 @@
 	import type { CategoryPatch } from '$db/repos/categories';
 	import { m } from '$i18n/paraglide/messages';
 
-	/** A category's settings. Each field saves on its own: switches when flipped, the name on change. */
+	/** A category's settings. Each field saves on its own: the switch when flipped, the name on change. */
 	let { category, groups }: { category: BudgetCategoryView; groups: BudgetGroupView[] } = $props();
 
 	const session = useSession();
@@ -26,7 +26,6 @@
 	let name = $state('');
 	let groupId = $state('');
 	let hidden = $state(false);
-	let carryover = $state(false);
 	let error = $state<ActionError | null>(null);
 
 	/** Shows the saved values again, dropping edits. */
@@ -34,7 +33,6 @@
 		name = category.name;
 		groupId = currentGroupId;
 		hidden = category.hidden;
-		carryover = category.carryoverOverspending;
 	}
 
 	// A derived id changes only when the category does, not on every refresh of the same category.
@@ -104,19 +102,6 @@
 				onCheckedChange={(checked) => save({ hidden: checked })}
 			/>
 		</div>
-		{#if !isIncome}
-			<div class="flex items-center justify-between gap-4 p-3">
-				<div class="grid gap-1">
-					<Label for="category-carryover">{m.category_carryover()}</Label>
-					<p class="text-xs text-muted-foreground">{m.category_carryover_hint()}</p>
-				</div>
-				<Switch
-					id="category-carryover"
-					bind:checked={carryover}
-					onCheckedChange={(checked) => save({ carryoverOverspending: checked })}
-				/>
-			</div>
-		{/if}
 	</div>
 	<FormMessage {error} />
 </div>

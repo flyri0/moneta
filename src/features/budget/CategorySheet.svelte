@@ -32,6 +32,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import AvailablePill from './AvailablePill.svelte';
+	import CarryoverSwitch from './CarryoverSwitch.svelte';
 	import CategoryDelete from './CategoryDelete.svelte';
 	import CategorySettings from './CategorySettings.svelte';
 	import GoalForm from './GoalForm.svelte';
@@ -297,6 +298,7 @@
 						detail={goalSummary}
 						onclick={() => go('goal')}
 					/>
+					<CarryoverSwitch {category} />
 				{/if}
 				<SheetLink
 					icon={SettingsIcon}

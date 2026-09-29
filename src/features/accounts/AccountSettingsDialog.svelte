@@ -46,20 +46,19 @@
 		error = null;
 	}
 
-	function rename(event: SubmitEvent) {
+	/** Saves the name and, on a card, its billing days (both left blank clears them). */
+	function save(event: SubmitEvent) {
 		event.preventDefault();
-		void act(() => session.api.accounts.rename(account.id, name));
-	}
-
-	/** Saves a card's billing days; both left blank clears them. */
-	function saveBilling(event: SubmitEvent) {
-		event.preventDefault();
-		const days = parseBillingDays(closingDay, dueDay);
+		const isCard = account.type === 'credit_card';
+		const days = isCard ? parseBillingDays(closingDay, dueDay) : null;
 		if (days === 'invalid') {
 			error = { message: m.form_error_billing_days_invalid() };
 			return;
 		}
-		void act(() => session.api.accounts.setBilling(account.id, days ?? undefined));
+		void act(async () => {
+			if (name !== account.name) await session.api.accounts.rename(account.id, name);
+			if (isCard) await session.api.accounts.setBilling(account.id, days ?? undefined);
+		});
 	}
 </script>
 
@@ -79,19 +78,22 @@
 		/>
 	{:else}
 		<div class="grid gap-4">
-			<form class="grid gap-2" onsubmit={rename}>
-				<Label for="account-rename">{m.account_name()}</Label>
-				<div class="flex gap-2">
+			<form class="grid gap-4" onsubmit={save}>
+				<div class="grid gap-2">
+					<Label for="account-rename">{m.account_name()}</Label>
 					<Input id="account-rename" bind:value={name} required autocomplete="off" />
-					<Button type="submit" variant="outline">{m.save()}</Button>
+				</div>
+				{#if account.type === 'credit_card'}
+					<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="account" />
+				{/if}
+				<FormMessage {error} />
+				<div class="grid grid-cols-2 gap-2">
+					<Button variant="outline" disabled={busy} onclick={() => (open = false)}>
+						{m.cancel()}
+					</Button>
+					<Button type="submit" disabled={busy}>{m.save()}</Button>
 				</div>
 			</form>
-			{#if account.type === 'credit_card'}
-				<form class="grid gap-2" onsubmit={saveBilling}>
-					<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="account" />
-					<Button type="submit" variant="outline" class="justify-self-end">{m.save()}</Button>
-				</form>
-			{/if}
 			<Separator />
 			{#if account.closed}
 				<Button
@@ -122,7 +124,6 @@
 				</div>
 				<p class="text-xs text-muted-foreground">{m.account_delete_hint()}</p>
 			</div>
-			<FormMessage {error} />
 		</div>
 	{/if}
 </ResponsiveDialog>

@@ -65,6 +65,8 @@ test('puts the installments of a card with billing days on its bills’ due date
 		.getByRole('link')
 		.click();
 	await page.getByRole('main').getByRole('button', { name: 'Settings for Visa' }).click();
+	// The name and the billing days share one form and one Save.
+	await expect(dialog.getByRole('button', { name: 'Save' })).toHaveCount(1);
 	await dialog.getByLabel('Closing day').fill('5');
 	await dialog.getByLabel('Due day').press('Enter');
 	await expect(dialog.getByText('Enter both days')).toBeVisible();
