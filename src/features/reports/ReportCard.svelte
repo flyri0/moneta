@@ -9,8 +9,9 @@
 	/**
 	 * A report on the overview: a glance at it, opening the full report. The title is the link and
 	 * stretches over the whole card, so everything is clickable while screen readers still read the
-	 * figures as text rather than as one long link name. Every card has the same height, so the grid
-	 * lines up; each glance is drawn to fit it.
+	 * figures as text rather than as one long link name. That stretch sits above the arrow and the
+	 * glance, which are moved or positioned, so the pointer never slips off the link. Every card has
+	 * the same height, so the grid lines up; each glance is drawn to fit it.
 	 */
 	let {
 		title,
@@ -30,13 +31,13 @@
 </script>
 
 <section
-	class="group relative flex h-80 flex-col gap-4 overflow-hidden rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
+	class="group relative isolate flex h-80 flex-col gap-4 overflow-hidden rounded-xl border bg-card p-4 text-card-foreground transition-colors has-[a:hover]:bg-accent/40"
 	data-testid={testId}
 >
 	<h2 class="flex items-center justify-between gap-3">
 		<a
 			href={resolve(route)}
-			class="rounded-sm text-xs font-medium tracking-wide text-muted-foreground uppercase outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+			class="rounded-sm text-xs font-medium tracking-wide text-muted-foreground uppercase outline-none after:absolute after:inset-0 after:z-10 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
 		>
 			{title}
 		</a>

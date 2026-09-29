@@ -80,7 +80,15 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	await expect(months).toHaveCount(6);
 	await expect(months.last()).toContainText('income $0.00, expenses $115.00');
 
-	// The whole card opens the full report, not just its title.
+	// The whole card opens the full report, not just its title. The pointer stays on the link over
+	// the arrow, even once hovering the card moves it.
+	await netWorthCard.getByRole('link', { name: 'Net worth' }).hover();
+	const arrow = (await netWorthCard.locator('h2 svg').boundingBox())!;
+	const underPointer = await page.evaluate(
+		([x, y]) => document.elementFromPoint(x, y)?.closest('a')?.textContent?.trim() ?? null,
+		[arrow.x + arrow.width / 2, arrow.y + arrow.height / 2]
+	);
+	expect(underPointer).toBe('Net worth');
 	await spendingCard.click();
 	await expect(page).toHaveURL(/\/reports\/spending$/);
 	await expect(page.getByRole('heading', { name: 'Spending by category', level: 1 })).toBeVisible();
