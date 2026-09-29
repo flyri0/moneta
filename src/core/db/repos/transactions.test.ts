@@ -255,7 +255,8 @@ describe('splits in a list', () => {
 		const rows = listTransactions(db);
 		const elapsed = performance.now() - start;
 		expect(rows.filter((r) => r.splits.length === 2)).toHaveLength(10_000);
-		expect(elapsed).toBeLessThan(1000);
+		// About 0.5s on a laptop, but over 1s on a CI runner busy with the other test files.
+		expect(elapsed).toBeLessThan(3000);
 	});
 });
 
