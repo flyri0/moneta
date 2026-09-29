@@ -143,6 +143,7 @@
 					? m.payee_rule_delete_title()
 					: payee.name}
 	onBack={confirming ? () => confirm(null) : undefined}
+	focusFirst={false}
 >
 	{#if confirming?.kind === 'rule'}
 		{@const rule = confirming.rule}

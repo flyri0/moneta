@@ -9,23 +9,33 @@
 
 	/**
 	 * A dialog on desktop and a bottom sheet on phones (below 768px). `onBack` adds a back button
-	 * before the title, for screens nested inside one dialog.
+	 * before the title, for screens nested inside one dialog. `focusFirst={false}` keeps focus on the
+	 * dialog itself when it opens instead of its first field, so a phone's keyboard stays down.
 	 */
 	let {
 		open = $bindable(false),
 		title,
 		description,
 		onBack,
+		focusFirst = true,
 		children
 	}: {
 		open: boolean;
 		title: string;
 		description?: string;
 		onBack?: () => void;
+		focusFirst?: boolean;
 		children: Snippet;
 	} = $props();
 
 	const desktop = new MediaQuery('min-width: 768px');
+	let content = $state<HTMLElement | null>(null);
+
+	function openAutoFocus(event: Event) {
+		if (focusFirst) return;
+		event.preventDefault();
+		content?.focus({ preventScroll: true });
+	}
 </script>
 
 {#snippet back()}
@@ -39,7 +49,11 @@
 
 {#if desktop.current}
 	<Dialog.Root bind:open>
-		<Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+		<Dialog.Content
+			bind:ref={content}
+			class="max-h-[90dvh] overflow-y-auto sm:max-w-lg"
+			onOpenAutoFocus={openAutoFocus}
+		>
 			<Dialog.Header>
 				<div class="flex min-w-0 items-center gap-1 pr-8">
 					{@render back()}
@@ -52,7 +66,12 @@
 	</Dialog.Root>
 {:else}
 	<Sheet.Root bind:open>
-		<Sheet.Content side="bottom" class="max-h-[90dvh] overflow-y-auto">
+		<Sheet.Content
+			bind:ref={content}
+			side="bottom"
+			class="max-h-[90dvh] overflow-y-auto outline-none"
+			onOpenAutoFocus={openAutoFocus}
+		>
 			<Sheet.Header>
 				<div class="flex min-w-0 items-center gap-1 pr-8">
 					{@render back()}

@@ -99,6 +99,10 @@ test('creates a payee with a default category, then opens it', async ({ page }) 
 
 	// Its own dialog opens next, for its rules.
 	await expect(dialog.getByRole('heading', { name: 'Bakery' })).toBeVisible();
+	// Focus stays on the dialog, not its name field, so a phone's keyboard doesn't open again.
+	const payeeDialog = page.getByRole('dialog', { name: 'Bakery' });
+	await expect(payeeDialog).toBeFocused();
+	await expect(payeeDialog.locator('#payee-rename')).not.toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 10000 });
 	const rows = page.getByTestId('payee-row');
