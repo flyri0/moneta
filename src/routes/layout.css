@@ -96,6 +96,21 @@
  * blocks have to point it back at --primary themselves.
  */
 
+/* The system bar around the installed app, per accent and in both modes. `themeColor()` in
+   `$client/accent` reads them by name, so they don't depend on which accent is picked. */
+:root {
+	--theme-color-blue: var(--color-blue-700);
+	--theme-color-indigo: var(--color-indigo-700);
+	--theme-color-violet: var(--color-violet-700);
+	--theme-color-cyan: var(--color-cyan-700);
+	--theme-color-teal: var(--color-teal-700);
+	--theme-color-emerald: var(--color-emerald-700);
+	--theme-color-amber: var(--color-amber-700);
+	--theme-color-orange: var(--color-orange-700);
+	--theme-color-rose: var(--color-rose-700);
+	--theme-color-pink: var(--color-pink-700);
+}
+
 [data-theme='blue'] {
 	--primary: var(--color-blue-600);
 	--primary-foreground: var(--color-white);

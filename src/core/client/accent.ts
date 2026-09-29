@@ -49,6 +49,23 @@ export const ACCENT_SWATCH: Record<Accent, string> = {
 	pink: 'bg-pink-600 text-white dark:bg-pink-400 dark:text-black'
 };
 
+/**
+ * The colour of the system bar around the installed app (`<meta name="theme-color">`) for an
+ * accent: its `--theme-color-<accent>` from `layout.css`, as hex, because browsers don't all
+ * read the newer colour syntaxes there. `null` when the page can't work it out.
+ */
+export function themeColor(accent: Accent): string | null {
+	const value = getComputedStyle(document.documentElement)
+		.getPropertyValue(`--theme-color-${accent}`)
+		.trim();
+	const context = document.createElement('canvas').getContext('2d');
+	if (!value || !context) return null;
+	context.fillStyle = value;
+	context.fillRect(0, 0, 1, 1);
+	const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+	return '#' + [r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('');
+}
+
 const ACCENT_LABELS: Record<Accent, () => string> = {
 	blue: m.color_blue,
 	indigo: m.color_indigo,

@@ -22,7 +22,7 @@ export default defineConfig({
 				name: 'Moneta',
 				short_name: 'Moneta',
 				description: 'Zero-based envelope budgeting that stays on your device.',
-				theme_color: '#0f766e',
+				theme_color: '#00786f',
 				background_color: '#ffffff',
 				display: 'standalone',
 				// Not '/': the installed app skips the welcome page and goes to the budget.

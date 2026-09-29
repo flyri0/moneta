@@ -89,17 +89,21 @@ test('picks an accent colour and a theme that outlive a reload', async ({ page }
 	await onboard(page);
 	await openSettings(page);
 	const html = page.locator('html');
+	const themeColor = page.locator('meta[name="theme-color"]');
 	await expect(html).toHaveAttribute('data-theme', 'teal');
+	await expect(themeColor).toHaveAttribute('content', '#00786f');
 
 	await page.getByRole('button', { name: 'Violet' }).click();
 	await page.getByRole('button', { name: 'Dark' }).click();
 	await expect(html).toHaveAttribute('data-theme', 'violet');
 	await expect(html).toHaveClass(/dark/);
+	await expect(themeColor).toHaveAttribute('content', '#7008e7');
 
 	await page.reload();
 	await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 	await expect(html).toHaveAttribute('data-theme', 'violet');
 	await expect(html).toHaveClass(/dark/);
+	await expect(themeColor).toHaveAttribute('content', '#7008e7');
 	await expect(page.getByRole('button', { name: 'Violet' })).toHaveAttribute(
 		'aria-pressed',
 		'true'

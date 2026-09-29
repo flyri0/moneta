@@ -16,6 +16,16 @@ describe('the accent list', () => {
 	});
 });
 
+describe('the theme colour', () => {
+	it('is the same in the page and the manifest, before the app runs', () => {
+		const html = readFileSync(new URL('../../app.html', import.meta.url), 'utf8');
+		const vite = readFileSync(new URL('../../../vite.config.ts', import.meta.url), 'utf8');
+		const color = html.match(/<meta name="theme-color" content="([^"]+)" \/>/)?.[1];
+		expect(color).toBeDefined();
+		expect(vite).toContain(`theme_color: '${color}'`);
+	});
+});
+
 describe('isAccent', () => {
 	it('accepts every listed accent', () => {
 		for (const accent of ACCENTS) expect(isAccent(accent)).toBe(true);
@@ -49,6 +59,12 @@ describe('the stylesheet', () => {
 		for (const accent of ACCENTS) {
 			expect(css, accent).toContain(`[data-theme='${accent}'] {`);
 			expect(css, accent).toContain(`.dark[data-theme='${accent}'] {`);
+		}
+	});
+
+	it('gives every accent a theme colour from its own palette', () => {
+		for (const accent of ACCENTS) {
+			expect(css, accent).toContain(`--theme-color-${accent}: var(--color-${accent}-700);`);
 		}
 	});
 
