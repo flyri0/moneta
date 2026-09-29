@@ -27,12 +27,16 @@
 	const STRATEGIES: { strategy: QuickAssignStrategy; label: () => string }[] = [
 		{ strategy: 'goals', label: m.quick_assign_goals },
 		{ strategy: 'last-month', label: m.quick_assign_last_month },
-		{ strategy: 'avg-3', label: () => m.quick_assign_average({ months: 3 }) },
-		{ strategy: 'avg-6', label: () => m.quick_assign_average({ months: 6 }) },
-		{ strategy: 'avg-12', label: () => m.quick_assign_average({ months: 12 }) },
 		{ strategy: 'cover-overspending', label: m.quick_assign_cover },
 		{ strategy: 'clear', label: m.quick_assign_clear }
 	];
+	/** The averages share one label: "Average spent: 3 mo. 6 mo. 12 mo.". */
+	const AVERAGES: { strategy: QuickAssignStrategy; months: number }[] = [
+		{ strategy: 'avg-3', months: 3 },
+		{ strategy: 'avg-6', months: 6 },
+		{ strategy: 'avg-12', months: 12 }
+	];
+	const CHIP = 'h-7 rounded-full px-3 text-xs';
 
 	async function apply(strategy: QuickAssignStrategy, label: string) {
 		const call = session.api.budget.quickAssign({ month, categoryIds, strategy });
@@ -45,15 +49,25 @@
 
 <section class="grid gap-2">
 	<h3 class="text-sm font-medium">{m.quick_assign_title()}</h3>
-	<div class="grid grid-cols-2 gap-2">
+	<div class="flex flex-wrap gap-1.5">
 		{#each STRATEGIES.filter((s) => hasGoals || s.strategy !== 'goals') as { strategy, label } (strategy)}
-			<!-- Half a phone's width is short for some labels ("Média gasta (12 meses)"): they wrap. -->
+			<Button variant="outline" size="sm" class={CHIP} onclick={() => apply(strategy, label())}>
+				{label()}
+			</Button>
+		{/each}
+	</div>
+	<div class="flex flex-wrap items-center gap-1.5">
+		<span class="mr-0.5 text-xs text-muted-foreground">{m.quick_assign_average_title()}</span>
+		{#each AVERAGES as { strategy, months } (strategy)}
 			<Button
 				variant="outline"
 				size="sm"
-				class="h-auto min-h-8 py-1.5 whitespace-normal"
-				onclick={() => apply(strategy, label())}>{label()}</Button
+				class={CHIP}
+				aria-label={m.quick_assign_average({ months })}
+				onclick={() => apply(strategy, m.quick_assign_average({ months }))}
 			>
+				{m.quick_assign_months({ months })}
+			</Button>
 		{/each}
 	</div>
 	<FormMessage {error} />

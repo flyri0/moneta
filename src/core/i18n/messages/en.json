@@ -309,6 +309,8 @@
 	"quick_assign_title": "Quick assign",
 	"quick_assign_last_month": "Same as last month",
 	"quick_assign_average": "Average spent ({months} mo.)",
+	"quick_assign_average_title": "Average spent",
+	"quick_assign_months": "{months} mo.",
 	"quick_assign_cover": "Cover overspending",
 	"quick_assign_clear": "Clear",
 	"quick_assign_goals": "Fund goals",
