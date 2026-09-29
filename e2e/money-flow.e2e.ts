@@ -36,7 +36,14 @@ test('income, assigning, spending, a card purchase and a card payment add up', a
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
 	await page.getByRole('button', { name: 'Add account' }).click();
 	const dialog = page.getByRole('dialog');
+	const onBudget = dialog.getByRole('switch', { name: 'On budget' });
+	await dialog.getByRole('button', { name: /^Checking/ }).click();
+	await expect(onBudget).toBeVisible();
+	await dialog.getByRole('button', { name: 'Change type' }).click();
 	await dialog.getByRole('button', { name: 'Credit card' }).click();
+	// Credit cards are always on-budget, so there is nothing to choose.
+	await expect(dialog.getByLabel('Account name')).toBeVisible();
+	await expect(onBudget).toHaveCount(0);
 	await dialog.getByLabel('Account name').fill('Visa');
 	await dialog.getByRole('button', { name: 'Add account' }).click();
 	await expect(dialog).toBeHidden();

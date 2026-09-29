@@ -96,15 +96,17 @@
 	<Label for="{idPrefix}-name">{m.account_name()}</Label>
 	<Input id="{idPrefix}-name" bind:value={name} required autocomplete="off" />
 </div>
-<div class="flex items-center justify-between gap-4">
-	<div class="grid gap-1">
-		<Label for="{idPrefix}-on-budget">{m.account_on_budget()}</Label>
-		<p class="text-xs text-muted-foreground">
-			{onBudget ? m.account_on_budget_hint() : m.account_off_budget_hint()}
-		</p>
+{#if !onBudgetLocked(type)}
+	<div class="flex items-center justify-between gap-4">
+		<div class="grid gap-1">
+			<Label for="{idPrefix}-on-budget">{m.account_on_budget()}</Label>
+			<p class="text-xs text-muted-foreground">
+				{onBudget ? m.account_on_budget_hint() : m.account_off_budget_hint()}
+			</p>
+		</div>
+		<Switch id="{idPrefix}-on-budget" bind:checked={onBudget} />
 	</div>
-	<Switch id="{idPrefix}-on-budget" bind:checked={onBudget} disabled={onBudgetLocked(type)} />
-</div>
+{/if}
 <div class="grid grid-cols-2 gap-3">
 	<div class="grid gap-2">
 		<Label for="{idPrefix}-balance">
