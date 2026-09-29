@@ -2,7 +2,7 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
-	import { rtaTone, type RtaTone } from '$features/budget/view';
+	import { rtaHint, rtaTone, type RtaHint } from '$features/budget/view';
 	import { m } from '$i18n/paraglide/messages';
 	import { RTA_CARD, RTA_ICON, RTA_TEXT } from './tones';
 
@@ -17,10 +17,11 @@
 	const session = useSession();
 	let expanded = $state(false);
 
-	const HINTS: Record<RtaTone, () => string> = {
+	const HINTS: Record<RtaHint, () => string> = {
 		assigned: m.budget_rta_assigned_hint,
 		unassigned: m.budget_rta_unassigned_hint,
-		overassigned: m.budget_rta_overassigned_hint
+		overassigned: m.budget_rta_overassigned_hint,
+		negativeFunds: m.budget_rta_negative_funds_hint
 	};
 
 	// Zero is the goal: it shows as done, and anything else asks to be dealt with.
@@ -56,7 +57,7 @@
 			>
 				{session.format(view.readyToAssign)}
 			</span>
-			<span class="text-sm {RTA_TEXT[tone]}" data-testid="rta-hint">{HINTS[tone]()}</span>
+			<span class="text-sm {RTA_TEXT[tone]}" data-testid="rta-hint">{HINTS[rtaHint(view)]()}</span>
 		</div>
 		<div
 			class="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground"

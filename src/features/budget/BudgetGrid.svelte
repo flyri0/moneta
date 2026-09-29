@@ -4,7 +4,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import * as Collapsible from '$ui/collapsible';
 	import { useSession } from '$client/app-state.svelte';
-	import { availableTone, overspentCount, type GridModel } from '$features/budget/view';
+	import { amountTone, availableTone, overspentCount, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { Month } from '$domain/month';
 	import { groupLabel } from '$i18n/labels';
@@ -12,7 +12,7 @@
 	import AssignedInput from './AssignedInput.svelte';
 	import AvailablePill from './AvailablePill.svelte';
 	import CategoryCard from './CategoryCard.svelte';
-	import { TONE_PILL, TONE_ROW } from './tones';
+	import { AMOUNT_TEXT, TONE_PILL, TONE_ROW } from './tones';
 
 	let {
 		model,
@@ -107,7 +107,9 @@
 		>
 		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 		<span
-			class="text-right text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+			class="text-right text-sm font-semibold tabular-nums {AMOUNT_TEXT[
+				amountTone(category.activity)
+			]}"
 			data-testid="activity"
 		>
 			{session.format(category.activity)}
@@ -126,7 +128,7 @@
 			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium hover:underline"
 			onclick={() => onSelectCategory(category.id)}>{category.name}</button
 		>
-		<span class="text-sm font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
+		<span class="text-sm font-medium tabular-nums {AMOUNT_TEXT[amountTone(category.activity)]}">
 			{session.format(category.activity)}
 		</span>
 	</div>
@@ -181,8 +183,9 @@
 					{#if isIncome}
 						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 						<span
-							class="text-right text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
-							>{session.format(group.activity)}</span
+							class="text-right text-sm font-semibold tabular-nums {AMOUNT_TEXT[
+								amountTone(group.activity)
+							]}">{session.format(group.activity)}</span
 						>
 						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 					{:else}
@@ -228,10 +231,14 @@
 						{@render overspentBadge(group)}
 					</div>
 					{#if isIncome}
+						<!-- The sign comes from the amount: "+" only for money in, "-" from the format. -->
 						<span
-							class="shrink-0 text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+							class="shrink-0 text-sm font-semibold tabular-nums {AMOUNT_TEXT[
+								amountTone(group.activity)
+							]}"
+							data-testid="income-total"
 						>
-							+{session.format(group.activity)}
+							{group.activity > 0 ? '+' : ''}{session.format(group.activity)}
 						</span>
 					{:else}
 						<span class="shrink-0 text-sm font-semibold text-foreground tabular-nums">

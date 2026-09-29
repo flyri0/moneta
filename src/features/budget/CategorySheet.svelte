@@ -18,6 +18,7 @@
 	import { offerUndo } from '$client/undo';
 	import { categoryProgress } from '$features/budget/progress';
 	import {
+		amountTone,
 		coverableFromReady,
 		isOverspent,
 		moveTargets,
@@ -35,7 +36,7 @@
 	import CategorySettings from './CategorySettings.svelte';
 	import GoalForm from './GoalForm.svelte';
 	import QuickAssignButtons from './QuickAssignButtons.svelte';
-	import { TONE_PILL } from './tones';
+	import { AMOUNT_TEXT, TONE_PILL } from './tones';
 
 	let {
 		open = $bindable(false),
@@ -188,7 +189,9 @@
 			{#if isIncome}
 				<div class="flex items-center justify-between text-sm">
 					<span class="text-muted-foreground">{m.budget_activity()}</span>
-					<span class="text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+					<span
+						class="text-sm font-semibold tabular-nums {AMOUNT_TEXT[amountTone(category.activity)]}"
+					>
 						{session.format(category.activity)}
 					</span>
 				</div>

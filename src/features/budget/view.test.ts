@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
 import {
+	amountTone,
 	availableTone,
 	coverableFromReady,
 	gridModel,
 	moveTargets,
 	overspentCategories,
 	overspentCount,
+	rtaHint,
 	rtaTone
 } from './view';
 
@@ -61,6 +63,27 @@ describe('rtaTone', () => {
 
 	it('flags assigning more than there is', () => {
 		expect(rtaTone(-1)).toBe('overassigned');
+	});
+});
+
+describe('rtaHint', () => {
+	it('follows the tone while funds are not below zero', () => {
+		expect(rtaHint({ readyToAssign: 0, availableFunds: 100 })).toBe('assigned');
+		expect(rtaHint({ readyToAssign: 1, availableFunds: 100 })).toBe('unassigned');
+		expect(rtaHint({ readyToAssign: -1, availableFunds: 100 })).toBe('overassigned');
+	});
+
+	it('blames funds below zero, not assigning, when the funds themselves are negative', () => {
+		// A credit card's starting debt in an income category, with nothing assigned.
+		expect(rtaHint({ readyToAssign: -126596, availableFunds: -126596 })).toBe('negativeFunds');
+	});
+});
+
+describe('amountTone', () => {
+	it('takes the tone from the sign alone', () => {
+		expect(amountTone(1)).toBe('inflow');
+		expect(amountTone(0)).toBe('zero');
+		expect(amountTone(-1)).toBe('outflow');
 	});
 });
 

@@ -5,6 +5,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import {
 		defaultOnBudget,
+		isDebtType,
 		parseBillingDays,
 		signedStartingBalance
 	} from '$features/accounts/account-form';
@@ -113,6 +114,9 @@
 					onSelect={(id) => (categoryId = id)}
 					placeholder={m.register_starting_balance()}
 				/>
+				{#if isDebtType(type)}
+					<p class="text-xs text-muted-foreground">{m.account_starting_debt_hint()}</p>
+				{/if}
 			</div>
 		{/if}
 		<FormMessage {error} />

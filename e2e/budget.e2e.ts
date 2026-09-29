@@ -586,3 +586,31 @@ test('picks month and year from the month reader date picker', async ({ page }) 
 		new RegExp(`January ${initialYear - 1}`)
 	);
 });
+
+test.describe('with a credit card owing more than the budget has', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('shows negative income by its sign and says why Ready to Assign is below zero', async ({
+		page
+	}) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).first().click();
+		await page.getByRole('button', { name: 'Add account' }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByRole('button', { name: 'Credit card' }).click();
+		await dialog.getByLabel('Account name').fill('Visa');
+		await expect(dialog.getByText('the debt comes out of Ready to Assign')).toBeVisible();
+		await dialog.getByLabel('Amount owed').fill('3001.55');
+		await dialog.getByRole('button', { name: 'Add account' }).click();
+		await expect(dialog).toBeHidden();
+
+		await page.getByRole('link', { name: 'Budget' }).first().click();
+		// $1,000 from the checking account, less the card's debt: no "+" in front of a minus.
+		await expect(page.getByTestId('income-total')).toHaveText('-$2,001.55');
+		const rtaCard = page.getByTestId('rta-card');
+		await expect(rtaCard).toHaveAttribute('data-tone', 'overassigned');
+		await expect(rtaCard.getByTestId('rta-hint')).toHaveText(
+			"Funds available are below zero, as with a credit card's starting debt. Record some income or take some back from a category."
+		);
+	});
+});
