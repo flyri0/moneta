@@ -4,7 +4,7 @@ import { chooseCombobox, onboard, spend } from './helpers';
 /** Picks from the combobox labelled exactly `label` (the payee dialog has several categories). */
 async function pick(container: Locator, label: string, item: string) {
 	await container.getByLabel(label, { exact: true }).click();
-	const popover = container.page().locator('[data-slot="popover-content"][data-state="open"]');
+	const popover = container.page().locator('[data-picker][data-state="open"]');
 	await popover.locator('[data-slot="command-input"]').fill(item);
 	await popover.locator('[data-slot="command-item"]').filter({ hasText: item }).first().click();
 	await expect(popover).toBeHidden();

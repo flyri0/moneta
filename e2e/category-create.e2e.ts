@@ -10,7 +10,7 @@ async function newCategory(
 ) {
 	const page = 'page' in container ? (container as Locator).page() : (container as Page);
 	await container.getByLabel(label, { exact: true }).click();
-	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const popover = page.locator('[data-picker][data-state="open"]');
 	const input = popover.locator('[data-slot="command-input"]');
 	await input.fill(name);
 	await popover
@@ -33,7 +33,7 @@ async function newCategory(
 /** Names a new group in a group combobox. */
 async function newGroup(container: Locator, label: string, name: string) {
 	await container.getByLabel(label, { exact: true }).click();
-	const popover = container.page().locator('[data-slot="popover-content"][data-state="open"]');
+	const popover = container.page().locator('[data-picker][data-state="open"]');
 	await popover.locator('[data-slot="command-input"]').fill(name);
 	await popover
 		.locator('[data-slot="command-item"]')
@@ -259,23 +259,33 @@ test("moves a deleted group's categories to a new group", async ({ page }) => {
 test.describe('on phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('keeps the keyboard down until the search is tapped, and offers to create first', async ({
+	test('picks on a screen of its own, with the keyboard down until the search is tapped', async ({
 		page
 	}) => {
 		await onboard(page);
 		const dialog = await startTransaction(page, 'Market', '20');
 		await dialog.getByLabel('Category', { exact: true }).click();
-		const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
-		const input = popover.locator('[data-slot="command-input"]');
-		await expect(popover).toBeVisible();
+		const picker = page.locator('[data-picker][data-state="open"]');
+		const input = picker.locator('[data-slot="command-input"]');
+		await expect(picker).toBeVisible();
 		await expect(input).not.toBeFocused();
+		await expect
+			.poll(() => picker.boundingBox())
+			.toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
 
 		await input.fill('Gro');
-		const items = popover.locator('[data-slot="command-item"]');
+		const items = picker.locator('[data-slot="command-item"]');
 		await expect(items.first()).toHaveText('Create category "Gro"');
 		await items.first().click();
-		await expect(popover.getByText('Add "Gro" to…')).toBeVisible();
+		await expect(picker.getByText('Add "Gro" to…')).toBeVisible();
 		await expect(input).not.toBeFocused();
+
+		const back = picker.getByRole('button', { name: 'Back' });
+		await back.click();
+		await expect(input).toHaveValue('Gro');
+		await back.click();
+		await expect(picker).toBeHidden();
+		await expect(dialog.getByLabel('Category', { exact: true })).toHaveText('Choose a category');
 	});
 });
 
@@ -283,7 +293,7 @@ test('focuses the search and lists the matches before creating on desktop', asyn
 	await onboard(page);
 	const dialog = await startTransaction(page, 'Market', '20');
 	await dialog.getByLabel('Category', { exact: true }).click();
-	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const popover = page.locator('[data-picker][data-state="open"]');
 	const input = popover.locator('[data-slot="command-input"]');
 	await expect(input).toBeFocused();
 

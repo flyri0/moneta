@@ -32,7 +32,7 @@ export async function chooseCombobox(
 	const page = 'page' in container ? (container as Locator).page() : (container as Page);
 	const trigger = container.getByLabel(label, { exact: false });
 	await trigger.click();
-	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const popover = page.locator('[data-picker][data-state="open"]');
 	if (search) {
 		await popover.locator('[data-slot="command-input"]').fill(search);
 	}

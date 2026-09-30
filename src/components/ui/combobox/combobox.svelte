@@ -1,10 +1,8 @@
 <script lang="ts">
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
-	import * as Popover from '$ui/popover';
-	import { PickerKeyboard } from '$components/picker.svelte';
+	import PickerShell from '$components/PickerShell.svelte';
 	import { cn } from '$utils';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -31,7 +29,6 @@
 		name,
 		disabled = false,
 		class: className,
-		contentClass,
 		ariaLabel,
 		onSelect,
 		allowCustom = false,
@@ -48,14 +45,12 @@
 		name?: string;
 		disabled?: boolean;
 		class?: string;
-		contentClass?: string;
 		ariaLabel?: string;
 		onSelect?: (val: string) => void;
 		allowCustom?: boolean;
 		createLabel?: (query: string) => string;
 	} = $props();
 
-	const keyboard = new PickerKeyboard();
 	let open = $state(false);
 	let search = $state('');
 
@@ -118,36 +113,22 @@
 	<input type="hidden" {name} {value} />
 {/if}
 
-<Popover.Root bind:open>
-	<Popover.Trigger
-		{id}
-		role="combobox"
-		aria-expanded={open}
-		aria-label={ariaLabel}
-		{disabled}
-		class={cn(
-			'flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-2 text-sm font-normal shadow-xs transition-[color,box-shadow] outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50',
-			!value && 'text-muted-foreground',
-			className
-		)}
-	>
-		<span class="truncate">
-			{selectedLabel}
-		</span>
-		<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-	</Popover.Trigger>
-	<Popover.Content
-		class={cn('z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0', contentClass)}
-		align="start"
-		onOpenAutoFocus={keyboard.openAutoFocus}
-	>
-		<Command.Root bind:ref={keyboard.root} class="outline-none">
+<PickerShell
+	bind:open
+	{id}
+	{ariaLabel}
+	{disabled}
+	label={selectedLabel}
+	muted={!value}
+	title={ariaLabel ?? placeholder}
+	class={className}
+>
+	{#snippet children(layout)}
+		<Command.Root class={layout.root}>
 			<Command.Input placeholder={searchPlaceholder} bind:value={search} />
-			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto max-md:**:data-[slot=command-item]:min-h-11"
-			>
+			<Command.List class={layout.list}>
 				<Command.Empty>{emptyText}</Command.Empty>
-				{#if showCreateOption && keyboard.createFirst}
+				{#if showCreateOption && layout.phone}
 					{@render createRow()}
 					<Command.Separator />
 				{/if}
@@ -198,11 +179,11 @@
 						{/each}
 					</Command.Group>
 				{/if}
-				{#if showCreateOption && !keyboard.createFirst}
+				{#if showCreateOption && !layout.phone}
 					<Command.Separator />
 					{@render createRow()}
 				{/if}
 			</Command.List>
 		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+	{/snippet}
+</PickerShell>

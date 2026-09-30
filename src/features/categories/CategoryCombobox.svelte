@@ -1,11 +1,9 @@
 <script lang="ts">
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
-	import * as Popover from '$ui/popover';
-	import { PickerKeyboard } from '$components/picker.svelte';
+	import PickerShell from '$components/PickerShell.svelte';
 	import { foldText } from '$domain/search';
 	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -52,7 +50,7 @@
 		class?: string;
 	} = $props();
 
-	const keyboard = new PickerKeyboard();
+	let shell = $state<ReturnType<typeof PickerShell>>();
 	let open = $state(false);
 	let search = $state('');
 	/** The category being created, while its group is picked. */
@@ -107,7 +105,7 @@
 	function startCreating() {
 		naming = typed;
 		search = '';
-		keyboard.dismiss();
+		shell?.dismissKeyboard();
 	}
 
 	function back() {
@@ -134,37 +132,27 @@
 	</Command.Group>
 {/snippet}
 
-<Popover.Root bind:open>
-	<Popover.Trigger
-		{id}
-		role="combobox"
-		aria-expanded={open}
-		aria-label={ariaLabel}
-		class={cn(
-			'flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-2 text-sm font-normal shadow-xs transition-[color,box-shadow] outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50',
-			!selectedLabel && 'text-muted-foreground',
-			className
-		)}
-	>
-		<span class="truncate">{selectedLabel ?? emptyLabel}</span>
-		<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-	</Popover.Trigger>
-	<Popover.Content
-		class="z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0"
-		align="start"
-		onOpenAutoFocus={keyboard.openAutoFocus}
-	>
-		<Command.Root bind:ref={keyboard.root} class="outline-none">
+<PickerShell
+	bind:this={shell}
+	bind:open
+	{id}
+	{ariaLabel}
+	label={selectedLabel ?? emptyLabel}
+	muted={!selectedLabel}
+	title={ariaLabel ?? emptyLabel}
+	onBack={naming === null ? undefined : back}
+	class={className}
+>
+	{#snippet children(layout)}
+		<Command.Root class={layout.root}>
 			<Command.Input
 				placeholder={naming === null ? m.combobox_search() : m.category_group_search()}
 				bind:value={search}
 			/>
-			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto max-md:**:data-[slot=command-item]:min-h-11"
-			>
+			<Command.List class={layout.list}>
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
 				{#if naming === null}
-					{#if creating && keyboard.createFirst}
+					{#if creating && layout.phone}
 						{@render createRow()}
 						<Command.Separator />
 					{/if}
@@ -192,26 +180,28 @@
 							{/each}
 						</Command.Group>
 					{/each}
-					{#if creating && !keyboard.createFirst}
+					{#if creating && !layout.phone}
 						<Command.Separator />
 						{@render createRow()}
 					{/if}
 				{:else}
-					<Command.Group forceMount>
-						<Command.Item value="back" forceMount onSelect={back}>
-							<ArrowLeftIcon class="mr-2 size-4" />
-							<span>{m.back()}</span>
-						</Command.Item>
-					</Command.Group>
+					{#if !layout.phone}
+						<Command.Group forceMount>
+							<Command.Item value="back" forceMount onSelect={back}>
+								<ArrowLeftIcon class="mr-2 size-4" />
+								<span>{m.back()}</span>
+							</Command.Item>
+						</Command.Group>
+					{/if}
 					<GroupItems
 						{groups}
 						{typed}
-						createFirst={keyboard.createFirst}
+						createFirst={layout.phone}
 						heading={m.category_add_to({ name: naming })}
 						onPick={createIn}
 					/>
 				{/if}
 			</Command.List>
 		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+	{/snippet}
+</PickerShell>
