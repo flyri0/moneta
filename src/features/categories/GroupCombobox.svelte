@@ -1,10 +1,8 @@
 <script lang="ts">
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import * as Command from '$ui/command';
-	import * as Popover from '$ui/popover';
+	import PickerShell from '$components/PickerShell.svelte';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
-	import { cn } from '$utils';
 	import GroupItems from './GroupItems.svelte';
 	import { NewCategories, type NewCategoryGroup } from './new-categories';
 	import type { PickerGroup } from './picker';
@@ -57,34 +55,29 @@
 	}
 </script>
 
-<Popover.Root bind:open>
-	<Popover.Trigger
-		{id}
-		role="combobox"
-		aria-expanded={open}
-		aria-label={ariaLabel}
-		{disabled}
-		class={cn(
-			'flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-2 text-sm font-normal shadow-xs transition-[color,box-shadow] outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50',
-			!selectedLabel && 'text-muted-foreground',
-			className
-		)}
-	>
-		<span class="truncate">{selectedLabel ?? placeholder}</span>
-		<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-	</Popover.Trigger>
-	<Popover.Content
-		class="z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0"
-		align="start"
-	>
-		<Command.Root>
+<PickerShell
+	bind:open
+	{id}
+	{ariaLabel}
+	{disabled}
+	label={selectedLabel ?? placeholder}
+	muted={!selectedLabel}
+	title={ariaLabel ?? placeholder}
+	class={className}
+>
+	{#snippet children(layout)}
+		<Command.Root class={layout.root}>
 			<Command.Input placeholder={m.category_group_search()} bind:value={search} />
-			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
-			>
+			<Command.List class={layout.list}>
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
-				<GroupItems {groups} typed={search.trim()} selected={value} onPick={choose} />
+				<GroupItems
+					{groups}
+					typed={search.trim()}
+					selected={value}
+					createFirst={layout.phone}
+					onPick={choose}
+				/>
 			</Command.List>
 		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+	{/snippet}
+</PickerShell>

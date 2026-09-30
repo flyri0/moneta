@@ -1,9 +1,8 @@
 <script lang="ts">
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
-	import * as Popover from '$ui/popover';
+	import PickerShell from '$components/PickerShell.svelte';
 	import { cn } from '$utils';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -30,7 +29,6 @@
 		name,
 		disabled = false,
 		class: className,
-		contentClass,
 		ariaLabel,
 		onSelect,
 		allowCustom = false,
@@ -47,7 +45,6 @@
 		name?: string;
 		disabled?: boolean;
 		class?: string;
-		contentClass?: string;
 		ariaLabel?: string;
 		onSelect?: (val: string) => void;
 		allowCustom?: boolean;
@@ -92,38 +89,49 @@
 	}
 </script>
 
+{#snippet createRow()}
+	<Command.Group>
+		<Command.Item
+			value={trimmedSearch}
+			keywords={[trimmedSearch]}
+			onSelect={() => handleSelect(trimmedSearch)}
+			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
+		>
+			<div
+				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+			>
+				<PlusIcon class="size-3.5 stroke-[2.5]" />
+			</div>
+			<span class="truncate">
+				{createLabel ? createLabel(trimmedSearch) : m.combobox_create({ name: trimmedSearch })}
+			</span>
+		</Command.Item>
+	</Command.Group>
+{/snippet}
+
 {#if name}
 	<input type="hidden" {name} {value} />
 {/if}
 
-<Popover.Root bind:open>
-	<Popover.Trigger
-		{id}
-		role="combobox"
-		aria-expanded={open}
-		aria-label={ariaLabel}
-		{disabled}
-		class={cn(
-			'flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-2.5 py-2 text-sm font-normal shadow-xs transition-[color,box-shadow] outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50',
-			!value && 'text-muted-foreground',
-			className
-		)}
-	>
-		<span class="truncate">
-			{selectedLabel}
-		</span>
-		<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-	</Popover.Trigger>
-	<Popover.Content
-		class={cn('z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0', contentClass)}
-		align="start"
-	>
-		<Command.Root>
+<PickerShell
+	bind:open
+	{id}
+	{ariaLabel}
+	{disabled}
+	label={selectedLabel}
+	muted={!value}
+	title={ariaLabel ?? placeholder}
+	class={className}
+>
+	{#snippet children(layout)}
+		<Command.Root class={layout.root}>
 			<Command.Input placeholder={searchPlaceholder} bind:value={search} />
-			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
-			>
+			<Command.List class={layout.list}>
 				<Command.Empty>{emptyText}</Command.Empty>
+				{#if showCreateOption && layout.phone}
+					{@render createRow()}
+					<Command.Separator />
+				{/if}
 				{#if emptyOption}
 					<Command.Group>
 						<Command.Item
@@ -171,29 +179,11 @@
 						{/each}
 					</Command.Group>
 				{/if}
-				{#if showCreateOption}
+				{#if showCreateOption && !layout.phone}
 					<Command.Separator />
-					<Command.Group>
-						<Command.Item
-							value={trimmedSearch}
-							keywords={[trimmedSearch]}
-							onSelect={() => handleSelect(trimmedSearch)}
-							class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-						>
-							<div
-								class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
-							>
-								<PlusIcon class="size-3.5 stroke-[2.5]" />
-							</div>
-							<span class="truncate">
-								{createLabel
-									? createLabel(trimmedSearch)
-									: m.combobox_create({ name: trimmedSearch })}
-							</span>
-						</Command.Item>
-					</Command.Group>
+					{@render createRow()}
 				{/if}
 			</Command.List>
 		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+	{/snippet}
+</PickerShell>
