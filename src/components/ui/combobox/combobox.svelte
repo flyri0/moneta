@@ -4,6 +4,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
 	import * as Popover from '$ui/popover';
+	import { PickerKeyboard } from '$components/picker.svelte';
 	import { cn } from '$utils';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -54,6 +55,7 @@
 		createLabel?: (query: string) => string;
 	} = $props();
 
+	const keyboard = new PickerKeyboard();
 	let open = $state(false);
 	let search = $state('');
 
@@ -92,6 +94,26 @@
 	}
 </script>
 
+{#snippet createRow()}
+	<Command.Group>
+		<Command.Item
+			value={trimmedSearch}
+			keywords={[trimmedSearch]}
+			onSelect={() => handleSelect(trimmedSearch)}
+			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
+		>
+			<div
+				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+			>
+				<PlusIcon class="size-3.5 stroke-[2.5]" />
+			</div>
+			<span class="truncate">
+				{createLabel ? createLabel(trimmedSearch) : m.combobox_create({ name: trimmedSearch })}
+			</span>
+		</Command.Item>
+	</Command.Group>
+{/snippet}
+
 {#if name}
 	<input type="hidden" {name} {value} />
 {/if}
@@ -117,13 +139,18 @@
 	<Popover.Content
 		class={cn('z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0', contentClass)}
 		align="start"
+		onOpenAutoFocus={keyboard.openAutoFocus}
 	>
-		<Command.Root>
+		<Command.Root bind:ref={keyboard.root} class="outline-none">
 			<Command.Input placeholder={searchPlaceholder} bind:value={search} />
 			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
+				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto max-md:**:data-[slot=command-item]:min-h-11"
 			>
 				<Command.Empty>{emptyText}</Command.Empty>
+				{#if showCreateOption && keyboard.createFirst}
+					{@render createRow()}
+					<Command.Separator />
+				{/if}
 				{#if emptyOption}
 					<Command.Group>
 						<Command.Item
@@ -171,27 +198,9 @@
 						{/each}
 					</Command.Group>
 				{/if}
-				{#if showCreateOption}
+				{#if showCreateOption && !keyboard.createFirst}
 					<Command.Separator />
-					<Command.Group>
-						<Command.Item
-							value={trimmedSearch}
-							keywords={[trimmedSearch]}
-							onSelect={() => handleSelect(trimmedSearch)}
-							class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-						>
-							<div
-								class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
-							>
-								<PlusIcon class="size-3.5 stroke-[2.5]" />
-							</div>
-							<span class="truncate">
-								{createLabel
-									? createLabel(trimmedSearch)
-									: m.combobox_create({ name: trimmedSearch })}
-							</span>
-						</Command.Item>
-					</Command.Group>
+					{@render createRow()}
 				{/if}
 			</Command.List>
 		</Command.Root>

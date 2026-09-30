@@ -255,3 +255,40 @@ test("moves a deleted group's categories to a new group", async ({ page }) => {
 	await expect(group.getByTestId('category-row').filter({ hasText: 'Groceries' })).toHaveCount(1);
 	await expect(page.getByRole('button', { name: 'Everyday', exact: true })).toHaveCount(0);
 });
+
+test.describe('on phone', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('keeps the keyboard down until the search is tapped, and offers to create first', async ({
+		page
+	}) => {
+		await onboard(page);
+		const dialog = await startTransaction(page, 'Market', '20');
+		await dialog.getByLabel('Category', { exact: true }).click();
+		const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+		const input = popover.locator('[data-slot="command-input"]');
+		await expect(popover).toBeVisible();
+		await expect(input).not.toBeFocused();
+
+		await input.fill('Gro');
+		const items = popover.locator('[data-slot="command-item"]');
+		await expect(items.first()).toHaveText('Create category "Gro"');
+		await items.first().click();
+		await expect(popover.getByText('Add "Gro" to…')).toBeVisible();
+		await expect(input).not.toBeFocused();
+	});
+});
+
+test('focuses the search and lists the matches before creating on desktop', async ({ page }) => {
+	await onboard(page);
+	const dialog = await startTransaction(page, 'Market', '20');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const input = popover.locator('[data-slot="command-input"]');
+	await expect(input).toBeFocused();
+
+	await input.fill('Gro');
+	const items = popover.locator('[data-slot="command-item"]');
+	await expect(items.filter({ hasText: 'Groceries' })).toHaveCount(1);
+	await expect(items.last()).toHaveText('Create category "Gro"');
+});

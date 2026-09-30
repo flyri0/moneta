@@ -2,6 +2,7 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import * as Command from '$ui/command';
 	import * as Popover from '$ui/popover';
+	import { PickerKeyboard } from '$components/picker.svelte';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
@@ -35,6 +36,7 @@
 		class?: string;
 	} = $props();
 
+	const keyboard = new PickerKeyboard();
 	let open = $state(false);
 	let search = $state('');
 
@@ -76,14 +78,21 @@
 	<Popover.Content
 		class="z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0"
 		align="start"
+		onOpenAutoFocus={keyboard.openAutoFocus}
 	>
-		<Command.Root>
+		<Command.Root bind:ref={keyboard.root} class="outline-none">
 			<Command.Input placeholder={m.category_group_search()} bind:value={search} />
 			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
+				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto max-md:**:data-[slot=command-item]:min-h-11"
 			>
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
-				<GroupItems {groups} typed={search.trim()} selected={value} onPick={choose} />
+				<GroupItems
+					{groups}
+					typed={search.trim()}
+					selected={value}
+					createFirst={keyboard.createFirst}
+					onPick={choose}
+				/>
 			</Command.List>
 		</Command.Root>
 	</Popover.Content>

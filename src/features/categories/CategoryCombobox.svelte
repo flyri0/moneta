@@ -5,6 +5,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
 	import * as Popover from '$ui/popover';
+	import { PickerKeyboard } from '$components/picker.svelte';
 	import { foldText } from '$domain/search';
 	import { categoryLabel, groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -51,6 +52,7 @@
 		class?: string;
 	} = $props();
 
+	const keyboard = new PickerKeyboard();
 	let open = $state(false);
 	let search = $state('');
 	/** The category being created, while its group is picked. */
@@ -78,6 +80,7 @@
 	const categoryExists = $derived(
 		offered.some((g) => g.categories.some((c) => foldText(categoryLabel(c)) === foldText(typed)))
 	);
+	const creating = $derived(creatable && typed !== '' && !categoryExists);
 
 	const selectedLabel = $derived.by(() => {
 		for (const g of offered) {
@@ -104,6 +107,7 @@
 	function startCreating() {
 		naming = typed;
 		search = '';
+		keyboard.dismiss();
 	}
 
 	function back() {
@@ -111,6 +115,24 @@
 		naming = null;
 	}
 </script>
+
+{#snippet createRow()}
+	<Command.Group>
+		<Command.Item
+			value={`create ${typed}`}
+			keywords={[typed]}
+			onSelect={startCreating}
+			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
+		>
+			<div
+				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+			>
+				<PlusIcon class="size-3.5 stroke-[2.5]" />
+			</div>
+			<span class="truncate">{m.category_create({ name: typed })}</span>
+		</Command.Item>
+	</Command.Group>
+{/snippet}
 
 <Popover.Root bind:open>
 	<Popover.Trigger
@@ -130,17 +152,22 @@
 	<Popover.Content
 		class="z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0"
 		align="start"
+		onOpenAutoFocus={keyboard.openAutoFocus}
 	>
-		<Command.Root>
+		<Command.Root bind:ref={keyboard.root} class="outline-none">
 			<Command.Input
 				placeholder={naming === null ? m.combobox_search() : m.category_group_search()}
 				bind:value={search}
 			/>
 			<Command.List
-				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto"
+				class="max-h-[min(var(--bits-popover-content-available-height,15rem),15rem)] overflow-y-auto max-md:**:data-[slot=command-item]:min-h-11"
 			>
 				<Command.Empty>{m.combobox_empty()}</Command.Empty>
 				{#if naming === null}
+					{#if creating && keyboard.createFirst}
+						{@render createRow()}
+						<Command.Separator />
+					{/if}
 					{#if allowEmpty}
 						<Command.Group>
 							<Command.Item value={emptyLabel} onSelect={() => choose('')}>
@@ -165,23 +192,9 @@
 							{/each}
 						</Command.Group>
 					{/each}
-					{#if creatable && typed && !categoryExists}
+					{#if creating && !keyboard.createFirst}
 						<Command.Separator />
-						<Command.Group>
-							<Command.Item
-								value={`create ${typed}`}
-								keywords={[typed]}
-								onSelect={startCreating}
-								class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-							>
-								<div
-									class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
-								>
-									<PlusIcon class="size-3.5 stroke-[2.5]" />
-								</div>
-								<span class="truncate">{m.category_create({ name: typed })}</span>
-							</Command.Item>
-						</Command.Group>
+						{@render createRow()}
 					{/if}
 				{:else}
 					<Command.Group forceMount>
@@ -193,6 +206,7 @@
 					<GroupItems
 						{groups}
 						{typed}
+						createFirst={keyboard.createFirst}
 						heading={m.category_add_to({ name: naming })}
 						onPick={createIn}
 					/>
