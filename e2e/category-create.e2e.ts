@@ -259,16 +259,14 @@ test("moves a deleted group's categories to a new group", async ({ page }) => {
 test.describe('on phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('picks on a screen of its own, with the keyboard down until the search is tapped', async ({
-		page
-	}) => {
+	test('picks on a screen of its own, typing right away', async ({ page }) => {
 		await onboard(page);
 		const dialog = await startTransaction(page, 'Market', '20');
 		await dialog.getByLabel('Category', { exact: true }).click();
 		const picker = page.locator('[data-picker][data-state="open"]');
 		const input = picker.locator('[data-slot="command-input"]');
 		await expect(picker).toBeVisible();
-		await expect(input).not.toBeFocused();
+		await expect(input).toBeFocused();
 		await expect
 			.poll(() => picker.boundingBox())
 			.toMatchObject({ x: 0, y: 0, width: 390, height: 844 });

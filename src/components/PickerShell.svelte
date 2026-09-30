@@ -25,8 +25,7 @@
 	/**
 	 * The field and the panel of a picker: a popover under the field on desktop, and on phones
 	 * (below 768px) a screen of its own that fits above the keyboard, with a back button and
-	 * `title`. `onBack` replaces closing, for a picker's own second step. On phones the search isn't
-	 * focused on open, so the keyboard comes up only when it's tapped.
+	 * `title`. `onBack` replaces closing, for a picker's own second step.
 	 */
 	let {
 		open = $bindable(false),
@@ -63,9 +62,12 @@
 		if (!desktop.current) screen?.focus({ preventScroll: true });
 	}
 
+	/** Focuses the search rather than the back button, which comes first. */
 	function openAutoFocus(event: Event) {
 		event.preventDefault();
-		screen?.focus({ preventScroll: true });
+		screen
+			?.querySelector<HTMLElement>('[data-slot="command-input"]')
+			?.focus({ preventScroll: true });
 	}
 
 	const triggerClass = $derived(
