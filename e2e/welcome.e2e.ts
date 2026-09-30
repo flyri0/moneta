@@ -19,7 +19,7 @@ async function offerInstall(page: Page, accept: boolean): Promise<void> {
 
 test('welcomes a first-time visitor and lets them into the app', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.getByRole('heading', { name: 'Moneta' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Give every dollar a job.' })).toBeVisible();
 	await expect(page.getByText('Free and open source')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Use it in the browser' }).click();
@@ -78,15 +78,35 @@ test('explains how to install by hand when no prompt is offered', async ({ page 
 	await expect(page.getByText('Add to Home Screen')).toBeVisible();
 });
 
-test('keeps the welcome page in one screen on a phone', async ({ page }) => {
-	await page.setViewportSize({ width: 360, height: 640 });
-	await page.goto('/');
-	await expect(page.getByRole('button', { name: 'Install Moneta' })).toBeVisible();
-	const overflow = await page.evaluate(
-		() => document.documentElement.scrollHeight - document.documentElement.clientHeight
-	);
-	expect(overflow).toBeLessThanOrEqual(0);
-});
+// Phones upright and sideways, a tablet, a small laptop and desktops.
+const SCREENS = [
+	[360, 640],
+	[390, 844],
+	[844, 390],
+	[768, 1024],
+	[1024, 600],
+	[1280, 720],
+	[1440, 900]
+] as const;
+const INSTALL = { en: 'Install Moneta', 'pt-BR': 'Instalar o Moneta' } as const;
+
+for (const [locale, install] of Object.entries(INSTALL)) {
+	for (const [width, height] of SCREENS) {
+		test(`keeps the welcome page in one screen at ${width}x${height} in ${locale}`, async ({
+			page
+		}) => {
+			await page.addInitScript((l) => localStorage.setItem('PARAGLIDE_LOCALE', l), locale);
+			await page.setViewportSize({ width, height });
+			await page.goto('/');
+			await expect(page.getByRole('button', { name: install })).toBeInViewport({ ratio: 1 });
+			const overflow = await page.evaluate(() => {
+				const root = document.documentElement;
+				return Math.max(root.scrollHeight - root.clientHeight, root.scrollWidth - root.clientWidth);
+			});
+			expect(overflow).toBeLessThanOrEqual(0);
+		});
+	}
+}
 
 test('offers the welcome page in Portuguese', async ({ page }) => {
 	await page.goto('/');
