@@ -121,6 +121,8 @@ const EVERY_MONTH: Spend[] = [
 	{ day: 25, account: CARD, payee: 'grocery', category: 'groceries', amount: 131.05, varies: true },
 	{ day: 6, account: CARD, payee: 'transport', category: 'transport', amount: 58, varies: true },
 	{ day: 20, account: CARD, payee: 'transport', category: 'transport', amount: 62.5, varies: true },
+	// Something on the 1st, so a month that has just begun already shows spending.
+	{ day: 1, account: CARD, payee: 'coffee', category: 'dining', amount: 8.4, varies: true },
 	{ day: 7, account: CARD, payee: 'coffee', category: 'dining', amount: 34.6, varies: true },
 	{ day: 14, account: CARD, payee: 'restaurant', category: 'dining', amount: 68.25, varies: true },
 	{ day: 22, account: CARD, payee: 'coffee', category: 'dining', amount: 41.9, varies: true },

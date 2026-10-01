@@ -331,6 +331,19 @@ describe('buildDemo', () => {
 		expect(inMonth.length).toBeGreaterThan(0);
 	});
 
+	it('has spending on the first of the month, so reports of a new month have something to show', () => {
+		const fresh = buildDemo(input('2026-10-01'));
+		const spent = fresh.transactions.filter(
+			(t) =>
+				t.date === '2026-10-01' &&
+				t.amount < 0 &&
+				t.categoryName !== undefined &&
+				t.categoryName !== null &&
+				!INCOME.has(t.categoryName)
+		);
+		expect(spent.length).toBeGreaterThan(0);
+	});
+
 	for (const day of ['2026-09-01', '2026-01-31', '2026-03-31', '2027-01-15']) {
 		it(`holds together when today is ${day}`, () => {
 			const demo = buildDemo(input(day));
