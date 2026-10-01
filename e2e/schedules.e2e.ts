@@ -14,7 +14,7 @@ test('schedules a monthly bill, forecasts it and enters it', async ({ page }) =>
 	await onboard(page);
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
-	await expect(page.getByRole('heading', { name: 'Schedules' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Transactions' })).toBeVisible();
 	await expect(page.getByText('No schedules yet')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Add schedule' }).first().click();

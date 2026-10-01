@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import { Button } from '$ui/button';
 	import PageHeader from '$components/PageHeader.svelte';
 	import Register from '$features/accounts/Register.svelte';
 	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
 	import SelectButton from '$features/accounts/SelectButton.svelte';
 	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
 	import { RegisterSelection } from '$features/accounts/selection.svelte';
+	import TransactionsTabs from '$features/transactions/TransactionsTabs.svelte';
 	import { m } from '$i18n/paraglide/messages';
 
 	const filters = new RegisterFilters();
@@ -12,8 +16,17 @@
 </script>
 
 <PageHeader title={m.nav_transactions()}>
-	{#snippet actions()}<SelectButton {selection} labelled />{/snippet}
-	{#snippet toolbar()}<RegisterToolbar {filters} />{/snippet}
+	{#snippet actions()}
+		<Button variant="outline" size="sm" href={resolve('/payees')}>
+			<UsersIcon />
+			{m.nav_payees()}
+		</Button>
+		<SelectButton {selection} labelled />
+	{/snippet}
+	{#snippet toolbar()}
+		<TransactionsTabs />
+		<RegisterToolbar {filters} />
+	{/snippet}
 </PageHeader>
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">

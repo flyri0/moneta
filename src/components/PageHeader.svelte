@@ -22,7 +22,7 @@
 		subtitle?: Snippet;
 		/** The page one level up, and its name. */
 		back?:
-			| { route: '/accounts' | '/reports'; label: string }
+			| { route: '/accounts' | '/reports' | '/transactions'; label: string }
 			| { route: '/accounts/[id]'; id: string; label: string };
 		actions?: Snippet;
 		toolbar?: Snippet;

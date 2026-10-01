@@ -6,6 +6,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
+	import TransactionsTabs from '$features/transactions/TransactionsTabs.svelte';
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import ScheduleList from '$features/schedules/ScheduleList.svelte';
 	import { useSession } from '$client/app-state.svelte';
@@ -31,13 +32,14 @@
 	}
 </script>
 
-<PageHeader title={m.nav_schedules()}>
+<PageHeader title={m.nav_transactions()}>
 	{#snippet actions()}
 		<Button size="sm" onclick={() => open(null)}>
 			<PlusIcon />
 			{m.schedules_add()}
 		</Button>
 	{/snippet}
+	{#snippet toolbar()}<TransactionsTabs />{/snippet}
 </PageHeader>
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">

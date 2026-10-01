@@ -58,7 +58,9 @@ test('lists the transactions of every account', async ({ page }) => {
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
-	test('keeps Payees, Schedules and Settings in the More menu', async ({ page }) => {
+	test('keeps the bar to five destinations, with Payees and Scheduled inside Transactions', async ({
+		page
+	}) => {
 		await onboard(page);
 		const bar = page.getByRole('navigation', { name: 'Main' });
 		await expect(bar.locator('[data-nav-label]')).toHaveText([
@@ -66,22 +68,28 @@ test.describe('on a phone', () => {
 			'Transactions',
 			'Accounts',
 			'Reports',
-			'More'
+			'Settings'
 		]);
 
 		await bar.getByRole('link', { name: 'Transactions' }).click();
 		await expect(page.getByRole('heading', { name: 'Transactions' })).toBeVisible();
+		await page.getByRole('link', { name: 'Scheduled' }).click();
+		await expect(page.getByRole('button', { name: 'Add schedule' }).first()).toBeVisible();
+		await expect(bar.getByRole('link', { name: 'Transactions' })).toHaveAttribute(
+			'aria-current',
+			'page'
+		);
 
-		await bar.getByRole('button', { name: 'More' }).click();
-		await expect(page.getByRole('dialog').getByRole('link')).toHaveText([
-			'Payees',
-			'Schedules',
-			'Settings'
-		]);
-		await page.getByRole('dialog').getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'All' }).click();
+		await page.getByRole('link', { name: 'Payees' }).click();
+		await expect(page.getByRole('heading', { name: 'Payees' })).toBeVisible();
+		await expect(bar.getByRole('link', { name: 'Transactions' })).toHaveAttribute(
+			'aria-current',
+			'page'
+		);
+
+		await bar.getByRole('link', { name: 'Settings' }).click();
 		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-		await expect(page.getByRole('dialog')).toBeHidden();
-		await expect(bar.getByRole('button', { name: 'More' })).toHaveAttribute('aria-current', 'page');
 	});
 
 	test('keeps the dates behind a button, and in sight once one is set', async ({ page }) => {

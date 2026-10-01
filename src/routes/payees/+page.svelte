@@ -59,7 +59,7 @@
 	});
 </script>
 
-<PageHeader title={m.nav_payees()}>
+<PageHeader title={m.nav_payees()} back={{ route: '/transactions', label: m.nav_transactions() }}>
 	{#snippet actions()}
 		<Button size="sm" onclick={() => (adding = true)}>
 			<PlusIcon />

@@ -184,9 +184,8 @@ test.describe('on a phone', () => {
 		await onboard(page);
 		await page
 			.getByRole('navigation', { name: 'Main' })
-			.getByRole('button', { name: 'More' })
+			.getByRole('link', { name: 'Settings' })
 			.click();
-		await page.getByRole('dialog').getByRole('link', { name: 'Settings' }).click();
 		await chooseSelect(page, 'Language', 'Português (Brasil)');
 		const bar = page.getByRole('navigation', { name: 'Principal' });
 		// The active item is bolder, so measure with the longest label active.

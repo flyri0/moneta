@@ -6,7 +6,6 @@
 	import { resolve } from '$app/paths';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
 	import PanelLeftOpenIcon from '@lucide/svelte/icons/panel-left-open';
@@ -16,8 +15,6 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
-	import * as Sheet from '$ui/sheet';
-	import BottomDrawer from '$components/BottomDrawer.svelte';
 	import * as Tooltip from '$ui/tooltip';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
@@ -98,7 +95,7 @@
 			href: resolve('/transactions'),
 			label: m.nav_transactions(),
 			icon: ReceiptTextIcon,
-			active: path.startsWith('/transactions')
+			active: path.startsWith('/transactions') || path.startsWith('/payees')
 		},
 		{
 			href: resolve('/accounts'),
@@ -113,18 +110,6 @@
 			active: path.startsWith('/reports')
 		},
 		{
-			href: resolve('/payees'),
-			label: m.nav_payees(),
-			icon: UsersIcon,
-			active: path.startsWith('/payees')
-		},
-		{
-			href: resolve('/schedules'),
-			label: m.nav_schedules(),
-			icon: CalendarClockIcon,
-			active: path.startsWith('/schedules')
-		},
-		{
 			href: resolve('/settings'),
 			label: m.nav_settings(),
 			icon: SettingsIcon,
@@ -132,10 +117,33 @@
 		}
 	]);
 
-	/** On phones, the items after the first four live in the "More" sheet. */
-	const barItems = $derived(nav.slice(0, 4));
-	const moreItems = $derived(nav.slice(4));
-	const moreActive = $derived(moreItems.some((item) => item.active));
+	/**
+	 * The desktop sidebar has room for Payees and Schedules; on phones they sit inside Transactions
+	 * (a button and a tab), so the bar keeps to five destinations.
+	 */
+	const sidebarNav = $derived([
+		...nav.slice(0, 4).map((item) =>
+			item.href === resolve('/transactions')
+				? {
+						...item,
+						active: path.startsWith('/transactions') && !path.startsWith('/transactions/scheduled')
+					}
+				: item
+		),
+		{
+			href: resolve('/payees'),
+			label: m.nav_payees(),
+			icon: UsersIcon,
+			active: path.startsWith('/payees')
+		},
+		{
+			href: resolve('/transactions/scheduled'),
+			label: m.nav_schedules(),
+			icon: CalendarClockIcon,
+			active: path.startsWith('/transactions/scheduled')
+		},
+		nav[4]
+	]);
 
 	let adding = $state(false);
 	let dialogLoad =
@@ -143,7 +151,6 @@
 	$effect(() => {
 		if (adding) dialogLoad ??= import('$features/transactions/TransactionDialog.svelte');
 	});
-	let moreOpen = $state(false);
 
 	/** How far an arrow key moves the sidebar's edge. */
 	const RESIZE_STEP = 16;
@@ -217,7 +224,7 @@
 	// it still mounts only when first opened.
 	onMount(() =>
 		runWhenIdle([
-			...nav.map((item) => () => preloadCode(item.href)),
+			...sidebarNav.map((item) => () => preloadCode(item.href)),
 			() => import('$features/transactions/TransactionDialog.svelte')
 		])
 	);
@@ -252,7 +259,7 @@
 	});
 </script>
 
-{#snippet bottomLink(item: (typeof nav)[number])}
+{#snippet bottomLink(item: (typeof sidebarNav)[number])}
 	<a
 		href={item.href}
 		aria-current={item.active ? 'page' : undefined}
@@ -277,7 +284,7 @@
 	</Button>
 {/snippet}
 
-{#snippet railLink(item: (typeof nav)[number])}
+{#snippet railLink(item: (typeof sidebarNav)[number])}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
@@ -335,7 +342,7 @@
 							</Tooltip.Root>
 						</div>
 						<nav class="grid justify-items-center gap-1" aria-label={m.nav_label()}>
-							{#each nav as item (item.label)}
+							{#each sidebarNav as item (item.label)}
 								{@render railLink(item)}
 							{/each}
 						</nav>
@@ -354,7 +361,7 @@
 							</Button>
 						</div>
 						<nav class="grid grid-cols-1 gap-1" aria-label={m.nav_label()}>
-							{#each nav as item (item.label)}
+							{#each sidebarNav as item (item.label)}
 								<a
 									href={item.href}
 									aria-current={item.active ? 'page' : undefined}
@@ -432,42 +439,11 @@
 		aria-label={m.nav_label()}
 		data-scroll-inset="bottom"
 	>
-		{#each barItems as item (item.label)}
+		{#each nav as item (item.label)}
 			{@render bottomLink(item)}
 		{/each}
-		<button
-			type="button"
-			onclick={() => (moreOpen = true)}
-			aria-current={moreActive ? 'page' : undefined}
-			aria-haspopup="dialog"
-			class="flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
-		>
-			<EllipsisIcon class="size-5" />
-			<span data-nav-label class="max-w-full truncate">{m.nav_more()}</span>
-		</button>
 	</nav>
 </div>
-
-<BottomDrawer bind:open={moreOpen}>
-	{#snippet header()}
-		<Sheet.Header class="pt-3">
-			<Sheet.Title>{m.nav_more()}</Sheet.Title>
-		</Sheet.Header>
-	{/snippet}
-	<nav class="grid gap-1 px-2" aria-label={m.nav_more()}>
-		{#each moreItems as item (item.label)}
-			<a
-				href={item.href}
-				aria-current={item.active ? 'page' : undefined}
-				onclick={() => (moreOpen = false)}
-				class="flex items-center gap-3 rounded-md px-3 py-3 text-sm hover:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-primary"
-			>
-				<item.icon class="size-5" />
-				{item.label}
-			</a>
-		{/each}
-	</nav>
-</BottomDrawer>
 
 <!-- Loaded the first time it opens: most starts never add a transaction. -->
 {#if dialogLoad}

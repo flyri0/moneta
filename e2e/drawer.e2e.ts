@@ -21,12 +21,9 @@ async function onScreen(element: Locator): Promise<boolean> {
 	});
 }
 
-async function openMore(page: Page): Promise<Locator> {
-	await page
-		.getByRole('navigation', { name: 'Main' })
-		.getByRole('button', { name: 'More' })
-		.click();
-	const drawer = page.getByRole('dialog', { name: 'More' });
+async function openAdd(page: Page): Promise<Locator> {
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const drawer = page.getByRole('dialog', { name: 'New transaction' });
 	await expect(drawer).toBeVisible();
 	return drawer;
 }
@@ -78,33 +75,18 @@ test.describe('on a phone', () => {
 		await expect(drawer).toBeHidden();
 	});
 
-	test('a drawer that shows everything stays at its height when dragged up', async ({ page }) => {
-		await onboard(page);
-		const drawer = await openMore(page);
-		const natural = Math.round((await drawer.boundingBox())!.height);
-		await drag(page, drawer, -150);
-		await expect(drawer).not.toHaveAttribute('data-expanded');
-		await expect.poll(async () => Math.round((await drawer.boundingBox())!.height)).toBe(natural);
-	});
-
 	test('opening a drawer never shows its hidden Close', async ({ page }) => {
 		await onboard(page);
 		// The transaction dialog opens before its form loads, with nothing else to focus.
-		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
-		const drawer = page.getByRole('dialog', { name: 'New transaction' });
-		await expect(drawer).toBeVisible();
+		const drawer = await openAdd(page);
 		const close = drawer.getByRole('button', { name: 'Close' });
 		await expect(close).not.toBeFocused();
 		expect(await onScreen(close)).toBe(false);
 	});
 
-	test('the More menu is a drawer too, and Escape still closes it', async ({ page }) => {
+	test('Escape still closes a drawer', async ({ page }) => {
 		await onboard(page);
-		let drawer = await openMore(page);
-		await drag(page, drawer, 300);
-		await expect(drawer).toBeHidden();
-
-		drawer = await openMore(page);
+		const drawer = await openAdd(page);
 		await page.keyboard.press('Escape');
 		await expect(drawer).toBeHidden();
 	});
