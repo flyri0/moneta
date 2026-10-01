@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import Loader2Icon from '@lucide/svelte/icons/loader-circle';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
@@ -156,7 +157,7 @@
 					{m.backup_restore_made({ date: formatDateTime(createdAt, getLocale()) })}
 				</p>
 			{/if}
-			<ul class="divide-y rounded-lg border" data-testid="restore-budgets">
+			<ul class="divide-y rounded-lg border" data-testid="restore-budgets" aria-busy={busy}>
 				{#each plan as budget (budget.index)}
 					<li class="flex items-center gap-3 px-3 py-2">
 						<Checkbox
@@ -183,7 +184,10 @@
 					disabled={busy || chosen.length === 0 || countdown > 0}
 					onclick={restore}
 				>
-					{#if !confirmReplace}
+					{#if busy}
+						<Loader2Icon class="animate-spin" />
+						{m.backup_restore_restoring()}
+					{:else if !confirmReplace}
 						{m.backup_restore_count({ count: chosen.length })}
 					{:else if countdown > 0}
 						{m.backup_restore_replace_wait({ seconds: countdown })}

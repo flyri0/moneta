@@ -209,9 +209,10 @@
 			<Button
 				disabled={busy || counts.missing > 0 || counts.create + counts.match === 0}
 				onclick={commit}
+				aria-busy={busy}
 				data-testid="import-commit"
 			>
-				{m.import_commit({ count: counts.create + counts.match })}
+				{busy ? m.import_committing() : m.import_commit({ count: counts.create + counts.match })}
 			</Button>
 		</div>
 	</div>

@@ -8,6 +8,7 @@
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError, runActionToast } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { ScheduleRow, UpcomingOccurrence } from '$db/repos/schedules';
 	import { todayIso } from '$domain/month';
 	import { formatDate } from '$i18n/formats';
@@ -57,7 +58,11 @@
 	}
 
 	function skip(o: UpcomingOccurrence) {
-		void runActionToast(() => session.api.schedules.skip(o.scheduleId, o.index));
+		const call = session.api.schedules.skip(o.scheduleId, o.index);
+		void runActionToast(async () => {
+			await call;
+			offerUndo(session.client, call, m.schedule_skipped());
+		});
 	}
 </script>
 

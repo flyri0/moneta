@@ -137,10 +137,17 @@
 	async function coverFromReady() {
 		const assigned = category.assigned + fromReady;
 		const all = readyCoversAll;
-		coverError = await runAction(() =>
-			session.api.budget.setAssigned(category.id, month, assigned)
+		let call = null as ReturnType<typeof session.api.budget.setAssigned> | null;
+		coverError = await runAction(async () => {
+			call = session.api.budget.setAssigned(category.id, month, assigned);
+			await call;
+		});
+		if (coverError || !call) return;
+		offerUndo(
+			session.client,
+			call,
+			m.budget_assigned_set({ amount: session.format(assigned), name: category.name })
 		);
-		if (coverError) return;
 		if (all) open = false;
 		else assignedText = formatAmountInput(assigned, session.money);
 	}
@@ -159,8 +166,18 @@
 			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
-		error = await runAction(() => session.api.budget.setAssigned(category.id, month, value));
-		if (!error) open = false;
+		let call = null as ReturnType<typeof session.api.budget.setAssigned> | null;
+		error = await runAction(async () => {
+			call = session.api.budget.setAssigned(category.id, month, value);
+			await call;
+		});
+		if (error || !call) return;
+		open = false;
+		offerUndo(
+			session.client,
+			call,
+			m.budget_assigned_set({ amount: session.format(value), name: category.name })
+		);
 	}
 
 	async function move(event: SubmitEvent) {
@@ -195,7 +212,12 @@
 	}
 </script>
 
-<ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
+<ResponsiveDialog
+	bind:open
+	{title}
+	onBack={view === 'main' ? undefined : () => go('main')}
+	focusFirst="desktop"
+>
 	{#if view === 'main'}
 		<div class="grid gap-5">
 			{#if isIncome}

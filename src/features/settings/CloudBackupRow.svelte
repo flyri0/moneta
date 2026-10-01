@@ -184,7 +184,7 @@
 					{#if connection}
 						<SettingsRow
 							label={m.cloud_back_up_now({ provider: provider.name })}
-							{disabled}
+							disabled={disabled || status.kind === 'running'}
 							onclick={() => runActionToast(() => cloudBackup.backUpNow(session.api))}
 						/>
 						<SettingsRow
@@ -205,8 +205,12 @@
 					{#each providers as target (target.id)}
 						<SettingsRow
 							label={m.cloud_connect({ provider: target.name })}
-							hint={encrypted === false ? m.cloud_needs_encryption() : undefined}
-							{disabled}
+							hint={encrypted === false
+								? m.cloud_needs_encryption()
+								: encrypted === null
+									? m.cloud_checking_encryption()
+									: undefined}
+							disabled={disabled || encrypted === null}
 							onclick={() => connect(target)}
 						/>
 					{/each}

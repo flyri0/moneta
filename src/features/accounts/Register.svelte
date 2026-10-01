@@ -86,8 +86,9 @@
 </script>
 
 <section
-	class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+	class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs transition-opacity aria-busy:opacity-60 aria-busy:delay-150"
 	aria-label={m.register_transactions()}
+	aria-busy={rows.stale}
 >
 	{#if rows.error && !rows.data}
 		<FormMessage error={actionError(rows.error)} class="justify-center p-6" />

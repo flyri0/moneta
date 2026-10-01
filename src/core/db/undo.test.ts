@@ -88,6 +88,19 @@ describe('record and applyInverse', () => {
 		expect(snapshot(db)).toEqual(before);
 	});
 
+	it('takes back an assigned amount, changed or first set', () => {
+		const empty = snapshot(db);
+		setAssigned(db, food, '2026-01', 10000);
+		const assigned = snapshot(db);
+		const changed = recorded(() => setAssigned(db, food, '2026-01', 4000));
+		undo(changed.inverse);
+		expect(snapshot(db)).toEqual(assigned);
+		const first = recorded(() => setAssigned(db, fun, '2026-01', 500));
+		undo(first.inverse);
+		expect(snapshot(db)).toEqual(assigned);
+		expect(empty).not.toEqual(assigned);
+	});
+
 	it('takes back an import, so the same lines can be imported again', () => {
 		const before = snapshot(db);
 		const input = {

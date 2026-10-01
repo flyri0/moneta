@@ -154,7 +154,7 @@ export const api = {
 		update: write([...SCHED, 'payees'], schedules.updateSchedule, ['string', 'object']),
 		delete: write(SCHED, schedules.deleteSchedule, ['string']),
 		enter: write(['schedules', ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),
-		skip: write(['schedules'], schedules.skipOccurrence, ['string', 'number']),
+		skip: write(['schedules'], schedules.skipOccurrence, ['string', 'number'], { undo: true }),
 		// Entered with the schedule's own payee, which exists.
 		enterDue: write(
 			['schedules', 'transactions', 'transaction_splits'],
@@ -164,7 +164,9 @@ export const api = {
 	},
 	budget: {
 		month: read(budget.getBudgetMonth, ['string']),
-		setAssigned: write(['budget_assignments'], budget.setAssigned, ['string', 'string', 'number']),
+		setAssigned: write(['budget_assignments'], budget.setAssigned, ['string', 'string', 'number'], {
+			undo: true
+		}),
 		moveMoney: write(['budget_assignments'], budget.moveMoney, ['object'], { undo: true }),
 		quickAssign: write(['budget_assignments'], budget.applyQuickAssign, ['object'], {
 			undo: true

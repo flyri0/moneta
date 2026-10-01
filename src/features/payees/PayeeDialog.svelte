@@ -164,13 +164,14 @@
 			onCancel={() => confirm(null)}
 		/>
 		{#if rule}
-			<Button
-				variant="ghost"
-				class="mt-2 w-full text-destructive"
-				onclick={() => confirm({ kind: 'delete-rule', rule })}
-			>
-				{m.payee_rule_delete()}
-			</Button>
+			<div class="-mx-2 mt-2 grid">
+				<SheetLink
+					icon={Trash2Icon}
+					label={m.payee_rule_delete()}
+					destructive
+					onclick={() => confirm({ kind: 'delete-rule', rule })}
+				/>
+			</div>
 		{/if}
 	{:else if confirming}
 		<ConfirmPanel

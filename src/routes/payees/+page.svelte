@@ -9,6 +9,7 @@
 	import { Input } from '$ui/input';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import EmptyState from '$components/EmptyState.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AddPayeeDialog from '$features/payees/AddPayeeDialog.svelte';
@@ -17,6 +18,7 @@
 	import { filterPayees, unusedCount } from '$features/payees/payees';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import type { Payee } from '$db/repos/payees';
 	import { categoryLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -121,7 +123,9 @@
 				</Button>
 			</div>
 		{/if}
-	{:else if !payees.error}
+	{:else if payees.error}
+		<FormMessage error={actionError(payees.error)} />
+	{:else}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows /></div>
 	{/if}
 </div>

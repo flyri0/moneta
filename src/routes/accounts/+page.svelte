@@ -3,6 +3,7 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
 	import EmptyState from '$components/EmptyState.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
 	import AccountList from '$features/accounts/AccountList.svelte';
@@ -10,6 +11,7 @@
 	import AddAccountDialog from '$features/accounts/AddAccountDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -67,7 +69,9 @@
 				{m.accounts_add()}
 			</Button>
 		</EmptyState>
-	{:else if !accounts.data && !accounts.error}
+	{:else if !accounts.data && accounts.error}
+		<FormMessage error={actionError(accounts.error)} />
+	{:else if !accounts.data}
 		<div class="overflow-hidden rounded-xl border bg-card shadow-xs"><LoadingRows rows={4} /></div>
 	{/if}
 	<AccountList

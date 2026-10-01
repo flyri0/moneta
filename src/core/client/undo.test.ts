@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { errorMock, successMock } = vi.hoisted(() => ({
+const { dismissMock, errorMock, successMock } = vi.hoisted(() => ({
+	dismissMock: vi.fn(),
 	errorMock: vi.fn(),
-	successMock: vi.fn()
+	successMock: vi.fn<(message: string, options?: unknown) => string>(() => 'toast-id')
 }));
-vi.mock('svelte-sonner', () => ({ toast: { error: errorMock, success: successMock } }));
+vi.mock('svelte-sonner', () => ({
+	toast: { dismiss: dismissMock, error: errorMock, success: successMock }
+}));
 
 import { DomainError } from '$domain/errors';
 import type { RpcClient } from './rpc';
@@ -24,7 +27,7 @@ function fakeClient(token: string | null, apply = vi.fn(async () => {})) {
 
 /** The options of the last success toast. */
 function lastOptions(): { action?: Button; cancel?: Button; duration?: number } {
-	return successMock.mock.calls.at(-1)?.[1];
+	return successMock.mock.calls.at(-1)?.[1] as ReturnType<typeof lastOptions>;
 }
 
 describe('offerUndo', () => {
@@ -36,6 +39,14 @@ describe('offerUndo', () => {
 		lastOptions().action!.onClick();
 		await vi.waitFor(() => expect(apply).toHaveBeenCalledWith('7'));
 		await vi.waitFor(() => expect(successMock).toHaveBeenCalledTimes(2));
+	});
+
+	it('replaces the previous Undo toast, since only the latest write can be taken back', () => {
+		dismissMock.mockClear();
+		const { client } = fakeClient('7');
+		offerUndo(client, Promise.resolve(), 'First');
+		offerUndo(client, Promise.resolve(), 'Second');
+		expect(dismissMock).toHaveBeenCalledWith('toast-id');
 	});
 
 	it('puts Undo second when the toast has its own action', () => {

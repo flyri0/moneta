@@ -48,7 +48,10 @@ test('takes back moved money', async ({ page }) => {
 
 	const toast = page.getByRole('region', { name: /Notifications/ });
 	await expect(toast).toContainText('Moved $30.00 from Groceries to Household.');
-	await toast.getByRole('button', { name: 'Undo' }).click();
+	// The earlier "assigned" toast is replaced: only the latest write can be taken back.
+	const undoButton = toast.getByRole('button', { name: 'Undo' });
+	await expect(undoButton).toHaveCount(1);
+	await undoButton.click();
 	await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
 	await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$0.00');
 });

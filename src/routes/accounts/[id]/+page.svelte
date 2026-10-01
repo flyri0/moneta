@@ -170,6 +170,9 @@
 		{/snippet}
 		{#snippet toolbar()}<RegisterToolbar {filters} />{/snippet}
 	</PageHeader>
+{:else}
+	<!-- While loading, or when the account can't be read, the way back is still there. -->
+	<PageHeader title={m.nav_accounts()} back={{ route: '/accounts', label: m.nav_accounts() }} />
 {/if}
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:p-6 lg:max-w-5xl">

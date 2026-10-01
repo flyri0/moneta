@@ -98,6 +98,7 @@
 			{#if account.closed}
 				<Button
 					variant="outline"
+					disabled={busy}
 					onclick={() => act(() => session.api.accounts.reopen(account.id))}
 				>
 					{m.account_reopen()}
@@ -106,6 +107,7 @@
 				<div class="grid gap-1">
 					<Button
 						variant="outline"
+						disabled={busy}
 						onclick={() => act(() => session.api.accounts.close(account.id))}
 					>
 						{m.account_close()}

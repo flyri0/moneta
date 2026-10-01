@@ -36,6 +36,7 @@
 	const demo = $derived(session.isDemo);
 	let copies = $state<BudgetCopy[]>([]);
 	let restoring = $state(false);
+	let backingUp = $state(false);
 	let picked = $state<File | null>(null);
 	let chosen = $state('');
 	let fileInput = $state<HTMLInputElement>();
@@ -142,7 +143,18 @@
 			? m.backup_last({ date: formatDateTime(session.meta.lastBackupAt, session.meta.locale) })
 			: m.backup_never()}
 	</p>
-	<SettingsRow label={m.backup_now()} disabled={demo} onclick={() => backUpNow(session.api)} />
+	<SettingsRow
+		label={m.backup_now()}
+		disabled={demo || backingUp}
+		onclick={async () => {
+			backingUp = true;
+			try {
+				await backUpNow(session.api);
+			} finally {
+				backingUp = false;
+			}
+		}}
+	/>
 	<SettingsRow label={m.backup_restore()} disabled={demo} onclick={() => fileInput?.click()} />
 	<CloudBackupRow
 		bind:open={cloudOpen}

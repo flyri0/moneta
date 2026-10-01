@@ -78,7 +78,7 @@
 	</ul>
 
 	{#if onRestore}
-		<section class="grid gap-1.5">
+		<section class="grid gap-1.5" aria-busy={busy}>
 			<h2 class="px-1 text-xs font-medium text-muted-foreground">
 				{m.onboarding_restore_title()}
 			</h2>
@@ -114,6 +114,9 @@
 					</button>
 				{/each}
 			</div>
+			{#if busy}
+				<p class="px-1 text-xs text-muted-foreground" role="status">{m.onboarding_restoring()}</p>
+			{/if}
 		</section>
 		<label for="restore-file" class="sr-only">{m.backup_restore()}</label>
 		<input

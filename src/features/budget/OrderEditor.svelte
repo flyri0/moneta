@@ -114,11 +114,11 @@
 
 <div class="grid gap-3 p-3">
 	<p class="text-sm text-muted-foreground">{m.order_hint()}</p>
-	<div class="flex justify-end gap-2">
-		<Button variant="ghost" onclick={onDone}>{m.cancel()}</Button>
+	<FormMessage {error} />
+	<div class="grid grid-cols-2 gap-2">
+		<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
 		<Button onclick={save}>{m.save()}</Button>
 	</div>
-	<FormMessage {error} />
 	{#each layout as group, gi (group.id)}
 		{@const dragged = drag.active?.id === group.id}
 		<section
