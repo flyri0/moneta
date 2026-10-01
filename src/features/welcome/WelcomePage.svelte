@@ -234,6 +234,9 @@
 		);
 		background-clip: text;
 		color: transparent;
+		/* The gradient only paints inside the box: room for descenders, taken back from the margin. */
+		padding-bottom: 0.15em;
+		margin-bottom: -0.15em;
 	}
 
 	.fade {
