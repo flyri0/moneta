@@ -82,6 +82,27 @@ test('assigns inline with arithmetic on desktop', async ({ page }) => {
 	await expect(groceries.getByTestId('available')).toHaveText('$300.00');
 });
 
+test('moves between assigned cells with the keyboard and keeps what could not be read', async ({
+	page
+}) => {
+	await onboard(page);
+	const groceries = categoryRow(page, 'Groceries').getByTestId('assigned');
+	await groceries.fill('100');
+	await groceries.press('Enter');
+	await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
+	// Enter committed it and moved on to the next category's cell.
+	const focused = page.locator('input[data-assigned-input]:focus');
+	await expect(focused).toHaveCount(1);
+	const label = await focused.getAttribute('aria-label');
+	expect(label).not.toBe(await groceries.getAttribute('aria-label'));
+	const next = page.getByLabel(label ?? '', { exact: true });
+	await next.fill('12abc');
+	await next.press('ArrowUp');
+	await expect(groceries).toBeFocused();
+	await expect(next).toHaveAttribute('aria-invalid', 'true');
+	await expect(next).toHaveValue('12abc');
+});
+
 test('quick-assign in a group leaves hidden categories untouched', async ({ page }) => {
 	await onboard(page);
 	const groceries = categoryRow(page, 'Groceries');

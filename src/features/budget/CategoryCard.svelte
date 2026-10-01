@@ -43,14 +43,14 @@
 </script>
 
 <div
-	class="grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40 {TONE_ROW[tone]}"
+	class="relative grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40 {TONE_ROW[tone]}"
 	data-testid="category-row"
 	data-tone={tone}
 >
 	<div class="flex items-center justify-between gap-3">
 		<button
 			type="button"
-			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium hover:underline"
+			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium after:absolute after:inset-0 hover:underline"
 			onclick={() => onSelect(category.id)}>{category.name}</button
 		>
 		<AvailablePill {category} />
