@@ -288,6 +288,9 @@ test('opens Age of Money from its card, which waits for ten payments', async ({ 
 	await expect(page.getByText('It shows up after 10 payments')).toBeVisible();
 });
 
+// The demo is dated from today, and on the 1st its current month has nothing spent yet.
+const MID_MONTH = new Date('2026-09-15T12:00:00');
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
@@ -304,6 +307,7 @@ test.describe('on a phone', () => {
 	});
 
 	test("brings a category's transactions into view when it opens", async ({ page }) => {
+		await page.clock.setFixedTime(MID_MONTH);
 		await page.goto('/');
 		await page.getByRole('button', { name: /demo|demonstra/i }).click();
 		await page.waitForURL(/\/budget\//);
@@ -323,6 +327,7 @@ test.describe('on a phone', () => {
 	] as const) {
 		test(`keeps the reports inside their bounds in ${locale} at ${width}px`, async ({ page }) => {
 			await page.setViewportSize({ width, height: 851 });
+			await page.clock.setFixedTime(MID_MONTH);
 			await page.addInitScript((l) => localStorage.setItem('PARAGLIDE_LOCALE', l), locale);
 			await page.goto('/');
 			await page.getByRole('button', { name: /demo|demonstra/i }).click();

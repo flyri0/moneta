@@ -61,7 +61,8 @@ test.describe('on a phone', () => {
 		await page.getByRole('button', { name: 'Add account' }).click();
 		const drawer = page.getByRole('dialog', { name: 'Add account' });
 		await expect(drawer).toBeVisible();
-		const height = async () => (await drawer.boundingBox())!.height;
+		// Rounded: the CI's renderer lands a fraction of a pixel off.
+		const height = async () => Math.round((await drawer.boundingBox())!.height);
 		const natural = await height();
 		expect(natural).toBeLessThan(520);
 
@@ -80,10 +81,10 @@ test.describe('on a phone', () => {
 	test('a drawer that shows everything stays at its height when dragged up', async ({ page }) => {
 		await onboard(page);
 		const drawer = await openMore(page);
-		const natural = (await drawer.boundingBox())!.height;
+		const natural = Math.round((await drawer.boundingBox())!.height);
 		await drag(page, drawer, -150);
 		await expect(drawer).not.toHaveAttribute('data-expanded');
-		await expect.poll(async () => (await drawer.boundingBox())!.height).toBe(natural);
+		await expect.poll(async () => Math.round((await drawer.boundingBox())!.height)).toBe(natural);
 	});
 
 	test('opening a drawer never shows its hidden Close', async ({ page }) => {
