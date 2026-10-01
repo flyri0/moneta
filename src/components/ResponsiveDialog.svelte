@@ -6,9 +6,10 @@
 	import * as Dialog from '$ui/dialog';
 	import * as Sheet from '$ui/sheet';
 	import { m } from '$i18n/paraglide/messages';
+	import BottomDrawer from './BottomDrawer.svelte';
 
 	/**
-	 * A dialog on desktop and a bottom sheet on phones (below 768px). `onBack` adds a back button
+	 * A dialog on desktop and a drawer on phones (below 768px). `onBack` adds a back button
 	 * before the title, for screens nested inside one dialog. `focusFirst={false}` keeps focus on the
 	 * dialog itself when it opens instead of its first field, so a phone's keyboard stays down.
 	 */
@@ -65,21 +66,16 @@
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
-	<Sheet.Root bind:open>
-		<Sheet.Content
-			bind:ref={content}
-			side="bottom"
-			class="max-h-[90dvh] overflow-y-auto outline-none"
-			onOpenAutoFocus={openAutoFocus}
-		>
-			<Sheet.Header>
-				<div class="flex min-w-0 items-center gap-1 pr-8">
+	<BottomDrawer bind:open bind:ref={content} onOpenAutoFocus={openAutoFocus}>
+		{#snippet header()}
+			<Sheet.Header class="pt-3">
+				<div class="flex min-w-0 items-center gap-1">
 					{@render back()}
 					<Sheet.Title class="min-w-0">{title}</Sheet.Title>
 				</div>
 				{#if description}<Sheet.Description>{description}</Sheet.Description>{/if}
 			</Sheet.Header>
-			<div class="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{@render children()}</div>
-		</Sheet.Content>
-	</Sheet.Root>
+		{/snippet}
+		<div class="px-4">{@render children()}</div>
+	</BottomDrawer>
 {/if}

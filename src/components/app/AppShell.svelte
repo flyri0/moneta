@@ -17,6 +17,7 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
+	import BottomDrawer from '$components/BottomDrawer.svelte';
 	import * as Tooltip from '$ui/tooltip';
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
@@ -447,26 +448,26 @@
 	</nav>
 </div>
 
-<Sheet.Root bind:open={moreOpen}>
-	<Sheet.Content side="bottom" class="pb-[env(safe-area-inset-bottom)]">
-		<Sheet.Header>
+<BottomDrawer bind:open={moreOpen}>
+	{#snippet header()}
+		<Sheet.Header class="pt-3">
 			<Sheet.Title>{m.nav_more()}</Sheet.Title>
 		</Sheet.Header>
-		<nav class="grid gap-1 px-2 pb-4" aria-label={m.nav_more()}>
-			{#each moreItems as item (item.label)}
-				<a
-					href={item.href}
-					aria-current={item.active ? 'page' : undefined}
-					onclick={() => (moreOpen = false)}
-					class="flex items-center gap-3 rounded-md px-3 py-3 text-sm hover:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-primary"
-				>
-					<item.icon class="size-5" />
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-	</Sheet.Content>
-</Sheet.Root>
+	{/snippet}
+	<nav class="grid gap-1 px-2" aria-label={m.nav_more()}>
+		{#each moreItems as item (item.label)}
+			<a
+				href={item.href}
+				aria-current={item.active ? 'page' : undefined}
+				onclick={() => (moreOpen = false)}
+				class="flex items-center gap-3 rounded-md px-3 py-3 text-sm hover:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-primary"
+			>
+				<item.icon class="size-5" />
+				{item.label}
+			</a>
+		{/each}
+	</nav>
+</BottomDrawer>
 
 <!-- Loaded the first time it opens: most starts never add a transaction. -->
 {#if dialogLoad}
