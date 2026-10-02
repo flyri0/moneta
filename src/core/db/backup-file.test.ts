@@ -245,6 +245,14 @@ describe('sealBackup and openSealed', () => {
 		expect(isSealed(bytes)).toBe(true);
 	});
 
+	it('does not unpack a manifest that claims to be huge', () => {
+		const files = unzipSync(sealed);
+		const padded = strFromU8(files['moneta.json']) + ' '.repeat(2 << 20);
+		const bytes = zipSync({ ...files, 'moneta.json': strToU8(padded) });
+		expect(isSealed(bytes)).toBe(false);
+		expect(() => readBackup(bytes)).toThrow(expect.objectContaining({ code: 'BACKUP_DAMAGED' }));
+	});
+
 	it('rejects a wrong secret, or any change to the manifest', async () => {
 		expect(await codeOf(openSealed(sealed, { password: 'wrong horse' }))).toBe('BACKUP_WRONG_KEY');
 		const changed = resealed((json) => (json.note = 'hi'));

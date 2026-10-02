@@ -37,6 +37,8 @@ const PAYLOAD = 'payload.bin';
 const CIPHER = 'AES-256-GCM';
 /** Most a backup may unpack to, against ZIP bombs. */
 const MAX_UNPACKED = 1 << 30;
+/** Most the manifest, a short JSON, may unpack to. */
+const MAX_MANIFEST = 1 << 20;
 const ID = /^[0-9a-f-]{1,64}$/;
 const SQLITE_HEADER = 'SQLite format 3\0';
 const ZIP_HEADER = 'PK\x03\x04';
@@ -99,6 +101,8 @@ function readZip(bytes: Uint8Array): { manifest: Record<string, unknown>; files:
 	try {
 		files = unzipSync(bytes, {
 			filter(file) {
+				if (file.name === MANIFEST && file.originalSize > MAX_MANIFEST)
+					throw new DomainError('BACKUP_DAMAGED', 'Manifest too large');
 				unpacked += file.originalSize;
 				if (unpacked > MAX_UNPACKED) throw new DomainError('BACKUP_DAMAGED', 'Backup too large');
 				return true;
@@ -201,7 +205,9 @@ export async function sealBackup(
 export function isSealed(bytes: Uint8Array): boolean {
 	if (!startsWith(bytes, ZIP_HEADER)) return false;
 	try {
-		const files = unzipSync(bytes, { filter: (file) => file.name === MANIFEST });
+		const files = unzipSync(bytes, {
+			filter: (file) => file.name === MANIFEST && file.originalSize <= MAX_MANIFEST
+		});
 		const manifest: unknown = JSON.parse(strFromU8(files[MANIFEST]));
 		if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) return false;
 		checkManifest(manifest as Record<string, unknown>);
