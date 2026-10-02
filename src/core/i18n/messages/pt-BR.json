@@ -799,6 +799,7 @@
 	"register_reconciled": "Conciliada",
 	"transaction_reconciled_notice": "Esta transação foi conciliada. Mudar o valor, a data ou a conta altera um saldo que você já conferiu com o banco.",
 	"error_statement_unreadable": "O Moneta não conseguiu ler esse arquivo. Escolha um extrato OFX ou CSV exportado pelo seu banco.",
+	"error_statement_multiple_accounts": "Esse arquivo tem os extratos de mais de uma conta. Exporte uma conta por vez e importe cada uma na sua conta.",
 	"error_statement_empty": "Esse extrato não tem transações.",
 	"import_statement": "Importar",
 	"import_title": "Importar extrato",

@@ -85,4 +85,14 @@ describe('parseOfx', () => {
 		expect(isOfx(XML)).toBe(true);
 		expect(isOfx('Data;Descrição;Valor\n01/01/2026;x;1,00')).toBe(false);
 	});
+
+	it('refuses a file with the statements of several accounts', () => {
+		const one = '<STMTRS><BANKTRANLIST><STMTTRN><DTPOSTED>20260105<TRNAMT>-1.00<FITID>1</STMTTRN>';
+		const two =
+			'<CCSTMTRS><BANKTRANLIST><STMTTRN><DTPOSTED>20260106<TRNAMT>-2.00<FITID>1</STMTTRN>';
+		expect(() => parseOfx(`<OFX>${one}</STMTRS>${two}</CCSTMTRS></OFX>`, 2)).toThrow(
+			expect.objectContaining({ code: 'STATEMENT_MULTIPLE_ACCOUNTS' })
+		);
+		expect(parseOfx(`<OFX>${one}</STMTRS></OFX>`, 2).lines).toHaveLength(1);
+	});
 });

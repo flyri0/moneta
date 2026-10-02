@@ -49,11 +49,15 @@ export function parseOfx(text: string, digits: number): Statement {
 	if (start < 0) throw new DomainError('STATEMENT_UNREADABLE', 'No <OFX> element');
 	const lines: ParsedLine[] = [];
 	let balance: Statement['balance'] = null;
+	let accounts = 0;
 	let current: Record<string, string> | null = null;
 	let ledger: Record<string, string> | null = null;
 
 	for (const tag of tags(text.slice(start))) {
-		if (tag.name === 'STMTTRN') {
+		if (tag.name === 'STMTRS' || tag.name === 'CCSTMTRS') {
+			// Lines carry no account, and a FITID is only unique within one: they can't be mixed.
+			if (!tag.close && ++accounts > 1) throw new DomainError('STATEMENT_MULTIPLE_ACCOUNTS');
+		} else if (tag.name === 'STMTTRN') {
 			if (!tag.close) current = {};
 			else if (current) {
 				lines.push(toLine(current, digits));

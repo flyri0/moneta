@@ -799,6 +799,7 @@
 	"register_reconciled": "Reconciled",
 	"transaction_reconciled_notice": "This transaction was reconciled. Changing its amount, date or account changes a balance you already checked with your bank.",
 	"error_statement_unreadable": "Moneta couldn't read that file. Choose an OFX or CSV statement exported by your bank.",
+	"error_statement_multiple_accounts": "That file holds the statements of more than one account. Export one account at a time and import each into its own account.",
 	"error_statement_empty": "That statement has no transactions.",
 	"import_statement": "Import",
 	"import_title": "Import statement",

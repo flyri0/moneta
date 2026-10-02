@@ -39,6 +39,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	RECONCILE_MISMATCH: m.error_reconcile_mismatch,
 	STATEMENT_UNREADABLE: m.error_statement_unreadable,
 	STATEMENT_EMPTY: m.error_statement_empty,
+	STATEMENT_MULTIPLE_ACCOUNTS: m.error_statement_multiple_accounts,
 	RULE_EXISTS: m.error_rule_exists,
 	UNDO_UNAVAILABLE: m.error_undo_unavailable,
 	UNDO_CONFLICT: m.error_undo_conflict,
