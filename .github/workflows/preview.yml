@@ -23,30 +23,23 @@ env:
   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  deploy:
-    name: Deploy preview
+  # Builds the pull request's code with no secrets and a read-only token, so nothing it runs (its
+  # install scripts, its build) can reach the Netlify token. The deploy below only moves files.
+  build:
+    name: Build preview
     # Pull requests from forks get no secrets, so they get no preview. Dependabot's do, from the
     # Dependabot secrets: NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID must be set there too.
     if: >-
       github.event.action != 'closed' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    # Shows the preview on the pull request as a deployment, with a "View deployment" button.
-    environment:
-      name: preview
-      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.HEAD_SHA }}
-
-      - name: Say the preview is on its way
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          .github/scripts/preview-comment.sh "### ⏳ Preview
-
-          Building a preview of ${HEAD_SHA::7}… ([progress]($RUN_URL))"
+          persist-credentials: false
 
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
@@ -62,18 +55,69 @@ jobs:
       # new one, so previews leave cloud backups out (no VITE_GOOGLE_CLIENT_ID).
       - run: pnpm build
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: preview-build
+          path: build/
+          retention-days: 1
+
+  # Runs main's code (its lockfile, its comment script), never the pull request's: only the built
+  # files come from the pull request, and they are uploaded, not run.
+  deploy:
+    name: Deploy preview
+    needs: build
+    if: ${{ !cancelled() && needs.build.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    # Shows the preview on the pull request as a deployment, with a "View deployment" button.
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Say the preview is on its way
+        if: needs.build.result == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/preview-comment.sh "### ⏳ Preview
+
+          Deploying a preview of ${HEAD_SHA::7}… ([progress]($RUN_URL))"
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        if: needs.build.result == 'success'
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        if: needs.build.result == 'success'
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: needs.build.result == 'success'
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: needs.build.result == 'success'
+        with:
+          name: preview-build
+          path: ${{ runner.temp }}/build
+
       # A draft deploy under a fixed alias, so each pull request keeps one address. Without cloud
       # backups the token function has nothing to do, so it stays out (an empty functions folder):
       # the site's Google client secret never meets code that hasn't been merged.
       - name: Deploy to Netlify
         id: deploy
+        if: needs.build.result == 'success'
         run: |
           if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
             echo "::error::NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID is missing. Dependabot's pull requests read the Dependabot secrets, not the Actions ones."
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/no-functions"
-          pnpm exec netlify deploy --no-build --dir build --functions "$RUNNER_TEMP/no-functions" \
+          pnpm exec netlify deploy --no-build --dir "$RUNNER_TEMP/build" --functions "$RUNNER_TEMP/no-functions" \
             --alias "$ALIAS" --message "PR #$PR · ${HEAD_SHA::7}" --json > "$RUNNER_TEMP/deploy.json"
           site=$(jq -r .site_name "$RUNNER_TEMP/deploy.json")
           {
@@ -87,6 +131,7 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
       - name: Post the link
+        if: needs.build.result == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           URL: ${{ steps.deploy.outputs.url }}
@@ -105,7 +150,7 @@ jobs:
           real app's; cloud backups are left out (Google only signs in from registered addresses)."
 
       - name: Say the preview failed
-        if: failure()
+        if: failure() || needs.build.result == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -120,11 +165,13 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      # Only for the comment script. From the pull request's head: main may not have it yet.
+      # Only for the comment script, taken from main: the pull request's own copy would run here
+      # with this job's token.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ env.HEAD_SHA }}
+          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
+          persist-credentials: false
 
       # Deletes every deploy the pull request made (their messages start "PR #<number> ·"). The list
       # is newest first, so it stops at deploys older than the pull request.
