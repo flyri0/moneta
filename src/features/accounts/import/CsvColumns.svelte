@@ -7,7 +7,7 @@
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
-	import { applyFormat, type CsvFormat, type DateOrder } from './csv';
+	import { applyFormat, widest, type CsvFormat, type DateOrder } from './csv';
 
 	/** Maps a CSV's columns, with a preview of the first lines as they will import. */
 	let {
@@ -26,7 +26,7 @@
 
 	const session = useSession();
 	const NONE = 'none';
-	const columns = $derived(Math.max(...table.map((r) => r.length)));
+	const columns = $derived(widest(table));
 	const result = $derived(applyFormat(table, format, digits));
 	const split = $derived(format.amount === null);
 

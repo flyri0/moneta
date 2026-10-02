@@ -13,6 +13,12 @@ describe('readStatement', () => {
 		expect(read).toMatchObject({ kind: 'ofx', statement: { lines: [{ amount: -100 }] } });
 	});
 
+	it('reads a table too long to spread into arguments', () => {
+		const rows = Array.from({ length: 300_000 }, () => 'a;b').join('\n');
+		const read = readStatement(bytes(rows), 2);
+		expect(read).toMatchObject({ kind: 'csv' });
+	});
+
 	it('reads anything else as a CSV table', () => {
 		expect(readStatement(bytes('Data;Valor\n05/01/2026;1,00'), 2)).toEqual({
 			kind: 'csv',

@@ -1,5 +1,5 @@
 import { DomainError } from '$domain/errors';
-import { parseCsv } from './csv';
+import { parseCsv, widest } from './csv';
 import { decodeStatement } from './decode';
 import { isOfx, parseOfx } from './ofx';
 import type { Statement } from './statement';
@@ -22,7 +22,6 @@ export function readStatement(bytes: Uint8Array, digits: number): ReadStatement 
 	if (text.includes('\u0000')) throw new DomainError('STATEMENT_UNREADABLE', 'Binary file');
 	const table = parseCsv(text);
 	if (table.length === 0) throw new DomainError('STATEMENT_EMPTY');
-	if (Math.max(...table.map((r) => r.length)) < 2)
-		throw new DomainError('STATEMENT_UNREADABLE', 'Not a table');
+	if (widest(table) < 2) throw new DomainError('STATEMENT_UNREADABLE', 'Not a table');
 	return { kind: 'csv', table };
 }

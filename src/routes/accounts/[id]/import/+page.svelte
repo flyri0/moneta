@@ -10,6 +10,7 @@
 	import ImportReview from '$features/accounts/import/ImportReview.svelte';
 	import {
 		applyFormat,
+		widest,
 		guessFormat,
 		localeDateOrder,
 		storedFormat,
@@ -51,7 +52,7 @@
 		}
 		if (pending.kind !== 'csv') return;
 		const table = pending.table;
-		const columns = Math.max(...table.map((r) => r.length));
+		const columns = widest(table);
 		session.api.imports.csvFormat(accountId).then(
 			(saved) => {
 				format =

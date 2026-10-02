@@ -5,6 +5,13 @@ import { detectDecimal, parseStatementAmount, type DecimalSeparator } from './am
 import { cleanText, withImportIds, type ParsedLine } from './statement';
 import type { StatementLine } from '$db/repos/imports';
 
+/** The most columns in any row of `table` (a loop: spreading a long table overflows the stack). */
+export function widest(table: string[][]): number {
+	let columns = 0;
+	for (const row of table) if (row.length > columns) columns = row.length;
+	return columns;
+}
+
 /** The order of day, month and year in a CSV's dates. */
 export type DateOrder = 'DMY' | 'MDY' | 'YMD';
 
@@ -132,7 +139,7 @@ export function guessFormat(
 	table: string[][],
 	fallback: { decimal: DecimalSeparator; dateOrder: DateOrder }
 ): CsvFormat {
-	const columns = Math.max(0, ...table.map((r) => r.length));
+	const columns = widest(table);
 	const first = table[0] ?? [];
 	const header = first.length > 0 && !first.some((f) => isAnyDate(f));
 	const data = (header ? table.slice(1) : table).slice(0, 50);
