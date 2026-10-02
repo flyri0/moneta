@@ -329,6 +329,7 @@ export function startupError(err: unknown): { code: StartupErrorCode; message: s
 	const message = err instanceof Error ? err.message : String(err);
 	if (typeof code === 'string' && STARTUP_CODES.has(code))
 		return { code: code as StartupErrorCode, message };
-	if (/quota/i.test(message)) return { code: 'QUOTA_EXCEEDED', message };
+	if (/quota|SQLITE_FULL|SQLITE_IOERR|disk is full|disk I\/O/i.test(message))
+		return { code: 'QUOTA_EXCEEDED', message };
 	return { code: 'INTERNAL', message };
 }

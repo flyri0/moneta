@@ -637,6 +637,12 @@ describe('startupError', () => {
 		expect(startupError(new RpcError('INTERNAL', 'QuotaExceededError: full')).code).toBe(
 			'QUOTA_EXCEEDED'
 		);
+		// SQLite's own words for a full disk or a failing one: the file is fine, the storage isn't.
+		for (const message of [
+			'SQLITE_FULL: sqlite3 result code 13: database or disk is full',
+			'SQLITE_IOERR_WRITE: disk I/O error'
+		])
+			expect(startupError(new RpcError('INTERNAL', message)).code).toBe('QUOTA_EXCEEDED');
 		expect(startupError(new Error('boom'))).toEqual({ code: 'INTERNAL', message: 'boom' });
 	});
 });
