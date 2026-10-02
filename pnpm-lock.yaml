@@ -270,7 +270,7 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0(svelte@5.57.1(@typescript-eslint/types@8.70.0))
       netlify-cli:
-        specifier: ^27.10.0
+        specifier: 27.10.0
         version: 27.10.0(@types/node@26.6.2)(picomatch@4.0.7)(rollup@4.63.3)(supports-color@11.0.0)
       prettier:
         specifier: ^3.9.9
