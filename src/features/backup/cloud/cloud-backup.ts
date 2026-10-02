@@ -35,6 +35,27 @@ function cloudTarget(
 }
 
 /**
+ * `api` with an export that fails when a budget was left out (or none is left): the day's file
+ * replaces the one already in the cloud, and rotation deletes older days, so a backup missing a
+ * budget must never get that far.
+ */
+function whole(api: Pick<ClientApi, 'system'>): Pick<ClientApi, 'system'> {
+	return {
+		system: new Proxy(api.system, {
+			get(target, key) {
+				if (key !== 'exportBackup') return target[key as keyof typeof target];
+				return async (...args: Parameters<typeof target.exportBackup>) => {
+					const exported = await target.exportBackup(...args);
+					if (exported.skipped.length > 0 || args[0].length === exported.skipped.length)
+						throw new DomainError('BACKUP_INCOMPLETE', exported.skipped.join(', '));
+					return exported;
+				};
+			}
+		})
+	};
+}
+
+/**
  * Backs up every budget into the cloud, encrypted with this device's key (no password asked), and
  * records it in each budget. Then deletes this device's oldest backups past the ones it keeps
  * (`retention.ts`); a failed cleanup waits for the next backup.
@@ -52,7 +73,7 @@ export async function backUpToCloud(
 		throw new DomainError('BACKUP_KEYS_UNAVAILABLE', String(err));
 	}
 	if (!encrypted) throw new DomainError('CLOUD_NOT_ENCRYPTED');
-	const done = await backUp(api, cloudTarget(api, connection, device, now), now);
+	const done = await backUp(whole(api), cloudTarget(api, connection, device, now), now);
 	try {
 		for (const old of expiredBackups(await connection.list(), device.device))
 			await connection.remove(old.id);

@@ -47,6 +47,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	CLOUD_UNAVAILABLE: m.error_cloud_unavailable,
 	CLOUD_STORAGE_FULL: m.error_cloud_storage_full,
 	CLOUD_NOT_ENCRYPTED: m.error_cloud_not_encrypted,
+	BACKUP_INCOMPLETE: m.error_backup_incomplete,
 	CLOUD_FAILED: m.error_cloud_failed,
 	WORKER_FAILED: m.error_worker_failed,
 	INTERNAL: m.error_internal

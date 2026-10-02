@@ -136,6 +136,7 @@
 	"error_cloud_popup_blocked": "The browser blocked the sign-in window. Allow pop-ups for Moneta and try again.",
 	"error_cloud_unavailable": "Couldn't reach your cloud storage. Moneta will try again when you're online.",
 	"error_cloud_storage_full": "Your cloud storage is full, so the backup couldn't be saved.",
+	"error_backup_incomplete": "A budget could not be read, so the backup in the cloud was left as it was. Open the budget to check it, then back up again.",
 	"error_cloud_not_encrypted": "Backups to the cloud are always encrypted. Turn on backup encryption first.",
 	"error_cloud_failed": "Your cloud storage gave an answer Moneta didn't expect.",
 	"error_restore_partial": "The restore stopped partway. The budgets restored before the error were kept; the others were left as they were.",

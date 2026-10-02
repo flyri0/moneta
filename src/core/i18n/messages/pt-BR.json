@@ -136,6 +136,7 @@
 	"error_cloud_popup_blocked": "O navegador bloqueou a janela de login. Permita pop-ups para o Moneta e tente de novo.",
 	"error_cloud_unavailable": "Não foi possível falar com a sua nuvem. O Moneta tenta de novo quando você estiver on-line.",
 	"error_cloud_storage_full": "Sua nuvem está cheia, então o backup não foi salvo.",
+	"error_backup_incomplete": "Um orçamento não pôde ser lido, então o backup na nuvem foi mantido como estava. Abra o orçamento para verificá-lo e faça o backup de novo.",
 	"error_cloud_not_encrypted": "Backups na nuvem são sempre criptografados. Ative a criptografia de backups antes.",
 	"error_cloud_failed": "Sua nuvem deu uma resposta que o Moneta não esperava.",
 	"error_restore_partial": "A restauração parou no meio. Os orçamentos restaurados antes do erro foram mantidos; os outros ficaram como estavam.",

@@ -61,6 +61,32 @@ describe('backUpToCloud', () => {
 		expect((await api.meta.get()).lastBackupAt).toBeNull();
 	});
 
+	it('does not replace the day backup when a budget could not be read', async () => {
+		const { api, connection, drive } = await setup();
+		const now = new Date(2026, 8, 26, 10, 0);
+		await backUpToCloud(api, connection, DEVICE, now);
+		const unreadable: typeof api = {
+			...api,
+			system: new Proxy(api.system, {
+				get: (target, key) =>
+					key === 'exportBackup'
+						? async (names: string[], options?: { plain?: boolean }) => ({
+								...(await target.exportBackup(names, options)),
+								skipped: names
+							})
+						: target[key as keyof typeof target]
+			})
+		};
+		await expect(backUpToCloud(unreadable, connection, DEVICE, now)).rejects.toMatchObject({
+			code: 'BACKUP_INCOMPLETE'
+		});
+		const [saved] = await connection.list();
+		const bytes = new Uint8Array(await (await connection.download(saved.id)).arrayBuffer());
+		expect(drive.backups()).toEqual(['2026-09-26 laptop']);
+		expect(await api.system.isEncryptedBackup(bytes)).toBe(true);
+		expect((await api.meta.get()).lastBackupAt).toBe(now.toISOString());
+	});
+
 	it('keeps the newest day and five before it, deleting the oldest', async () => {
 		const { api, connection, drive } = await setup();
 		for (let day = 1; day <= 8; day++)
