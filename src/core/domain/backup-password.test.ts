@@ -3,7 +3,8 @@ import {
 	MIN_PASSWORD_LENGTH,
 	UNRATED_MIN_LENGTH,
 	passwordProblem,
-	passwordStrength
+	passwordStrength,
+	preloadPasswordStrength
 } from './backup-password';
 
 describe('passwordProblem', () => {
@@ -38,6 +39,13 @@ describe('passwordStrength', () => {
 
 	it('rates a phrase of unrelated words as hard to guess', async () => {
 		expect(await passwordStrength('violet lantern gravel orbit')).toBeGreaterThanOrEqual(3);
+	});
+});
+
+describe('preloadPasswordStrength', () => {
+	it('loads the checker ahead of the first rating, without failing', async () => {
+		await expect(preloadPasswordStrength()).resolves.toBeUndefined();
+		expect(await passwordStrength('password1')).toBeLessThan(3);
 	});
 });
 

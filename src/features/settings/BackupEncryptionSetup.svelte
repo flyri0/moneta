@@ -14,7 +14,8 @@
 		UNRATED_MIN_LENGTH,
 		MIN_PASSWORD_STRENGTH,
 		passwordProblem,
-		passwordStrength
+		passwordStrength,
+		preloadPasswordStrength
 	} from '$domain/backup-password';
 	import { todayIso } from '$domain/month';
 	import { newRecoveryKey } from '$domain/recovery-key';
@@ -46,7 +47,7 @@
 	let unrated = $state(false);
 	const problem = $derived(passwordProblem(password, confirm, strength, unrated));
 
-	// Rated on this device as it is typed; the word lists load the first time.
+	// Rated on this device as it is typed; the word lists start loading when the dialog opens.
 	$effect(() => {
 		const typed = password;
 		strength = null;
@@ -62,6 +63,7 @@
 
 	$effect(() => {
 		if (!open) return;
+		void preloadPasswordStrength();
 		step = 'password';
 		password = '';
 		confirm = '';

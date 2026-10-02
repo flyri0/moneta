@@ -49,14 +49,27 @@ async function loadChecker(): Promise<(password: string) => number> {
 	return (password) => zxcvbn.check(password).score;
 }
 
+/** The checker, loaded once; a failed load is forgotten so the next call tries again. */
+function getChecker(): Promise<(password: string) => number> {
+	checker ??= loadChecker().catch((err: unknown) => {
+		checker = null;
+		throw err;
+	});
+	return checker;
+}
+
 /**
  * How hard a password is to guess, from 0 (among the most common) to 4, estimated on this device.
  * The word lists load on first use, so they stay out of the app's first download.
  */
 export async function passwordStrength(password: string): Promise<number> {
-	checker ??= loadChecker().catch((err: unknown) => {
-		checker = null;
-		throw err;
-	});
-	return (await checker)(normalizePassword(password));
+	return (await getChecker())(normalizePassword(password));
+}
+
+/**
+ * Starts loading the word lists before the first password is rated, so it doesn't wait for them.
+ * A failure is left for `passwordStrength` to report.
+ */
+export async function preloadPasswordStrength(): Promise<void> {
+	await getChecker().catch(() => {});
 }
