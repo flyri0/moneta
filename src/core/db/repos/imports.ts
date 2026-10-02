@@ -101,6 +101,13 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 		 ORDER BY t.date, t.id`,
 		[accountId, addDays(dates[0], -MATCH_DAYS), addDays(dates[dates.length - 1], MATCH_DAYS)]
 	);
+	// By amount, in the same order, so a line only looks at transactions it could match.
+	const byAmount = new Map<number, Candidate[]>();
+	for (const c of candidates) {
+		const same = byAmount.get(c.amount);
+		if (same) same.push(c);
+		else byAmount.set(c.amount, [c]);
+	}
 	const used = new Set<string>();
 	const categories = onBudget ? suggestedCategories(db) : new Map<string, string>();
 	const rules = listRules(db);
@@ -112,8 +119,8 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 		}
 		imported.add(line.importId);
 		let best: Candidate | null = null;
-		for (const c of candidates) {
-			if (c.amount !== line.amount || used.has(c.id)) continue;
+		for (const c of byAmount.get(line.amount) ?? []) {
+			if (used.has(c.id)) continue;
 			const distance = dayDistance(c.date, line.date);
 			if (distance > MATCH_DAYS) continue;
 			if (!best || distance < dayDistance(best.date, line.date)) best = c;
