@@ -8,10 +8,10 @@
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
 	import { Label } from '$ui/label';
+	import EditBar from '$components/EditBar.svelte';
 	import ConfirmDialog from '$components/ConfirmDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import { fab } from '$components/app/fab.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
 	import type { RegisterSelection } from '$features/accounts/selection.svelte';
@@ -74,13 +74,6 @@
 			destructive: true
 		}
 	]);
-
-	// The floating add button would sit on the bar.
-	$effect(() => {
-		if (!selection.active) return;
-		fab.hidden = true;
-		return () => (fab.hidden = false);
-	});
 
 	function edit(what: 'category' | 'date') {
 		count = ids.length;
@@ -146,13 +139,7 @@
 </script>
 
 {#if selection.active}
-	<!-- The bar lays itself out by its own width: it sits next to a resizable sidebar on desktops. -->
-	<div
-		class="@container fixed inset-x-3 bottom-[calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-40 rounded-xl border bg-background/95 shadow-lg backdrop-blur md:sticky md:inset-x-auto md:bottom-4"
-		role="toolbar"
-		aria-label={m.bulk_actions()}
-		data-testid="selection-bar"
-	>
+	<EditBar label={m.bulk_actions()} testId="selection-bar">
 		<div class="flex flex-col gap-1 p-1.5 @3xl:flex-row @3xl:items-center">
 			<div class="flex min-w-0 items-center gap-1 @3xl:flex-1">
 				<Button
@@ -190,7 +177,7 @@
 				{/each}
 			</div>
 		</div>
-	</div>
+	</EditBar>
 {/if}
 
 <ResponsiveDialog

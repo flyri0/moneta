@@ -510,7 +510,8 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
  * the screen: starting near an edge scrolls the page, which moves the target.
  */
 async function dragTo(page: Page, handle: Locator, y: number | (() => Promise<number>)) {
-	await handle.scrollIntoViewIfNeeded();
+	// Centered, so the bar at the bottom of the screen is not over it.
+	await handle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 	const box = (await handle.boundingBox())!;
 	const x = box.x + box.width / 2;
 	await page.mouse.move(x, box.y + box.height / 2);
@@ -524,7 +525,7 @@ async function dragTo(page: Page, handle: Locator, y: number | (() => Promise<nu
 }
 
 function orderSection(page: Page, name: string) {
-	return page.locator('section[data-order-group]').filter({
+	return page.locator('[data-order-group]').filter({
 		has: page.locator('[data-order-header]', { hasText: name })
 	});
 }
@@ -551,12 +552,11 @@ test('drags a category into another group', async ({ page }) => {
 test('drags the Income group below the others and keeps it there', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('button', { name: 'Edit order' }).click();
-	const sections = page.locator('section[data-order-group]');
-	const last = sections.last();
+	const sections = page.locator('[data-order-group]');
 	await dragTo(
 		page,
 		orderSection(page, 'Income').getByTestId('drag-handle').first(),
-		(await last.boundingBox())!.y + 1000
+		page.viewportSize()!.height - 10
 	);
 	await expect(sections.last()).toHaveAttribute('aria-label', 'Income');
 	await expect(orderSection(page, 'Income').getByTestId('order-category')).toHaveText([
@@ -575,10 +575,7 @@ test('moves the Income group with its arrows', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('button', { name: 'Edit order' }).click();
 	await page.getByRole('button', { name: 'Move Income down' }).click();
-	await expect(page.locator('section[data-order-group]').nth(1)).toHaveAttribute(
-		'aria-label',
-		'Income'
-	);
+	await expect(page.locator('[data-order-group]').nth(1)).toHaveAttribute('aria-label', 'Income');
 	await page.getByRole('button', { name: 'Save' }).click();
 	await expect(page.getByTestId('group-card').nth(1)).toContainText('Income');
 });
@@ -590,7 +587,8 @@ test('scrolls while a drag holds at the bottom edge, and Escape undoes it', asyn
 	const first = page.getByTestId('order-category').first();
 	const name = (await first.innerText()).trim();
 	const handle = first.getByTestId('drag-handle');
-	await handle.scrollIntoViewIfNeeded();
+	// Centered, so the bar at the bottom of the screen is not over it.
+	await handle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 	const box = (await handle.boundingBox())!;
 	const start = await page.evaluate(() => window.scrollY);
 	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

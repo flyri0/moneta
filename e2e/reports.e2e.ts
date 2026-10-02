@@ -195,8 +195,10 @@ test('hides and reorders the report cards, remembering them', async ({ page }) =
 	await page.getByRole('button', { name: 'Customize' }).click();
 	const editor = page.getByTestId('reports-editor');
 	await editor.getByRole('switch', { name: 'Show Spending by category' }).click();
+	await expect(editor.getByTestId('report-row').first()).toHaveAttribute('data-shown', 'false');
+	await expect(editor.getByTestId('report-row').first()).toHaveClass(/opacity-50/);
 	await editor.getByRole('button', { name: 'Move Age of Money up' }).click();
-	await editor.getByRole('button', { name: 'Save' }).click();
+	await page.getByTestId('reports-bar').getByRole('button', { name: 'Save' }).click();
 	await expect(editor).toBeHidden();
 
 	await expect(cards).toHaveCount(6);
@@ -212,11 +214,11 @@ test('hides and reorders the report cards, remembering them', async ({ page }) =
 	// Cancel leaves things as they were; restoring the default brings every card back in order.
 	await page.getByRole('button', { name: 'Customize' }).click();
 	await editor.getByRole('button', { name: 'Move Net worth down' }).click();
-	await editor.getByRole('button', { name: 'Cancel' }).click();
+	await page.getByTestId('reports-bar').getByRole('button', { name: 'Cancel' }).click();
 	await expect(cards.first()).toHaveAttribute('data-testid', 'net-worth-card');
 	await page.getByRole('button', { name: 'Customize' }).click();
-	await editor.getByRole('button', { name: 'Restore default' }).click();
-	await editor.getByRole('button', { name: 'Save' }).click();
+	await page.getByTestId('reports-bar').getByRole('button', { name: 'Restore default' }).click();
+	await page.getByTestId('reports-bar').getByRole('button', { name: 'Save' }).click();
 	await expect(cards).toHaveCount(7);
 	await expect(cards.first()).toHaveAttribute('data-testid', 'spending-card');
 	await expect(page.getByRole('button', { name: /Hidden reports/ })).toHaveCount(0);
@@ -351,13 +353,15 @@ test.describe('on a phone', () => {
 			await expect(page.getByTestId('reports-editor')).toBeVisible();
 			expect(
 				await page
-					.getByTestId('reports-editor')
+					.locator('[data-testid="reports-editor"], [data-testid="reports-bar"]')
 					.locator('button, [role="switch"]')
-					.evaluateAll(
-						(els) => els.filter((el) => el.getBoundingClientRect().right > innerWidth).length
+					.evaluateAll((els) =>
+						els
+							.filter((el) => el.getBoundingClientRect().right > innerWidth)
+							.map((el) => el.outerHTML.slice(0, 120))
 					),
 				'editor controls past the edge of the screen'
-			).toBe(0);
+			).toEqual([]);
 			await page.getByRole('button', { name: /Cancel|Cancelar/ }).click();
 
 			await page.goto('/reports/net-worth');

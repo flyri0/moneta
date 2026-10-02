@@ -5,6 +5,7 @@
 	import { tick } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import { Button } from '$ui/button';
+	import EditBar from '$components/EditBar.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
@@ -112,23 +113,23 @@
 	</span>
 {/snippet}
 
-<div class="grid gap-3 p-3">
-	<p class="text-sm text-muted-foreground">{m.order_hint()}</p>
-	<FormMessage {error} />
-	<div class="grid grid-cols-2 gap-2">
-		<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
-		<Button onclick={save}>{m.save()}</Button>
-	</div>
+<!-- The budget's own cards and rows, with a grip and arrows in place of the figures. -->
+<!-- On phones the bar floats over the end of the list: room to scroll past it. -->
+<section class="grid gap-4 pb-28 md:pb-0" aria-label={m.budget_categories()}>
 	{#each layout as group, gi (group.id)}
 		{@const dragged = drag.active?.id === group.id}
-		<section
-			class="rounded-lg border {dragged ? 'border-dashed opacity-40' : ''}"
+		<div
+			class="grid gap-2 {dragged ? 'opacity-40' : ''}"
 			aria-label={groupLabel(group)}
 			data-order-group={group.id}
 			data-order-row
+			data-testid="group-card"
 			animate:flip={{ duration: 150 }}
 		>
-			<div class="flex items-center gap-2 bg-muted/60 px-3 py-2 font-medium" data-order-header>
+			<div
+				class="flex items-center gap-2 px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+				data-order-header
+			>
 				{@render grip({ kind: 'group', id: group.id, label: groupLabel(group) })}
 				<span class="flex-1 truncate">{groupLabel(group)}</span>
 				<Button
@@ -147,39 +148,54 @@
 				>
 			</div>
 			{#if !draggingGroups}
-				{#each group.categories as category (category.id)}
-					<div
-						class="flex items-center gap-2 border-t px-3 py-1.5 {drag.active?.id === category.id
-							? 'border-dashed opacity-40'
-							: ''}"
-						role="listitem"
-						data-order-category={category.id}
-						data-order-row
-						data-testid="order-category"
-						animate:flip={{ duration: 150 }}
-					>
-						{@render grip({ kind: 'category', id: category.id, label: category.name })}
-						<span class="flex-1 truncate">{category.name}</span>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label={m.order_move_up({ name: category.name })}
-							onclick={() => (layout = moveCategory(layout, category.id, -1))}
-							><ArrowUpIcon /></Button
+				<div
+					class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+				>
+					{#each group.categories as category (category.id)}
+						<div
+							class="flex items-center gap-2 bg-card px-4 py-2 {drag.active?.id === category.id
+								? 'opacity-40'
+								: ''}"
+							role="listitem"
+							data-order-category={category.id}
+							data-order-row
+							data-testid="order-category"
+							animate:flip={{ duration: 150 }}
 						>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label={m.order_move_down({ name: category.name })}
-							onclick={() => (layout = moveCategory(layout, category.id, 1))}
-							><ArrowDownIcon /></Button
-						>
-					</div>
-				{/each}
+							{@render grip({ kind: 'category', id: category.id, label: category.name })}
+							<span class="min-w-0 flex-1 truncate text-sm font-medium">{category.name}</span>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								aria-label={m.order_move_up({ name: category.name })}
+								onclick={() => (layout = moveCategory(layout, category.id, -1))}
+								><ArrowUpIcon /></Button
+							>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								aria-label={m.order_move_down({ name: category.name })}
+								onclick={() => (layout = moveCategory(layout, category.id, 1))}
+								><ArrowDownIcon /></Button
+							>
+						</div>
+					{/each}
+				</div>
 			{/if}
-		</section>
+		</div>
 	{/each}
-</div>
+</section>
+
+<EditBar label={m.budget_edit_order()} testId="order-bar" passThrough={!!drag.active}>
+	<div class="grid gap-2 p-2">
+		<p class="px-1 text-sm text-muted-foreground">{m.order_hint()}</p>
+		<FormMessage {error} />
+		<div class="grid grid-cols-2 gap-2">
+			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
+			<Button onclick={save}>{m.save()}</Button>
+		</div>
+	</div>
+</EditBar>
 
 {#if drag.active}
 	{@const item = drag.active}

@@ -6,6 +6,7 @@
 	import { flip } from 'svelte/animate';
 	import { Button } from '$ui/button';
 	import { Switch } from '$ui/switch';
+	import EditBar from '$components/EditBar.svelte';
 	import { shouldMove } from '$features/budget/sortable';
 	import { DragController, type DragItem } from '$features/budget/sortable.svelte';
 	import { REPORTS } from '$features/reports/catalog';
@@ -74,60 +75,67 @@
 	</span>
 {/snippet}
 
-<div class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3" data-testid="reports-editor">
-	<p class="text-sm text-muted-foreground">{m.reports_customize_hint()}</p>
-	<!-- Only icons for the lesser action on a phone: three labelled buttons do not fit one. -->
-	<div class="flex items-center gap-2">
-		<Button
-			variant="ghost"
-			aria-label={m.reports_restore_default()}
-			onclick={() => (layout = DEFAULT_LAYOUT)}
+<!-- Each report folds down to a card's title row, so they are short enough to drag past one another. -->
+<ul class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 pb-28 md:pb-0" data-testid="reports-editor">
+	{#each layout.order as id, i (id)}
+		{@const title = REPORTS[id].title()}
+		{@const shown = !layout.hidden.includes(id)}
+		<li
+			class="flex items-center gap-1.5 rounded-xl border bg-card px-4 py-3 text-card-foreground transition-opacity sm:gap-2 {drag
+				.active?.id === id
+				? 'border-dashed opacity-40'
+				: shown
+					? ''
+					: 'opacity-50'}"
+			data-report-row={id}
+			data-shown={shown}
+			data-testid="report-row"
+			animate:flip={{ duration: 150 }}
 		>
-			<RotateCcwIcon class="size-4" />
-			<span class="hidden sm:inline">{m.reports_restore_default()}</span>
-		</Button>
-		<div class="ml-auto flex gap-2">
-			<Button variant="ghost" onclick={onCancel}>{m.cancel()}</Button>
+			{@render grip({ kind: 'card', id, label: title })}
+			<span class="min-w-0 flex-1 truncate text-xs font-medium tracking-wide uppercase"
+				>{title}</span
+			>
+			<Switch
+				checked={shown}
+				aria-label={m.reports_show_report({ name: title })}
+				onCheckedChange={() => (layout = toggleHidden(layout, id))}
+			/>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				aria-label={m.order_move_up({ name: title })}
+				disabled={i === 0}
+				onclick={() => (layout = moveCard(layout, id, -1))}><ArrowUpIcon /></Button
+			>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				aria-label={m.order_move_down({ name: title })}
+				disabled={i === layout.order.length - 1}
+				onclick={() => (layout = moveCard(layout, id, 1))}><ArrowDownIcon /></Button
+			>
+		</li>
+	{/each}
+</ul>
+
+<EditBar label={m.reports_customize()} testId="reports-bar" passThrough={!!drag.active}>
+	<div class="grid gap-2 p-2">
+		<p class="px-1 text-sm text-muted-foreground">{m.reports_customize_hint()}</p>
+		<div class="grid grid-cols-[auto_1fr_1fr] gap-2">
+			<Button
+				variant="ghost"
+				aria-label={m.reports_restore_default()}
+				onclick={() => (layout = DEFAULT_LAYOUT)}
+			>
+				<RotateCcwIcon class="size-4" />
+				<span class="hidden sm:inline">{m.reports_restore_default()}</span>
+			</Button>
+			<Button variant="outline" onclick={onCancel}>{m.cancel()}</Button>
 			<Button onclick={() => onSave(layout)}>{m.save()}</Button>
 		</div>
 	</div>
-	<ul class="divide-y rounded-xl border bg-card text-card-foreground">
-		{#each layout.order as id, i (id)}
-			{@const title = REPORTS[id].title()}
-			{@const shown = !layout.hidden.includes(id)}
-			<li
-				class="flex items-center gap-1.5 px-3 py-2 sm:gap-2 {drag.active?.id === id
-					? 'border-dashed opacity-40'
-					: ''}"
-				data-report-row={id}
-				data-testid="report-row"
-				animate:flip={{ duration: 150 }}
-			>
-				{@render grip({ kind: 'card', id, label: title })}
-				<span class="min-w-0 flex-1 truncate {shown ? '' : 'text-muted-foreground'}">{title}</span>
-				<Switch
-					checked={shown}
-					aria-label={m.reports_show_report({ name: title })}
-					onCheckedChange={() => (layout = toggleHidden(layout, id))}
-				/>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label={m.order_move_up({ name: title })}
-					disabled={i === 0}
-					onclick={() => (layout = moveCard(layout, id, -1))}><ArrowUpIcon /></Button
-				>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label={m.order_move_down({ name: title })}
-					disabled={i === layout.order.length - 1}
-					onclick={() => (layout = moveCard(layout, id, 1))}><ArrowDownIcon /></Button
-				>
-			</li>
-		{/each}
-	</ul>
-</div>
+</EditBar>
 
 {#if drag.active}
 	<div

@@ -64,7 +64,7 @@ test('onboarding can start with no categories, keeping an empty Income group', a
 	await expect(page.getByTestId('category-row')).toHaveCount(0);
 	// The grid leaves an empty Income group out; the order editor shows it's there.
 	await page.getByRole('button', { name: 'Edit order' }).click();
-	const sections = page.locator('section[data-order-group]');
+	const sections = page.locator('[data-order-group]');
 	await expect(sections).toHaveCount(1);
 	await expect(sections).toHaveAttribute('aria-label', 'Income');
 	await expect(sections.getByTestId('order-category')).toHaveCount(0);
