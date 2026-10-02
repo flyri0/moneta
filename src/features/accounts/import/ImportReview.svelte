@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { SvelteSet } from 'svelte/reactivity';
+	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
@@ -16,11 +17,13 @@
 	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
+	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 	import ImportRow from './ImportRow.svelte';
 	import { importHandoff } from './pending.svelte';
 	import {
 		applyRule,
+		farFutureCount,
 		fillCategories,
 		importLines,
 		reviewCounts,
@@ -107,6 +110,7 @@
 	});
 
 	const counts = $derived(rows ? reviewCounts(rows, account.onBudget) : null);
+	const farFuture = $derived(rows ? farFutureCount(rows, todayIso()) : 0);
 
 	async function commit() {
 		if (!rows) return;
@@ -154,6 +158,12 @@
 		</div>
 	</Delayed>
 {:else}
+	{#if farFuture > 0}
+		<Alert.Root data-testid="import-far-future">
+			<Alert.Description>{m.import_far_future({ count: farFuture })}</Alert.Description>
+		</Alert.Root>
+	{/if}
+
 	{#if account.onBudget && counts.missing > 0}
 		<section class="grid gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-xs">
 			<p class="text-sm" data-testid="import-missing">

@@ -833,6 +833,7 @@
 	"import_status_new": "New",
 	"import_status_match": "Matches {payee}, {date}",
 	"import_status_duplicate": "Already imported",
+	"import_far_future": "Lines dated more than two years from now: {count}. If a year is wrong, fix it in the file and import again; every month up to the latest date is worked out on each change.",
 	"import_missing_categories": "Transactions still without a category: {count}. Choose one for each, or one for all of them.",
 	"import_category_for_rest": "Category for the rest",
 	"import_apply_category": "Apply",

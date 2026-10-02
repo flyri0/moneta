@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { ImportPreview, StatementLine } from '$db/repos/imports';
-import { applyRule, fillCategories, importLines, reviewCounts, reviewRows } from './review';
+import {
+	applyRule,
+	farFutureCount,
+	fillCategories,
+	importLines,
+	reviewCounts,
+	reviewRows
+} from './review';
 
 const line = (n: number): StatementLine => ({
 	date: '2026-01-05',
@@ -113,5 +120,14 @@ describe('applyRule', () => {
 		const r = rows();
 		applyRule(r, { ...rule, kind: 'is', text: 'Shop' });
 		expect(r.every((x) => x.ruleId === null)).toBe(true);
+	});
+
+	it('counts the included lines dated over two years ahead', () => {
+		const all = rows();
+		all[0].line = { ...all[0].line, date: '2029-01-05' };
+		all[1].line = { ...all[1].line, date: '2029-01-05' };
+		all[1].include = false;
+		all[3].line = { ...all[3].line, date: '2031-01-05' };
+		expect(farFutureCount(all, '2026-10-02')).toBe(1);
 	});
 });

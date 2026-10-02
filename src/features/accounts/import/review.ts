@@ -1,4 +1,5 @@
 import type { ImportLine, ImportPreview, StatementLine } from '$db/repos/imports';
+import { isFarFuture } from '$domain/month';
 import { matchRule, type RuleKind } from '$domain/payee-rules';
 
 /** A statement line on the review screen, with what the user chose for it. */
@@ -43,6 +44,16 @@ export function reviewCounts(rows: ReviewRow[], onBudget: boolean) {
 		if (needsCategory(row, onBudget)) missing++;
 	}
 	return { create, match, missing };
+}
+
+/**
+ * How many lines to import are dated more than two years ahead, likely a wrong year: the budget
+ * is worked out month by month up to the latest date.
+ */
+export function farFutureCount(rows: ReviewRow[], today: string): number {
+	return rows.filter(
+		(r) => r.include && r.preview.status !== 'duplicate' && isFarFuture(r.line.date, today)
+	).length;
 }
 
 /** Gives `categoryId` to every included new row that has no category yet. */
