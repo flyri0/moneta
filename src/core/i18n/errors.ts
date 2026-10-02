@@ -12,6 +12,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	STORAGE_UNAVAILABLE: m.error_storage_unavailable,
 	ACCOUNT_CLOSED: m.error_account_closed,
 	ACCOUNT_HAS_TRANSACTIONS: m.error_account_has_transactions,
+	ACCOUNT_HAS_SCHEDULES: m.error_account_has_schedules,
 	ACCOUNT_BALANCE_NOT_ZERO: m.error_account_balance_not_zero,
 	CATEGORY_REQUIRED: m.error_category_required,
 	CATEGORY_NOT_ALLOWED: m.error_category_not_allowed,

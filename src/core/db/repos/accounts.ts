@@ -143,6 +143,13 @@ export function deleteAccount(db: Db, id: string): void {
 		getAccount(db, id);
 		if (one(db, 'SELECT 1 AS x FROM transactions WHERE account_id = ?', [id]))
 			throw new DomainError('ACCOUNT_HAS_TRANSACTIONS');
+		// The schedules' foreign keys cascade, which would drop recurring entries without a word.
+		if (
+			one(db, 'SELECT 1 AS x FROM schedules WHERE account_id = ?1 OR transfer_account_id = ?1', [
+				id
+			])
+		)
+			throw new DomainError('ACCOUNT_HAS_SCHEDULES');
 		run(db, 'DELETE FROM accounts WHERE id = ?', [id]);
 	});
 }

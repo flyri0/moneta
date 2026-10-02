@@ -574,7 +574,7 @@ describe('what schedules keep in use', () => {
 		expect(() => deletePayee(db, payeeId)).toThrow(code('PAYEE_IN_USE'));
 	});
 
-	it('deletes the schedules of a deleted account, on either leg', () => {
+	it('refuses to delete an account a schedule uses, on either leg', () => {
 		const old = createAccount(db, {
 			onBudget: true,
 			startingBalance: 0,
@@ -582,9 +582,14 @@ describe('what schedules keep in use', () => {
 			name: 'Old',
 			type: 'checking'
 		});
-		createSchedule(db, rentInput({ accountId: old }));
-		createSchedule(db, transferInput({ transferAccountId: old }));
+		const own = createSchedule(db, rentInput({ accountId: old }));
+		const incoming = createSchedule(db, transferInput({ transferAccountId: old }));
+		expect(() => deleteAccount(db, old)).toThrow(code('ACCOUNT_HAS_SCHEDULES'));
+		expect(listSchedules(db, T)).toHaveLength(2);
+		deleteSchedule(db, own);
+		expect(() => deleteAccount(db, old)).toThrow(code('ACCOUNT_HAS_SCHEDULES'));
+		deleteSchedule(db, incoming);
 		deleteAccount(db, old);
-		expect(listSchedules(db, T)).toEqual([]);
+		expect(() => getAccount(db, old)).toThrow(code('NOT_FOUND'));
 	});
 });

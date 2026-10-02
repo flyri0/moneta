@@ -222,25 +222,7 @@ const SCENARIOS: Record<string, Scenario[]> = {
 		{ args: (f) => [{ name: 'Internet', group: { id: f.bills } }] },
 		{ args: () => [{ name: 'Vet', group: { name: 'Pets' } }] }
 	],
-	'accounts.delete': [
-		{ args: (f) => [f.spare] },
-		{
-			prepare: (f) => {
-				createSchedule(
-					f.db,
-					scheduleInput(f, {
-						accountId: f.spare,
-						categoryId: null,
-						splits: [
-							{ categoryId: f.food, amount: -100000 },
-							{ categoryId: f.fun, amount: -50000 }
-						]
-					})
-				);
-			},
-			args: (f) => [f.spare]
-		}
-	],
+	'accounts.delete': [{ args: (f) => [f.spare] }],
 	'categories.createGroup': [{ args: () => [{ name: 'Goals' }] }],
 	'categories.updateGroup': [{ args: (f) => [f.bills, { name: 'Housing' }] }],
 	'categories.deleteGroup': [
