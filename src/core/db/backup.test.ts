@@ -291,6 +291,27 @@ describe('checkBackup rebuilds the budget', () => {
 			'a last backup that is not a date',
 			"INSERT INTO meta (key, value) VALUES ('last_backup_at', 'not a date')"
 		],
+		[
+			'an amount past the safe integer range',
+			"UPDATE transactions SET amount = 9007199254740993 WHERE memo = 'plain'"
+		],
+		[
+			'an assignment past the safe integer range',
+			'UPDATE budget_assignments SET assigned = -9007199254740993'
+		],
+		[
+			'a goal past the safe integer range',
+			"UPDATE categories SET goal_type = 'monthly', goal_amount = 9007199254740993 WHERE name = 'Rent'"
+		],
+		[
+			'a schedule amount past the safe integer range',
+			'UPDATE schedules SET amount = 9007199254740993'
+		],
+		[
+			'a category total past the safe integer range',
+			`UPDATE budget_assignments SET assigned = 9007199254740991;
+			INSERT INTO budget_assignments SELECT category_id, '2026-02', 9007199254740991 FROM budget_assignments`
+		],
 		['a boolean that is not 0 or 1', "UPDATE transactions SET cleared = 7 WHERE memo = 'plain'"]
 	];
 	for (const [what, sql] of broken) {

@@ -7,6 +7,9 @@ import { getMeta, validateCurrency, validateLocale } from './repos/meta';
  * Queries that find a row breaking a rule the repos keep on every write. A budget restored from a
  * file never went through the repos, so each must come back empty.
  */
+/** The largest amount JS numbers hold exactly: past it, balances and sums stop adding up. */
+const SAFE = Number.MAX_SAFE_INTEGER;
+
 const BROKEN_ROWS: [string, string][] = [
 	[
 		'an amount that is not an integer',
@@ -90,6 +93,21 @@ const BROKEN_ROWS: [string, string][] = [
 			JOIN (SELECT schedule_id, SUM(amount) AS total FROM schedule_splits GROUP BY 1) s
 				ON s.schedule_id = t.id
 			WHERE s.total <> t.amount`
+	],
+	[
+		'an amount past the safe integer range',
+		`SELECT 1 FROM transactions WHERE ABS(amount) > ${SAFE}
+			UNION ALL SELECT 1 FROM transaction_splits WHERE ABS(amount) > ${SAFE}
+			UNION ALL SELECT 1 FROM budget_assignments WHERE ABS(assigned) > ${SAFE}
+			UNION ALL SELECT 1 FROM schedules WHERE ABS(amount) > ${SAFE}
+			UNION ALL SELECT 1 FROM schedule_splits WHERE ABS(amount) > ${SAFE}
+			UNION ALL SELECT 1 FROM categories WHERE ABS(goal_amount) > ${SAFE}`
+	],
+	[
+		'a total past the safe integer range',
+		`SELECT 1 FROM transactions GROUP BY account_id HAVING ABS(TOTAL(amount)) > ${SAFE}
+			UNION ALL SELECT 1 FROM budget_assignments GROUP BY category_id HAVING ABS(TOTAL(assigned)) > ${SAFE}
+			UNION ALL SELECT 1 FROM budget_assignments GROUP BY month HAVING ABS(TOTAL(assigned)) > ${SAFE}`
 	],
 	[
 		'a transfer without its other half',
