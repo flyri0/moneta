@@ -1,5 +1,7 @@
 /** The shortest password backup encryption accepts. */
 export const MIN_PASSWORD_LENGTH = 8;
+/** The length asked for when the password's strength can't be rated (its word lists didn't load). */
+export const UNRATED_MIN_LENGTH = 12;
 /**
  * The lowest zxcvbn score (0 to 4) accepted: 3 is "safely unguessable" against offline attacks
  * slowed down, as PBKDF2 slows them, and a backup file may end up where anyone can try.
@@ -13,16 +15,19 @@ export function normalizePassword(password: string): string {
 
 /**
  * What is wrong with a new backup password and its confirmation, or null when nothing is.
- * `strength` is `passwordStrength` of the password, or null while it is being worked out.
+ * `strength` is `passwordStrength` of the password, or null while it is being worked out; `unrated`
+ * says that failed, so it can't be trusted to be hard to guess and must be longer.
  */
 export function passwordProblem(
 	password: string,
 	confirm: string,
-	strength: number | null = null
-): 'short' | 'weak' | 'mismatch' | null {
+	strength: number | null = null,
+	unrated = false
+): 'short' | 'weak' | 'unrated' | 'mismatch' | null {
 	const typed = normalizePassword(password);
 	if (typed.length < MIN_PASSWORD_LENGTH) return 'short';
 	if (strength !== null && strength < MIN_PASSWORD_STRENGTH) return 'weak';
+	if (unrated && strength === null && typed.length < UNRATED_MIN_LENGTH) return 'unrated';
 	if (typed !== normalizePassword(confirm)) return 'mismatch';
 	return null;
 }

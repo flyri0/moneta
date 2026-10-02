@@ -552,6 +552,7 @@
 	"backup_password_confirm": "Confirme a senha",
 	"backup_password_short": "Use pelo menos {min} caracteres.",
 	"backup_password_mismatch": "As senhas não são iguais.",
+	"backup_password_unrated": "Não foi possível verificar a força desta senha. Use pelo menos {min} caracteres, ou toque em Avançar para tentar de novo.",
 	"backup_password_weak": "Esta senha é fácil demais de adivinhar. Algumas palavras sem relação entre si formam uma senha difícil de adivinhar e fácil de lembrar.",
 	"backup_password_hint": "A chave de recuperação já é forte; a senha é o que alguém com um backup em mãos tentaria adivinhar.",
 	"backup_strength_weak": "Fraca",

@@ -11,6 +11,7 @@
 	import { runAction, type ActionError } from '$client/notify';
 	import {
 		MIN_PASSWORD_LENGTH,
+		UNRATED_MIN_LENGTH,
 		MIN_PASSWORD_STRENGTH,
 		passwordProblem,
 		passwordStrength
@@ -41,12 +42,15 @@
 
 	/** How hard the password is to guess (0 to 4), or null until it is rated. */
 	let strength = $state<number | null>(null);
-	const problem = $derived(passwordProblem(password, confirm, strength));
+	/** Rating failed (the word lists didn't load): the password has to be longer instead. */
+	let unrated = $state(false);
+	const problem = $derived(passwordProblem(password, confirm, strength, unrated));
 
 	// Rated on this device as it is typed; the word lists load the first time.
 	$effect(() => {
 		const typed = password;
 		strength = null;
+		unrated = false;
 		if (typed.length < MIN_PASSWORD_LENGTH) return;
 		let current = true;
 		passwordStrength(typed).then(
@@ -74,7 +78,10 @@
 		if (strength === null && password.length >= MIN_PASSWORD_LENGTH) {
 			const typed = password;
 			const score = await passwordStrength(typed).catch(() => null);
-			if (password === typed) strength = score;
+			if (password === typed) {
+				strength = score;
+				unrated = score === null;
+			}
 		}
 		if (problem) return;
 		// A new key every time, so going back can't leave one on screen that was never saved.
@@ -169,7 +176,9 @@
 								? m.backup_password_short({ min: MIN_PASSWORD_LENGTH })
 								: problem === 'weak'
 									? m.backup_password_weak()
-									: m.backup_password_mismatch()
+									: problem === 'unrated'
+										? m.backup_password_unrated({ min: UNRATED_MIN_LENGTH })
+										: m.backup_password_mismatch()
 					}}
 				/>
 			{/if}

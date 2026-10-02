@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { MIN_PASSWORD_LENGTH, passwordProblem, passwordStrength } from './backup-password';
+import {
+	MIN_PASSWORD_LENGTH,
+	UNRATED_MIN_LENGTH,
+	passwordProblem,
+	passwordStrength
+} from './backup-password';
 
 describe('passwordProblem', () => {
 	it('accepts a long enough password typed the same twice', () => {
@@ -45,5 +50,15 @@ describe('passwordProblem with a strength', () => {
 	it('flags a short password first, and waits for a strength before calling it weak', () => {
 		expect(passwordProblem('short', 'short', 0)).toBe('short');
 		expect(passwordProblem('password1', 'password1', null)).toBeNull();
+	});
+});
+
+describe('passwordProblem when the strength could not be rated', () => {
+	it('asks for a longer password instead of letting an easy one through', () => {
+		const typed = 'a'.repeat(UNRATED_MIN_LENGTH - 1);
+		expect(passwordProblem(typed, typed, null, true)).toBe('unrated');
+		const long = 'a'.repeat(UNRATED_MIN_LENGTH);
+		expect(passwordProblem(long, long, null, true)).toBeNull();
+		expect(passwordProblem(long, 'x', null, true)).toBe('mismatch');
 	});
 });

@@ -552,6 +552,7 @@
 	"backup_password_confirm": "Confirm password",
 	"backup_password_short": "Use at least {min} characters.",
 	"backup_password_mismatch": "The passwords don't match.",
+	"backup_password_unrated": "Couldn't check how strong this password is. Use at least {min} characters, or press Next to try again.",
 	"backup_password_weak": "This password is too easy to guess. A few unrelated words make one that is hard to guess and easy to remember.",
 	"backup_password_hint": "The recovery key is strong by design; the password is what someone holding a backup would try to guess.",
 	"backup_strength_weak": "Weak",
