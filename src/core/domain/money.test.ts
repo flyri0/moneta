@@ -54,7 +54,12 @@ describe('parseAmount', () => {
 		['−12,34', BRL, -1234],
 		['.5', USD, 50],
 		['1500', JPY, 1500],
-		['0', USD, 0]
+		['0', USD, 0],
+		// Half a cent rounds away from zero, as the statement parser does, though 5.35 / 2 * 100
+		// is 267.49999999999997 in floats.
+		['5.35/2', USD, 268],
+		['-5.35/2', USD, -268],
+		['1.15*0.5', USD, 58]
 	])('parses %s', (input, fmt, expected) => {
 		expect(parseAmount(input, fmt)).toBe(expected);
 	});

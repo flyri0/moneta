@@ -187,6 +187,17 @@ function evaluate(tokens: Token[]): number | null {
 }
 
 /**
+ * Rounds a non-negative number to a whole one, halves up. A half that float math left a few ulps
+ * short (1.005 * 100 is 100.49999999999999) counts as a half; the slack stops short of huge values,
+ * where an ulp is no longer small.
+ */
+function roundHalfUp(x: number): number {
+	const half = Math.floor(x) + 0.5;
+	if (x < 1e12 && Math.abs(x - half) <= x * 8 * Number.EPSILON) return half + 0.5;
+	return Math.round(x);
+}
+
+/**
  * Parses user input like "1.234,56", "R$ 12,50" or "120+35" into integer minor units.
  * Returns null for anything ambiguous or malformed rather than guessing.
  */
@@ -199,7 +210,7 @@ export function parseAmount(input: string, fmt: MoneyFormat): number | null {
 	const value = evaluate(tokens);
 	if (value === null || !Number.isFinite(value)) return null;
 	const scaled = value * 10 ** digits;
-	const rounded = Math.sign(scaled) * Math.round(Math.abs(scaled));
+	const rounded = Math.sign(scaled) * roundHalfUp(Math.abs(scaled));
 	// Past 2^53 minor units the amount is no longer exact, and the repos refuse it anyway.
 	if (!Number.isSafeInteger(rounded)) return null;
 	return rounded === 0 ? 0 : rounded;
