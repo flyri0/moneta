@@ -30,6 +30,11 @@
 
 	/** How long shutting down waits on the worker before terminating it anyway. */
 	const SHUTDOWN_TIMEOUT = 3000;
+	/**
+	 * How long an update waits for calls already running (a restore, an import) before it closes the
+	 * database under them: cutting those short can leave a restore half done.
+	 */
+	const IDLE_TIMEOUT = 30_000;
 
 	/** The one toast for an update, from its download until it is ready. */
 	const UPDATE_TOAST = 'app-update';
@@ -139,7 +144,7 @@
 	 */
 	async function applyUpdate() {
 		app.boot = { kind: 'loading' };
-		if (worker) await settleWithin(worker.idle(), SHUTDOWN_TIMEOUT);
+		if (worker) await settleWithin(worker.idle(), IDLE_TIMEOUT);
 		await stopWorker();
 		await applyServiceWorkerUpdate();
 	}
@@ -149,7 +154,7 @@
 	 * has the database closes it cleanly first.
 	 */
 	async function reloadForUpdate() {
-		if (worker) await settleWithin(worker.idle(), SHUTDOWN_TIMEOUT);
+		if (worker) await settleWithin(worker.idle(), IDLE_TIMEOUT);
 		await stopWorker();
 		location.reload();
 	}
