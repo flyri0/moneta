@@ -52,7 +52,15 @@ export function idbAuthStore(): AuthStore {
 			const request = indexedDB.open(AUTH_DB, 1);
 			request.onupgradeneeded = () => request.result.createObjectStore(STORE);
 			opened = done(request);
-			opened.catch(() => (opened = null));
+			opened.then(
+				(db) =>
+					// Lets go when the database is being deleted (wiping the device), or it waits on us.
+					(db.onversionchange = () => {
+						db.close();
+						opened = null;
+					}),
+				() => (opened = null)
+			);
 		}
 		return opened;
 	}

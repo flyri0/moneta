@@ -154,6 +154,8 @@ export const cloudBackup = new CloudBackup();
 
 /** Forgets every cloud connection on this device, for wiping it. Access lapses unused. */
 export async function forgetCloud(): Promise<void> {
+	// Loaded first: without its connection there is no refresh token to revoke.
+	await cloudBackup.load();
 	await cloudBackup.disconnect().catch(() => {});
 	await deleteAuthDb().catch(() => {});
 }
