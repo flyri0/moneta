@@ -4,6 +4,9 @@ export type DecimalSeparator = ',' | '.';
 /** What may stand next to an amount: nothing, a symbol like `R$` or `US$`, or a code like `BRL`. */
 const CURRENCY = /^(?:[A-Z]{3}|[A-Za-z]{0,2}[$€£¥₹]|)$/;
 
+/** The longest cell, spaces left out, that can be an amount. */
+const MAX_LENGTH = 64;
+
 /**
  * Reads an amount from a statement into integer minor units: `1.234,56`, `-12.50`, `R$ 10,00`,
  * `(12.50)` and a trailing `D` (debit) or `C` (credit). Digits past the currency's are rounded
@@ -15,6 +18,8 @@ export function parseStatementAmount(
 	digits: number
 ): number | null {
 	let s = text.replace(/[\s\u00a0]/g, '').replace(/[−–]/g, '-');
+	// Nothing a bank writes is this long, and the affix pattern below backtracks on long text.
+	if (s.length > MAX_LENGTH) return null;
 	let negative = false;
 	const suffix = /^(.*?)([DC])$/i.exec(s);
 	if (suffix && /\d/.test(suffix[1])) {

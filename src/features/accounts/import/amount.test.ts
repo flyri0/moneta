@@ -20,6 +20,16 @@ describe('parseStatementAmount', () => {
 		expect(parseStatementAmount('12.50−', '.', 2)).toBe(-1250);
 	});
 
+	it('gives up on a cell too long to be an amount without stalling', () => {
+		const start = performance.now();
+		expect(
+			parseStatementAmount('x'.repeat(200_000) + '1' + 'x'.repeat(200_000), '.', 2)
+		).toBeNull();
+		expect(parseStatementAmount('1' + 'x'.repeat(50_000) + '1', ',', 2)).toBeNull();
+		expect(parseStatementAmount('-'.repeat(200_000), ',', 2)).toBeNull();
+		expect(performance.now() - start).toBeLessThan(100);
+	});
+
 	it('rounds extra decimals and follows the currency digits', () => {
 		expect(parseStatementAmount('1.005', '.', 2)).toBe(101);
 		expect(parseStatementAmount('-1.004', '.', 2)).toBe(-100);
