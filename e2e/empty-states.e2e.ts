@@ -135,7 +135,7 @@ test('each empty screen offers its next step', async ({ page }) => {
 	const rows = page.getByTestId('register-row');
 	await expect(rows).toHaveCount(1);
 	await page.getByRole('searchbox').fill('nothing like this');
-	await expect(empty).toContainText('Nothing matches this search or these dates.');
+	await expect(empty).toContainText('Nothing matches this search or these filters.');
 	await empty.getByRole('button', { name: 'Clear filters' }).click();
 	await expect(rows).toHaveCount(1);
 	await expect(page.getByRole('searchbox')).toHaveValue('');

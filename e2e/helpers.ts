@@ -199,3 +199,35 @@ export const UNREADABLE_FILE = {
 	mimeType: 'application/octet-stream',
 	buffer: Buffer.from('x')
 };
+
+/** Picks a range in the DateRangePicker: the month and year of its start, then both days. */
+export async function pickDateRange(
+	container: Page | Locator,
+	label: string | RegExp,
+	from: string, // 'YYYY-MM-DD'
+	to: string
+): Promise<void> {
+	const page = 'page' in container ? (container as Locator).page() : (container as Page);
+	await container.getByLabel(label, { exact: false }).click();
+	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
+	const [y, m] = from.split('-').map(Number);
+	await popover.getByLabel('Year').click();
+	await page
+		.locator('[data-slot="select-content"][data-state="open"] [data-slot="select-item"]')
+		.filter({ hasText: String(y) })
+		.first()
+		.click();
+	await popover.getByLabel('Month').click();
+	await page
+		.locator('[data-slot="select-content"][data-state="open"] [data-slot="select-item"]')
+		.nth(m - 1)
+		.click();
+	for (const day of [from, to]) {
+		await popover
+			.locator('[data-slot="calendar-day"]:not([data-outside-month])')
+			.filter({ hasText: new RegExp(`^${Number(day.slice(8))}$`) })
+			.first()
+			.click();
+	}
+	await expect(popover).toBeHidden();
+}

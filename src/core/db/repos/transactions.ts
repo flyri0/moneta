@@ -63,6 +63,10 @@ export interface TransactionQuery {
 	search?: string;
 	from?: string;
 	to?: string;
+	/** Bounds on the size of the amount, in minor units, ignoring its sign. */
+	amountMin?: number;
+	amountMax?: number;
+	cleared?: boolean;
 	limit?: number;
 	offset?: number;
 }
@@ -577,6 +581,9 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		':payeeId': query.payeeId ?? null,
 		':from': query.from ?? null,
 		':to': query.to ?? null,
+		':amountMin': query.amountMin ?? null,
+		':amountMax': query.amountMax ?? null,
+		':cleared': query.cleared === undefined ? null : query.cleared ? 1 : 0,
 		':limit': query.limit ?? -1,
 		':offset': query.offset ?? 0
 	};
@@ -599,6 +606,9 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		   AND (:payeeId IS NULL OR t.payee_id = :payeeId)
 		   AND (:from IS NULL OR t.date >= :from)
 		   AND (:to IS NULL OR t.date <= :to)
+		   AND (:amountMin IS NULL OR ABS(t.amount) >= :amountMin)
+		   AND (:amountMax IS NULL OR ABS(t.amount) <= :amountMax)
+		   AND (:cleared IS NULL OR t.cleared = :cleared)
 		   ${conditions.join('\n')}
 		 ORDER BY t.date DESC, t.id DESC
 		 LIMIT :limit OFFSET :offset`,

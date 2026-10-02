@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseCombobox, onboard, pickDate } from './helpers';
+import { chooseCombobox, onboard, pickDate, pickDateRange } from './helpers';
 
 test('lists the transactions of every account', async ({ page }) => {
 	await onboard(page);
@@ -31,7 +31,7 @@ test('lists the transactions of every account', async ({ page }) => {
 	await expect(rows.filter({ hasText: 'Rainy day' })).toContainText('$250.00');
 
 	await page.getByRole('searchbox').fill('nothing like this');
-	await expect(page.getByText('Nothing matches this search or these dates.')).toBeVisible();
+	await expect(page.getByText('Nothing matches this search or these filters.')).toBeVisible();
 	// The account's own name, any case, and amounts match too.
 	await page.getByRole('searchbox').fill('RAINY');
 	await expect(rows).toHaveCount(1);
@@ -92,16 +92,46 @@ test.describe('on a phone', () => {
 		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 	});
 
-	test('keeps the dates behind a button, and in sight once one is set', async ({ page }) => {
+	test('filters by period, amount and status from one dialog', async ({ page }) => {
 		await onboard(page);
 		await page.goto('/transactions');
-		const dates = page.getByRole('button', { name: 'Dates' });
-		await expect(page.getByLabel('From')).toBeHidden();
-		await dates.click();
-		await expect(dates).toHaveAttribute('aria-expanded', 'true');
-		await expect(page.getByLabel('From')).toBeVisible();
-		await dates.click();
-		await expect(page.getByLabel('From')).toBeHidden();
+		const rows = page.getByTestId('register-row');
+		await expect(rows).toHaveCount(1);
+		const dialog = page.getByRole('dialog');
+		const filters = page.getByRole('button', { name: /^Filters/ });
+		await expect(page.getByLabel('From')).toHaveCount(0);
+
+		await filters.click();
+		await expect(dialog.getByRole('button', { name: 'Period' })).toBeVisible();
+		await dialog.getByLabel('Amount from').fill('999999');
+		await dialog.getByRole('button', { name: 'Apply' }).click();
+		await expect(dialog).toBeHidden();
+		await expect(rows).toHaveCount(0);
+		await expect(filters).toContainText('1');
+
+		await filters.click();
+		await dialog.getByLabel('Amount from').fill('abc');
+		await dialog.getByRole('button', { name: 'Apply' }).click();
+		await expect(dialog.getByRole('alert')).toBeVisible();
+		await dialog.getByRole('button', { name: 'Clear filters' }).click();
+		await expect(dialog).toBeHidden();
+		await expect(rows).toHaveCount(1);
+		await expect(filters).not.toContainText('1');
+	});
+
+	test('picks a period as one range', async ({ page }) => {
+		await onboard(page);
+		await page.goto('/transactions');
+		const rows = page.getByTestId('register-row');
+		const dialog = page.getByRole('dialog');
+		await page.getByRole('button', { name: /^Filters/ }).click();
+		await pickDateRange(dialog, 'Period', '2020-03-05', '2020-03-20');
+		await dialog.getByRole('button', { name: 'Apply' }).click();
+		await expect(dialog).toBeHidden();
+		await expect(rows).toHaveCount(0);
+		await expect(page.getByText('Nothing matches this search or these filters.')).toBeVisible();
+		await page.getByRole('button', { name: 'Clear filters' }).click();
+		await expect(rows).toHaveCount(1);
 	});
 
 	test('shrinks the add-transaction button to its icon on scroll', async ({ page }) => {

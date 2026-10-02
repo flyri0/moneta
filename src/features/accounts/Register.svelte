@@ -41,11 +41,18 @@
 
 	let pages = $state(1);
 
-	// A new search or date range starts paging over.
+	// A new search or filter starts paging over.
 	$effect(() => {
-		void filters.search;
-		void filters.from;
-		void filters.to;
+		void [
+			filters.search,
+			filters.from,
+			filters.to,
+			filters.categoryId,
+			filters.payeeId,
+			filters.amountMin,
+			filters.amountMax,
+			filters.status
+		];
 		pages = 1;
 	});
 
@@ -64,11 +71,16 @@
 				search: filters.search || undefined,
 				from: filters.from || undefined,
 				to: filters.to || undefined,
+				categoryId: filters.categoryId || undefined,
+				payeeId: filters.payeeId || undefined,
+				amountMin: filters.amountMin ?? undefined,
+				amountMax: filters.amountMax ?? undefined,
+				cleared: filters.status ? filters.status === 'cleared' : undefined,
 				limit: pages * PAGE_SIZE
 			})
 	);
 	const hasMore = $derived((rows.data?.length ?? 0) >= pages * PAGE_SIZE);
-	const filtered = $derived(!!(filters.search || filters.from || filters.to));
+	const filtered = $derived(filters.active);
 
 	let dialogOpen = $state(false);
 	let editing = $state<TransactionRow | null>(null);

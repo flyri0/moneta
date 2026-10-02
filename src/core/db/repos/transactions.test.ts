@@ -559,6 +559,28 @@ describe('listTransactions', () => {
 		expect(listTransactions(db, { payeeId: padaria, from: '2026-02-01' })).toEqual([]);
 	});
 
+	it('filters by amount range, whatever the sign', () => {
+		const amounts = (q: Parameters<typeof listTransactions>[1]) =>
+			listTransactions(db, q).map((t) => t.amount);
+		expect(amounts({ amountMin: 300 })).toEqual([400, -400, -300]);
+		expect(amounts({ amountMax: 200 })).toEqual([-200, -100]);
+		expect(amounts({ amountMin: 200, amountMax: 300 })).toEqual([-300, -200]);
+		expect(amounts({ amountMin: 200, amountMax: 300, accountId: bank })).toEqual([-200]);
+	});
+
+	it('filters by cleared status', () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-04-01',
+			amount: -777,
+			categoryId: food,
+			cleared: true
+		});
+		expect(listTransactions(db, { cleared: true }).map((t) => t.amount)).toEqual([-777]);
+		expect(listTransactions(db, { cleared: false })).toHaveLength(5);
+		expect(listTransactions(db, {})).toHaveLength(6);
+	});
+
 	it('pages with limit and offset', () => {
 		expect(listTransactions(db, { limit: 2, offset: 1 }).map((t) => t.amount)).toEqual([
 			-400, -300
