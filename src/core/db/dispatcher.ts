@@ -90,7 +90,17 @@ export function createDispatcher(deps: DispatcherDeps) {
 				if (!entry || !sqlite3 || entry.token !== req.args[0] || entry.db !== deps.getDb())
 					throw new DomainError('UNDO_UNAVAILABLE');
 				const { db, inverse } = entry;
-				tx(db, () => applyInverse(sqlite3, db, inverse));
+				tx(db, () => {
+					applyInverse(sqlite3, db, inverse);
+					// An account only closes at a zero balance: taking back a write must not undo that.
+					if (
+						db.selectValue(
+							`SELECT 1 FROM accounts a WHERE a.closed = 1
+								AND (SELECT TOTAL(t.amount) FROM transactions t WHERE t.account_id = a.id) <> 0`
+						)
+					)
+						throw new DomainError('UNDO_CONFLICT');
+				});
 				lastUndo = null;
 				return { id: req.id, ok: true, data: null, changed: [...entry.tables] };
 			}

@@ -4,7 +4,9 @@ import { createDispatcher } from './dispatcher';
 import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { run } from './connection';
 import { api, type SystemApi } from './api';
+import { createAccount } from './repos/accounts';
 import { getMeta } from './repos/meta';
+import { createTransaction } from './repos/transactions';
 
 function fakeSystem(): { system: SystemApi; opened: string[] } {
 	const opened: string[] = [];
@@ -271,6 +273,34 @@ describe('undo', () => {
 		if (!res.ok) throw new Error('move failed');
 		await dispatch({ id: 2, method: 'system.open', args: ['b.sqlite3'] });
 		expect(await undo(3, res.undo)).toMatchObject({ error: { code: 'UNDO_UNAVAILABLE' } });
+	});
+
+	it('refuses to bring a transaction back into an account closed since', async () => {
+		const { db, dispatch } = await setUp();
+		const account = createAccount(db, {
+			name: 'Wallet',
+			type: 'cash',
+			onBudget: true,
+			startingBalance: 0,
+			startingDate: '2026-01-01'
+		});
+		const spent = createTransaction(db, {
+			accountId: account,
+			date: '2026-01-05',
+			amount: -500,
+			categoryId: categoryId(db, 'Food')
+		});
+		const deleted = await dispatch({ id: 1, method: 'transactions.delete', args: [spent] });
+		if (!deleted.ok) throw new Error('delete failed');
+		// Its balance is zero without the transaction, so the account closes.
+		await dispatch({ id: 2, method: 'accounts.close', args: [account] });
+		expect(await dispatch({ id: 3, method: 'undo.apply', args: [deleted.undo] })).toMatchObject({
+			ok: false,
+			error: { code: 'UNDO_CONFLICT' }
+		});
+		expect(
+			db.selectValue('SELECT COUNT(*) FROM transactions WHERE account_id = ?', [account])
+		).toBe(0);
 	});
 
 	it('returns no token without the SQLite module', async () => {
