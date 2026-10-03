@@ -181,3 +181,22 @@ test('says when a file is not a statement', async ({ page }) => {
 	await expect(page.getByText("Moneta couldn't read that file.", { exact: false })).toBeVisible();
 	await expect(page.getByTestId('register-title')).toHaveText('Checking');
 });
+
+test('shows a line the bank repeats in a file as already imported', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await openChecking(page);
+	const { y, m, d } = today();
+	const line = `<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>${y}${m}${d}<TRNAMT>-129.00<FITID>7<NAME>FARMACIA</STMTTRN>`;
+	await importFile(page, {
+		name: 'repeated.ofx',
+		mimeType: 'application/x-ofx',
+		buffer: Buffer.from(
+			`OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>\n${line}\n${line}\n</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`
+		)
+	});
+	const rows = page.getByTestId('import-row');
+	await expect(rows).toHaveCount(2);
+	await expect(rows.nth(0)).not.toContainText('Already imported');
+	await expect(rows.nth(1)).toContainText('Already imported');
+});

@@ -85,12 +85,15 @@
 		if (rows) applyRule(rows, saved);
 	}
 
-	/** The lines opened to show their details, by import id. */
-	const open = new SvelteSet<string>();
+	/**
+	 * The lines opened to show their details, by position. Not by import id: a bank can repeat
+	 * one in a file (the copies come in as already imported).
+	 */
+	const open = new SvelteSet<number>();
 
-	function toggle(importId: string) {
-		if (open.has(importId)) open.delete(importId);
-		else open.add(importId);
+	function toggle(index: number) {
+		if (open.has(index)) open.delete(index);
+		else open.add(index);
 	}
 
 	$effect(() => {
@@ -192,15 +195,15 @@
 		class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
 		aria-label={m.import_lines()}
 	>
-		{#each rows as row, i (row.line.importId)}
+		{#each rows as row, i (i)}
 			<ImportRow
 				bind:row={rows[i]}
 				index={i}
 				onBudget={account.onBudget}
 				tree={tree.data ?? []}
 				{pending}
-				expanded={open.has(row.line.importId)}
-				onToggle={() => toggle(row.line.importId)}
+				expanded={open.has(i)}
+				onToggle={() => toggle(i)}
 				onMakeRule={() => makeRule(row)}
 			/>
 		{/each}
