@@ -34,11 +34,13 @@ export type OpenResult =
 	| { kind: 'unreadable'; budgets: UnreadableBudget[] };
 
 /**
- * Whether a failure to open a file is about that file (damaged, not a database) rather than about
- * the storage, the worker or the app version, which no other file would fare better against.
+ * Whether a failure to open a file is about that file (damaged, not a database, or saved by a
+ * newer app) rather than about the storage or the worker, which no other file would fare better
+ * against.
  */
 function isFileFailure(err: unknown): boolean {
-	return startupError(err).code === 'INTERNAL';
+	const { code } = startupError(err);
+	return code === 'INTERNAL' || code === 'SCHEMA_TOO_NEW';
 }
 
 /**
@@ -58,8 +60,11 @@ export async function openLastBudget(api: SessionApi, store: KeyValueStore): Pro
 	const reconciled = reconcile(loadRegistry(store), files);
 	let registry = reconciled.registry;
 	const unreadable: UnreadableBudget[] = [];
+	/** The failures of budgets a newer app saved: when they are all there is, that is the news. */
+	const tooNew: unknown[] = [];
 	const skip = (file: string, name: string, err: unknown) => {
 		if (!isFileFailure(err)) throw err;
+		if (startupError(err).code === 'SCHEMA_TOO_NEW') tooNew.push(err);
 		console.warn(`Moneta couldn't open ${file}`, err);
 		unreadable.push({ file, name, message: startupError(err).message });
 	};
@@ -95,6 +100,8 @@ export async function openLastBudget(api: SessionApi, store: KeyValueStore): Pro
 	}
 	saveRegistry(store, registry);
 	await api.system.close();
+	// Rolled back to an older version: the screen that asks for the newer one says it best.
+	if (tooNew.length > 0 && tooNew.length === unreadable.length) throw tooNew[0];
 	return unreadable.length > 0
 		? { kind: 'unreadable', budgets: unreadable }
 		: { kind: 'onboarding' };

@@ -3,6 +3,7 @@
 	import { Button } from '$ui/button';
 	import type { BootState } from '$client/app-state.svelte';
 	import type { StartupErrorCode } from '$client/session';
+	import { appUpdate } from '$client/update.svelte';
 	import { m } from '$i18n/paraglide/messages';
 
 	let {
@@ -17,6 +18,20 @@
 	} = $props();
 
 	let forcing = $state(false);
+
+	// A budget saved by a newer version: that version may be waiting to be installed.
+	$effect(() => {
+		if (boot.kind === 'error' && boot.code === 'SCHEMA_TOO_NEW') void appUpdate.check();
+	});
+
+	/**
+	 * Reloads, through the waiting version when there is one: a plain reload stays on the version
+	 * the service worker serves now.
+	 */
+	function reload() {
+		if (appUpdate.status === 'ready') void appUpdate.install();
+		else location.reload();
+	}
 
 	const ERRORS: Record<StartupErrorCode, { title: () => string; body: () => string }> = {
 		STORAGE_UNAVAILABLE: {
@@ -53,7 +68,7 @@
 			<p class="text-muted-foreground">{ERRORS[boot.code].body()}</p>
 			<pre
 				class="max-w-full overflow-x-auto rounded-md bg-muted p-2 text-left text-xs">{boot.message}</pre>
-			<Button onclick={() => location.reload()}>{m.startup_reload()}</Button>
+			<Button onclick={reload}>{m.startup_reload()}</Button>
 		{/if}
 	</div>
 </main>
