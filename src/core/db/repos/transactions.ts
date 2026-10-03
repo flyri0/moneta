@@ -4,6 +4,7 @@ import { groupBy } from '$domain/group-by';
 import { isDate } from '$domain/month';
 import { foldText, searchTerms, type SearchTerm } from '$domain/search';
 import { all, one, run, tx, type Db } from '../connection';
+import { memo as perVersion } from '../memo';
 import { getMeta } from './meta';
 import { getOrCreatePayee } from './payees';
 
@@ -506,19 +507,9 @@ function jsonValue<T>(db: Db, sql: string): T {
  */
 function matchTerms(db: Db, terms: SearchTerm[]): TermMatches[] {
 	if (terms.length === 0) return [];
-	const names = (table: string) =>
-		jsonValue<[string, string][]>(
-			db,
-			`SELECT json_group_array(json_array(id, name)) FROM ${table}`
-		).map(([id, name]) => ({ id, text: foldText(name) }));
-	const accounts = names('accounts');
-	const payees = names('payees');
-	const categories = names('categories');
-	const memos = jsonValue<string[]>(
-		db,
-		`SELECT json_group_array(memo) FROM (SELECT memo FROM transactions WHERE memo <> ''
-		 UNION SELECT memo FROM transaction_splits WHERE memo <> '')`
-	).map((memo) => ({ memo, text: foldText(memo) }));
+	const { accounts, payees, categories, memos } = perVersion(db, 'search-texts', () =>
+		searchTexts(db)
+	);
 	return terms.map(({ text, amount }) => {
 		const ids = (rows: { id: string; text: string }[]) =>
 			rows.filter((r) => r.text.includes(text)).map((r) => r.id);
@@ -530,6 +521,25 @@ function matchTerms(db: Db, terms: SearchTerm[]): TermMatches[] {
 			memos: memos.filter((r) => r.text.includes(text)).map((r) => r.memo)
 		};
 	});
+}
+
+/** Every name and memo a search looks in, folded: read once between writes. */
+function searchTexts(db: Db) {
+	const names = (table: string) =>
+		jsonValue<[string, string][]>(
+			db,
+			`SELECT json_group_array(json_array(id, name)) FROM ${table}`
+		).map(([id, name]) => ({ id, text: foldText(name) }));
+	return {
+		accounts: names('accounts'),
+		payees: names('payees'),
+		categories: names('categories'),
+		memos: jsonValue<string[]>(
+			db,
+			`SELECT json_group_array(memo) FROM (SELECT memo FROM transactions WHERE memo <> ''
+			 UNION SELECT memo FROM transaction_splits WHERE memo <> '')`
+		).map((memo) => ({ memo, text: foldText(memo) }))
+	};
 }
 
 /**
@@ -576,18 +586,34 @@ function termCondition(match: TermMatches, i: number): string | null {
 export function listTransactions(db: Db, query: TransactionQuery = {}): TransactionRow[] {
 	const terms = query.search ? searchTerms(query.search, getMeta(db)) : [];
 	const bind: Record<string, string | number | null> = {
-		':accountId': query.accountId ?? null,
-		':categoryId': query.categoryId ?? null,
-		':payeeId': query.payeeId ?? null,
-		':from': query.from ?? null,
-		':to': query.to ?? null,
-		':amountMin': query.amountMin ?? null,
-		':amountMax': query.amountMax ?? null,
-		':cleared': query.cleared === undefined ? null : query.cleared ? 1 : 0,
 		':limit': query.limit ?? -1,
 		':offset': query.offset ?? 0
 	};
+	// Only the filters given, so SQLite can use the index of the one that narrows the rows (an
+	// account's or a payee's): `(:x IS NULL OR …)` keeps it from using any.
 	const conditions: string[] = [];
+	const filter = (condition: string, name: string, value: string | number | undefined) => {
+		if (value === undefined || value === null) return;
+		conditions.push(`AND ${condition}`);
+		bind[name] = value;
+	};
+	filter('t.account_id = :accountId', ':accountId', query.accountId);
+	filter(
+		`(t.category_id = :categoryId OR EXISTS (SELECT 1 FROM transaction_splits s
+			WHERE s.transaction_id = t.id AND s.category_id = :categoryId))`,
+		':categoryId',
+		query.categoryId
+	);
+	filter('t.payee_id = :payeeId', ':payeeId', query.payeeId);
+	filter('t.date >= :from', ':from', query.from);
+	filter('t.date <= :to', ':to', query.to);
+	filter('ABS(t.amount) >= :amountMin', ':amountMin', query.amountMin);
+	filter('ABS(t.amount) <= :amountMax', ':amountMax', query.amountMax);
+	filter(
+		't.cleared = :cleared',
+		':cleared',
+		query.cleared === undefined ? undefined : +query.cleared
+	);
 	for (const [i, match] of matchTerms(db, terms).entries()) {
 		const condition = termCondition(match, i);
 		if (condition === null) return [];
@@ -599,16 +625,7 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 	const rows = all<Row>(
 		db,
 		`${SELECT_SQL}
-		 WHERE (:accountId IS NULL OR t.account_id = :accountId)
-		   AND (:categoryId IS NULL OR t.category_id = :categoryId
-		     OR EXISTS (SELECT 1 FROM transaction_splits s
-		                WHERE s.transaction_id = t.id AND s.category_id = :categoryId))
-		   AND (:payeeId IS NULL OR t.payee_id = :payeeId)
-		   AND (:from IS NULL OR t.date >= :from)
-		   AND (:to IS NULL OR t.date <= :to)
-		   AND (:amountMin IS NULL OR ABS(t.amount) >= :amountMin)
-		   AND (:amountMax IS NULL OR ABS(t.amount) <= :amountMax)
-		   AND (:cleared IS NULL OR t.cleared = :cleared)
+		 WHERE 1
 		   ${conditions.join('\n')}
 		 ORDER BY t.date DESC, t.id DESC
 		 LIMIT :limit OFFSET :offset`,

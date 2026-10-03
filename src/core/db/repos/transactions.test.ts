@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, run, tx, type Db } from '../connection';
 import { closeAccount, createAccount, getAccount } from './accounts';
@@ -12,7 +12,7 @@ import {
 	updateTransaction,
 	updateTransactions
 } from './transactions';
-import { listPayees } from './payees';
+import { getOrCreatePayee, listPayees } from './payees';
 
 const code = (c: string) => expect.objectContaining({ code: c });
 
@@ -585,6 +585,56 @@ describe('listTransactions', () => {
 		expect(listTransactions(db, { limit: 2, offset: 1 }).map((t) => t.amount)).toEqual([
 			-400, -300
 		]);
+	});
+});
+
+describe('search between writes', () => {
+	it('reads the names and memos once, and again after a write', () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -100,
+			memo: 'pão',
+			categoryId: food
+		});
+		const reads = vi.spyOn(db, 'selectValue');
+		const texts = () =>
+			reads.mock.calls.filter(([sql]) => String(sql).includes('json_group_array'));
+		expect(listTransactions(db, { search: 'pao' })).toHaveLength(1);
+		expect(listTransactions(db, { search: 'cafe' })).toHaveLength(0);
+		expect(texts()).toHaveLength(4);
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-06',
+			amount: -100,
+			memo: 'café',
+			categoryId: food
+		});
+		expect(listTransactions(db, { search: 'cafe' })).toHaveLength(1);
+		expect(texts()).toHaveLength(8);
+	});
+});
+
+describe('listTransactions query plans', () => {
+	/** How SQLite runs the query `listTransactions` makes for `query`. */
+	function plan(query: Parameters<typeof listTransactions>[1]): string {
+		const reads = vi.spyOn(db, 'selectObjects');
+		listTransactions(db, query);
+		const [sql, bind] = reads.mock.calls[0] as [string, Record<string, unknown>];
+		reads.mockRestore();
+		return db
+			.selectArrays(`EXPLAIN QUERY PLAN ${sql}`, bind as never)
+			.map((row) => row[3])
+			.join('\n');
+	}
+
+	it("reads only an account's rows, through its index", () => {
+		expect(plan({ accountId: bank, limit: 50 })).toContain('transactions_account_date');
+	});
+
+	it("reads only a payee's rows, through its index", () => {
+		const payee = getOrCreatePayee(db, 'Padaria')!;
+		expect(plan({ payeeId: payee, limit: 50 })).toContain('transactions_payee_date');
 	});
 });
 

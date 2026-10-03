@@ -99,7 +99,15 @@ export function createSystem(deps: SystemDeps): {
 	let inspected: { token: string; images: Uint8Array[] } | null = null;
 
 	function closeDb(): void {
-		if (db) store.close(db);
+		if (db) {
+			// Keeps SQLite's statistics current, for the query plans of the next session.
+			try {
+				db.exec('PRAGMA optimize');
+			} catch (err) {
+				console.warn("Moneta couldn't optimize the budget", err);
+			}
+			store.close(db);
+		}
 		db = null;
 		openName = null;
 	}
@@ -196,6 +204,9 @@ export function createSystem(deps: SystemDeps): {
 				if (version > 0 && version < migrations.length)
 					await saveCopy(fileName, toImage(sqlite3, next));
 				migrate(next, migrations);
+				// SQLite's advice for a connection that stays open: gather the statistics the
+				// planner lacks (a few hundred rows per index at most), once, at open.
+				next.exec('PRAGMA analysis_limit = 400; PRAGMA optimize = 0x10002');
 			} catch (err) {
 				store.close(next);
 				throw err;
