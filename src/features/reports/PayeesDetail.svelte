@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ReportBody from './ReportBody.svelte';
+	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import EmptyState from '$components/EmptyState.svelte';
@@ -7,6 +8,7 @@
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
 	import StatTile from './StatTile.svelte';
+	import { PAGE_SIZE } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
@@ -31,6 +33,8 @@
 	const TOP = 5;
 
 	let selected = $state<string | null>(null);
+	/** How many pages of the selected row's transactions are shown: a long period has thousands. */
+	let pages = $state(1);
 	let expanded = $state(false);
 
 	const payees = useLive(session.client, SPENDING_TABLES, () =>
@@ -45,9 +49,21 @@
 	const payee = $derived(report.rows.find((r) => r.key === selected) ?? null);
 	const transactions = useLive(session.client, SPENDING_TABLES, () =>
 		selected
-			? session.api.transactions.list({ payeeId: selected, from: range.from, to: range.to })
+			? session.api.transactions.list({
+					payeeId: selected,
+					from: range.from,
+					to: range.to,
+					limit: pages * PAGE_SIZE
+				})
 			: Promise.resolve<TransactionRow[]>([])
 	);
+	const hasMore = $derived((transactions.data?.length ?? 0) >= pages * PAGE_SIZE);
+
+	$effect(() => {
+		void selected;
+		void range;
+		untrack(() => (pages = 1));
+	});
 
 	// A drilled-in payee rarely survives a new period, and a stale one reads as a bug.
 	$effect(() => {
@@ -196,6 +212,11 @@
 								</li>
 							{/each}
 						</ul>
+						{#if hasMore}
+							<Button variant="outline" class="w-full" onclick={() => pages++}>
+								{m.register_load_more()}
+							</Button>
+						{/if}
 					</section>
 				{/if}
 			</div>
