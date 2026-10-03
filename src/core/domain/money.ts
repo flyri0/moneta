@@ -15,21 +15,19 @@ export function currencyDigits(currency: string): number {
 }
 
 export function formatMoney(minor: number, fmt: MoneyFormat): string {
-	const digits = currencyDigits(fmt.currency);
 	return numberFormat(fmt.locale, { style: 'currency', currency: fmt.currency }).format(
-		minor / 10 ** digits
+		major(minor, fmt)
 	);
 }
 
 /** A short form for chart axes, e.g. "$1.2M" or "R$ 1,5 mil". */
 export function formatMoneyCompact(minor: number, fmt: MoneyFormat): string {
-	const digits = currencyDigits(fmt.currency);
 	return numberFormat(fmt.locale, {
 		style: 'currency',
 		currency: fmt.currency,
 		notation: 'compact',
 		maximumFractionDigits: 1
-	}).format(minor / 10 ** digits);
+	}).format(major(minor, fmt));
 }
 
 /** The editable text for an amount: no currency symbol and no grouping, e.g. "1234,50" in pt-BR. */
@@ -41,8 +39,13 @@ export function formatAmountInput(minor: number, fmt: MoneyFormat): string {
 		useGrouping: false,
 		numberingSystem: 'latn'
 	})
-		.format(minor / 10 ** digits)
+		.format(major(minor, fmt))
 		.replace('−', '-');
+}
+
+/** `minor` in whole units of the currency; a negated zero (`-x` of 0) becomes 0, which Intl shows unsigned. */
+function major(minor: number, fmt: MoneyFormat): number {
+	return (minor === 0 ? 0 : minor) / 10 ** currencyDigits(fmt.currency);
 }
 
 /** The decimal separator `locale` writes numbers with. */

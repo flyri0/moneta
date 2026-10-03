@@ -30,6 +30,12 @@ describe('formatMoney', () => {
 		expect(formatMoney(-123450, USD)).toBe('-$1,234.50');
 		expect(formatMoney(1234, JPY)).toBe('￥1,234');
 	});
+
+	it('shows a negated zero without a sign', () => {
+		expect(formatMoney(-0, USD)).toBe('$0.00');
+		expect(formatMoneyCompact(-0, USD)).toBe('$0');
+		expect(formatAmountInput(-0, USD)).toBe('0.00');
+	});
 });
 
 describe('parseAmount', () => {
