@@ -52,6 +52,25 @@ describe('backUpToCloud', () => {
 		expect((await api.meta.get()).lastBackupAt).toBe(now.toISOString());
 	});
 
+	it('checks the budgets with the quick check, as it runs on its own', async () => {
+		const { api, connection } = await setup();
+		const asked: unknown[] = [];
+		const recording: typeof api = {
+			...api,
+			system: new Proxy(api.system, {
+				get: (target, key) =>
+					key === 'exportBackup'
+						? (names: string[], options?: { quick?: boolean }) => {
+								asked.push(options);
+								return target.exportBackup(names, options);
+							}
+						: target[key as keyof typeof target]
+			})
+		};
+		await backUpToCloud(recording, connection, DEVICE);
+		expect(asked).toEqual([{ quick: true }]);
+	});
+
 	it('refuses to save a backup that is not encrypted', async () => {
 		const { api, connection, drive } = await setup({ encrypted: false });
 		await expect(backUpToCloud(api, connection, DEVICE)).rejects.toMatchObject({

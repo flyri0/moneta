@@ -32,7 +32,7 @@ function connect(db: Db | null, sqlite3?: Sqlite3Static) {
 			readCopy: () => new Uint8Array(),
 			exportBackup: async () => ({ bytes: new Uint8Array(), skipped: [], encrypted: false }),
 			markBackedUp: () => {},
-			inspectBackup: () => ({ token: 't', createdAt: null, budgets: [] }),
+			inspectBackup: async () => ({ token: 't', createdAt: null, budgets: [] }),
 			restoreBackup: async () => {},
 			restoreInspected: async () => {},
 			backupEncryption: async () => ({ on: false }),

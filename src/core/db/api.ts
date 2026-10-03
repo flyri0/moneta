@@ -256,14 +256,17 @@ export interface SystemApi {
 	 * key. Files that can't be read are left out and listed in `skipped`. BACKUP_KEYS_UNAVAILABLE
 	 * when the key can't be read; `plain` then backs up without encryption, when the user says so.
 	 */
-	exportBackup(names: string[], options?: { plain?: boolean }): Promise<ExportedBackup>;
+	exportBackup(
+		names: string[],
+		options?: { plain?: boolean; quick?: boolean }
+	): Promise<ExportedBackup>;
 	/** Records in each budget file when it was last backed up. Files that can't be written are skipped. */
 	markBackedUp(fileNames: string[], at: string): void;
 	/**
 	 * Checks a `.moneta` (or legacy `.sqlite`) backup and lists its budgets. Writes nothing. The
 	 * token lets `restoreInspected` restore them without unpacking and checking them again.
 	 */
-	inspectBackup(bytes: Uint8Array): InspectedBackup;
+	inspectBackup(bytes: Uint8Array): Promise<InspectedBackup>;
 	/**
 	 * Restores budgets from a backup into the given files, all checked before any is written. A
 	 * file that exists is replaced and kept as a saved copy; the open one is closed first.

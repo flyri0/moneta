@@ -31,9 +31,24 @@ function manifest(overrides: Record<string, unknown> = {}) {
 }
 
 describe('writeBackup', () => {
+	it('lets other work run while it compresses', async () => {
+		const image = new Uint8Array(4 << 20).map((_, i) => (i * 7919) % 251);
+		let done = false;
+		let doneWhenOtherWorkRan: boolean | null = null;
+		setTimeout(() => (doneWhenOtherWorkRan = done), 0);
+		const bytes = await writeBackup(
+			[{ id: ID_A, name: 'Home', image }],
+			'2026-09-22T12:00:00.000Z'
+		);
+		done = true;
+		expect(doneWhenOtherWorkRan).toBe(false);
+		const { budgets } = readBackup(bytes);
+		expect(Buffer.compare(budgets[0].image, image)).toBe(0);
+	});
+
 	it('writes a zip with a manifest first and one .sqlite per budget', async () => {
 		const image = await budgetImage();
-		const bytes = writeBackup(
+		const bytes = await writeBackup(
 			[
 				{ id: ID_A, name: 'Home', image },
 				{ id: ID_B, name: 'Trip', image }
@@ -66,7 +81,7 @@ describe('readBackup', () => {
 	it('reads back what writeBackup wrote', async () => {
 		const image = await budgetImage();
 		const contents = readBackup(
-			writeBackup([{ id: ID_A, name: 'Home', image }], '2026-09-22T12:00:00.000Z')
+			await writeBackup([{ id: ID_A, name: 'Home', image }], '2026-09-22T12:00:00.000Z')
 		);
 		expect(contents).toEqual({
 			createdAt: '2026-09-22T12:00:00.000Z',
@@ -115,7 +130,9 @@ describe('readBackup', () => {
 	it('rejects damaged zips and manifests', async () => {
 		const image = await budgetImage();
 		const files = { [`budgets/${ID_A}.sqlite`]: image };
-		const cut = writeBackup([{ id: ID_A, name: 'Home', image }], 'x').slice(0, 200);
+		const cut = (
+			await writeBackup([{ id: ID_A, name: 'Home', image }], '2026-09-22T12:00:00.000Z')
+		).slice(0, 200);
 		const damaged = [
 			cut,
 			zipSync({ 'moneta.json': strToU8('{ not json') }),
@@ -151,7 +168,7 @@ describe('sealBackup and openSealed', () => {
 
 	beforeAll(async () => {
 		keys = await createKeys(PASSWORD, RECOVERY, 1000);
-		inner = writeBackup(
+		inner = await writeBackup(
 			[{ id: ID_A, name: 'Home', image: await budgetImage() }],
 			'2026-09-22T12:00:00.000Z'
 		);

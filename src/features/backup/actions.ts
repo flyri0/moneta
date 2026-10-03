@@ -34,17 +34,21 @@ export interface BackupDone {
  * Saves every budget on this device as one `.moneta` file (the backup that can be restored).
  * The date is recorded in each budget only when the target says the file was saved; when it
  * can't tell (`unknown`), the caller asks the user and calls `markBackedUp`. `plain` skips
- * encryption (see BACKUP_KEYS_UNAVAILABLE).
+ * encryption (see BACKUP_KEYS_UNAVAILABLE); `quick` checks each budget with SQLite's quicker
+ * check, for backups that run on their own.
  */
 export async function backUp(
 	api: Pick<ClientApi, 'system'>,
 	target: BackupTarget = fileTarget,
 	now = new Date(),
-	options: { plain?: boolean } = {}
+	options: { plain?: boolean; quick?: boolean } = {}
 ): Promise<BackupDone> {
 	const files = (await api.system.listFiles()).filter(isBudgetFile);
 	const encrypted = !options.plain && (await isEncrypting(api));
-	const exported = api.system.exportBackup(files, options.plain ? options : undefined);
+	const exported = api.system.exportBackup(
+		files,
+		options.plain || options.quick ? options : undefined
+	);
 	const result = await target.save(
 		encrypted ? encryptedBackupFileName(now) : fullBackupFileName(now),
 		exported.then(({ bytes }) => new Blob([bytes], { type: BACKUP_TYPE }))

@@ -1,4 +1,4 @@
-import { strFromU8, strToU8, unzipSync, zipSync, type Unzipped, type Zippable } from 'fflate';
+import { strFromU8, strToU8, unzipSync, Zip, ZipDeflate, zipSync, type Unzipped } from 'fflate';
 import { DomainError } from '$domain/errors';
 import {
 	decrypt,
@@ -81,8 +81,33 @@ function startsWith(bytes: Uint8Array, header: string): boolean {
 	return true;
 }
 
-/** The bytes of a `.moneta` file holding `budgets`. */
-export function writeBackup(budgets: BackupBudget[], createdAt: string): Uint8Array<ArrayBuffer> {
+/** How much of a budget is compressed at a time, before the worker turns to other calls. */
+const SLICE = 256 * 1024;
+
+/**
+ * Lets the tasks waiting run (the worker's other calls), then resumes. A message, not a timer:
+ * browsers wait at least 4 ms on timers set one after another.
+ */
+export function nextTask(): Promise<void> {
+	return new Promise((resolve) => {
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => {
+			port1.close();
+			port2.close();
+			resolve();
+		};
+		port2.postMessage(null);
+	});
+}
+
+/**
+ * The bytes of a `.moneta` file holding `budgets`. It compresses a slice at a time and lets other
+ * calls run in between: a large budget takes the worker for seconds otherwise.
+ */
+export async function writeBackup(
+	budgets: BackupBudget[],
+	createdAt: string
+): Promise<Uint8Array<ArrayBuffer>> {
 	const manifest: Manifest = {
 		format: BACKUP_FORMAT,
 		version: BACKUP_VERSION,
@@ -90,9 +115,36 @@ export function writeBackup(budgets: BackupBudget[], createdAt: string): Uint8Ar
 		encryption: null,
 		budgets: budgets.map(({ id, name }) => ({ id, name, path: pathOf(id) }))
 	};
-	const files: Zippable = { [MANIFEST]: strToU8(JSON.stringify(manifest, null, '\t')) };
-	for (const { id, image } of budgets) files[pathOf(id)] = image;
-	return zipSync(files);
+	const chunks: Uint8Array[] = [];
+	let failure: Error | null = null;
+	const zip = new Zip((err, chunk) => {
+		if (err) failure ??= err;
+		else chunks.push(chunk);
+	});
+	const add = (name: string) => {
+		const file = new ZipDeflate(name);
+		zip.add(file);
+		return file;
+	};
+	add(MANIFEST).push(strToU8(JSON.stringify(manifest, null, '\t')), true);
+	for (const { id, image } of budgets) {
+		const file = add(pathOf(id));
+		let at = 0;
+		do {
+			file.push(image.subarray(at, at + SLICE), at + SLICE >= image.length);
+			at += SLICE;
+			await nextTask();
+		} while (at < image.length);
+	}
+	zip.end();
+	if (failure) throw failure;
+	const bytes = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.length;
+	}
+	return bytes;
 }
 
 function readZip(bytes: Uint8Array): { manifest: Record<string, unknown>; files: Unzipped } {

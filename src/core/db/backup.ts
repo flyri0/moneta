@@ -15,10 +15,13 @@ function looksLikeSqlite(bytes: Uint8Array): boolean {
 	return true;
 }
 
-/** Whether `PRAGMA integrity_check` passes. */
-export function isIntact(db: Db): boolean {
+/**
+ * Whether `PRAGMA integrity_check` passes, or `quick_check` with `quick`: several times faster,
+ * it skips matching indexes against their tables.
+ */
+export function isIntact(db: Db, quick = false): boolean {
 	try {
-		return db.selectValues('PRAGMA integrity_check').join() === 'ok';
+		return db.selectValues(`PRAGMA ${quick ? 'quick_check' : 'integrity_check'}`).join() === 'ok';
 	} catch {
 		return false; // e.g. SQLITE_NOTADB or SQLITE_CORRUPT
 	}

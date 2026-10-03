@@ -73,7 +73,10 @@ export async function backUpToCloud(
 		throw new DomainError('BACKUP_KEYS_UNAVAILABLE', String(err));
 	}
 	if (!encrypted) throw new DomainError('CLOUD_NOT_ENCRYPTED');
-	const done = await backUp(whole(api), cloudTarget(api, connection, device, now), now);
+	// It runs on its own, often while the app is in use: the quick check keeps it short.
+	const done = await backUp(whole(api), cloudTarget(api, connection, device, now), now, {
+		quick: true
+	});
 	try {
 		for (const old of expiredBackups(await connection.list(), device.device))
 			await connection.remove(old.id);
