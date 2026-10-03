@@ -310,6 +310,43 @@ describe('undo', () => {
 		).toBe(0);
 	});
 
+	it('refuses to take back what a later write depends on through a cascade', async () => {
+		const { db, dispatch } = await setUp();
+		const account = createAccount(db, {
+			name: 'Bank',
+			type: 'checking',
+			onBudget: true,
+			startingBalance: 0,
+			startingDate: '2026-01-01'
+		});
+		const line = {
+			importId: 'csv:x:1',
+			date: '2026-01-05',
+			amount: -100,
+			payeeName: 'ACME NEW',
+			memo: '',
+			categoryId: categoryId(db, 'Food'),
+			matchId: null
+		};
+		const imported = await dispatch({
+			id: 1,
+			method: 'imports.commit',
+			args: [account, { lines: [line] }]
+		});
+		if (!imported.ok) throw new Error('import failed');
+		// The rule is written after the import, and deleting its payee would delete it too.
+		const rule = { payeeName: 'ACME NEW', kind: 'contains', text: 'acme', categoryId: null };
+		expect(await dispatch({ id: 2, method: 'payeeRules.create', args: [rule] })).toMatchObject({
+			ok: true
+		});
+		expect(await dispatch({ id: 3, method: 'undo.apply', args: [imported.undo] })).toMatchObject({
+			ok: false,
+			error: { code: 'UNDO_CONFLICT' }
+		});
+		expect(db.selectValue('SELECT COUNT(*) FROM payee_rules')).toBe(1);
+		expect(db.selectValue('SELECT COUNT(*) FROM transactions WHERE import_id IS NOT NULL')).toBe(1);
+	});
+
 	it('returns no token without the SQLite module', async () => {
 		const db = await createBudgetDb();
 		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });

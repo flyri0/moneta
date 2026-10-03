@@ -6,7 +6,7 @@ import { checkArgs, type ArgSpec } from './args';
 import type { CallRequest, CallResponse, RpcErrorPayload } from './protocol';
 import { checkAmountRange, writesAmounts } from './limits';
 import { dataVersion } from './memo';
-import { applyInverse, record } from './undo';
+import { applyInverse, changesetSize, record } from './undo';
 
 export interface DispatcherDeps {
 	system: SystemApi;
@@ -93,7 +93,11 @@ export function createDispatcher(deps: DispatcherDeps) {
 					throw new DomainError('UNDO_UNAVAILABLE');
 				const { db, inverse } = entry;
 				tx(db, () => {
-					applyInverse(sqlite3, db, inverse);
+					// A foreign key action (a payee rule deleted with its payee) would reach rows
+					// written since, outside the changeset: those must not go silently.
+					const applied = record(sqlite3, db, () => applyInverse(sqlite3, db, inverse));
+					if (changesetSize(sqlite3, applied.inverse) > changesetSize(sqlite3, inverse))
+						throw new DomainError('UNDO_CONFLICT');
 					if (writesAmounts(entry.tables)) checkAmountRange(db);
 					// An account only closes at a zero balance: taking back a write must not undo that.
 					if (
