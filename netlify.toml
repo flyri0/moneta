@@ -2,6 +2,14 @@
     command = "pnpm run build"
     publish = "build"
 
+# A build's asset that is gone (an older deploy's chunk) is a 404, never the app's index.html with
+# a 200: the service worker would precache that HTML as the script, and browsers keep anything
+# under /_app/immutable/ for a year. Without `force`, it only applies when no file matches.
+[[redirects]]
+    from = "/_app/*"
+    to = "/404.html"
+    status = 404
+
 # The app is a single-page app: every route that isn't a file gets index.html. A 200 rule without
 # `force` only applies when no file matches, so assets and the service worker are served as is.
 [[redirects]]
