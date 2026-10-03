@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
 import type { Db } from '../connection';
 import { createAccount } from './accounts';
@@ -440,5 +440,24 @@ describe('accountBalances', () => {
 		expect(() => accountBalances(db, '2026-13')).toThrow(
 			expect.objectContaining({ code: 'INVALID_INPUT' })
 		);
+	});
+});
+
+describe('series between writes', () => {
+	it('read the history once, and again after a write', () => {
+		const reads = vi.spyOn(db, 'selectObjects');
+		netWorth(db, '2026-03');
+		accountBalances(db, '2026-03');
+		ageOfMoney(db, '2026-03-31');
+		ageOfMoney(db, '2026-03-31');
+		expect(reads).toHaveBeenCalledTimes(2);
+		const before = netWorth(db, '2026-03');
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-03-02',
+			amount: -700,
+			categoryId: categoryId(db, 'Food')
+		});
+		expect(netWorth(db, '2026-03').at(-1)!.netWorth).toBe(before.at(-1)!.netWorth - 700);
 	});
 });
