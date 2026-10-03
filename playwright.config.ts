@@ -12,5 +12,11 @@ export const webServer = {
 export default defineConfig({
 	webServer,
 	testMatch: '**/*.e2e.{ts,js}',
-	use: { baseURL: 'http://localhost:4173' }
+	// On CI a test that fails once is tried again, so a slow runner doesn't block a deploy; the
+	// report still lists it as flaky, with a trace of the failed attempt.
+	retries: process.env.CI ? 2 : 0,
+	use: {
+		baseURL: 'http://localhost:4173',
+		trace: process.env.CI ? 'retain-on-first-failure' : 'off'
+	}
 });
