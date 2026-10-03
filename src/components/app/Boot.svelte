@@ -45,9 +45,16 @@
 	let mounted = true;
 	let worker: DbWorker | null = $state.raw(null);
 	// Without Web Locks (very old browsers) there is no way to coordinate tabs; run unguarded.
+	// Handing over waits for the calls running here (`onLost`), so the lock gives it that long,
+	// and a tab taking over waits a little longer than that before it gives up.
 	const lock: TabLock | null =
 		'locks' in navigator
-			? createTabLock({ locks: navigator.locks, channel: new BroadcastChannel('moneta-tab') })
+			? createTabLock({
+					locks: navigator.locks,
+					channel: new BroadcastChannel('moneta-tab'),
+					shutdownTimeout: IDLE_TIMEOUT + SHUTDOWN_TIMEOUT,
+					takeOverTimeout: IDLE_TIMEOUT + SHUTDOWN_TIMEOUT + 5000
+				})
 			: null;
 
 	onDestroy(() => {
@@ -61,6 +68,8 @@
 	});
 
 	lock?.onLost(async () => {
+		// As for an update: a restore cut short can leave a budget half written.
+		if (worker) await settleWithin(worker.idle(), IDLE_TIMEOUT);
 		await stopWorker();
 		if (mounted) app.boot = { kind: 'blocked' };
 	});
