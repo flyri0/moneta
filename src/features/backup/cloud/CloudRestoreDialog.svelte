@@ -64,11 +64,10 @@
 	async function pick(backup: RemoteBackup) {
 		if (!connection) return;
 		busy = true;
-		const from = connection;
 		error = await runAction(async () => {
-			const blob = await from.download(backup.id);
+			const file = await cloudBackup.download(backup);
 			open = false;
-			onpick(new File([blob], backup.name));
+			onpick(file);
 		});
 		busy = false;
 	}

@@ -5,11 +5,13 @@ import { backUp, type BackupDone } from '../actions';
 import type { BackupTarget } from '../target';
 import { expiredBackups } from './retention';
 import type { CloudConnection } from './provider';
+import type { RemoteRevision } from './revision';
 
-/** This device, as its backups name it in the cloud. */
+/** This device, as its backups name it in the cloud, and the revision the backup carries. */
 export interface CloudDevice {
 	device: string;
 	deviceLabel: string;
+	revision?: RemoteRevision | null;
 }
 
 /**
@@ -20,7 +22,11 @@ function cloudTarget(connection: CloudConnection, device: CloudDevice, now: Date
 	return {
 		async save(fileName, data) {
 			const blob = await data;
-			await connection.upload({ name: fileName, day: todayIso(now), ...device }, blob);
+			const { device: id, deviceLabel, revision } = device;
+			await connection.upload(
+				{ name: fileName, day: todayIso(now), device: id, deviceLabel, revision },
+				blob
+			);
 			return 'saved';
 		}
 	};

@@ -276,7 +276,7 @@ export async function restoreBackup(
 	backup: Uint8Array | string,
 	plan: PlannedRestore[],
 	openFile?: string
-): Promise<{ file: string; meta: BudgetMeta }> {
+): Promise<{ file: string; meta: BudgetMeta; files: string[] }> {
 	if (plan.length === 0) throw new DomainError('INVALID_INPUT', 'Nothing to restore');
 	const picks = plan.map(({ index, file }) => ({ index, file }));
 	try {
@@ -306,7 +306,7 @@ export async function restoreBackup(
 	let registry = loadRegistry(store);
 	for (const p of plan) registry = upsertBudget(registry, { file: p.file, name: p.name });
 	saveRegistry(store, markOpened(upsertBudget(registry, { file, name: meta.name }), file));
-	return { file, meta };
+	return { file, meta, files: plan.map((p) => p.file) };
 }
 
 /**
@@ -319,7 +319,7 @@ export async function restoreAll(
 	bytes: Uint8Array,
 	openFile?: string,
 	replace: boolean = false
-): Promise<{ file: string; meta: BudgetMeta }> {
+): Promise<{ file: string; meta: BudgetMeta; files: string[] }> {
 	const { token, budgets } = await api.system.inspectBackup(bytes);
 	const plan = planRestore(budgets, await api.system.listFiles(), replace);
 	return restoreBackup(api, store, token, plan, openFile);

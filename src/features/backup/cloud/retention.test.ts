@@ -10,7 +10,8 @@ function backup(day: string, device = 'me', modifiedAt = `${day}T12:00:00.000Z`)
 		device,
 		deviceLabel: device,
 		modifiedAt,
-		size: 1
+		size: 1,
+		revision: null
 	};
 }
 

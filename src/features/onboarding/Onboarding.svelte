@@ -27,6 +27,7 @@
 	import BackupsStep from './BackupsStep.svelte';
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import { readBackupFile } from '$features/backup/actions';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import BudgetStep from './BudgetStep.svelte';
 	import CategoriesStep from './CategoriesStep.svelte';
 	import DoneStep from './DoneStep.svelte';
@@ -128,7 +129,11 @@
 		else finish();
 	}
 
+	/** The file being restored, to tell the cloud backup which one it was. */
+	let source: File | null = null;
+
 	async function restore(file: File) {
+		source = file;
 		busy = true;
 		error = null;
 		let plain: Uint8Array | null = null;
@@ -149,6 +154,7 @@
 		error = null;
 		error = await runAction(async () => {
 			const restored = await restoreAll(api, localStorage, bytes);
+			await cloudBackup.restored(api, { source, all: true, files: restored.files }).catch(() => {});
 			void navigator.storage?.persist?.();
 			toast.success(m.backup_restored());
 			onCreated(restored.file, restored.meta);

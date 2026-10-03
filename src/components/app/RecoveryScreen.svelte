@@ -6,7 +6,7 @@
 	import CopyList from '$features/backup/CopyList.svelte';
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import CloudRestoreDialog from '$features/backup/cloud/CloudRestoreDialog.svelte';
-	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
+	import { cloudBackup, cloudProviders } from '$features/backup/cloud/cloud.svelte';
 	import type { CloudProvider } from '$features/backup/cloud/provider';
 	import { readBackupFile } from '$features/backup/actions';
 	import DeleteBudgetDialog from '$features/settings/DeleteBudgetDialog.svelte';
@@ -111,6 +111,10 @@
 	/** Adds the budgets of a backup, or a copy, and opens one; the unreadable files stay. */
 	async function open(bytes: Uint8Array, message: string) {
 		const restored = await restoreAll(api, localStorage, bytes);
+		// The unreadable files stay, so this device's data is its own now.
+		await cloudBackup
+			.restored(api, { source: null, all: false, files: restored.files })
+			.catch(() => {});
 		void navigator.storage?.persist?.();
 		toast.success(message);
 		onResult({ kind: 'ready', file: restored.file, meta: restored.meta });

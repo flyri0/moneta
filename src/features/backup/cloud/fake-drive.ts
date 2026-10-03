@@ -41,6 +41,13 @@ async function readMultipart(
 	};
 }
 
+/** Properties without the ones set to null, which Drive removes. */
+function present(props: Record<string, string | null>): Record<string, string> {
+	return Object.fromEntries(
+		Object.entries(props).filter((entry): entry is [string, string] => entry[1] !== null)
+	);
+}
+
 /** The `appProperties has {…}`, `mimeType` and `in parents` conditions of a query. */
 function matches(file: FakeFile, q: string): boolean {
 	if (file.trashed && q.includes('trashed = false')) return false;
@@ -137,7 +144,7 @@ export function fakeDrive(options: { account?: string } = {}) {
 				name: metadata.name ?? 'Untitled',
 				mimeType: metadata.mimeType ?? 'application/octet-stream',
 				parents: metadata.parents ?? [],
-				appProperties: metadata.appProperties ?? {},
+				appProperties: present(metadata.appProperties ?? {}),
 				modifiedTime: tick(),
 				content,
 				trashed: false
@@ -152,7 +159,7 @@ export function fakeDrive(options: { account?: string } = {}) {
 			const { metadata, content } = await readMultipart(req);
 			Object.assign(file, {
 				name: metadata.name ?? file.name,
-				appProperties: { ...file.appProperties, ...metadata.appProperties },
+				appProperties: present({ ...file.appProperties, ...metadata.appProperties }),
 				content,
 				modifiedTime: tick()
 			});

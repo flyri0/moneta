@@ -1,6 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import type { KeyValueStore } from '$client/registry';
 import type { CloudProviderId } from './provider';
+import { parseLocalRevision, type Revision } from './revision';
 
 /** Where this device keeps its cloud backup settings (the tokens live in IndexedDB). */
 export const CLOUD_KEY = 'moneta.cloud';
@@ -17,6 +18,8 @@ export interface CloudSettings {
 	lastUploadAt: string | null;
 	/** Since when a change is waiting for a backup (ISO): it survives a closed tab. */
 	pendingSince: string | null;
+	/** Which version of the data this device has (`revision.ts`); null before its first backup. */
+	revision: Revision | null;
 }
 
 export function newCloudSettings(provider: CloudProviderId, userAgent: string): CloudSettings {
@@ -25,7 +28,8 @@ export function newCloudSettings(provider: CloudProviderId, userAgent: string): 
 		device: uuidv7(),
 		deviceLabel: deviceLabel(userAgent),
 		lastUploadAt: null,
-		pendingSince: null
+		pendingSince: null,
+		revision: null
 	};
 }
 
@@ -43,7 +47,8 @@ export function loadCloudSettings(store: KeyValueStore): CloudSettings | null {
 			device: raw.device,
 			deviceLabel: typeof raw.deviceLabel === 'string' ? raw.deviceLabel : '',
 			lastUploadAt: stringOrNull(raw.lastUploadAt),
-			pendingSince: stringOrNull(raw.pendingSince)
+			pendingSince: stringOrNull(raw.pendingSince),
+			revision: parseLocalRevision(raw.revision)
 		};
 	} catch {
 		return null;
