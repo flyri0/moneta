@@ -30,6 +30,8 @@ export type RemoteState =
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const GEN = /^(0|[1-9][0-9]{0,15})$/;
+/** The highest generation read: one upload a second would take millions of years to reach it. */
+const MAX_GEN = 2 ** 48;
 
 /**
  * A revision as a backup's properties carry it. A missing base is null, which removes the one an
@@ -48,7 +50,8 @@ export function parseRevision(props: Record<string, unknown>): RemoteRevision | 
 	if (typeof rev !== 'string' || !UUID.test(rev)) return null;
 	if (typeof gen !== 'string' || !GEN.test(gen)) return null;
 	const n = Number(gen);
-	if (!Number.isSafeInteger(n)) return null;
+	// Far below the safe limit, so counting up from any accepted one stays exact.
+	if (n > MAX_GEN) return null;
 	return { rev, gen: n, base: typeof base === 'string' && UUID.test(base) ? base : null };
 }
 
@@ -98,7 +101,8 @@ export function keptOver(
  * Whether another device has a version this one lacks. `dirty`: changes here wait for a backup.
  * A device without a revision counts as having data of its own. Across three or more devices a
  * base may not match and warn of differences that aren't there; it never offers as newer a
- * version that would lose changes made here.
+ * version that would lose changes made here. A version with a lower `gen` is passed over even
+ * when it diverged: its device is the one warned, as it sees this one's higher `gen`.
  */
 export function compareRemote(
 	local: Revision | null,

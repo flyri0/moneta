@@ -40,12 +40,29 @@ class CloudBackup {
 	status = $state.raw<AutoBackupStatus>({ kind: 'idle' });
 	/** Whether the saved connection has been read yet. */
 	loaded = $state(false);
-	/** How this device stands against the others' backups, as checked when the app opened. */
-	remote = $state.raw<RemoteState>({ kind: 'current' });
+	/** What `check()` found, before changes made here since. */
+	#remote = $state.raw<RemoteState>({ kind: 'current' });
+	/** Whether the shell already said so: once per check, not on every shell. */
+	warned = false;
 	#auto: AutoBackup | null = null;
 	#loading: Promise<void> | null = null;
 	/** The cloud backup last downloaded to restore, until it is restored. */
 	#picked: { file: File; backup: RemoteBackup } | null = null;
+
+	/**
+	 * How this device stands against the others' backups, as checked when the app opened. A newer
+	 * version stops being safe to restore once changes are made here.
+	 */
+	get remote(): RemoteState {
+		const remote = this.#remote;
+		if (remote.kind === 'newer' && this.settings?.pendingSince)
+			return { kind: 'diverged', backup: remote.backup };
+		return remote;
+	}
+
+	set remote(remote: RemoteState) {
+		this.#remote = remote;
+	}
 
 	get provider(): CloudProvider | undefined {
 		return this.settings ? providerOf(this.settings.provider) : undefined;
@@ -163,6 +180,7 @@ class CloudBackup {
 			const now = this.settings;
 			if (!now || this.connection !== connection) return;
 			this.remote = compareRemote(now.revision, now.pendingSince !== null, backups, now.device);
+			this.warned = false;
 		} catch {
 			// The notice waits for the next start.
 		}
@@ -220,7 +238,8 @@ class CloudBackup {
 			pendingSince: settings.pendingSince ?? new Date().toISOString()
 		});
 		this.remote = { kind: 'current' };
-		this.#auto?.changed([]);
+		// Not just `[]`: a backup running now must not take the waiting change with it.
+		this.#auto?.changed(['revision']);
 	}
 
 	/** Hides the notice until the app opens again. */

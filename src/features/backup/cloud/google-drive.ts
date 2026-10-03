@@ -173,9 +173,13 @@ function driveConnection(
 				hasProperty('day', info.day),
 				hasProperty('device', info.device)
 			]);
+			// A null property removes an old value on update; a new file just leaves it out.
+			const created = Object.fromEntries(
+				Object.entries(appProperties).filter(([, value]) => value !== null)
+			);
 			const { body, type } = today
 				? multipart({ name: info.name, appProperties }, data)
-				: multipart({ name: info.name, appProperties, parents: [await folder()] }, data);
+				: multipart({ name: info.name, appProperties: created, parents: [await folder()] }, data);
 			const res = await call(
 				today
 					? `${UPLOAD}/files/${today.id}?uploadType=multipart&fields=${FILE_FIELDS}`

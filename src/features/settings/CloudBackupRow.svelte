@@ -240,6 +240,7 @@
 							<Alert.Root data-testid="cloud-version">
 								<Alert.Description class="grid gap-2">
 									<p>{versionText()}</p>
+									<FormMessage error={versionError} />
 									<div class="flex flex-wrap gap-2">
 										<Button
 											variant="outline"
@@ -253,18 +254,22 @@
 											<Button
 												variant="outline"
 												size="sm"
-												{disabled}
+												disabled={disabled || downloading}
 												onclick={() => (keeping = true)}
 											>
 												{m.cloud_keep_version()}
 											</Button>
 										{:else}
-											<Button variant="ghost" size="sm" onclick={() => cloudBackup.dismiss()}>
+											<Button
+												variant="ghost"
+												size="sm"
+												disabled={downloading}
+												onclick={() => cloudBackup.dismiss()}
+											>
 												{m.cloud_not_now()}
 											</Button>
 										{/if}
 									</div>
-									<FormMessage error={versionError} />
 								</Alert.Description>
 							</Alert.Root>
 						</div>

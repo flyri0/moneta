@@ -57,6 +57,8 @@ describe('parseRevision', () => {
 		expect(parseRevision({ rev: R(1), gen: '1.5' })).toBeNull();
 		expect(parseRevision({ rev: R(1), gen: '1e3' })).toBeNull();
 		expect(parseRevision({ rev: R(1), gen: '99999999999999999999' })).toBeNull();
+		expect(parseRevision({ rev: R(1), gen: String(2 ** 48 + 1) })).toBeNull();
+		expect(parseRevision({ rev: R(1), gen: String(2 ** 48) })).not.toBeNull();
 		expect(parseRevision({ rev: R(1), gen: '2', base: 'nope' })).toEqual({
 			rev: R(1),
 			gen: 2,
