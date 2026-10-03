@@ -35,6 +35,21 @@ export function listPayees(db: Db): Payee[] {
 	);
 }
 
+/** A payee as the forms and filters offer it. */
+export type PayeeOption = Pick<Payee, 'id' | 'name' | 'defaultCategoryId' | 'lastCategoryId'>;
+
+/** The payees in the order `listPayees` gives, without counting what uses them. */
+export function listPayeeOptions(db: Db): PayeeOption[] {
+	return all<PayeeOption>(
+		db,
+		`SELECT p.id, p.name, p.default_category_id AS defaultCategoryId,
+			(SELECT t.category_id FROM transactions t
+			 WHERE t.payee_id = p.id AND t.is_split = 0 AND t.transfer_id IS NULL AND t.category_id IS NOT NULL
+			 ORDER BY t.date DESC, t.id DESC LIMIT 1) AS lastCategoryId
+		 FROM payees p ORDER BY p.name COLLATE NOCASE`
+	);
+}
+
 /** Returns the id of the payee named `name` (case-insensitive), creating it if needed. */
 export function getOrCreatePayee(db: Db, name: string | null | undefined): string | null {
 	const trimmed = name?.trim();

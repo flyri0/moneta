@@ -4,7 +4,9 @@ import { ALL_TABLES, tx, type Db, type Table } from './connection';
 import { findHandler, type SystemApi } from './api';
 import { checkArgs, type ArgSpec } from './args';
 import type { CallRequest, CallResponse, RpcErrorPayload } from './protocol';
-import { applyInverse, record } from './undo';
+import { checkAmountRange, writesAmounts } from './limits';
+import { dataVersion } from './memo';
+import { applyInverse, changesetSize, record } from './undo';
 
 export interface DispatcherDeps {
 	system: SystemApi;
@@ -42,6 +44,7 @@ const SYSTEM_CHANGES = {
 	inspectBackup: [],
 	restoreBackup: ALL_TABLES,
 	restoreInspected: ALL_TABLES,
+	discardInspected: [],
 	backupEncryption: [],
 	setBackupEncryption: [],
 	clearBackupEncryption: [],
@@ -64,6 +67,7 @@ const SYSTEM_ARGS: { [K in keyof SystemApi]: ArgSpec<Parameters<SystemApi[K]>> }
 	inspectBackup: ['bytes'],
 	restoreBackup: ['bytes', 'array'],
 	restoreInspected: ['string', 'array'],
+	discardInspected: [],
 	backupEncryption: [],
 	setBackupEncryption: ['string', 'string'],
 	clearBackupEncryption: [],
@@ -91,7 +95,12 @@ export function createDispatcher(deps: DispatcherDeps) {
 					throw new DomainError('UNDO_UNAVAILABLE');
 				const { db, inverse } = entry;
 				tx(db, () => {
-					applyInverse(sqlite3, db, inverse);
+					// A foreign key action (a payee rule deleted with its payee) would reach rows
+					// written since, outside the changeset: those must not go silently.
+					const applied = record(sqlite3, db, () => applyInverse(sqlite3, db, inverse));
+					if (changesetSize(sqlite3, applied.inverse) > changesetSize(sqlite3, inverse))
+						throw new DomainError('UNDO_CONFLICT');
+					if (writesAmounts(entry.tables)) checkAmountRange(db);
 					// An account only closes at a zero balance: taking back a write must not undo that.
 					if (
 						db.selectValue(
@@ -120,17 +129,23 @@ export function createDispatcher(deps: DispatcherDeps) {
 			checkArgs(req.method, handler.args, req.args);
 			const db = deps.getDb();
 			if (!db) throw new DomainError('NO_DATABASE_OPEN');
-			const changed = [...handler.tables];
 			if (handler.kind === 'read')
-				return { id: req.id, ok: true, data: handler.fn(db, ...req.args) ?? null, changed };
+				return { id: req.id, ok: true, data: handler.fn(db, ...req.args) ?? null, changed: [] };
+			// A write that changed no row (e.g. no schedule due) leaves the live queries be.
+			const before = dataVersion(db);
+			const changes = () => (dataVersion(db) === before ? [] : [...handler.tables]);
+			const write = () => {
+				const result = handler.fn(db, ...req.args);
+				if (writesAmounts(handler.tables) && dataVersion(db) !== before) checkAmountRange(db);
+				return result;
+			};
 			const sqlite3 = deps.sqlite3;
 			if (!handler.undoable || !sqlite3) {
-				const data = tx(db, () => handler.fn(db, ...req.args));
-				return { id: req.id, ok: true, data: data ?? null, changed };
+				const data = tx(db, write);
+				return { id: req.id, ok: true, data: data ?? null, changed: changes() };
 			}
-			const { result, inverse } = tx(db, () =>
-				record(sqlite3, db, () => handler.fn(db, ...req.args))
-			);
+			const { result, inverse } = tx(db, () => record(sqlite3, db, write));
+			const changed = changes();
 			const token = String(nextToken++);
 			lastUndo = { token, db, inverse, tables: handler.tables };
 			return { id: req.id, ok: true, data: result ?? null, changed, undo: token };

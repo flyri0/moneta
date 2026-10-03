@@ -66,7 +66,7 @@ export function importLines(rows: ReviewRow[], onBudget: boolean): ImportLine[] 
 	return rows
 		.filter((r) => r.include && r.preview.status !== 'duplicate')
 		.map((r) => ({
-			importId: r.line.importId,
+			importId: r.preview.importId,
 			date: r.line.date,
 			amount: r.line.amount,
 			payeeName: r.payeeName.trim(),

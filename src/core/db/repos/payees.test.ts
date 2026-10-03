@@ -9,6 +9,7 @@ import {
 	deletePayee,
 	deleteUnusedPayees,
 	getOrCreatePayee,
+	listPayeeOptions,
 	listPayees,
 	mergePayee,
 	renamePayee,
@@ -69,6 +70,23 @@ describe('listPayees', () => {
 				lastCategoryId: null
 			})
 		]);
+	});
+});
+
+describe('listPayeeOptions', () => {
+	it('gives what the forms offer, as listPayees does, without counting uses', () => {
+		spend('Mercado', '2026-01-10');
+		spend('Mercado', '2026-02-03', fun);
+		getOrCreatePayee(db, 'Unused');
+		setPayeeDefaultCategory(db, payee('Mercado').id, food);
+		expect(listPayeeOptions(db)).toEqual(
+			listPayees(db).map(({ id, name, defaultCategoryId, lastCategoryId }) => ({
+				id,
+				name,
+				defaultCategoryId,
+				lastCategoryId
+			}))
+		);
 	});
 });
 

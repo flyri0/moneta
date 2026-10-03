@@ -31,6 +31,24 @@ async function sentForm(fetcher: ReturnType<typeof upstream>): Promise<URLSearch
 }
 
 describe('handleTokenRequest', () => {
+	it('refuses a body that is not JSON, without calling the provider', async () => {
+		const fetcher = upstream();
+		const req = new Request(`${ORIGIN}/api/oauth/google/token`, {
+			method: 'POST',
+			headers: { 'content-type': 'text/plain', origin: ORIGIN },
+			body: JSON.stringify({ grant: 'refresh_token', refreshToken: 'r' })
+		});
+		expect((await handleTokenRequest(req, 'google', PROVIDERS, fetcher)).status).toBe(415);
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
+	it('refuses a body larger than any token request, without calling the provider', async () => {
+		const fetcher = upstream();
+		const req = request({ grant: 'refresh_token', refreshToken: 'r'.repeat(10_000) });
+		expect((await handleTokenRequest(req, 'google', PROVIDERS, fetcher)).status).toBe(413);
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
 	it('exchanges a code with the client secret and the callback on its own origin', async () => {
 		const fetcher = upstream();
 		const res = await handleTokenRequest(
@@ -119,7 +137,7 @@ describe('handleTokenRequest', () => {
 			);
 		const broken = new Request(`${ORIGIN}/api/oauth/google/token`, {
 			method: 'POST',
-			headers: { origin: ORIGIN },
+			headers: { 'content-type': 'application/json', origin: ORIGIN },
 			body: '{'
 		});
 		expect((await handleTokenRequest(broken, 'google', PROVIDERS, fetcher)).status).toBe(400);

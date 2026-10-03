@@ -44,7 +44,9 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				// Precache everything, including SQLite's WebAssembly, so the app works offline.
+				// Precache everything, including SQLite's WebAssembly, so the app works offline. That
+				// includes zxcvbn's dictionaries (about 1.1 MB gzipped, half the precache), though only
+				// the backup password uses them: on purpose, so that it can be set offline too.
 				globPatterns: ['client/**/*.{js,css,html,ico,png,svg,webp,woff2,wasm,webmanifest}'],
 				globIgnores: [
 					// sqlite-wasm ships these for its other APIs; the app uses only the SAH pool.

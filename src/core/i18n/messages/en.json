@@ -110,6 +110,7 @@
 	"startup_unreadable_new": "Start a new budget",
 	"startup_skipped": "Couldn't open {names}. It may be damaged; you can delete it in Settings.",
 	"error_invalid_input": "Some of the values aren't valid.",
+	"error_amount_too_large": "That amount is too large: the budget's totals would go past what can be added up exactly.",
 	"error_not_found": "That item no longer exists.",
 	"error_already_initialized": "This budget is already set up.",
 	"error_schema_too_new": "This budget was saved by a newer version of Moneta.",

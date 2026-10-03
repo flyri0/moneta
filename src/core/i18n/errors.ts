@@ -4,6 +4,7 @@ import { m } from '$i18n/paraglide/messages';
 /** Every error code the worker or the client can report, in the UI language. */
 const MESSAGES: Record<ErrorCode, () => string> = {
 	INVALID_INPUT: m.error_invalid_input,
+	AMOUNT_TOO_LARGE: m.error_amount_too_large,
 	NOT_FOUND: m.error_not_found,
 	ALREADY_INITIALIZED: m.error_already_initialized,
 	SCHEMA_TOO_NEW: m.error_schema_too_new,

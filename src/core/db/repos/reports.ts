@@ -9,6 +9,7 @@ import {
 	type NetWorthPoint
 } from '$domain/net-worth';
 import { all, type Db } from '../connection';
+import { memo } from '../memo';
 
 export interface SpendingRow {
 	categoryId: string;
@@ -175,11 +176,14 @@ export function spendingByPayee(db: Db, query: SpendingQuery): PayeeSpendingRow[
 	);
 }
 
+/** Each account's change per month, read once between writes (net worth and balances share it). */
 function accountMonthChanges(db: Db): AccountMonthChange[] {
-	return all<AccountMonthChange>(
-		db,
-		`SELECT account_id AS accountId, substr(date, 1, 7) AS month, SUM(amount) AS amount
-		 FROM transactions GROUP BY account_id, month`
+	return memo(db, 'account-month-changes', () =>
+		all<AccountMonthChange>(
+			db,
+			`SELECT account_id AS accountId, substr(date, 1, 7) AS month, SUM(amount) AS amount
+			 FROM transactions GROUP BY account_id, month`
+		)
 	);
 }
 
@@ -202,6 +206,10 @@ export function accountBalances(db: Db, through: Month): AccountBalancesPoint[] 
  */
 export function ageOfMoneyFlows(db: Db, today: string): CashFlowEntry[] {
 	if (!isDate(today)) throw new DomainError('INVALID_INPUT', `Invalid date ${today}`);
+	return memo(db, `age-of-money-flows:${today}`, () => readFlows(db, today));
+}
+
+function readFlows(db: Db, today: string): CashFlowEntry[] {
 	return all<Omit<CashFlowEntry, 'opening'> & { opening: number }>(
 		db,
 		`SELECT t.date, t.id, t.amount,

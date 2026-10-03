@@ -61,7 +61,7 @@
 	let busy = $state(false);
 	let bulkCategory = $state('');
 	const pending = new NewCategories();
-	const payees = useLive(session.client, ['payees'], () => session.api.payees.list());
+	const payees = useLive(session.client, ['payees'], () => session.api.payees.options());
 	const payeeNames = $derived((payees.data ?? []).map((p) => p.name));
 
 	/** The rule being made from a line, and that line's description. */

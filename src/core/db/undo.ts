@@ -58,6 +58,27 @@ export function applyInverse(sqlite3: Sqlite3Static, db: Db, inverse: Uint8Array
 	}
 }
 
+/** How many row changes a changeset holds. */
+export function changesetSize(sqlite3: Sqlite3Static, changeset: Uint8Array): number {
+	const { capi, wasm } = sqlite3;
+	if (changeset.length === 0) return 0;
+	const stack = wasm.pstack.pointer;
+	const bytes = wasm.allocFromTypedArray(changeset);
+	let iter = 0;
+	try {
+		const pp = wasm.pstack.allocPtr();
+		check(sqlite3, capi.sqlite3changeset_start(pp, changeset.length, bytes));
+		iter = wasm.peekPtr(pp) as number;
+		let size = 0;
+		while (capi.sqlite3changeset_next(iter) === capi.SQLITE_ROW) size++;
+		return size;
+	} finally {
+		if (iter) capi.sqlite3changeset_finalize(iter);
+		wasm.dealloc(bytes);
+		wasm.pstack.restore(stack);
+	}
+}
+
 function invert(sqlite3: Sqlite3Static, changeset: Uint8Array): Uint8Array {
 	const { capi, wasm } = sqlite3;
 	if (changeset.length === 0) return changeset;

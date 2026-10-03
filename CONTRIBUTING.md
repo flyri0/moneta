@@ -125,6 +125,10 @@ Maintainers only. Netlify builds and deploys every push to `main`; other branche
 requests get deploy previews. Work on a branch and merge it into `main` to ship it. An open app
 finds the new service worker on its own and offers to reload.
 
+Never roll back a deploy that added a migration: the budgets opened since were migrated, and
+the older app can't open them (it says it needs a newer version). Fix forward with a new deploy
+instead.
+
 ## Reporting bugs
 
 Use the [issue templates](https://github.com/flyri0/moneta/issues/new/choose). Moneta holds

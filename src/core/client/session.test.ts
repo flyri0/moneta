@@ -543,6 +543,29 @@ describe('openLastBudget with damaged files', () => {
 		expect(files.has(home.file)).toBe(true);
 	});
 
+	it('opens another budget when the one used last needs a newer app', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		const work = await createBudget(api, store, { ...HOME, name: 'Work' });
+		await api.system.close();
+		files.get(work.file)!.exec('PRAGMA user_version = 999');
+
+		const result = await openLastBudget(api, store);
+		expect(result).toMatchObject({
+			kind: 'ready',
+			file: home.file,
+			skipped: [{ file: work.file, name: 'Work' }]
+		});
+	});
+
+	it('still says the app is too old when every budget needs a newer one', async () => {
+		const { api, store, files } = await setup();
+		const home = await createBudget(api, store, HOME);
+		await api.system.close();
+		files.get(home.file)!.exec('PRAGMA user_version = 999');
+		await expect(openLastBudget(api, store)).rejects.toMatchObject({ code: 'SCHEMA_TOO_NEW' });
+	});
+
 	it('still stops for failures that are not about one file', async () => {
 		const { api, store } = await setup();
 		await createBudget(api, store, HOME);
@@ -618,6 +641,7 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		inspectBackup: system.inspectBackup,
 		restoreBackup: system.restoreBackup,
 		restoreInspected: system.restoreInspected,
+		discardInspected: system.discardInspected,
 		wipe: system.wipe,
 		backupEncryption: system.backupEncryption,
 		setBackupEncryption: system.setBackupEncryption,

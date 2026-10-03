@@ -324,6 +324,27 @@ describe('checkBackup rebuilds the budget', () => {
 		});
 	}
 
+	const wrongTypes: [string, string][] = [
+		[
+			'a name stored as bytes',
+			"UPDATE categories SET name = X'3c696d67207372633d783e' WHERE name = 'Rent'"
+		],
+		[
+			'ids stored as bytes, references and all',
+			`UPDATE transactions SET account_id = CAST(account_id AS BLOB);
+			UPDATE schedules SET account_id = CAST(account_id AS BLOB),
+				transfer_account_id = CAST(transfer_account_id AS BLOB);
+			UPDATE accounts SET id = CAST(id AS BLOB)`
+		]
+	];
+	for (const [what, sql] of wrongTypes) {
+		it(`rejects ${what} as damaged`, async () => {
+			const sqlite3 = await loadSqlite();
+			const image = await tampered(sql);
+			expect(() => checkBackup(sqlite3, image)).toThrow(/a value of the wrong type in/);
+		});
+	}
+
 	it('rejects a budget that misses a table as damaged', async () => {
 		const sqlite3 = await loadSqlite();
 		const image = await tampered('DROP TABLE schedule_splits');

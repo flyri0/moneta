@@ -18,6 +18,7 @@ const line = (n: number): StatementLine => ({
 });
 const preview = (status: ImportPreview['status'], over: Partial<ImportPreview> = {}) => ({
 	status,
+	importId: '',
 	match: null,
 	payeeName: 'Shop',
 	categoryId: null,
@@ -33,7 +34,7 @@ function rows() {
 			preview('new'),
 			preview('match', { match: { id: 't9', date: '2026-01-04', payeeName: null, memo: '' } }),
 			preview('duplicate')
-		]
+		].map((p, i) => ({ ...p, importId: `ofx:${i + 1}` }))
 	);
 }
 

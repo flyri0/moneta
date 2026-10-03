@@ -13,21 +13,13 @@ export interface CloudDevice {
 }
 
 /**
- * A target that saves into the cloud: the day's file of this device. It checks the bytes it is
- * given: a backup that isn't encrypted never leaves the device.
+ * A target that saves into the cloud: the day's file of this device. It gets only exports that
+ * came back encrypted (`whole`).
  */
-function cloudTarget(
-	api: Pick<ClientApi, 'system'>,
-	connection: CloudConnection,
-	device: CloudDevice,
-	now: Date
-): BackupTarget {
+function cloudTarget(connection: CloudConnection, device: CloudDevice, now: Date): BackupTarget {
 	return {
 		async save(fileName, data) {
 			const blob = await data;
-			const bytes = new Uint8Array(await blob.arrayBuffer());
-			if (!(await api.system.isEncryptedBackup(bytes)))
-				throw new DomainError('CLOUD_NOT_ENCRYPTED');
 			await connection.upload({ name: fileName, day: todayIso(now), ...device }, blob);
 			return 'saved';
 		}
@@ -35,9 +27,9 @@ function cloudTarget(
 }
 
 /**
- * `api` with an export that fails when a budget was left out (or none is left): the day's file
- * replaces the one already in the cloud, and rotation deletes older days, so a backup missing a
- * budget must never get that far.
+ * `api` with an export that fails when it isn't encrypted, so it never leaves the device, or when
+ * a budget was left out (or none is left): the day's file replaces the one already in the cloud,
+ * and rotation deletes older days, so a backup missing a budget must never get that far.
  */
 function whole(api: Pick<ClientApi, 'system'>): Pick<ClientApi, 'system'> {
 	return {
@@ -46,6 +38,7 @@ function whole(api: Pick<ClientApi, 'system'>): Pick<ClientApi, 'system'> {
 				if (key !== 'exportBackup') return target[key as keyof typeof target];
 				return async (...args: Parameters<typeof target.exportBackup>) => {
 					const exported = await target.exportBackup(...args);
+					if (exported.encrypted !== true) throw new DomainError('CLOUD_NOT_ENCRYPTED');
 					if (exported.skipped.length > 0 || args[0].length === exported.skipped.length)
 						throw new DomainError('BACKUP_INCOMPLETE', exported.skipped.join(', '));
 					return exported;
@@ -73,7 +66,10 @@ export async function backUpToCloud(
 		throw new DomainError('BACKUP_KEYS_UNAVAILABLE', String(err));
 	}
 	if (!encrypted) throw new DomainError('CLOUD_NOT_ENCRYPTED');
-	const done = await backUp(whole(api), cloudTarget(api, connection, device, now), now);
+	// It runs on its own, often while the app is in use: the quick check keeps it short.
+	const done = await backUp(whole(api), cloudTarget(connection, device, now), now, {
+		quick: true
+	});
 	try {
 		for (const old of expiredBackups(await connection.list(), device.device))
 			await connection.remove(old.id);

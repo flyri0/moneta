@@ -23,9 +23,10 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 			readCopy: () => new Uint8Array(),
 			exportBackup: async () => ({ bytes: new Uint8Array(), skipped: [], encrypted: false }),
 			markBackedUp: () => {},
-			inspectBackup: () => ({ token: 't', createdAt: null, budgets: [] }),
+			inspectBackup: async () => ({ token: 't', createdAt: null, budgets: [] }),
 			restoreBackup: async () => {},
 			restoreInspected: async () => {},
+			discardInspected: () => {},
 			backupEncryption: async () => ({ on: false }),
 			setBackupEncryption: async () => {},
 			clearBackupEncryption: async () => {},
@@ -175,6 +176,13 @@ describe('createDispatcher', () => {
 		expect(getMeta(db).name).toBe('Test Budget');
 	});
 
+	it('reports no changes for a write that changed no row', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		const res = await dispatch({ id: 8, method: 'schedules.enterDue', args: ['2026-01-01'] });
+		expect(res).toMatchObject({ ok: true, changed: [] });
+	});
+
 	it('requires an open database for data methods', async () => {
 		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => null });
 		const res = await dispatch({ id: 6, method: 'meta.get', args: [] });
@@ -301,6 +309,43 @@ describe('undo', () => {
 		expect(
 			db.selectValue('SELECT COUNT(*) FROM transactions WHERE account_id = ?', [account])
 		).toBe(0);
+	});
+
+	it('refuses to take back what a later write depends on through a cascade', async () => {
+		const { db, dispatch } = await setUp();
+		const account = createAccount(db, {
+			name: 'Bank',
+			type: 'checking',
+			onBudget: true,
+			startingBalance: 0,
+			startingDate: '2026-01-01'
+		});
+		const line = {
+			importId: 'csv:x:1',
+			date: '2026-01-05',
+			amount: -100,
+			payeeName: 'ACME NEW',
+			memo: '',
+			categoryId: categoryId(db, 'Food'),
+			matchId: null
+		};
+		const imported = await dispatch({
+			id: 1,
+			method: 'imports.commit',
+			args: [account, { lines: [line] }]
+		});
+		if (!imported.ok) throw new Error('import failed');
+		// The rule is written after the import, and deleting its payee would delete it too.
+		const rule = { payeeName: 'ACME NEW', kind: 'contains', text: 'acme', categoryId: null };
+		expect(await dispatch({ id: 2, method: 'payeeRules.create', args: [rule] })).toMatchObject({
+			ok: true
+		});
+		expect(await dispatch({ id: 3, method: 'undo.apply', args: [imported.undo] })).toMatchObject({
+			ok: false,
+			error: { code: 'UNDO_CONFLICT' }
+		});
+		expect(db.selectValue('SELECT COUNT(*) FROM payee_rules')).toBe(1);
+		expect(db.selectValue('SELECT COUNT(*) FROM transactions WHERE import_id IS NOT NULL')).toBe(1);
 	});
 
 	it('returns no token without the SQLite module', async () => {

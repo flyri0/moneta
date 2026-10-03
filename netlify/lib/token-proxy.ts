@@ -47,14 +47,21 @@ function parseGrant(body: unknown): Grant | null {
 	return null;
 }
 
+/** Far more than a code or a refresh token takes: anything larger isn't the app. */
+const MAX_BODY = 8 * 1024;
+
 function reply(status: number, body: unknown): Response {
 	return Response.json(body, { status, headers: { 'cache-control': 'no-store' } });
 }
 
 /**
  * Exchanges a code or refreshes a token for the app on the same origin. Only the two grants the app
- * uses are accepted, and the callback is always this origin's, so the secret can't serve anything
- * else. The provider's answer, errors included, is passed through as it came.
+ * uses are accepted, and the callback is always this origin's, so the secret can't serve another
+ * OAuth client. The provider's answer, errors included, is passed through as it came.
+ *
+ * The `Origin` check only stops other sites' pages: anything outside a browser can send any
+ * origin, and the function can't tell it from the app. The rate limit (`oauth-token.mts`) and the
+ * checks on the body keep such calls from costing much.
  */
 export async function handleTokenRequest(
 	req: Request,
@@ -67,9 +74,15 @@ export async function handleTokenRequest(
 	if (req.headers.get('origin') !== origin) return reply(403, { error: 'forbidden_origin' });
 	const provider = Object.hasOwn(providers, providerId) ? providers[providerId] : undefined;
 	if (!provider) return reply(404, { error: 'unknown_provider' });
+	if (!/^application\/json\b/i.test(req.headers.get('content-type') ?? ''))
+		return reply(415, { error: 'unsupported_media_type' });
+	if (Number(req.headers.get('content-length')) > MAX_BODY)
+		return reply(413, { error: 'request_too_large' });
+	const text = await req.text();
+	if (text.length > MAX_BODY) return reply(413, { error: 'request_too_large' });
 	let grant: Grant | null;
 	try {
-		grant = parseGrant(await req.json());
+		grant = parseGrant(JSON.parse(text));
 	} catch {
 		grant = null;
 	}

@@ -5,6 +5,7 @@ import { checkBackup, isIntact } from './backup';
 import { createKeys, openKey, type BackupKeys } from './backup-crypto';
 import {
 	isSealed,
+	nextTask,
 	openSealed,
 	readBackup,
 	sealBackup,
@@ -15,7 +16,7 @@ import { configure, type Db } from './connection';
 import { openImage, toImage } from './image';
 import { MIGRATIONS, migrate, schemaVersion } from './migrate';
 import { getMeta, updateMeta } from './repos/meta';
-import type { RestorePick, SystemApi } from './api';
+import type { InspectedBackup, RestorePick, SystemApi } from './api';
 
 /** Where database files live: the OPFS SAH pool in the worker, in-memory databases in tests. */
 export interface FileStore {
@@ -98,7 +99,15 @@ export function createSystem(deps: SystemDeps): {
 	let inspected: { token: string; images: Uint8Array[] } | null = null;
 
 	function closeDb(): void {
-		if (db) store.close(db);
+		if (db) {
+			// Keeps SQLite's statistics current, for the query plans of the next session.
+			try {
+				db.exec('PRAGMA optimize');
+			} catch (err) {
+				console.warn("Moneta couldn't optimize the budget", err);
+			}
+			store.close(db);
+		}
 		db = null;
 		openName = null;
 	}
@@ -149,15 +158,18 @@ export function createSystem(deps: SystemDeps): {
 		return id;
 	}
 
-	/** A budget file or copy as it goes into a backup, or null when it can't be read. */
-	function backupBudget(name: string): BackupBudget | null {
+	/**
+	 * A budget file or copy as it goes into a backup, or null when it can't be read. The copy is
+	 * vacuumed first: a file keeps deleted rows in its free space, and a backup may be shared.
+	 */
+	function backupBudget(name: string, quick = false): BackupBudget | null {
 		const id = backupId(name);
 		try {
-			const image = readImage(name);
-			const copy = openImage(sqlite3, image);
+			const copy = openImage(sqlite3, readImage(name));
 			try {
-				if (!isIntact(copy)) return null;
-				return { id, name: getMeta(copy).name, image };
+				if (!isIntact(copy, quick)) return null;
+				copy.exec('VACUUM');
+				return { id, name: getMeta(copy).name, image: toImage(sqlite3, copy) };
 			} finally {
 				copy.close();
 			}
@@ -192,6 +204,9 @@ export function createSystem(deps: SystemDeps): {
 				if (version > 0 && version < migrations.length)
 					await saveCopy(fileName, toImage(sqlite3, next));
 				migrate(next, migrations);
+				// SQLite's advice for a connection that stays open: gather the statistics the
+				// planner lacks (a few hundred rows per index at most), once, at open.
+				next.exec('PRAGMA analysis_limit = 400; PRAGMA optimize = 0x10002');
 			} catch (err) {
 				store.close(next);
 				throw err;
@@ -238,11 +253,11 @@ export function createSystem(deps: SystemDeps): {
 			const budgets: BackupBudget[] = [];
 			const skipped: string[] = [];
 			for (const name of names) {
-				const budget = backupBudget(name);
+				const budget = backupBudget(name, options.quick);
 				if (budget) budgets.push(budget);
 				else skipped.push(name);
 			}
-			const bytes = writeBackup(budgets, now().toISOString());
+			const bytes = await writeBackup(budgets, now().toISOString());
 			if (options.plain) return { bytes, skipped, encrypted: false };
 			let key: BackupKeys | null;
 			try {
@@ -290,18 +305,21 @@ export function createSystem(deps: SystemDeps): {
 				}
 			}
 		},
-		inspectBackup(bytes) {
+		async inspectBackup(bytes) {
 			const { createdAt, budgets } = readBackup(bytes);
 			const images: Uint8Array[] = [];
-			const infos = budgets.map(({ id, image }, index) => {
+			const infos: InspectedBackup['budgets'] = [];
+			for (const [index, { id, image }] of budgets.entries()) {
+				// Each check takes a while on a large budget: let other calls run in between.
+				if (index > 0) await nextTask();
 				images.push(checkBackup(sqlite3, image, migrations));
 				const db = openImage(sqlite3, images[index]);
 				try {
-					return { index, id, name: getMeta(db).name };
+					infos.push({ index, id, name: getMeta(db).name });
 				} finally {
 					db.close();
 				}
-			});
+			}
 			inspected = { token: uuidv7(), images };
 			return { token: inspected.token, createdAt, budgets: infos };
 		},
@@ -314,6 +332,9 @@ export function createSystem(deps: SystemDeps): {
 				checkBackup(sqlite3, budgets[index].image, migrations)
 			);
 			await writeRestored(picks, images);
+		},
+		discardInspected() {
+			inspected = null;
 		},
 		async restoreInspected(token, picks) {
 			if (!inspected || token !== inspected.token)

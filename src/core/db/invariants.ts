@@ -1,6 +1,7 @@
 import { DomainError } from '$domain/errors';
 import { isDate, isMonth } from '$domain/month';
 import type { Db } from './connection';
+import { AMOUNT_SIZE_SQL } from './limits';
 import { getMeta, validateCurrency, validateLocale } from './repos/meta';
 
 /**
@@ -103,11 +104,10 @@ const BROKEN_ROWS: [string, string][] = [
 			UNION ALL SELECT 1 FROM schedule_splits WHERE ABS(amount) > ${SAFE}
 			UNION ALL SELECT 1 FROM categories WHERE ABS(goal_amount) > ${SAFE}`
 	],
+	// What every write keeps (limits.ts): no total the app derives can go past the range.
 	[
-		'a total past the safe integer range',
-		`SELECT 1 FROM transactions GROUP BY account_id HAVING ABS(TOTAL(amount)) > ${SAFE}
-			UNION ALL SELECT 1 FROM budget_assignments GROUP BY category_id HAVING ABS(TOTAL(assigned)) > ${SAFE}
-			UNION ALL SELECT 1 FROM budget_assignments GROUP BY month HAVING ABS(TOTAL(assigned)) > ${SAFE}`
+		'amounts that add up past the safe integer range',
+		`SELECT 1 WHERE ${AMOUNT_SIZE_SQL} > ${SAFE}`
 	],
 	[
 		'a transfer without its other half',
@@ -127,17 +127,46 @@ const DATES: [string, string, (value: string) => boolean][] = [
 	['accounts', 'reconciled_on', isDate]
 ];
 
+/**
+ * A row holding a value of another type than its column's (the tables aren't STRICT): a copy
+ * keeps a BLOB in a TEXT column, and the app would get bytes where it expects a name or an id.
+ */
+function wrongType(db: Db): string | null {
+	const tables = db.selectValues(
+		"SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+	) as string[];
+	for (const table of tables) {
+		const columns = db.selectArrays('SELECT name, upper(type) FROM pragma_table_info(?)', [
+			table
+		]) as [string, string][];
+		const tests = columns.flatMap(([name, type]) => {
+			const expected = type === 'TEXT' ? 'text' : type === 'INTEGER' ? 'integer' : null;
+			return expected ? [[name, `typeof("${name}") NOT IN ('${expected}', 'null')`]] : [];
+		});
+		if (tests.length === 0) continue;
+		// One pass over the table, naming the first column that fails.
+		const found = db.selectValue(
+			`SELECT CASE ${tests.map(([name, test]) => `WHEN ${test} THEN '${name}'`).join(' ')} END
+			 FROM "${table}" WHERE ${tests.map(([, test]) => test).join(' OR ')} LIMIT 1`
+		);
+		if (found !== undefined) return `${table}.${String(found)}`;
+	}
+	return null;
+}
+
 function damaged(what: string): DomainError {
 	return new DomainError('BACKUP_DAMAGED', `The budget has ${what}`);
 }
 
 /**
- * Checks that a budget keeps the rules the app enforces when it writes: foreign keys, whole-number
- * amounts, real dates and months, splits that add up, paired transfers, and a meta the app can
- * display. Throws BACKUP_DAMAGED on the first one broken.
+ * Checks that a budget keeps the rules the app enforces when it writes: foreign keys, values of
+ * their column's type, whole-number amounts, real dates and months, splits that add up, paired
+ * transfers, and a meta the app can display. Throws BACKUP_DAMAGED on the first one broken.
  */
 export function checkInvariants(db: Db): void {
 	if (db.selectArrays('PRAGMA foreign_key_check').length > 0) throw damaged('broken references');
+	const column = wrongType(db);
+	if (column) throw damaged(`a value of the wrong type in ${column}`);
 	for (const [what, sql] of BROKEN_ROWS)
 		if (db.selectArrays(`${sql} LIMIT 1`).length > 0) throw damaged(what);
 	for (const [table, column, valid] of DATES) {

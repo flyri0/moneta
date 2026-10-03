@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ReportBody from './ReportBody.svelte';
+	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
 	import EmptyState from '$components/EmptyState.svelte';
@@ -7,7 +8,7 @@
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
 	import StatTile from './StatTile.svelte';
-	import { payeeDisplay } from '$features/accounts/register';
+	import { PAGE_SIZE, payeeDisplay } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
@@ -37,6 +38,8 @@
 	const TOP = 5;
 
 	let selected = $state<string | null>(null);
+	/** How many pages of the selected row's transactions are shown: a long period has thousands. */
+	let pages = $state(1);
 	let expanded = $state(false);
 	let grouped = $state(false);
 
@@ -56,9 +59,21 @@
 	);
 	const transactions = useLive(session.client, SPENDING_TABLES, () =>
 		selected
-			? session.api.transactions.list({ categoryId: selected, from: range.from, to: range.to })
+			? session.api.transactions.list({
+					categoryId: selected,
+					from: range.from,
+					to: range.to,
+					limit: pages * PAGE_SIZE
+				})
 			: Promise.resolve<TransactionRow[]>([])
 	);
+	const hasMore = $derived((transactions.data?.length ?? 0) >= pages * PAGE_SIZE);
+
+	$effect(() => {
+		void selected;
+		void range;
+		untrack(() => (pages = 1));
+	});
 
 	// A drilled-in category rarely survives a new period or a switch to groups, and a stale one
 	// reads as a bug.
@@ -235,6 +250,11 @@
 								</li>
 							{/each}
 						</ul>
+						{#if hasMore}
+							<Button variant="outline" class="w-full" onclick={() => pages++}>
+								{m.register_load_more()}
+							</Button>
+						{/if}
 					</section>
 				{/if}
 			</div>

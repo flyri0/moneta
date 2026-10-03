@@ -41,6 +41,17 @@ beforeEach(async () => {
 });
 
 describe('amount validation', () => {
+	it('rejects a move that would leave an assignment beyond the safe integer range', () => {
+		const max = Number.MAX_SAFE_INTEGER;
+		setAssigned(db, rent, '2026-01', max);
+		expect(() =>
+			moveMoney(db, { fromCategoryId: food, toCategoryId: rent, month: '2026-01', amount: max })
+		).toThrow(code('INVALID_INPUT'));
+		expect(all(db, "SELECT assigned FROM budget_assignments WHERE month = '2026-01'")).toEqual([
+			{ assigned: max }
+		]);
+	});
+
 	it('rejects amounts beyond the safe integer range', () => {
 		const unsafe = 2 ** 53;
 		expect(() => setAssigned(db, food, '2026-01', unsafe)).toThrow(code('INVALID_INPUT'));
