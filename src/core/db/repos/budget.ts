@@ -13,6 +13,7 @@ import {
 	type QuickAssignStrategy
 } from '$domain/quick-assign';
 import { one, run, tx, type Db } from '../connection';
+import { memo } from '../memo';
 import { loadEngineInput } from './aggregates';
 import { getCategory, getGroup, listCategoryTree, type GroupNode } from './categories';
 
@@ -55,8 +56,19 @@ function requireMonth(month: Month): void {
 	if (!isMonth(month)) throw new DomainError('INVALID_INPUT', `Invalid month ${month}`);
 }
 
+/**
+ * The engine's results through `month`. Between writes, the history is read once (`memo`) and the
+ * last month computed is kept, so moving between months and reading again skip most of the work.
+ */
 function compute(db: Db, month: Month): BudgetComputation {
-	return computeBudget(loadEngineInput(db), month);
+	const input = memo(db, 'engine-input', () => loadEngineInput(db));
+	const last = memo(db, 'engine-month', () => ({
+		month: '',
+		comp: null as BudgetComputation | null
+	}));
+	if (last.month !== month || !last.comp)
+		Object.assign(last, { month, comp: computeBudget(input, month) });
+	return last.comp!;
 }
 
 export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {

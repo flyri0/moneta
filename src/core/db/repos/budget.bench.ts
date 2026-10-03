@@ -58,10 +58,18 @@ async function bigBudget({ analyze = true } = {}): Promise<Db> {
 
 const db = await bigBudget();
 const input = loadEngineInput(db);
+const touched = categoryId(db, 'Category 1');
+let flip = 0;
+/** A write, so the next read can't reuse what the one before it computed. */
+const write = () => setAssigned(db, touched, LAST, 20_000 + (flip ^= 1));
 
 test('budget recompute', async ({ bench }) => {
 	const result = await bench.compare(
-		bench('getBudgetMonth, 5 years of history', () => {
+		bench('getBudgetMonth, 5 years of history, after a write', () => {
+			write();
+			getBudgetMonth(db, LAST);
+		}),
+		bench('getBudgetMonth, nothing written since', () => {
 			getBudgetMonth(db, LAST);
 		}),
 		bench('loadEngineInput (SQL only)', () => {
@@ -71,8 +79,8 @@ test('budget recompute', async ({ bench }) => {
 			computeBudget(input, LAST);
 		})
 	);
-	expect(result.get('computeBudget (engine only)')).toBeFasterThan(
-		result.get('getBudgetMonth, 5 years of history')
+	expect(result.get('getBudgetMonth, nothing written since')).toBeFasterThan(
+		result.get('getBudgetMonth, 5 years of history, after a write')
 	);
 });
 
