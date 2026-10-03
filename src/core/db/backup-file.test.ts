@@ -121,6 +121,8 @@ describe('readBackup', () => {
 			zipSync({ 'moneta.json': strToU8('{ not json') }),
 			zipWith(manifest({ version: 'one' }), files),
 			zipWith(manifest({ budgets: 'all' }), files),
+			// The restore screen shows it: one that doesn't parse would take the screen down.
+			zipWith(manifest({ createdAt: '<img src=x onerror=alert(1)>' }), files),
 			zipWith(manifest()),
 			zipWith(manifest({ budgets: [{ id: '../x', name: 'Home', path: 'budgets/x' }] }), {
 				'budgets/x': image

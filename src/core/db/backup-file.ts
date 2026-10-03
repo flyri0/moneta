@@ -126,7 +126,12 @@ function readZip(bytes: Uint8Array): { manifest: Record<string, unknown>; files:
 
 function unpack(manifest: Record<string, unknown>, files: Unzipped): BackupContents {
 	const { budgets, createdAt } = manifest;
-	if (!Array.isArray(budgets) || typeof createdAt !== 'string')
+	// The restore screen shows when the backup was made: a date that doesn't parse would crash it.
+	if (
+		!Array.isArray(budgets) ||
+		typeof createdAt !== 'string' ||
+		Number.isNaN(Date.parse(createdAt))
+	)
 		throw new DomainError('BACKUP_DAMAGED', `Bad ${MANIFEST}`);
 	const seen = new Set<string>();
 	return {
