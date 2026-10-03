@@ -175,6 +175,13 @@ describe('createDispatcher', () => {
 		expect(getMeta(db).name).toBe('Test Budget');
 	});
 
+	it('reports no changes for a write that changed no row', async () => {
+		const db = await createBudgetDb();
+		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => db });
+		const res = await dispatch({ id: 8, method: 'schedules.enterDue', args: ['2026-01-01'] });
+		expect(res).toMatchObject({ ok: true, changed: [] });
+	});
+
 	it('requires an open database for data methods', async () => {
 		const dispatch = createDispatcher({ system: fakeSystem().system, getDb: () => null });
 		const res = await dispatch({ id: 6, method: 'meta.get', args: [] });

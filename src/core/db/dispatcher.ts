@@ -4,6 +4,7 @@ import { ALL_TABLES, tx, type Db, type Table } from './connection';
 import { findHandler, type SystemApi } from './api';
 import { checkArgs, type ArgSpec } from './args';
 import type { CallRequest, CallResponse, RpcErrorPayload } from './protocol';
+import { dataVersion } from './memo';
 import { applyInverse, record } from './undo';
 
 export interface DispatcherDeps {
@@ -120,17 +121,20 @@ export function createDispatcher(deps: DispatcherDeps) {
 			checkArgs(req.method, handler.args, req.args);
 			const db = deps.getDb();
 			if (!db) throw new DomainError('NO_DATABASE_OPEN');
-			const changed = [...handler.tables];
 			if (handler.kind === 'read')
-				return { id: req.id, ok: true, data: handler.fn(db, ...req.args) ?? null, changed };
+				return { id: req.id, ok: true, data: handler.fn(db, ...req.args) ?? null, changed: [] };
+			// A write that changed no row (e.g. no schedule due) leaves the live queries be.
+			const before = dataVersion(db);
+			const changes = () => (dataVersion(db) === before ? [] : [...handler.tables]);
 			const sqlite3 = deps.sqlite3;
 			if (!handler.undoable || !sqlite3) {
 				const data = tx(db, () => handler.fn(db, ...req.args));
-				return { id: req.id, ok: true, data: data ?? null, changed };
+				return { id: req.id, ok: true, data: data ?? null, changed: changes() };
 			}
 			const { result, inverse } = tx(db, () =>
 				record(sqlite3, db, () => handler.fn(db, ...req.args))
 			);
+			const changed = changes();
 			const token = String(nextToken++);
 			lastUndo = { token, db, inverse, tables: handler.tables };
 			return { id: req.id, ok: true, data: result ?? null, changed, undo: token };

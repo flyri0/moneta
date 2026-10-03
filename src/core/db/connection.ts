@@ -34,9 +34,21 @@ export function configure(db: Db): void {
 	db.exec('PRAGMA foreign_keys = ON');
 }
 
+const depths = new WeakMap<Db, number>();
+
 /** Runs `fn` atomically. Nests safely (uses SAVEPOINT). */
 export function tx<T>(db: Db, fn: () => T): T {
-	return db.savepoint(() => fn());
+	depths.set(db, (depths.get(db) ?? 0) + 1);
+	try {
+		return db.savepoint(() => fn());
+	} finally {
+		depths.set(db, depths.get(db)! - 1);
+	}
+}
+
+/** Whether `fn` of a `tx` on `db` is running. */
+export function inTransaction(db: Db): boolean {
+	return (depths.get(db) ?? 0) > 0;
 }
 
 export function all<T>(db: Db, sql: string, bind?: BindingSpec): T[] {
