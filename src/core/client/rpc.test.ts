@@ -5,6 +5,7 @@ import { categoryId, createBudgetDb, loadSqlite } from '$db/testing';
 import type { Db } from '$db/connection';
 import type { Table } from '$db/connection';
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
+import type { CallRequest } from '$db/protocol';
 
 const channels: MessageChannel[] = [];
 afterEach(() => {
@@ -140,6 +141,17 @@ describe('createRpcClient failure paths', () => {
 		);
 		await client.api.accounts.create(input);
 		expect((await client.api.accounts.list()).map((a) => a.name)).toEqual(['Bank']);
+	});
+
+	it('hands bytes to postMessage as they are, without copying them first', () => {
+		const sent: CallRequest[] = [];
+		const client = createRpcClient({
+			postMessage: (message) => void sent.push(message as CallRequest),
+			addEventListener: () => {}
+		});
+		const bytes = new Uint8Array([1, 2, 3]);
+		void client.api.system.isEncryptedBackup(bytes);
+		expect(sent[0].args[0]).toBe(bytes);
 	});
 
 	it('rejects, instead of hanging, when a message cannot be sent', async () => {

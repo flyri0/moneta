@@ -80,6 +80,23 @@ describe('backUpToCloud', () => {
 		expect((await api.meta.get()).lastBackupAt).toBeNull();
 	});
 
+	it('refuses an export that came back unencrypted, even with a key set', async () => {
+		const { api, connection, drive } = await setup();
+		const plain: typeof api = {
+			...api,
+			system: new Proxy(api.system, {
+				get: (target, key) =>
+					key === 'exportBackup'
+						? async (names: string[]) => target.exportBackup(names, { plain: true })
+						: target[key as keyof typeof target]
+			})
+		};
+		await expect(backUpToCloud(plain, connection, DEVICE)).rejects.toMatchObject({
+			code: 'CLOUD_NOT_ENCRYPTED'
+		});
+		expect(drive.backups()).toEqual([]);
+	});
+
 	it('does not replace the day backup when a budget could not be read', async () => {
 		const { api, connection, drive } = await setup();
 		const now = new Date(2026, 8, 26, 10, 0);
