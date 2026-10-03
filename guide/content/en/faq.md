@@ -39,6 +39,30 @@ Without the password or the recovery key, an encrypted backup can't be opened by
    or restore from Google Drive.
 3. Enter the backup's password or recovery key if it is encrypted.
 
+## Can I use Moneta on my phone and my computer? {#two-devices}
+
+Yes, but they don't sync: each device keeps its own copy of the budget, and changes on one never
+reach the other. Restoring a backup on the second device **replaces** its copy with the backup's,
+so whatever was entered only there is lost (it stays under **Saved copies**). Keep one device as
+the place you record things, and use the others to look, or move to a new one as described above.
+
+## Ready to Assign went negative when I added a credit card {#card-debt-negative}
+
+A card's starting debt comes out of Ready to Assign: the money to pay it has to come from
+somewhere. If you can't cover it now, give the debt a category of its own and pay it off over time:
+see [A credit card that already has debt](situations.md#existing-card-debt).
+
+## A transaction doesn't change my budget {#not-in-budget}
+
+That is expected in two cases: the transaction is in a tracking account (investments, loans), or
+it is a transfer between two budget accounts, like paying the card or moving money to savings. See
+[Transfers](transactions.md#transfers).
+
+## Can a budget have several currencies? {#currencies}
+
+No: a budget has one currency, set in **Budget details**. For money in another currency, keep a
+second budget in **Settings → Budget files**.
+
 ## A backup was made by a newer Moneta {#too-new}
 
 A budget or a backup saved by a newer version needs that version to open. Reload Moneta, or use

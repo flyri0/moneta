@@ -27,9 +27,12 @@ the budget and its saved copies for good.
 
 ## Backups {#backups}
 
-**Settings → Backup → Back up now** saves every budget on the device into one `.moneta` file in
-your downloads. Keep it off the device: in your cloud storage, on a computer, on a USB stick.
+**Settings → Backup → Back up now** saves every budget on the device into one `.moneta` file. Chrome
+and Edge on a computer ask where to save it; other browsers download it, and Moneta asks whether
+the download worked. Keep it off the device: in your cloud storage, on a computer, on a USB stick.
 Moneta reminds you when your last backup is more than two weeks old.
+
+![Settings → Backup: Back up now, Restore from a backup, Automatic backup, Encryption and Exports.](img/backup-light.png)
 
 **Restore from a backup** reads a `.moneta` file (or an older `.sqlite` one) and lets you pick which
 budgets to restore:
@@ -98,8 +101,8 @@ one. On a new device, connect, pick one, and enter the password or recovery key.
 
 ## Exports {#exports}
 
-**Transactions (CSV)** and **Whole budget (JSON)** export your data for spreadsheets and other
-apps. They can't be restored into Moneta, and they are never encrypted: keep them somewhere safe.
+In **Settings → Backup → Exports**, **Transactions (CSV)** and **Whole budget (JSON)** export the
+open budget for spreadsheets and other apps. They can't be restored into Moneta, and they are never encrypted: keep them somewhere safe.
 
 ## Delete everything {#wipe}
 

@@ -1,7 +1,8 @@
 # Payees and rules
 
-Payees are who you pay and who pays you. They are created as you type them in transactions, and
-**Payees** (in the sidebar, or a button on Transactions on a phone) lists them with how many transactions each has.
+Payees are who you pay and who pays you. They are created as you type them in transactions, or
+with **New payee**. **Payees** (in the sidebar, or a button on Transactions on a phone) lists them
+with how many transactions each has, and **Search payees** finds one by name.
 
 ## Editing a payee {#editing}
 
@@ -14,7 +15,7 @@ Tap a payee to:
   same store was typed two ways. Renaming a payee to a name that already exists offers the same.
 - **delete** it, when no transaction, schedule or rule uses it.
 
-**Remove unused** deletes every payee without transactions at once. A payee comes back if you type
+**Remove unused** deletes, at once, every payee that no transaction, schedule or rule uses. A payee comes back if you type
 it again.
 
 ## Import rules {#payee-rules}

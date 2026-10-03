@@ -19,14 +19,21 @@ Use o botão **Transação** (o **+** redondo no celular). Preencha:
 
 A renda vai numa categoria de receita, como Salário: é isso que a soma ao Pronto para atribuir.
 
-Uma data a mais de dois anos de distância costuma ser erro de digitação, então o Moneta pergunta
+Uma data a mais de dois anos no futuro costuma ser erro de digitação, então o Moneta pergunta
 antes de salvar.
+
+### Editar ou excluir uma {#editing}
+
+Toque numa transação para abri-la, mude o que precisar e salve. **Excluir transação**, na mesma
+janela, pergunta antes; logo depois, ainda dá para [desfazer](#undo).
 
 ## Dividir {#splits}
 
 Um recibo, várias categorias: escolha **Dividir** e adicione uma linha por categoria, cada uma com
 valor e memorando. As linhas precisam somar o valor da transação; o Moneta mostra quanto falta
 distribuir.
+
+![Uma compra de R$ 80,00 dividida entre Mercado e Casa, sem nada faltando distribuir.](img/split-light.pt-BR.png)
 
 ## Transferências {#transfers}
 
@@ -62,7 +69,7 @@ Logo depois de algumas mudanças, uma mensagem oferece **Desfazer**:
 
 - excluir uma ou várias transações;
 - mudar várias transações de uma vez;
-- atribuir, mover dinheiro e a atribuição rápida;
+- atribuir pela tela de uma categoria, mover dinheiro e a atribuição rápida;
 - importar um extrato;
 - pular uma transação agendada.
 

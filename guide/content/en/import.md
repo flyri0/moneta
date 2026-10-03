@@ -25,6 +25,8 @@ For a CSV file, tell Moneta:
 The preview shows how the lines read. Moneta remembers these choices for the next import into the
 same account. Lines with no date or amount are left out, and Moneta says how many.
 
+![The columns of a CSV statement: date, description and amount, the date and number formats, and a preview of how the lines read.](img/csv-light.png)
+
 ## Reviewing the lines {#matching}
 
 Before anything is written, every line is marked:

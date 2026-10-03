@@ -25,6 +25,8 @@ Para um arquivo CSV, diga ao Moneta:
 A prévia mostra como as linhas ficam. O Moneta lembra essas escolhas para a próxima importação na
 mesma conta. Linhas sem data ou valor ficam de fora, e o Moneta diz quantas.
 
+![As colunas de um extrato CSV: data, descrição e valor, os formatos de data e de números, e uma prévia de como as linhas são lidas.](img/csv-light.pt-BR.png)
+
 ## Revisar as linhas {#matching}
 
 Antes de gravar qualquer coisa, cada linha é marcada:

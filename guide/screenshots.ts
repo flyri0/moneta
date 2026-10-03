@@ -25,6 +25,16 @@ for (const [locale, t] of Object.entries(LOCALES) as [keyof typeof LOCALES, Mess
 				join(OUT, `${name}-${scheme}${locale === 'en' ? '' : `.${locale}`}.png`);
 			const shot = (target: Locator, name: string) =>
 				target.screenshot({ path: file(name), animations: 'disabled' });
+			/** A dialog alone, unfocused: the page behind it would show in its rounded corners. */
+			const shotDialog = async (dialog: Locator, name: string) => {
+				await dialog.page().evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+				await dialog.screenshot({
+					path: file(name),
+					animations: 'disabled',
+					style:
+						'body * { visibility: hidden } [role="dialog"], [role="dialog"] * { visibility: visible }'
+				});
+			};
 			/** The page's main area down to `last`, without the empty space below it. */
 			const shotUntil = async (page: Page, last: Locator, name: string) => {
 				const main = (await page.getByRole('main').boundingBox())!;
@@ -83,6 +93,80 @@ for (const [locale, t] of Object.entries(LOCALES) as [keyof typeof LOCALES, Mess
 				await expect(page.getByTestId('schedule-row').first()).toBeVisible();
 				await shotUntil(page, page.getByTestId('schedule-row').last(), 'schedules');
 			});
+
+			test('ready to assign', async ({ page }) => {
+				await openDemo(page, t);
+				await page.getByTestId('rta-amount').click();
+				await expect(page.getByText(t.budget_funds_available)).toBeVisible();
+				await shot(page.getByTestId('rta-card'), 'ready-to-assign');
+			});
+
+			test('category sheet', async ({ page }) => {
+				await openDemo(page, t);
+				const name = t.default_category_groceries;
+				await page
+					.getByTestId('category-row')
+					.filter({ hasText: name })
+					.getByRole('button', { name })
+					.click();
+				const dialog = page.getByRole('dialog');
+				await expect(dialog.getByRole('button', { name: t.budget_move_money })).toBeVisible();
+				await shotDialog(dialog, 'category');
+			});
+
+			test('split', async ({ page }) => {
+				await openDemoAccount(page, t, t.demo_account_checking);
+				await page.getByRole('button', { name: t.add_transaction, exact: true }).first().click();
+				const dialog = page.getByRole('dialog');
+				await pick(dialog, t.transaction_payee, t.demo_payee_grocery);
+				await dialog.getByLabel(t.transaction_amount, { exact: true }).fill('80');
+				await pick(dialog, t.transaction_category, t.default_category_groceries);
+				await dialog.getByRole('button', { name: t.transaction_split }).click();
+				await dialog.getByLabel(t.transaction_split_amount.replace('{line}', '1')).fill('50');
+				await pick(
+					dialog,
+					t.transaction_split_category.replace('{line}', '2'),
+					t.default_category_household
+				);
+				await dialog.getByLabel(t.transaction_split_amount.replace('{line}', '2')).fill('30');
+				await expect(dialog.getByRole('button', { name: t.save })).toBeEnabled();
+				await shotDialog(dialog, 'split');
+			});
+
+			test('account types', async ({ page }) => {
+				await openDemo(page, t);
+				await page.getByRole('link', { name: t.nav_accounts }).first().click();
+				await page.getByRole('button', { name: t.accounts_add }).click();
+				const dialog = page.getByRole('dialog');
+				await expect(dialog.getByRole('button', { name: t.account_type_checking })).toBeVisible();
+				await shotDialog(dialog, 'account-types');
+			});
+
+			test('csv columns', async ({ page }) => {
+				await openDemoAccount(page, t, t.demo_account_checking);
+				await page.getByTestId('import-file').setInputFiles(csvStatement());
+				await expect(page.getByTestId('csv-preview').getByRole('listitem')).toHaveCount(3);
+				const review = page.getByRole('button', { name: t.import_review.replace('{count}', '3') });
+				await shotUntil(page, review, 'csv');
+			});
+
+			test('backup settings', async ({ page }) => {
+				// The demo keeps no backups, so this one starts a budget of its own.
+				await page.goto('/');
+				await page.getByRole('button', { name: t.welcome_browser }).click();
+				await page.getByRole('button', { name: t.welcome_browser_continue }).click();
+				await page.getByRole('button', { name: t.onboarding_next }).click();
+				await page.getByRole('button', { name: t.onboarding_next }).click();
+				await page.getByLabel(t.onboarding_budget_name).fill(t.demo_account_checking);
+				await page.getByRole('button', { name: t.onboarding_next }).click();
+				await page.getByRole('button', { name: t.onboarding_next }).click();
+				await page.getByRole('button', { name: t.onboarding_account_skip }).click();
+				await page.getByRole('button', { name: t.onboarding_done_start }).click();
+				await page.getByRole('link', { name: t.nav_settings }).first().click();
+				const card = page.getByTestId('backup-card');
+				await expect(card.getByTestId('last-backup')).toBeVisible();
+				await shot(card, 'backup');
+			});
 		});
 	}
 }
@@ -137,4 +221,24 @@ ${line(day(2), '-129.00', 'a2', 'PAG*FARMACIA SAO JOAO')}
 ${line(day(3), '-18.50', 'a3', 'UBER *TRIP')}
 </BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
 	return { name: 'statement.ofx', mimeType: 'application/x-ofx', buffer: Buffer.from(text) };
+}
+
+/**
+ * A bank's CSV export for the column step: a header, Brazilian amounts and last month's dates,
+ * with days past the 12th so the day can't be read as a month.
+ */
+function csvStatement() {
+	const day = (n: number) => {
+		const date = new Date();
+		date.setDate(1);
+		date.setMonth(date.getMonth() - 1);
+		date.setDate(n);
+		return date.toLocaleDateString('pt-BR');
+	};
+	const text = `Data;Histórico;Valor
+${day(22)};PADARIA CENTRAL 0423;-45,90
+${day(18)};PAG*FARMACIA SAO JOAO;-129,00
+${day(15)};SALARIO EMPRESA;3.200,00
+`;
+	return { name: 'statement.csv', mimeType: 'text/csv', buffer: Buffer.from(text) };
 }

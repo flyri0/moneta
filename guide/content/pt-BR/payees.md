@@ -1,8 +1,9 @@
 # Favorecidos e regras
 
 Favorecidos são a quem você paga e quem paga você. Eles são criados conforme você os digita nas
-transações, e **Favorecidos** (na barra lateral, ou um botão em Transações no celular) lista todos com quantas transações cada um
-tem.
+transações, ou com **Novo favorecido**. **Favorecidos** (na barra lateral, ou um botão em
+Transações no celular) lista todos com quantas transações cada um tem, e **Buscar favorecidos**
+acha um pelo nome.
 
 ## Editar um favorecido {#editing}
 
@@ -16,7 +17,8 @@ Toque num favorecido para:
   mesmo.
 - **excluí-lo**, quando nenhuma transação, agendamento ou regra o usa.
 
-**Remover sem uso** exclui de uma vez todos os favorecidos sem transações. Um favorecido volta se
+**Remover sem uso** exclui de uma vez todos os favorecidos que nenhuma transação, agendamento ou
+regra usa. Um favorecido volta se
 você o digitar de novo.
 
 ## Regras de importação {#payee-rules}

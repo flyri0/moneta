@@ -15,6 +15,8 @@ atribuir igual a zero, com todo o dinheiro em alguma categoria.
 
 O Pronto para atribuir é o dinheiro que ainda não tem função. Toque nele para ver a conta:
 
+![O Pronto para atribuir aberto: dinheiro disponível, menos o gasto a mais do mês passado, menos o atribuído neste mês.](img/ready-to-assign-light.pt-BR.png)
+
 | Linha                       | O que é                                                                                |
 | --------------------------- | -------------------------------------------------------------------------------------- |
 | Dinheiro disponível         | O que sobrou do mês passado, mais a renda deste mês                                    |
@@ -32,8 +34,14 @@ soma àquele mês.
 
 ## Atribuir dinheiro {#assigning}
 
-Toque no valor **Atribuído** de uma categoria e digite quanto ela recebe neste mês. Os valores
-aceitam contas simples: `120+35` ou `400/2`.
+Toque numa categoria para abrir a tela dela e digite quanto ela recebe neste mês em **Atribuído
+neste mês**. Os valores aceitam contas simples: `120+35` ou `400/2`. Salva pela tela da
+categoria, a mudança pode ser desfeita logo em seguida.
+
+Numa tela larga, o orçamento vira uma tabela e você também pode digitar direto na coluna
+**Atribuído** de uma categoria. Ali, **Enter** salva e passa para a próxima categoria
+(**Shift+Enter** para a anterior), as setas **↑** e **↓** também mudam de categoria, e **Esc**
+descarta o que você digitou. As mudanças feitas na coluna não oferecem desfazer.
 
 - **Movimento** é o que foi gasto (ou recebido) na categoria neste mês, pelas suas transações.
 - **Disponível** é o que sobra: o que veio do mês passado, mais o Atribuído, mais o Movimento.
@@ -46,6 +54,8 @@ Pronto para atribuir de um mês futuro abaixo de zero, o Moneta avisa em qual m�
 Planos mudam. Abra uma categoria e use **Mover dinheiro**: escolha outra categoria e um valor, e
 ele passa de uma para a outra neste mês. Cada movimentação pode ser desfeita logo em seguida (veja
 [Desfazer](transactions.md#undo)).
+
+![A tela de uma categoria: o disponível, o atribuído neste mês, e Atribuição rápida, Mover dinheiro, Meta e Levar gasto a mais adiante.](img/category-light.pt-BR.png)
 
 ## Gasto a mais {#overspending}
 
@@ -80,8 +90,8 @@ grupo) ou para uma categoria (toque na categoria):
 - **Cumprir metas**: o que a meta de cada categoria pede neste mês.
 - **Zerar**: não atribuir nada.
 
-As opções que não mudariam nada ficam de fora. Como qualquer mudança no atribuído, dá para desfazer
-logo em seguida.
+As opções que não mudariam nada ficam de fora. A atribuição rápida pode ser desfeita logo em
+seguida.
 
 ## Metas {#goals}
 
@@ -100,11 +110,14 @@ aumenta valores, e deixa como estão as categorias sem meta.
 ## Grupos, ordem e categorias ocultas {#categories}
 
 - **Grupos** reúnem categorias (Contas fixas, Dia a dia…). Adicione um com **Adicionar grupo**;
-  toque no nome de um grupo para renomeá-lo, ocultá-lo, criar uma categoria nele ou excluí-lo.
-  Toque na seta para recolhê-lo.
+  toque no nome de um grupo para criar uma categoria nele, usar a Atribuição rápida nele ou
+  excluí-lo, e abra **Configurações do grupo** para renomeá-lo ou ocultá-lo. Toque na seta para
+  recolhê-lo.
 - **Reordenar** deixa você arrastar grupos e categorias, ou movê-los com as setas.
-- **Ocultar** uma categoria mantém o histórico e o dinheiro dela, mas a tira da tela do orçamento;
-  as categorias ocultas ficam no fim.
+- **Ocultar** uma categoria ou um grupo mantém o histórico e o dinheiro, mas os tira da tela do
+  orçamento. Os dois ficam no fim, em **Ocultos**: para trazer um de volta, toque nele, abra
+  **Configurações da categoria** (ou **Configurações do grupo**) e desligue **Oculta** (ou
+  **Oculto**). Ocultar um grupo oculta todas as categorias dele.
 - **Excluir** uma categoria que já foi usada pergunta para onde vão as transações e o dinheiro
   atribuído. Excluir um grupo move as categorias dele para o grupo que você escolher.
 

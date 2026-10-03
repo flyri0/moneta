@@ -18,13 +18,20 @@ Use the **Transaction** button (the round **+** on a phone). Fill in:
 
 Income goes in an income category, such as Salary: that is what adds it to Ready to Assign.
 
-A date more than two years away is usually a typo, so Moneta asks before saving it.
+A date more than two years from now is usually a typo, so Moneta asks before saving it.
+
+### Editing or deleting one {#editing}
+
+Tap a transaction to open it, change what you need and save. **Delete transaction**, in the same
+dialog, asks first; right after, you can still [undo](#undo) it.
 
 ## Splits {#splits}
 
 One receipt, several categories: choose **Split** and add a line per category, each with its
 amount and memo. The lines must add up to the transaction's amount; Moneta shows what is left to
 place.
+
+![A purchase of $80.00 split into Groceries and Household, with nothing left to place.](img/split-light.png)
 
 ## Transfers {#transfers}
 
@@ -59,7 +66,7 @@ Right after some changes, a message offers **Undo**:
 
 - deleting one or several transactions;
 - changing several transactions at once;
-- assigning, moving money, and quick assign;
+- assigning from a category's sheet, moving money, and quick assign;
 - importing a statement;
 - skipping a scheduled transaction.
 

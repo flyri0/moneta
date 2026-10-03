@@ -29,8 +29,11 @@ ele exclui o orçamento e as cópias salvas dele para sempre.
 ## Backups {#backups}
 
 **Ajustes → Backup → Fazer backup agora** salva todos os orçamentos do dispositivo num único
-arquivo `.moneta` nos seus downloads. Guarde-o fora do dispositivo: na sua nuvem, num computador,
+arquivo `.moneta`. O Chrome e o Edge no computador perguntam onde salvar; os outros navegadores
+baixam o arquivo, e o Moneta pergunta se o download deu certo. Guarde-o fora do dispositivo: na sua nuvem, num computador,
 num pen drive. O Moneta avisa quando o último backup tem mais de duas semanas.
+
+![Ajustes → Backup: Fazer backup agora, Restaurar um backup, Backup automático, Criptografia e Exportações.](img/backup-light.pt-BR.png)
 
 **Restaurar um backup** lê um arquivo `.moneta` (ou um `.sqlite` antigo) e deixa você escolher
 quais orçamentos restaurar:
@@ -101,8 +104,8 @@ de recuperação.
 
 ## Exportações {#exports}
 
-**Transações (CSV)** e **Orçamento inteiro (JSON)** exportam seus dados para planilhas e outros
-apps. Eles não podem ser restaurados no Moneta e nunca são criptografados: guarde-os num lugar
+Em **Ajustes → Backup → Exportações**, **Transações (CSV)** e **Orçamento inteiro (JSON)**
+exportam o orçamento aberto para planilhas e outros apps. Eles não podem ser restaurados no Moneta e nunca são criptografados: guarde-os num lugar
 seguro.
 
 ## Apagar tudo {#wipe}

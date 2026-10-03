@@ -42,6 +42,31 @@ criptografado.
    restaure o arquivo, ou restaure do Google Drive.
 3. Informe a senha ou a chave de recuperação do backup, se ele for criptografado.
 
+## Dá para usar o Moneta no celular e no computador? {#two-devices}
+
+Dá, mas eles não sincronizam: cada dispositivo guarda a própria cópia do orçamento, e o que muda
+num nunca chega ao outro. Restaurar um backup no segundo dispositivo **substitui** a cópia dele
+pela do backup, então o que foi lançado só ali se perde (fica em **Cópias salvas**). Use um
+dispositivo como o lugar onde você registra as coisas, e os outros para consultar, ou troque de
+dispositivo como descrito acima.
+
+## O Pronto para atribuir ficou negativo quando adicionei um cartão {#card-debt-negative}
+
+A dívida inicial de um cartão sai do Pronto para atribuir: o dinheiro para pagá-la tem que vir de
+algum lugar. Se não dá para cobrir agora, dê à dívida uma categoria própria e quite aos poucos:
+veja [Um cartão de crédito que já tem dívida](situations.md#existing-card-debt).
+
+## Uma transação não muda o meu orçamento {#not-in-budget}
+
+Isso é esperado em dois casos: a transação está numa conta de acompanhamento (investimentos,
+empréstimos), ou é uma transferência entre duas contas do orçamento, como pagar o cartão ou guardar
+dinheiro na poupança. Veja [Transferências](transactions.md#transfers).
+
+## Um orçamento pode ter várias moedas? {#currencies}
+
+Não: um orçamento tem uma moeda, definida em **Detalhes do orçamento**. Para dinheiro em outra
+moeda, mantenha um segundo orçamento em **Ajustes → Arquivos de orçamento**.
+
 ## Um backup foi feito por um Moneta mais novo {#too-new}
 
 Um orçamento ou backup salvo por uma versão mais nova precisa dessa versão para abrir. Recarregue o

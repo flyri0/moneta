@@ -15,7 +15,8 @@ incluem as contas de acompanhamento.
 
 - **Gastos por categoria**: para onde foi o dinheiro, por categoria ou por grupo, com a fatia de
   cada um. Toque numa linha para ver as transações dela.
-- **Gastos por favorecido**: o mesmo, por quem você pagou.
+- **Gastos por favorecido**: o mesmo, por quem você pagou. Aqui também, toque numa linha para ver
+  as transações dela.
 - **Patrimônio líquido**: tudo o que você tem menos tudo o que deve, no fim de cada mês, somando
   todas as contas, inclusive as de acompanhamento. Cada conta conta como bem ou dívida pelo sinal
   do saldo.

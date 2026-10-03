@@ -13,7 +13,7 @@ neither spending nor income. Net worth and the accounts report include tracking 
 
 - **Spending by category**: where the money went, by category or by group, with each one's share.
   Tap a row to see its transactions.
-- **Spending by payee**: the same, by who you paid.
+- **Spending by payee**: the same, by who you paid. Here too, tap a row for its transactions.
 - **Net worth**: everything you own minus everything you owe, at the end of each month, across all
   your accounts, tracking ones included. Each account counts as an asset or a debt by the sign of
   its balance.

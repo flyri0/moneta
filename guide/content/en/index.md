@@ -34,6 +34,9 @@ Moneta works in a browser tab, but installed it is better protected and works of
 - **Safari on a Mac:** open the File menu, then **Add to Dock**.
 - **Firefox:** open the browser menu, then **Install**.
 
+**Use it in the browser**, on the welcome page, skips installing: it shows the warning below
+first, then opens Moneta.
+
 > In a browser tab, the browser may clear the site's data to free up space, and Safari may clear
 > it when you don't open Moneta for a week. If you stay in the browser, back up regularly.
 
@@ -44,14 +47,17 @@ look for one in **Settings → About → Updates**.
 
 The first time you open Moneta, a few steps set up your budget:
 
-1. **Welcome**: how Moneta works, and a reminder that backups are up to you.
-2. **Already have a backup?** Restore a `.moneta` file (or an older `.sqlite` one) to bring your
-   budgets back and skip the rest.
+1. **Welcome**: how Moneta works.
+2. **One thing to know**: backups are up to you. Here, **Already have a backup?** restores a
+   `.moneta` file (or an older `.sqlite` one) to bring your budgets back and skip the rest.
 3. **Your budget**: its name, the currency, and the number and date format.
 4. **Your categories**: pick from a starter list organized in groups (Bills, Everyday, Goals,
    Fun), add your own, or start with none. The Income group is always created.
 5. **Your first account**: usually your checking account and its current balance. You can skip
    this and add accounts later.
+6. **You're all set**: the budget opens.
+
+A budget you add later from **Settings → Budget files → New budget** asks only for steps 3 to 5.
 
 Then:
 
@@ -76,5 +82,6 @@ On a phone, the bar at the bottom holds Budget, Transactions, Accounts, Reports 
 the floating button adds a transaction. Payees and scheduled transactions are inside
 Transactions: a **Payees** button, and the **Scheduled** tab. On a wider screen the sidebar on the
 left lists them all, Payees and Schedules included, with your accounts and their balances below.
+Drag its edge to make it wider or narrower, or collapse it to icons.
 
 ![Moneta on a phone: the budget, a new transaction, and the reports.](img/phone.png)

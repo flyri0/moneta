@@ -34,6 +34,9 @@ O Moneta funciona numa aba do navegador, mas instalado ele fica mais protegido e
 - **Safari no Mac:** abra o menu Arquivo e depois **Adicionar ao Dock**.
 - **Firefox:** abra o menu do navegador e depois **Instalar**.
 
+**Usar no navegador**, na página de boas-vindas, pula a instalação: mostra o aviso abaixo antes e
+depois abre o Moneta.
+
 > Numa aba do navegador, o navegador pode apagar os dados do site para liberar espaço, e o Safari
 > pode apagá-los se você passar uma semana sem abrir o Moneta. Se ficar no navegador, faça backup
 > com frequência.
@@ -45,14 +48,18 @@ recarregar; você também pode procurar uma em **Ajustes → Sobre → Atualiza�
 
 Na primeira vez que você abre o Moneta, alguns passos montam o seu orçamento:
 
-1. **Boas-vindas**: como o Moneta funciona, e um lembrete de que os backups ficam por sua conta.
-2. **Já tem um backup?** Restaure um arquivo `.moneta` (ou um `.sqlite` antigo) para trazer seus
-   orçamentos de volta e pular o resto.
+1. **Boas-vindas**: como o Moneta funciona.
+2. **Um ponto de atenção**: os backups ficam por sua conta. Aqui, **Já tem um backup?** restaura um
+   arquivo `.moneta` (ou um `.sqlite` antigo) para trazer seus orçamentos de volta e pular o resto.
 3. **Seu orçamento**: o nome, a moeda e o formato de números e datas.
 4. **Suas categorias**: escolha numa lista inicial organizada em grupos, adicione as suas, ou
    comece sem nenhuma. O grupo Receitas é sempre criado.
 5. **Sua primeira conta**: geralmente a conta corrente e o saldo atual dela. Dá para pular e
    adicionar contas depois.
+6. **Tudo pronto**: o orçamento abre.
+
+Um orçamento que você adiciona depois, em **Ajustes → Arquivos de orçamento → Novo orçamento**,
+pede só os passos 3 a 5.
 
 Depois:
 
@@ -76,6 +83,7 @@ que a outra aba ainda não tinha salvo se perde.
 No celular, a barra de baixo tem Orçamento, Transações, Contas, Relatórios e Ajustes, e o botão
 flutuante adiciona uma transação. Favorecidos e agendamentos ficam dentro de Transações: um botão
 **Favorecidos** e a aba **Agendadas**. Numa tela maior, a barra lateral à esquerda lista todos,
-inclusive Favorecidos e Agendamentos, com suas contas e saldos logo abaixo.
+inclusive Favorecidos e Agendamentos, com suas contas e saldos logo abaixo. Arraste a borda dela
+para alargá-la ou estreitá-la, ou recolha-a para mostrar só os ícones.
 
 ![O Moneta no celular: o orçamento, uma nova transação e os relatórios.](img/phone.pt-BR.png)

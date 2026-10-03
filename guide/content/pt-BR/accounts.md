@@ -13,18 +13,23 @@ Ao adicionar uma conta, você primeiro escolhe o tipo. Os tipos se dividem em do
 - **Acompanhamento**: investimentos, empréstimos e outros bens ou dívidas. Contam no seu
   patrimônio líquido, mas ficam fora do orçamento, e as transações delas não têm categoria.
 
-Dá para mudar o tipo de uma conta depois, nos ajustes dela. Cartões de crédito estão sempre no
-orçamento.
+![Adicionando uma conta: os tipos no orçamento (corrente, poupança, dinheiro, cartão de crédito) em cima, os de acompanhamento (investimento, empréstimo, outro) embaixo.](img/account-types-light.pt-BR.png)
+
+Cartões de crédito estão sempre no orçamento. O tipo não muda depois que a conta existe: os ajustes
+dela servem para renomeá-la, informar o fechamento e o vencimento de um cartão, e encerrá-la ou
+excluí-la. Se escolheu o tipo errado, adicione a conta de novo com o tipo certo e mude a conta das
+transações dela.
 
 ## Saldo inicial {#starting-balance}
 
 Uma conta nova pede o **saldo atual** (num cartão ou empréstimo, o **valor devido**) e a data a
 que ele se refere. O Moneta o registra como a primeira transação da conta, um saldo inicial.
 
-Numa conta do orçamento, o saldo inicial vai para uma categoria, normalmente **Saldo inicial** no
-grupo Receitas, então o dinheiro que você já tem cai no Pronto para atribuir. A dívida inicial de
-um cartão, nessa mesma categoria, sai do Pronto para atribuir: o dinheiro para pagá-la tem que vir
-de algum lugar.
+Numa conta do orçamento, o saldo inicial vai para a **Categoria do saldo inicial** que você escolhe
+no mesmo formulário, normalmente **Saldo inicial** no grupo Receitas, então o dinheiro que você já
+tem cai no Pronto para atribuir. A dívida inicial de um cartão, nessa mesma categoria, sai do
+Pronto para atribuir: o dinheiro para pagá-la tem que vir de algum lugar. Para quitar uma dívida
+antiga aos poucos, veja [Um cartão de crédito que já tem dívida](situations.md#existing-card-debt).
 
 ## Cartões de crédito {#credit-cards}
 
@@ -64,8 +69,7 @@ lançamentos do cartão.
 
 ## O extrato {#register}
 
-O extrato de uma conta lista as transações, das mais novas às mais antigas, com o saldo depois de
-cada uma. No topo você vê o saldo **compensado** (o que o banco já viu), o valor **não
+O extrato de uma conta lista as transações, das mais novas às mais antigas. No topo você vê o saldo **compensado** (o que o banco já viu), o valor **não
 compensado** e o total. Marque uma transação como compensada pela caixa de seleção quando ela
 aparecer no extrato do banco.
 

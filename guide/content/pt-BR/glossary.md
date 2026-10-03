@@ -14,6 +14,14 @@ O que você deu a uma categoria num mês. Sai do Pronto para atribuir.
 
 Um envelope para dinheiro com uma finalidade: Aluguel, Mercado, Viagem. As categorias ficam em grupos.
 
+### Categoria de receita {#income-category}
+
+Uma categoria do grupo Receitas, como Salário. O dinheiro registrado nela vai para o Pronto para atribuir, em vez de ficar na categoria.
+
+### Chave de recuperação {#recovery-key}
+
+Uma chave que abre seus backups criptografados quando você esquece a senha ([A chave de recuperação](data.md#recovery-key)).
+
 ### Compensada {#cleared}
 
 Uma transação que o banco já processou: ela aparece no seu extrato. Marque pela caixa de seleção; as transações importadas já entram compensadas.
@@ -30,6 +38,14 @@ Uma conta que conta no patrimônio líquido mas fica fora do orçamento: investi
 
 Uma conta cujo dinheiro é orçado em categorias: conta corrente, poupança, dinheiro e cartão de crédito. As transações dela precisam de categoria. Aparece como **No orçamento**.
 
+### Cópia salva {#saved-copy}
+
+Uma cópia de um orçamento que o Moneta guarda sozinho antes de uma atualização ou restauração mudá-lo ([Cópias salvas](data.md#saved-copies)).
+
+### Dinheiro disponível {#funds-available}
+
+O que sobrou do mês passado mais a renda deste mês: a primeira linha do Pronto para atribuir ([Pronto para atribuir](budgeting.md#ready-to-assign)).
+
 ### Disponível {#available}
 
 O que uma categoria ainda tem: o que veio do mês passado, mais o Atribuído, mais o Movimento. Fica vermelho quando é negativo ([gasto a mais](budgeting.md#overspending)).
@@ -41,6 +57,10 @@ A quem você pagou ou quem pagou você.
 ### Gasto a mais {#overspending}
 
 Gastar mais do que uma categoria tinha. Cubra movendo dinheiro, ou ele sai do Pronto para atribuir do mês seguinte.
+
+### Idade do dinheiro {#age-of-money}
+
+Quanto tempo seu dinheiro esperou nas contas antes de ser gasto, em média nos seus últimos 10 pagamentos ([Idade do dinheiro](reports.md#age-of-money)).
 
 ### Levar adiante {#carryover}
 
@@ -54,9 +74,17 @@ O que uma categoria busca: um valor todo mês, ou um saldo a juntar, se quiser a
 
 O que entrou e saiu de uma categoria num mês, pelas suas transações. Os gastos são negativos.
 
+### Não compensada {#uncleared}
+
+Uma transação que o banco ainda não processou. O extrato mostra o total delas separado do saldo compensado ([O extrato](accounts.md#register)).
+
 ### Parcelas {#installments}
 
 Uma compra no cartão paga em partes iguais, uma por mês, cada uma lançada na sua data ([Parcelas](accounts.md#installments)).
+
+### Patrimônio líquido {#net-worth}
+
+Tudo o que você tem menos tudo o que deve, somando todas as suas contas ([Relatórios](reports.md#list)).
 
 ### Pronto para atribuir {#ready-to-assign}
 
@@ -69,6 +97,10 @@ Uma regra que dá um favorecido (e uma categoria) às linhas do extrato cuja des
 ### Saldo inicial {#starting-balance}
 
 A primeira transação de uma conta: o que ela tinha, ou devia, quando você a adicionou.
+
+### Saldo previsto {#projected-balance}
+
+O saldo de uma conta daqui a 30 dias, contando as transações agendadas ([O que vem por aí](schedules.md#upcoming)).
 
 ### Transação dividida {#split}
 

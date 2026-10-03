@@ -15,6 +15,8 @@ with every unit of money in a category.
 
 Ready to Assign is the money that has no job yet. Tap it to see how it is worked out:
 
+![Ready to Assign opened: funds available, minus what was overspent last month, minus what was assigned this month.](img/ready-to-assign-light.png)
+
 | Line                 | What it is                                                                      |
 | -------------------- | ------------------------------------------------------------------------------- |
 | Funds available      | What was left last month, plus this month's income                              |
@@ -32,8 +34,14 @@ month.
 
 ## Assigning money {#assigning}
 
-Tap a category's **Assigned** amount and type how much it gets this month. Amounts accept simple
-math: `120+35` or `400/2`.
+Tap a category to open its sheet, and type how much it gets this month in **Assigned this
+month**. Amounts accept simple math: `120+35` or `400/2`. Saved from the sheet, the change can be
+undone right after.
+
+On a wide screen, the budget is a table and you can also type straight into a category's
+**Assigned** column. There, **Enter** saves and moves to the next category (**Shift+Enter** to the
+one before), the **↑** and **↓** arrows move too, and **Esc** cancels what you typed. Changes
+made in the column aren't offered for undo.
 
 - **Activity** is what was spent (or received) in the category this month, from your transactions.
 - **Available** is what is left: what carried over from last month, plus Assigned, plus Activity.
@@ -46,6 +54,8 @@ leave a future month's Ready to Assign below zero, Moneta warns you with the mon
 Plans change. Open a category and use **Move money**: pick another category and an amount, and it
 moves from one to the other in this month. Each move can be undone right after (see
 [Undo](transactions.md#undo)).
+
+![A category's sheet: what is available, what was assigned this month, and Quick assign, Move money, Goal and Roll overspending over.](img/category-light.png)
 
 ## Overspending {#overspending}
 
@@ -80,8 +90,7 @@ one category (tap the category):
 - **Fund goals**: what each category's goal asks for this month.
 - **Clear**: assign nothing.
 
-Options that wouldn't change anything are left out. Like any change to what is assigned, it can be
-undone right after.
+Options that wouldn't change anything are left out. Quick assign can be undone right after.
 
 ## Goals {#goals}
 
@@ -100,10 +109,12 @@ amount, and leaves categories without a goal as they are.
 ## Groups, order and hiding {#categories}
 
 - **Groups** gather categories (Bills, Everyday…). Add one with **Add group**; tap a group's name to
-  rename it, hide it, add a category to it or delete it. Tap the arrow to collapse it.
+  add a category to it, run Quick assign on it, or delete it, and open **Group settings** to rename
+  or hide it. Tap the arrow to collapse it.
 - **Edit order** lets you drag groups and categories, or move them with the arrows.
-- **Hiding** a category keeps its history and money but takes it off the budget screen; hidden
-  categories wait at the bottom.
+- **Hiding** a category or a group keeps its history and money but takes it off the budget screen.
+  Both wait at the bottom, under **Hidden**: to bring one back, tap it, open **Category settings**
+  (or **Group settings**) and turn off **Hidden**. Hiding a group hides all its categories.
 - **Deleting** a category that was used asks where its transactions and assigned money should go.
   Deleting a group moves its categories to the group you choose.
 

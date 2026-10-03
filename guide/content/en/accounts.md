@@ -13,17 +13,22 @@ When you add an account, you first pick its type. Types come in two kinds:
 - **Tracking**: investments, loans and other assets or debts. They count toward your net worth
   but stay out of the budget, and their transactions have no category.
 
-You can change an account's type later in its settings. Credit cards are always on budget.
+![Adding an account: on-budget types (checking, savings, cash, credit card) above, tracking types (investment, loan, other) below.](img/account-types-light.png)
+
+Credit cards are always on budget. The type can't be changed once the account exists: its
+settings rename it, set a card's billing days, and close or delete it. If you chose the wrong
+kind, add the account again with the right one and change the account of its transactions.
 
 ## Starting balance {#starting-balance}
 
 A new account asks for its **current balance** (for a card or a loan, the **amount owed**) and the
 date it is **as of**. Moneta records it as the account's first transaction, a starting balance.
 
-On an on-budget account, the starting balance goes to a category, normally **Starting Balance** in
-the Income group, so the money you already have lands in Ready to Assign. A card's starting debt,
-in that same category, comes out of Ready to Assign instead: the money to pay it has to come from
-somewhere.
+On an on-budget account, the starting balance goes to the **Starting balance category** you pick
+on the same form, normally **Starting Balance** in the Income group, so the money you already have
+lands in Ready to Assign. A card's starting debt, in that same category, comes out of Ready to
+Assign instead: the money to pay it has to come from somewhere. To pay an old debt off over time
+instead, see [A credit card that already has debt](situations.md#existing-card-debt).
 
 ## Credit cards {#credit-cards}
 
@@ -64,8 +69,7 @@ upcoming list.
 
 ## The register {#register}
 
-An account's register lists its transactions, newest first, with the balance after each. At the
-top you see the **cleared** balance (what the bank has already seen), the **uncleared** amount and
+An account's register lists its transactions, newest first. At the top you see the **cleared** balance (what the bank has already seen), the **uncleared** amount and
 the total. Mark a transaction cleared with its checkbox when it shows up on your statement.
 
 Each account also shows what is coming in the next 30 days from its schedules, and its balance
