@@ -344,7 +344,11 @@ describe('listAccountOptions', () => {
 		setBillingDays(db, card, { closingDay: 5, dueDay: 15 });
 		createAccount(db, acct({ name: 'Broker', type: 'investment', onBudget: false }));
 		expect(listAccountOptions(db)).toEqual(
-			listAccounts(db).map(({ balance: _b, clearedBalance: _c, ...rest }) => rest)
+			listAccounts(db).map((account) =>
+				Object.fromEntries(
+					Object.entries(account).filter(([key]) => key !== 'balance' && key !== 'clearedBalance')
+				)
+			)
 		);
 	});
 });
