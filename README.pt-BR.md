@@ -8,6 +8,7 @@
 
 <p align="center">
 	<a href="https://usemoneta.netlify.app"><strong>Ver uma demonstração</strong></a> ·
+	<a href="https://usemoneta.netlify.app/guide/pt-BR/">Guia de uso</a> ·
 	<a href="README.md">English</a> · <strong>Português (BR)</strong>
 	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="Status do CI" /></a>
@@ -37,7 +38,8 @@ um banco de dados SQLite guardado no seu dispositivo, e fica por lá. Instale-o 
 funciona offline, no celular ou no computador.
 
 **[Ver uma demonstração](https://usemoneta.netlify.app)**: ela abre um ano de dados de
-exemplo, e nada do que você fizer lá é salvo.
+exemplo, e nada do que você fizer lá é salvo. O **[guia de uso](https://usemoneta.netlify.app/guide/pt-BR/)**
+explica como fazer o orçamento nele, tela por tela.
 
 ## Recursos
 
@@ -192,20 +194,22 @@ pnpm dev            # servidor de desenvolvimento em http://localhost:5173
 pnpm dev --open     # …e abre no navegador
 ```
 
-| Comando          | O que faz                                             |
-| ---------------- | ----------------------------------------------------- |
-| `pnpm dev`       | Servidor de desenvolvimento em http://localhost:5173  |
-| `pnpm build`     | Build estático de produção em `./build`               |
-| `pnpm preview`   | Serve `./build` como faria um host estático           |
-| `pnpm test`      | Todos os testes unitários uma vez (Vitest, Node)      |
-| `pnpm test:unit` | Os mesmos testes em modo watch                        |
-| `pnpm test:e2e`  | Faz o build e roda o Playwright no Chromium           |
-| `pnpm lint`      | Prettier + ESLint                                     |
-| `pnpm check`     | Checagem de tipos com svelte-check                    |
-| `pnpm format`    | Corrige a formatação com o Prettier                   |
-| `pnpm i18n`      | Compila as mensagens do Paraglide                     |
-| `pnpm bench`     | Mede o recálculo do orçamento em um orçamento grande  |
-| `pnpm icons`     | Regera os ícones do PWA a partir de `static/icon.svg` |
+| Comando                  | O que faz                                                 |
+| ------------------------ | --------------------------------------------------------- |
+| `pnpm dev`               | Servidor de desenvolvimento em http://localhost:5173      |
+| `pnpm build`             | Build estático de produção em `./build`                   |
+| `pnpm guide`             | Gera o guia de uso em `./build/guide`                     |
+| `pnpm guide:screenshots` | Tira de novo as capturas do guia a partir da demonstração |
+| `pnpm preview`           | Serve `./build` como faria um host estático               |
+| `pnpm test`              | Todos os testes unitários uma vez (Vitest, Node)          |
+| `pnpm test:unit`         | Os mesmos testes em modo watch                            |
+| `pnpm test:e2e`          | Faz o build e roda o Playwright no Chromium               |
+| `pnpm lint`              | Prettier + ESLint                                         |
+| `pnpm check`             | Checagem de tipos com svelte-check                        |
+| `pnpm format`            | Corrige a formatação com o Prettier                       |
+| `pnpm i18n`              | Compila as mensagens do Paraglide                         |
+| `pnpm bench`             | Mede o recálculo do orçamento em um orçamento grande      |
+| `pnpm icons`             | Regera os ícones do PWA a partir de `static/icon.svg`     |
 
 Os testes unitários e de integração rodam no Node com o Vitest; os testes de banco usam um
 SQLite real em memória, o mesmo build WASM que o app usa. Os testes de ponta a ponta, em
@@ -245,6 +249,7 @@ src/features/          módulos de funcionalidades (lógica de tela + componente
   demo/                conjunto de dados de demonstração, sementes
 src/components/        componentes Svelte compartilhados (ui/ tem os primitivos do shadcn-svelte, app/ tem a casca da aplicação)
 src/routes/            páginas do SvelteKit
+guide/                 o guia de uso: páginas em Markdown (en, pt-BR) e o script que as gera
 e2e/                   testes do Playwright
 netlify/               a função opcional de tokens para os backups no Google Drive
 ```
@@ -256,6 +261,16 @@ Os textos da interface ficam em `src/core/i18n/messages/en.json` e `pt-BR.json`,
 `src/core/i18n/paraglide/` (gerado, não versionado). `pnpm dev`, `pnpm build` e `pnpm check`
 compilam por você; `pnpm i18n` faz isso sozinho. A primeira compilação baixa os plugins de
 formato de mensagem do Paraglide pelo jsDelivr, então ela precisa de rede uma vez.
+
+### O guia de uso
+
+O guia em `/guide/` é escrito em Markdown, em `guide/content/en/` e `guide/content/pt-BR/`, com
+as mesmas páginas e os mesmos ids de seção nos dois. O `pnpm build` o transforma em HTML puro
+(sem JavaScript) depois do build do app, então o service worker nunca o guarda em cache: ele é
+buscado no host só quando alguém o abre, e um app offline não consegue mostrá-lo. O `pnpm dev`
+o serve a partir do Markdown em http://localhost:5173/guide/, então uma edição aparece ao
+recarregar. As capturas em `guide/img/` vêm da demonstração, nos dois idiomas e temas: o
+`pnpm guide:screenshots` as tira de novo depois de uma mudança numa dessas telas.
 
 ## Sobre o nome
 

@@ -1,8 +1,10 @@
 <script lang="ts">
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
+	import { guidePath } from '$client/guide';
 	import { appUpdate } from '$client/update.svelte';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import { Button } from '$ui/button';
 
 	const REPOSITORY_URL = 'https://github.com/flyri0/moneta';
@@ -32,5 +34,6 @@
 			{/if}
 		{/snippet}
 	</SettingsRow>
+	<SettingsRow label={m.about_guide()} hint={m.about_guide_hint()} href={guidePath(getLocale())} />
 	<SettingsRow label={m.about_source()} href={REPOSITORY_URL} />
 </SettingsGroup>

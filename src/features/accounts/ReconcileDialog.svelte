@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -124,6 +125,7 @@
 				<p class="text-sm text-muted-foreground">
 					{debt ? m.reconcile_ask_owed() : m.reconcile_ask()}
 				</p>
+				<HelpLink topic="reconcile" text class="justify-self-center" />
 				<p class="text-3xl font-bold tracking-tight tabular-nums" data-testid="reconcile-cleared">
 					{session.format(cleared)}
 				</p>

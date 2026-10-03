@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -80,6 +81,7 @@
 		<p class="text-xs text-muted-foreground">
 			{type === 'monthly' ? m.category_goal_monthly_hint() : m.category_goal_target_hint()}
 		</p>
+		<HelpLink topic="goals" text />
 	</div>
 
 	<div class="grid gap-2">

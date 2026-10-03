@@ -106,6 +106,14 @@ and prefill inputs with `formatAmountInput`.
 Translation-only pull requests are very welcome — fixing awkward Portuguese is a real
 contribution.
 
+## The user guide
+
+The guide users read at `/guide/` lives in `guide/content/en/` and `guide/content/pt-BR/`, as
+Markdown. When a change alters what users see or do, update the matching page in both
+languages. Headings the app links to end with an id, such as `## Carryover {#carryover}`: keep
+it identical in both languages. `pnpm test` fails on a missing page, a broken link or an id that
+differs. Fixes to the guide alone are welcome too.
+
 ## Style
 
 Prettier with tabs, single quotes and a width of 100 (`pnpm format`). Match the surrounding

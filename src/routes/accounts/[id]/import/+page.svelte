@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -82,6 +83,9 @@
 >
 	{#snippet subtitle()}
 		{#if pending}<p class="truncate text-xs text-muted-foreground">{pending.fileName}</p>{/if}
+	{/snippet}
+	{#snippet actions()}
+		<HelpLink topic="importing" />
 	{/snippet}
 </PageHeader>
 

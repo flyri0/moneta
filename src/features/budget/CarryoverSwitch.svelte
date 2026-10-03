@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ForwardIcon from '@lucide/svelte/icons/forward';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Switch } from '$ui/switch';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
@@ -34,5 +35,6 @@
 		<span>{m.category_carryover()}</span>
 		<span class="text-xs text-muted-foreground">{m.category_carryover_hint()}</span>
 	</label>
+	<HelpLink topic="carryover" />
 	<Switch id="category-carryover" bind:checked onCheckedChange={save} />
 </div>

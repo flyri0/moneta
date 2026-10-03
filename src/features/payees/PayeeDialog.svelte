@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Alert from '$ui/alert';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Button } from '$ui/button';
 	import { Combobox } from '$ui/combobox';
 	import { Input } from '$ui/input';
@@ -261,6 +262,7 @@
 					</ul>
 				{/if}
 				<p class="text-xs text-muted-foreground">{m.payee_rules_hint()}</p>
+				<HelpLink topic="payeeRules" text />
 			</div>
 
 			<Separator />

@@ -3,11 +3,14 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { guideDevServer } from './guide/dev.ts';
 
 export default defineConfig({
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 	worker: { format: 'es' },
 	plugins: [
+		// `pnpm build` writes the guide after Vite; in dev it is served from its sources.
+		guideDevServer(),
 		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
@@ -51,7 +54,10 @@ export default defineConfig({
 					// others by themselves if a page ever shows those scripts.
 					'**/inter-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*'
 				],
-				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+				// The user guide is plain pages from the host, never precached: an offline app can't
+				// show it, and the service worker mustn't answer its addresses with the app.
+				navigateFallbackDenylist: [/^\/guide(\/|$)/]
 			}
 		}),
 		paraglideVitePlugin({
@@ -70,7 +76,11 @@ export default defineConfig({
 				test: {
 					name: 'server',
 					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}', 'netlify/**/*.{test,spec}.{js,ts}'],
+					include: [
+						'src/**/*.{test,spec}.{js,ts}',
+						'netlify/**/*.{test,spec}.{js,ts}',
+						'guide/**/*.{test,spec}.{js,ts}'
+					],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
 				}
 			}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Input } from '$ui/input';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Label } from '$ui/label';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -35,4 +36,5 @@
 		</div>
 	</div>
 	<p class="text-xs text-muted-foreground">{m.account_billing_hint()}</p>
+	<HelpLink topic="cardBilling" text />
 </div>

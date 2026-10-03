@@ -6,7 +6,9 @@
 	"packageManager": "pnpm@12.4.2",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "vite build && node guide/build.ts",
+		"guide": "node guide/build.ts",
+		"guide:screenshots": "playwright test -c guide/playwright.config.ts",
 		"preview": "sirv build --single --port 4173",
 		"icons": "pnpm --allow-build=sharp dlx @vite-pwa/assets-generator@1.0.2",
 		"prepare": "husky && svelte-kit sync || echo ''",
@@ -46,6 +48,7 @@
 		"globals": "^17.6.0",
 		"husky": "^9.1.7",
 		"layerchart": "^2.5.0",
+		"marked": "^18.0.14",
 		"mode-watcher": "^1.1.0",
 		"netlify-cli": "27.10.0",
 		"prettier": "^3.9.9",

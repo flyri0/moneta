@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
 	import { rtaHint, rtaTone, type RtaHint } from '$features/budget/view';
@@ -80,6 +81,7 @@
 				<span class="text-xs text-muted-foreground">{m.budget_assigned_this_month()}</span>
 				<span class="font-medium tabular-nums">{session.format(-view.assignedThisMonth)}</span>
 			</div>
+			<HelpLink topic="readyToAssign" text class="sm:col-span-full" />
 		</div>
 	{/if}
 </section>

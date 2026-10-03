@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Alert from '$ui/alert';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Button } from '$ui/button';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
@@ -136,6 +137,7 @@
 				onConfirm={disconnect}
 			/>
 		{:else}
+			<HelpLink topic="googleDrive" text />
 			<SettingsGroup>
 				{#if signingIn}
 					<div class="flex items-center justify-between gap-3 px-4 py-3">

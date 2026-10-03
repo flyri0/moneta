@@ -27,11 +27,17 @@ const config = {
 				'form-action': ['none']
 			}
 		},
-		// The optional Netlify function (cloud backup tokens) is type-checked with the app.
+		// The optional Netlify function (cloud backup tokens) and the guide's generator are
+		// type-checked with the app.
 		typescript: {
 			config: (config) => ({
 				...config,
-				include: [...config.include, '../netlify/**/*.ts', '../netlify/**/*.mts']
+				include: [
+					...config.include,
+					'../netlify/**/*.ts',
+					'../netlify/**/*.mts',
+					'../guide/**/*.ts'
+				]
 			})
 		},
 		alias: {

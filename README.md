@@ -8,6 +8,7 @@
 
 <p align="center">
 	<a href="https://usemoneta.netlify.app"><strong>Try the demo</strong></a> ·
+	<a href="https://usemoneta.netlify.app/guide/">User guide</a> ·
 	<strong>English</strong> · <a href="README.pt-BR.md">Português (BR)</a>
 	<br /><br />
 	<a href="https://github.com/flyri0/moneta/actions/workflows/ci.yml"><img src="https://github.com/flyri0/moneta/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
@@ -36,7 +37,8 @@ budget is a SQLite database stored on your device, and it stays there. Install i
 and it works offline, on your phone or your computer.
 
 **[Try the demo](https://usemoneta.netlify.app)**: it opens a year of sample data, and
-nothing you do there is saved.
+nothing you do there is saved. The **[user guide](https://usemoneta.netlify.app/guide/)**
+explains how to budget with it, screen by screen.
 
 ## Features
 
@@ -188,20 +190,22 @@ pnpm dev            # dev server at http://localhost:5173
 pnpm dev --open     # …and open it in the browser
 ```
 
-| Command          | What it does                                    |
-| ---------------- | ----------------------------------------------- |
-| `pnpm dev`       | Dev server at http://localhost:5173             |
-| `pnpm build`     | Static production build into `./build`          |
-| `pnpm preview`   | Serve `./build` like a static host would        |
-| `pnpm test`      | All unit tests once (Vitest, Node)              |
-| `pnpm test:unit` | The same tests in watch mode                    |
-| `pnpm test:e2e`  | Build, then run Playwright in Chromium          |
-| `pnpm lint`      | Prettier check + ESLint                         |
-| `pnpm check`     | Type-check with svelte-check                    |
-| `pnpm format`    | Fix formatting with Prettier                    |
-| `pnpm i18n`      | Compile the Paraglide messages                  |
-| `pnpm bench`     | Time the budget recompute on a large budget     |
-| `pnpm icons`     | Regenerate the PWA icons from `static/icon.svg` |
+| Command                  | What it does                                    |
+| ------------------------ | ----------------------------------------------- |
+| `pnpm dev`               | Dev server at http://localhost:5173             |
+| `pnpm build`             | Static production build into `./build`          |
+| `pnpm guide`             | Write the user guide into `./build/guide`       |
+| `pnpm guide:screenshots` | Retake the guide's screenshots from the demo    |
+| `pnpm preview`           | Serve `./build` like a static host would        |
+| `pnpm test`              | All unit tests once (Vitest, Node)              |
+| `pnpm test:unit`         | The same tests in watch mode                    |
+| `pnpm test:e2e`          | Build, then run Playwright in Chromium          |
+| `pnpm lint`              | Prettier check + ESLint                         |
+| `pnpm check`             | Type-check with svelte-check                    |
+| `pnpm format`            | Fix formatting with Prettier                    |
+| `pnpm i18n`              | Compile the Paraglide messages                  |
+| `pnpm bench`             | Time the budget recompute on a large budget     |
+| `pnpm icons`             | Regenerate the PWA icons from `static/icon.svg` |
 
 Unit and integration tests run in Node with Vitest; the database tests use a real in-memory
 SQLite, the same WASM build the app ships. End-to-end tests in `e2e/` run the production build
@@ -240,6 +244,7 @@ src/features/          feature modules (colocated screen logic + Svelte componen
   demo/                demo dataset, seed data
 src/components/        shared Svelte components (ui/ holds shadcn-svelte primitives, app/ holds shell)
 src/routes/            SvelteKit pages
+guide/                 the user guide: Markdown pages (en, pt-BR) and the script that builds them
 e2e/                   Playwright tests
 netlify/               the optional token function for backups to Google Drive
 ```
@@ -251,6 +256,16 @@ UI text lives in `src/core/i18n/messages/en.json` and `pt-BR.json`, and
 `src/core/i18n/paraglide/` (generated, not committed). `pnpm dev`, `pnpm build` and `pnpm check`
 compile it for you; `pnpm i18n` does it on its own. The first compile downloads Paraglide's
 message-format plugins from jsDelivr, so it needs a network connection once.
+
+### The user guide
+
+The guide at `/guide/` is written in Markdown, in `guide/content/en/` and
+`guide/content/pt-BR/`, with the same pages and section ids in both. `pnpm build` turns it into
+plain HTML (no JavaScript) after the app's own build, so the service worker never precaches it:
+it is fetched from the host only when someone opens it, and an offline app can't show it.
+`pnpm dev` serves it from the Markdown at http://localhost:5173/guide/, so an edit shows on
+reload. Its screenshots in `guide/img/` come from the demo, in both languages and themes:
+`pnpm guide:screenshots` takes them again after a change to one of those screens.
 
 ## About the name
 

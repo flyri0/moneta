@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
 	import { Label } from '$ui/label';
@@ -133,6 +134,7 @@
 	{#if step === 'password'}
 		<form class="grid gap-4" onsubmit={next}>
 			<p class="text-sm text-muted-foreground">{m.backup_encrypt_intro()}</p>
+			<HelpLink topic="encryption" text />
 			{#if changing}<p class="text-sm text-muted-foreground">{m.backup_change_intro()}</p>{/if}
 			<div class="grid gap-1.5">
 				<Label for="backup-password">{m.backup_password()}</Label>

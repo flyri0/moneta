@@ -11,6 +11,7 @@
 	import { requestDemo } from '$client/demo';
 	import { installHow } from '$client/install';
 	import { install } from '$client/install.svelte';
+	import { guidePath } from '$client/guide';
 	import { ensureServiceWorker } from '$client/sw';
 	import { dismissWelcome } from '$client/welcome';
 	import { Button } from '$ui/button';
@@ -161,6 +162,11 @@
 	<footer
 		class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground"
 	>
+		<!-- The guide is plain pages from the host, outside the app's routes. -->
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a class="underline underline-offset-2 hover:text-foreground" href={guidePath(getLocale())}>
+			{m.welcome_guide()}
+		</a>
 		<a class="underline underline-offset-2 hover:text-foreground" href={REPO}>
 			{m.welcome_source()}
 		</a>
