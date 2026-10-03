@@ -56,6 +56,19 @@ export function listAccounts(db: Db): Account[] {
 	).map(toAccount);
 }
 
+/** An account as the pickers offer it: everything but its balances. */
+export type AccountOption = Omit<Account, 'balance' | 'clearedBalance'>;
+
+/** The accounts in the order `listAccounts` gives, without adding up their transactions. */
+export function listAccountOptions(db: Db): AccountOption[] {
+	return all<Omit<AccountRow, 'balance' | 'clearedBalance'>>(
+		db,
+		`SELECT a.id, a.name, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
+			a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay
+		 FROM accounts a ORDER BY a.closed, a.on_budget DESC, a.sort_order, a.name`
+	).map((r) => ({ ...r, onBudget: r.onBudget === 1, closed: r.closed === 1 }));
+}
+
 export function getAccount(db: Db, id: string): Account {
 	const row = one<AccountRow>(db, `${SELECT_SQL} WHERE a.id = ? GROUP BY a.id`, [id]);
 	if (!row) throw new DomainError('NOT_FOUND', `Account ${id} not found`);

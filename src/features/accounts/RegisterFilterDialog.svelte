@@ -28,7 +28,7 @@
 	const tree = useLive(session.client, ['categories', 'category_groups'], () =>
 		session.api.categories.tree()
 	);
-	const payees = useLive(session.client, ['payees'], () => session.api.payees.list());
+	const payees = useLive(session.client, ['payees'], () => session.api.payees.options());
 	// Filtering never creates a category, but the picker's contract wants somewhere to put one.
 	const pending = new NewCategories();
 

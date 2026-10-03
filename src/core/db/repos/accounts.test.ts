@@ -6,6 +6,7 @@ import {
 	createAccount,
 	deleteAccount,
 	getAccount,
+	listAccountOptions,
 	listAccounts,
 	reconcileAccount,
 	renameAccount,
@@ -331,6 +332,19 @@ describe('reconcileAccount', () => {
 		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [bank]);
 		expect(() => reconcileAccount(db, bank, { date: '2026-01-31', balance: 7500 })).toThrow(
 			code('ACCOUNT_CLOSED')
+		);
+	});
+});
+
+describe('listAccountOptions', () => {
+	it('lists the accounts in the same order, without their balances', async () => {
+		const db = await createBudgetDb();
+		createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 500 }));
+		const card = createAccount(db, acct({ name: 'Card', type: 'credit_card' }));
+		setBillingDays(db, card, { closingDay: 5, dueDay: 15 });
+		createAccount(db, acct({ name: 'Broker', type: 'investment', onBudget: false }));
+		expect(listAccountOptions(db)).toEqual(
+			listAccounts(db).map(({ balance: _b, clearedBalance: _c, ...rest }) => rest)
 		);
 	});
 });

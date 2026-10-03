@@ -54,6 +54,8 @@ export const api = {
 	},
 	accounts: {
 		list: read(accounts.listAccounts, []),
+		/** For pickers: no balances. */
+		options: read(accounts.listAccountOptions, []),
 		get: read(accounts.getAccount, ['string']),
 		// A starting balance is one plain transaction, and its category may be created again.
 		create: write(['accounts', 'transactions', 'categories', 'meta'], accounts.createAccount, [
@@ -90,6 +92,8 @@ export const api = {
 	},
 	payees: {
 		list: read(payees.listPayees, []),
+		/** For forms and filters: no usage counts. */
+		options: read(payees.listPayeeOptions, []),
 		create: write(['payees'], payees.createPayee, ['object']),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
 		merge: write(['payees', 'transactions', 'schedules', 'payee_rules'], payees.mergePayee, [

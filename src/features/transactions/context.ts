@@ -6,8 +6,8 @@ import type { FormContext } from './form';
 /** Loads what the transaction and schedule forms offer: accounts, payees and categories. */
 export async function loadFormContext(api: ClientApi, money: MoneyFormat): Promise<FormContext> {
 	const [accounts, payees, tree] = await Promise.all([
-		api.accounts.list(),
-		api.payees.list(),
+		api.accounts.options(),
+		api.payees.options(),
 		api.categories.tree()
 	]);
 	return {
