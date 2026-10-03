@@ -24,6 +24,11 @@ export type ImportStatus = 'new' | 'match' | 'duplicate';
 
 export interface ImportPreview {
 	status: ImportStatus;
+	/**
+	 * The id to import the line under: its own, or with its date and amount added when a bank used
+	 * its id before for another line (same id, another amount or a date over `MATCH_DAYS` off).
+	 */
+	importId: string;
 	/** The transaction a `match` would mark imported and cleared. */
 	match: { id: string; date: string; payeeName: string | null; memo: string } | null;
 	/** The payee a `new` line would get: a rule's, else its description, trimmed. */
@@ -84,12 +89,13 @@ function suggestedCategories(db: Db): Map<string, string> {
 export function previewImport(db: Db, accountId: string, lines: StatementLine[]): ImportPreview[] {
 	const { onBudget } = requireOpenAccount(db, accountId);
 	if (lines.length === 0) return [];
-	const imported = new Set(
-		all<{ importId: string }>(
+	const imported = new Map(
+		all<{ importId: string; date: string; amount: number }>(
 			db,
-			'SELECT import_id AS importId FROM transactions WHERE account_id = ? AND import_id IS NOT NULL',
+			`SELECT import_id AS importId, date, amount FROM transactions
+			 WHERE account_id = ? AND import_id IS NOT NULL`,
 			[accountId]
-		).map((r) => r.importId)
+		).map(({ importId, date, amount }) => [importId, { date, amount }])
 	);
 	const dates = lines.map((l) => l.date).sort();
 	const candidates = all<Candidate>(
@@ -114,10 +120,23 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 
 	return lines.map((line) => {
 		const payeeName = line.description.trim();
-		if (imported.has(line.importId)) {
-			return { status: 'duplicate', match: null, payeeName, categoryId: null, ruleId: null };
+		let importId = line.importId;
+		const prior = imported.get(importId);
+		const duplicate = {
+			status: 'duplicate',
+			match: null,
+			payeeName,
+			categoryId: null,
+			ruleId: null
+		} as const;
+		if (prior) {
+			// Some banks reuse an id: only the same amount, dated close by, is the same line.
+			if (prior.amount === line.amount && dayDistance(prior.date, line.date) <= MATCH_DAYS)
+				return { ...duplicate, importId };
+			importId = `${line.importId}:${line.date}:${line.amount}`;
+			if (imported.has(importId)) return { ...duplicate, importId };
 		}
-		imported.add(line.importId);
+		imported.set(importId, { date: line.date, amount: line.amount });
 		let best: Candidate | null = null;
 		for (const c of byAmount.get(line.amount) ?? []) {
 			if (used.has(c.id)) continue;
@@ -130,6 +149,7 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 			const { id, date, payeeName: matchPayee, memo } = best;
 			return {
 				status: 'match',
+				importId,
 				match: { id, date, payeeName: matchPayee, memo },
 				payeeName,
 				categoryId: null,
@@ -140,6 +160,7 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 		const payee = rule?.payeeName ?? payeeName;
 		return {
 			status: 'new',
+			importId,
 			match: null,
 			payeeName: payee,
 			categoryId: onBudget

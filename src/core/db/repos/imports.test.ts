@@ -69,6 +69,7 @@ describe('previewImport', () => {
 		]);
 		expect(known).toEqual({
 			status: 'new',
+			importId: 'ofx:1',
 			match: null,
 			payeeName: 'mercado bom',
 			categoryId: fun,
@@ -160,6 +161,34 @@ describe('previewImport', () => {
 				line({ importId: 'ofx:2' })
 			]).map((p) => p.status)
 		).toEqual(['duplicate', 'new', 'duplicate']);
+	});
+
+	it('imports a bank id used again for another line under an id of its own', () => {
+		const statement = [
+			line({ date: '2026-01-05', amount: -1000 }),
+			line({ date: '2026-01-20', amount: -99999 })
+		];
+		const previews = previewImport(db, bank, statement);
+		expect(previews.map((p) => [p.status, p.importId])).toEqual([
+			['new', 'ofx:1'],
+			['new', 'ofx:1:2026-01-20:-99999']
+		]);
+		importTransactions(db, bank, {
+			lines: statement.map((l, i) => toImport({ ...l, importId: previews[i].importId }))
+		});
+		expect(previewImport(db, bank, statement).map((p) => p.status)).toEqual([
+			'duplicate',
+			'duplicate'
+		]);
+	});
+
+	it('takes a bank id seen again with the same amount, a few days off, as the same line', () => {
+		importTransactions(db, bank, { lines: [toImport(line({ date: '2026-01-10' }))] });
+		expect(previewImport(db, bank, [line({ date: '2026-01-12' })])[0].status).toBe('duplicate');
+		expect(previewImport(db, bank, [line({ amount: -1 })])[0]).toMatchObject({
+			status: 'new',
+			importId: 'ofx:1:2026-01-10:-1'
+		});
 	});
 
 	it('refuses a closed account', () => {
