@@ -117,7 +117,10 @@
 				<Separator />
 
 				<nav class="-mx-2 grid gap-0.5">
-					<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
+					<!-- A hidden group's categories are all hidden, and quick-assign leaves hidden ones alone. -->
+					{#if !group.hidden}
+						<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
+					{/if}
 					<SheetLink
 						icon={SettingsIcon}
 						label={m.group_settings()}

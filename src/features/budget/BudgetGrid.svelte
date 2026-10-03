@@ -264,22 +264,44 @@
 	</section>
 {/if}
 
-{#if model.hidden.length > 0}
+{#if model.hiddenCount > 0}
+	{@const loose = model.hidden.filter((h) => !h.group.hidden)}
 	<Collapsible.Root class="mt-4 grid gap-2">
 		<Collapsible.Trigger
 			class="group inline-flex cursor-pointer items-center gap-1.5 px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase hover:text-foreground"
 		>
 			<ChevronRightIcon class="size-4 transition-transform group-data-[state=open]:rotate-90" />
-			{m.budget_hidden_categories({ count: model.hidden.length })}
+			{m.budget_hidden({ count: model.hiddenCount })}
 		</Collapsible.Trigger>
-		<Collapsible.Content>
-			<div
-				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
-			>
-				{#each model.hidden as { category, group } (category.id)}
-					{@render categoryItem(category, group.system === 'income')}
-				{/each}
-			</div>
+		<Collapsible.Content class="grid gap-4">
+			{#if loose.length > 0}
+				<div
+					class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+				>
+					{#each loose as { category, group } (category.id)}
+						{@render categoryItem(category, group.system === 'income')}
+					{/each}
+				</div>
+			{/if}
+			<!-- A hidden group's name opens its sheet, where it can be shown again. -->
+			{#each model.hiddenGroups as group (group.id)}
+				<div class="grid gap-2" data-testid="hidden-group">
+					<button
+						type="button"
+						class="cursor-pointer truncate px-1 text-left text-xs font-semibold tracking-wider text-muted-foreground uppercase hover:text-foreground"
+						onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+					>
+					{#if group.categories.length > 0}
+						<div
+							class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+						>
+							{#each group.categories as category (category.id)}
+								{@render categoryItem(category, group.system === 'income')}
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/each}
 		</Collapsible.Content>
 	</Collapsible.Root>
 {/if}

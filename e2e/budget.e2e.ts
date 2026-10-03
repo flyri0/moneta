@@ -123,7 +123,7 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 	await page.keyboard.press('Escape');
 	await expect(categorySheet).toBeHidden();
 
-	await page.getByRole('button', { name: /Hidden categories/ }).click();
+	await page.getByRole('button', { name: /^Hidden \(/ }).click();
 	const hiddenGroceries = categoryRow(page, 'Groceries');
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
 
@@ -134,6 +134,31 @@ test('quick-assign in a group leaves hidden categories untouched', async ({ page
 	await page.getByRole('dialog').getByRole('button', { name: 'Clear $0.00' }).click();
 	await expect(dining.getByTestId('available')).toHaveText('$0.00');
 	await expect(hiddenGroceries.getByTestId('available')).toHaveText('$100.00');
+});
+
+test('hides a group and shows it again from the hidden section', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Fun', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Group settings' }).click();
+	await sheet.getByLabel('Hidden').click();
+	await expect(sheet).toBeHidden();
+	await expect(page.getByTestId('group-row').filter({ hasText: 'Fun' })).toHaveCount(0);
+
+	await page.getByRole('button', { name: /^Hidden \(/ }).click();
+	const hidden = page.getByTestId('hidden-group').filter({ hasText: 'Fun' });
+	await expect(categoryRow(page, 'Hobbies')).toBeVisible();
+	await hidden.getByRole('button', { name: 'Fun', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Group settings' }).click();
+	await expect(sheet.getByLabel('Hidden')).toBeChecked();
+	await sheet.getByRole('button', { name: 'Back' }).click();
+	await expect(sheet.getByRole('button', { name: 'Quick assign' })).toHaveCount(0);
+	await sheet.getByRole('button', { name: 'Group settings' }).click();
+	await sheet.getByLabel('Hidden').click();
+	await expect(sheet.getByLabel('Hidden')).not.toBeChecked();
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('group-row').filter({ hasText: 'Fun' })).toBeVisible();
+	await expect(page.getByTestId('hidden-group')).toHaveCount(0);
 });
 
 test('collapses a group and remembers it across reloads', async ({ page }) => {

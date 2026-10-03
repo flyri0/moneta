@@ -99,8 +99,11 @@
 	const category = $derived(
 		view.data?.groups.flatMap((g) => g.categories).find((c) => c.id === categoryId) ?? null
 	);
-	// Only the grid's visible groups/categories: quick-assign must not touch hidden categories.
-	const group = $derived(model?.groups.find((g) => g.id === groupId) ?? null);
+	// The grid's visible groups (visible categories only: quick-assign must not touch hidden ones),
+	// then the hidden groups, whose sheet offers no quick-assign.
+	const group = $derived(
+		[...(model?.groups ?? []), ...(model?.hiddenGroups ?? [])].find((g) => g.id === groupId) ?? null
+	);
 </script>
 
 <!-- Beside the month on desktop, where its fixed width keeps the arrows still. On phones the month
@@ -224,7 +227,7 @@ spans a row of its own, so the chip joins the actions instead. -->
 	{#if view.data && model}
 		{#if editingOrder}
 			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
-		{:else if model.groups.length === 0 && model.hidden.length === 0}
+		{:else if model.groups.length === 0 && model.hiddenCount === 0}
 			<EmptyState
 				framed
 				icon={LayoutGridIcon}

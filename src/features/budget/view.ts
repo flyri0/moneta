@@ -91,7 +91,12 @@ export interface HiddenCategory {
 
 export interface GridModel {
 	groups: BudgetGroupView[];
+	/** Every hidden category, those of hidden groups included. */
 	hidden: HiddenCategory[];
+	/** Hidden groups with all their categories, empty ones too: the way to show them again. */
+	hiddenGroups: BudgetGroupView[];
+	/** What the hidden section lists: hidden categories plus hidden groups. */
+	hiddenCount: number;
 }
 
 /**
@@ -101,14 +106,16 @@ export interface GridModel {
 export function gridModel(view: BudgetMonthView): GridModel {
 	const groups: BudgetGroupView[] = [];
 	const hidden: HiddenCategory[] = [];
+	const hiddenGroups: BudgetGroupView[] = [];
 	for (const group of view.groups) {
 		const visible = group.categories.filter((c) => !group.hidden && !c.hidden);
 		for (const category of group.categories)
 			if (group.hidden || category.hidden) hidden.push({ group, category });
+		if (group.hidden) hiddenGroups.push(group);
 		if (group.hidden || (group.system && visible.length === 0)) continue;
 		groups.push({ ...group, categories: visible });
 	}
-	return { groups, hidden };
+	return { groups, hidden, hiddenGroups, hiddenCount: hidden.length + hiddenGroups.length };
 }
 
 export interface CategoryChoiceGroup {

@@ -122,6 +122,21 @@ describe('gridModel', () => {
 		]);
 	});
 
+	it('lists hidden groups, empty ones too, so they can be shown again', () => {
+		const model = gridModel(
+			month([
+				group('Bills', [cat('Rent'), cat('Old', { hidden: true })]),
+				group('Archive', [cat('Gym')], { hidden: true }),
+				group('Spare', [], { hidden: true })
+			])
+		);
+		expect(model.hiddenGroups.map((g) => [g.name, g.categories.map((c) => c.name)])).toEqual([
+			['Archive', ['Gym']],
+			['Spare', []]
+		]);
+		expect(model.hiddenCount).toBe(4);
+	});
+
 	it('shows empty user groups but not an empty income group', () => {
 		const model = gridModel(month([group('Income', [], { system: 'income' }), group('New', [])]));
 		expect(model.groups.map((g) => g.name)).toEqual(['New']);
