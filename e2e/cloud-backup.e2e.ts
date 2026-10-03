@@ -170,3 +170,72 @@ test('restores a backup from Google Drive on a new device', async ({ browser }) 
 	await expect(fresh.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await second.close();
 });
+
+test('tells a device when another one has a newer version', async ({ browser }) => {
+	const drive = fakeDrive();
+	const first = await browser.newContext();
+	await routeGoogle(first, drive);
+	const laptop = await first.newPage();
+	await onboard(laptop, 'Trip');
+	await openSettings(laptop);
+	await turnOnEncryption(laptop);
+	const sheet = await openBackupPart(laptop, 'Automatic backup');
+	await signIn(laptop, sheet.getByRole('button', { name: /Connect Google Drive/ }));
+	await expect(sheet.getByTestId('cloud-status')).toContainText('Last backup to Google Drive:');
+	await laptop.keyboard.press('Escape');
+
+	// A second device starts from that backup: it has nothing of its own.
+	const second = await browser.newContext();
+	await routeGoogle(second, drive);
+	const phone = await second.newPage();
+	await startApp(phone);
+	await nextStep(phone).click();
+	await phone.getByRole('button', { name: 'Restore from Google Drive' }).click();
+	const pick = phone.getByRole('dialog');
+	await signIn(phone, pick.getByRole('button', { name: 'Connect Google Drive' }));
+	await pick.getByTestId('cloud-backups').getByRole('button').click();
+	const unlock = phone.getByRole('dialog');
+	await unlock.getByLabel('Password', { exact: true }).fill('correct horse');
+	await unlock.getByRole('button', { name: 'Unlock' }).click();
+	await expect(phone.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(phone.getByText('Another device has a different version')).toHaveCount(0);
+
+	// The laptop moves on and backs it up.
+	await laptop.getByRole('link', { name: 'Budget' }).first().click();
+	await spend(laptop, 'Market', '60', 'Groceries');
+	drive.state.calls.length = 0;
+	await hidePage(laptop);
+	await expect.poll(() => drive.state.calls.some((c) => c.startsWith('PATCH'))).toBe(true);
+
+	// The phone, opened again, offers the laptop's version and restores it.
+	await phone.reload();
+	await expect(phone.getByText('Another device has a different version')).toBeVisible();
+	await openSettings(phone);
+	const row = phone.getByTestId('backup-card').getByRole('button', { name: /^Automatic backup/ });
+	await expect(row).toContainText('has a newer version of your data');
+	const cloud = await openBackupPart(phone, 'Automatic backup');
+	const notice = cloud.getByTestId('cloud-version');
+	await notice.getByRole('button', { name: 'Restore that version' }).click();
+	const restore = phone.getByRole('dialog');
+	await restore.getByLabel('Password', { exact: true }).fill('correct horse');
+	await restore.getByRole('button', { name: 'Unlock' }).click();
+	await expect(restore.getByTestId('restore-budgets').getByRole('listitem')).toHaveText([
+		/Trip\s*Replaces Trip/
+	]);
+	await restore.getByRole('button', { name: 'Restore (1)' }).click();
+	await restore.getByRole('button', { name: 'Tap again to restore' }).click();
+	await expect(phone.getByText('Backup restored.')).toBeVisible();
+	await openSettings(phone);
+	await expect(row).not.toContainText('has a newer version');
+
+	// Opened again, it checks and has nothing to tell: the restore took the laptop's version.
+	drive.state.calls.length = 0;
+	await phone.reload();
+	await expect.poll(() => drive.state.calls).toContain('GET /drive/v3/files');
+	await openSettings(phone);
+	await expect(row).toContainText('Google Drive');
+	await expect(row).not.toContainText(/newer version|different changes/);
+	await expect(phone.getByText('Another device has a different version')).toHaveCount(0);
+	await first.close();
+	await second.close();
+});

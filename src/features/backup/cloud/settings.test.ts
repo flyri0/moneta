@@ -20,13 +20,34 @@ describe('cloud settings', () => {
 			provider: 'google-drive',
 			deviceLabel: 'Firefox · Linux',
 			lastUploadAt: null,
-			pendingSince: null
+			pendingSince: null,
+			revision: null
 		});
 		expect(settings.device).toMatch(/^[0-9a-f-]{36}$/);
 		saveCloudSettings(store, settings);
 		expect(loadCloudSettings(store)).toEqual(settings);
 		saveCloudSettings(store, null);
 		expect(store.getItem(CLOUD_KEY)).toBeNull();
+	});
+
+	it('keep this device revision, and drop one they cannot read', () => {
+		const store = memoryStore();
+		const revision = {
+			rev: '0190a000-0000-7000-8000-000000000001',
+			gen: 5,
+			own: true,
+			base: null
+		};
+		const settings = { ...newCloudSettings('google-drive', ''), revision };
+		saveCloudSettings(store, settings);
+		expect(loadCloudSettings(store)?.revision).toEqual(revision);
+		saveCloudSettings(store, { ...settings, revision: { ...revision, gen: -1 } });
+		expect(loadCloudSettings(store)?.revision).toBeNull();
+		store.setItem(
+			CLOUD_KEY,
+			JSON.stringify({ ...settings, revision: { ...revision, own: 'yes' } })
+		);
+		expect(loadCloudSettings(store)?.revision).toBeNull();
 	});
 
 	it('ignore what they cannot read', () => {

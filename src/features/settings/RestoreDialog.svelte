@@ -11,6 +11,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import BackupUnlockForm from '$features/backup/BackupUnlockForm.svelte';
 	import { readBackupFile } from '$features/backup/actions';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
@@ -125,6 +126,10 @@
 		error = await runAction(async () => {
 			try {
 				const restored = await restoreBackup(session.api, localStorage, data, chosen, session.file);
+				const all = chosen.length === plan.length;
+				await cloudBackup
+					.restored(session.api, { source: file, all, files: restored.files })
+					.catch(() => {});
 				app.show(session.client, restored.file, restored.meta);
 			} catch (err) {
 				failure = err;

@@ -3,6 +3,7 @@
 	import HelpLink from '$components/HelpLink.svelte';
 	import { Button } from '$ui/button';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import CloudRestoreDialog from '$features/backup/cloud/CloudRestoreDialog.svelte';
 	import { cloudBackup, cloudProviders } from '$features/backup/cloud/cloud.svelte';
@@ -53,6 +54,10 @@
 
 	let restoring = $state(false);
 	let disconnecting = $state(false);
+	/** On the screen that confirms keeping this device's version. */
+	let keeping = $state(false);
+	let versionError = $state<ActionError | null>(null);
+	let downloading = $state(false);
 	let disconnectError = $state<ActionError | null>(null);
 	let busy = $state(false);
 	let signingIn = $state<AbortController | null>(null);
@@ -65,7 +70,39 @@
 		if (!open) return;
 		disconnecting = false;
 		disconnectError = null;
+		keeping = false;
+		versionError = null;
 	});
+
+	/** Another device's version this one lacks, as checked when the app opened. */
+	const remote = $derived(cloudBackup.remote.kind === 'current' ? null : cloudBackup.remote);
+
+	function versionText(): string {
+		if (!remote) return '';
+		const device = remote.backup.deviceLabel;
+		const date = formatDateTime(remote.backup.modifiedAt, session.meta.locale);
+		return remote.kind === 'newer'
+			? m.cloud_newer({ device, date })
+			: m.cloud_diverged({ device, date });
+	}
+
+	/** Downloads the other version and hands it to the usual restore. */
+	async function restoreVersion() {
+		if (!remote) return;
+		const backup = remote.backup;
+		downloading = true;
+		versionError = await runAction(async () => {
+			const file = await cloudBackup.download(backup);
+			open = false;
+			onRestore(file);
+		});
+		downloading = false;
+	}
+
+	function keepVersion() {
+		cloudBackup.keepThisVersion();
+		keeping = false;
+	}
 
 	/** Straight from the click: the provider's popup opens before anything is awaited. */
 	function connect(target: CloudProvider) {
@@ -102,10 +139,11 @@
 	}
 
 	const failed = $derived(!!provider && status.kind === 'failed');
-	/** The row's hint: why backups stopped, or how the last one went. */
+	/** The row's hint: why backups stopped, another device's version, or how the last one went. */
 	const rowHint = $derived.by(() => {
 		if (!provider) return undefined;
-		return status.kind === 'failed' ? errorMessage(status.error) : statusText(provider.name);
+		if (status.kind === 'failed') return errorMessage(status.error);
+		return remote ? versionText() : statusText(provider.name);
 	});
 </script>
 
@@ -114,7 +152,7 @@
 		label={m.cloud_title()}
 		value={provider ? provider.name : m.cloud_off()}
 		hint={rowHint}
-		warn={failed}
+		warn={failed || (!!provider && !!remote)}
 		{disabled}
 		onclick={() => (open = true)}
 	/>
@@ -123,11 +161,25 @@
 		bind:open
 		title={disconnecting && provider
 			? m.cloud_disconnect_title({ provider: provider.name })
-			: m.cloud_title()}
-		description={disconnecting ? undefined : m.cloud_hint({ count: KEEP_PREVIOUS + 1 })}
-		onBack={disconnecting ? () => (disconnecting = false) : undefined}
+			: keeping
+				? m.cloud_keep_version()
+				: m.cloud_title()}
+		description={disconnecting || keeping ? undefined : m.cloud_hint({ count: KEEP_PREVIOUS + 1 })}
+		onBack={disconnecting
+			? () => (disconnecting = false)
+			: keeping
+				? () => (keeping = false)
+				: undefined}
 	>
-		{#if disconnecting && provider}
+		{#if keeping && remote}
+			<ConfirmPanel
+				body={m.cloud_keep_version_body({ device: remote.backup.deviceLabel })}
+				confirmLabel={m.cloud_keep_version()}
+				destructive={false}
+				onCancel={() => (keeping = false)}
+				onConfirm={keepVersion}
+			/>
+		{:else if disconnecting && provider}
 			<ConfirmPanel
 				body={m.cloud_disconnect_body({ provider: provider.name })}
 				confirmLabel={m.cloud_disconnect()}
@@ -179,6 +231,40 @@
 											{m.backup_encrypt()}
 										</Button>
 									{/if}
+								</Alert.Description>
+							</Alert.Root>
+						</div>
+					{/if}
+					{#if connection && remote}
+						<div class="px-4 pb-3">
+							<Alert.Root data-testid="cloud-version">
+								<Alert.Description class="grid gap-2">
+									<p>{versionText()}</p>
+									<div class="flex flex-wrap gap-2">
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={disabled || downloading}
+											onclick={restoreVersion}
+										>
+											{m.cloud_restore_version()}
+										</Button>
+										{#if remote.kind === 'diverged'}
+											<Button
+												variant="outline"
+												size="sm"
+												{disabled}
+												onclick={() => (keeping = true)}
+											>
+												{m.cloud_keep_version()}
+											</Button>
+										{:else}
+											<Button variant="ghost" size="sm" onclick={() => cloudBackup.dismiss()}>
+												{m.cloud_not_now()}
+											</Button>
+										{/if}
+									</div>
+									<FormMessage error={versionError} />
 								</Alert.Description>
 							</Alert.Root>
 						</div>

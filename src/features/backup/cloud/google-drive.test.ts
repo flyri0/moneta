@@ -104,6 +104,22 @@ describe('googleDrive', () => {
 		expect(folders).toHaveLength(1);
 	});
 
+	it('keeps the revision with the file, and reads it back', async () => {
+		const { connection, drive } = await connected();
+		const rev = '0190a000-0000-7000-8000-000000000001';
+		const base = '0190a000-0000-7000-8000-000000000002';
+		const first = await connection.upload({ ...INFO, revision: { rev, gen: 3, base } }, blob('a'));
+		expect(first.revision).toEqual({ rev, gen: 3, base });
+		// Replacing the day's file without a base drops the one it had.
+		await connection.upload({ ...INFO, revision: { rev, gen: 4, base: null } }, blob('b'));
+		const [listed] = await connection.list();
+		expect(listed.revision).toEqual({ rev, gen: 4, base: null });
+		expect(drive.state.files.get(first.id)?.appProperties).not.toHaveProperty('base');
+		// Backups from before revisions have none.
+		await connection.upload({ ...INFO, device: 'old' }, blob('c'));
+		expect((await connection.list()).find((b) => b.device === 'old')?.revision).toBeNull();
+	});
+
 	it('lists backups newest first and deletes them', async () => {
 		const { connection } = await connected();
 		const a = await connection.upload(INFO, blob('a'));

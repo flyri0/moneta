@@ -1,3 +1,5 @@
+import type { RemoteRevision } from './revision';
+
 /**
  * Cloud storage for backups. Each provider (Google Drive today) signs in once and then saves,
  * lists and deletes backup files with nobody at the screen. What is saved is always an encrypted
@@ -15,11 +17,15 @@ export interface BackupFileInfo {
 	device: string;
 	/** A readable name for that device, e.g. "Chrome on Android". */
 	deviceLabel: string;
+	/** Which version of the data it holds (`revision.ts`). */
+	revision?: RemoteRevision | null;
 }
 
 /** A backup saved in the cloud. */
 export interface RemoteBackup extends BackupFileInfo {
 	id: string;
+	/** Null for backups made before revisions, or with properties that don't hold up. */
+	revision: RemoteRevision | null;
 	/** When it was last written (ISO). */
 	modifiedAt: string;
 	size: number;

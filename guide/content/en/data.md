@@ -96,6 +96,21 @@ one. On a new device, connect, pick one, and enter the password or recovery key.
 
 **Disconnect** stops the automatic backups; the files already saved stay in your Drive.
 
+### More than one device {#several-devices}
+
+Moneta doesn't sync devices: each one keeps its own data and its own backups, so one device's
+backup never replaces another's. When Moneta opens, it looks at the other devices' backups and
+tells you when one has a version this device lacks (**Settings → Backup → Automatic backup**):
+
+- **A newer version**, when this device changed nothing since it last matched: restore it to pick
+  up where the other device left off.
+- **Different changes**, when both devices changed something: restoring the other version discards
+  the changes made here, so pick the one to keep. **Keep this version** stops the warning here, and
+  the other device is told the versions differ.
+
+Nothing is restored without you. To move between devices without losing anything, let one finish
+its backup before you open the other.
+
 > This option exists only where the site that serves Moneta has set up Google sign-in. A copy you
 > host yourself may not show it.
 

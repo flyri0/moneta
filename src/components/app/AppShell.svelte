@@ -243,6 +243,20 @@
 	// Cloud backups run by themselves in this tab (the one with the database). The demo is not saved.
 	onMount(() => (session.isDemo ? undefined : cloudBackup.attach(session.client)));
 
+	/** Says once per shell that another device has a version this one lacks; Settings tells more. */
+	let versionWarned = false;
+	$effect(() => {
+		if (versionWarned || cloudBackup.remote.kind === 'current') return;
+		versionWarned = true;
+		toast.warning(m.cloud_other_version(), {
+			duration: 15_000,
+			action: {
+				label: m.nav_settings(),
+				onClick: () => void goto(resolve('/settings'))
+			}
+		});
+	});
+
 	/** Says once per shell when cloud backups stopped until the user acts (not for outages). */
 	let cloudWarned = false;
 	$effect(() => {

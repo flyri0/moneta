@@ -52,6 +52,14 @@ describe('backUpToCloud', () => {
 		expect((await api.meta.get()).lastBackupAt).toBe(now.toISOString());
 	});
 
+	it('saves the revision it is given with the file', async () => {
+		const { api, connection } = await setup();
+		const revision = { rev: '0190a000-0000-7000-8000-000000000001', gen: 2, base: null };
+		await backUpToCloud(api, connection, { ...DEVICE, revision });
+		const [saved] = await connection.list();
+		expect(saved.revision).toEqual(revision);
+	});
+
 	it('checks the budgets with the quick check, as it runs on its own', async () => {
 		const { api, connection } = await setup();
 		const asked: unknown[] = [];

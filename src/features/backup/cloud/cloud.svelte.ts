@@ -11,7 +11,9 @@ import {
 	type CloudSettings
 } from './settings';
 import { deleteAuthDb, idbAuthStore } from './tokens';
-import type { CloudConnection, CloudProvider, CloudProviderId } from './provider';
+import type { CloudConnection, CloudProvider, CloudProviderId, RemoteBackup } from './provider';
+import { adopted, compareRemote, keptOver, nextRevision, type RemoteState } from './revision';
+import { isBudgetFile } from '$client/registry';
 
 /** The providers this build knows; `available()` says which have a client id. */
 const PROVIDERS: CloudProvider[] = [
@@ -38,8 +40,12 @@ class CloudBackup {
 	status = $state.raw<AutoBackupStatus>({ kind: 'idle' });
 	/** Whether the saved connection has been read yet. */
 	loaded = $state(false);
+	/** How this device stands against the others' backups, as checked when the app opened. */
+	remote = $state.raw<RemoteState>({ kind: 'current' });
 	#auto: AutoBackup | null = null;
 	#loading: Promise<void> | null = null;
+	/** The cloud backup last downloaded to restore, until it is restored. */
+	#picked: { file: File; backup: RemoteBackup } | null = null;
 
 	get provider(): CloudProvider | undefined {
 		return this.settings ? providerOf(this.settings.provider) : undefined;
@@ -82,6 +88,8 @@ class CloudBackup {
 		this.connection = connection;
 		this.status = { kind: 'idle' };
 		this.loaded = true;
+		// Before the backup that follows, as at start.
+		await this.check();
 		this.#auto?.resume();
 		return true;
 	}
@@ -127,7 +135,12 @@ class CloudBackup {
 		const onOnline = () => auto.online();
 		document.addEventListener('visibilitychange', onHidden);
 		window.addEventListener('online', onOnline);
-		void this.load().then(() => this.connection && auto.start());
+		void this.load().then(async () => {
+			if (!this.connection) return;
+			// Before the first backup, which may change this device's revision.
+			await this.check();
+			auto.start();
+		});
 		return () => {
 			auto.stop();
 			if (this.#auto === auto) this.#auto = null;
@@ -137,11 +150,94 @@ class CloudBackup {
 		};
 	}
 
+	/**
+	 * Lists the backups once and compares this device's revision with the others'. Best effort: a
+	 * failure leaves the notice as it was.
+	 */
+	async check(): Promise<void> {
+		const { connection, settings } = this;
+		if (!connection || !settings) return;
+		try {
+			const backups = await connection.list();
+			// Settings read again: a backup or a restore may have changed them meanwhile.
+			const now = this.settings;
+			if (!now || this.connection !== connection) return;
+			this.remote = compareRemote(now.revision, now.pendingSince !== null, backups, now.device);
+		} catch {
+			// The notice waits for the next start.
+		}
+	}
+
+	/** Downloads a cloud backup to restore, remembering it so a full restore adopts its revision. */
+	async download(backup: RemoteBackup): Promise<File> {
+		const connection = this.connection;
+		if (!connection) throw new DomainError('CLOUD_AUTH_NEEDED');
+		const file = new File([await connection.download(backup.id)], backup.name);
+		this.#picked = { file, backup };
+		return file;
+	}
+
+	/**
+	 * After a restore from `source` succeeded. When it was the cloud backup just downloaded, every
+	 * budget of it was restored (`all`) and this device now holds exactly those budgets (`files`),
+	 * this device takes its revision: it has nothing of its own. Otherwise the data changed here,
+	 * and waits for a backup like any change.
+	 */
+	async restored(
+		api: Pick<ClientApi, 'system'>,
+		restore: { source: File | null; all: boolean; files: readonly string[] }
+	): Promise<void> {
+		const picked = this.#picked;
+		this.#picked = null;
+		await this.load();
+		const settings = this.settings;
+		if (!settings) return;
+		const revision = picked?.file === restore.source ? picked.backup.revision : null;
+		let same = false;
+		if (revision && restore.all) {
+			const here = (await api.system.listFiles()).filter(isBudgetFile);
+			same = here.length === restore.files.length && here.every((f) => restore.files.includes(f));
+		}
+		const now = this.settings ?? settings;
+		if (revision && same) {
+			this.#save({ ...now, revision: adopted(revision), pendingSince: null });
+			this.remote = { kind: 'current' };
+		} else if (!now.pendingSince) {
+			this.#save({ ...now, pendingSince: new Date().toISOString() });
+		}
+	}
+
+	/**
+	 * Keeps this device's version over the other device's: this one stops warning, and the other
+	 * is warned that the versions differ once this one is backed up, which happens next.
+	 */
+	keepThisVersion(): void {
+		const { settings, remote } = this;
+		if (!settings || remote.kind === 'current' || !remote.backup.revision) return;
+		this.#save({
+			...settings,
+			revision: keptOver(settings.revision, remote.backup.revision),
+			pendingSince: settings.pendingSince ?? new Date().toISOString()
+		});
+		this.remote = { kind: 'current' };
+		this.#auto?.changed([]);
+	}
+
+	/** Hides the notice until the app opens again. */
+	dismiss(): void {
+		this.remote = { kind: 'current' };
+	}
+
 	async #run(api: Pick<ClientApi, 'system'>): Promise<void> {
 		await this.load();
 		const { connection, settings } = this;
 		if (!connection || !settings) throw new DomainError('CLOUD_AUTH_NEEDED');
-		await backUpToCloud(api, connection, settings);
+		const revision = nextRevision(settings.revision, settings.pendingSince !== null);
+		const { device, deviceLabel } = settings;
+		await backUpToCloud(api, connection, { device, deviceLabel, revision });
+		// Unless a restore or "keep this version" set another one meanwhile.
+		if (this.settings && this.settings.revision === settings.revision)
+			this.#save({ ...this.settings, revision });
 	}
 
 	#save(settings: CloudSettings | null) {

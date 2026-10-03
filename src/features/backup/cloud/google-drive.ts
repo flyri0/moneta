@@ -1,6 +1,7 @@
 import { DomainError } from '$domain/errors';
 import { requestToken, signIn, type SignInDeps } from './oauth';
 import { accessTokens, type AccessTokens, type AuthStore } from './tokens';
+import { parseRevision, revisionProperties } from './revision';
 import type { BackupFileInfo, CloudConnection, CloudProvider, RemoteBackup } from './provider';
 
 /**
@@ -91,6 +92,7 @@ function toRemote(file: DriveFile): RemoteBackup {
 		day: props.day ?? file.modifiedTime.slice(0, 10),
 		device: props.device ?? '',
 		deviceLabel: props.deviceLabel ?? '',
+		revision: parseRevision(props),
 		modifiedAt: file.modifiedTime,
 		size: Number(file.size ?? 0)
 	};
@@ -163,7 +165,8 @@ function driveConnection(
 				moneta: 'backup',
 				day: info.day,
 				device: info.device,
-				deviceLabel: info.deviceLabel
+				deviceLabel: info.deviceLabel,
+				...(info.revision ? revisionProperties(info.revision) : {})
 			};
 			const [today] = await find([
 				...backups,

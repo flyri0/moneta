@@ -99,6 +99,21 @@ de recuperação.
 
 **Desconectar** para os backups automáticos; os arquivos já salvos continuam no seu Drive.
 
+### Mais de um dispositivo {#several-devices}
+
+O Moneta não sincroniza dispositivos: cada um tem os próprios dados e os próprios backups, então o
+backup de um nunca substitui o de outro. Ao abrir, o Moneta olha os backups dos outros dispositivos
+e avisa quando um deles tem uma versão que este não tem (**Ajustes → Backup → Backup automático**):
+
+- **Uma versão mais nova**, quando este dispositivo não mudou nada desde a última vez que ficou
+  igual: restaure para continuar de onde o outro parou.
+- **Mudanças diferentes**, quando os dois mudaram algo: restaurar a outra versão descarta as
+  mudanças feitas aqui, então escolha qual manter. **Manter esta versão** para o aviso aqui, e o
+  outro dispositivo é avisado de que as versões são diferentes.
+
+Nada é restaurado sem você. Para trocar de dispositivo sem perder nada, deixe um terminar o backup
+antes de abrir o outro.
+
 > Essa opção só existe onde o site que serve o Moneta configurou o login do Google. Uma cópia que
 > você hospeda pode não mostrá-la.
 
