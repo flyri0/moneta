@@ -110,6 +110,7 @@
 	"startup_unreadable_new": "Começar um orçamento novo",
 	"startup_skipped": "Não foi possível abrir {names}. O arquivo pode estar danificado; você pode excluí-lo em Ajustes.",
 	"error_invalid_input": "Alguns valores não são válidos.",
+	"error_amount_too_large": "Esse valor é grande demais: os totais do orçamento passariam do que dá para somar com exatidão.",
 	"error_not_found": "Esse item não existe mais.",
 	"error_already_initialized": "Este orçamento já está configurado.",
 	"error_schema_too_new": "Este orçamento foi salvo por uma versão mais nova do Moneta.",

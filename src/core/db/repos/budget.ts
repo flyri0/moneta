@@ -108,6 +108,8 @@ function requireAssignable(db: Db, categoryId: string): void {
 }
 
 function writeAssigned(db: Db, categoryId: string, month: Month, amount: number): void {
+	if (!Number.isSafeInteger(amount))
+		throw new DomainError('INVALID_INPUT', 'Assigned amount out of range');
 	if (amount === 0) {
 		run(db, 'DELETE FROM budget_assignments WHERE category_id = ? AND month = ?', [
 			categoryId,

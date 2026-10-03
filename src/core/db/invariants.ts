@@ -1,6 +1,7 @@
 import { DomainError } from '$domain/errors';
 import { isDate, isMonth } from '$domain/month';
 import type { Db } from './connection';
+import { AMOUNT_SIZE_SQL } from './limits';
 import { getMeta, validateCurrency, validateLocale } from './repos/meta';
 
 /**
@@ -103,12 +104,8 @@ const BROKEN_ROWS: [string, string][] = [
 			UNION ALL SELECT 1 FROM schedule_splits WHERE ABS(amount) > ${SAFE}
 			UNION ALL SELECT 1 FROM categories WHERE ABS(goal_amount) > ${SAFE}`
 	],
-	[
-		'a total past the safe integer range',
-		`SELECT 1 FROM transactions GROUP BY account_id HAVING ABS(TOTAL(amount)) > ${SAFE}
-			UNION ALL SELECT 1 FROM budget_assignments GROUP BY category_id HAVING ABS(TOTAL(assigned)) > ${SAFE}
-			UNION ALL SELECT 1 FROM budget_assignments GROUP BY month HAVING ABS(TOTAL(assigned)) > ${SAFE}`
-	],
+	// What every write keeps (limits.ts): no total the app derives can go past the range.
+	['amounts that add up past the safe integer range', `SELECT 1 WHERE ${AMOUNT_SIZE_SQL} > ${SAFE}`],
 	[
 		'a transfer without its other half',
 		`SELECT 1 FROM transactions t LEFT JOIN transactions p ON p.id = t.transfer_id
