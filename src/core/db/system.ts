@@ -322,6 +322,9 @@ export function createSystem(deps: SystemDeps): {
 			);
 			await writeRestored(picks, images);
 		},
+		discardInspected() {
+			inspected = null;
+		},
 		async restoreInspected(token, picks) {
 			if (!inspected || token !== inspected.token)
 				throw new DomainError('INVALID_INPUT', 'Unknown or stale backup token');

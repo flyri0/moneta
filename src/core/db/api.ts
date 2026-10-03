@@ -274,6 +274,8 @@ export interface SystemApi {
 	restoreBackup(bytes: Uint8Array, picks: RestorePick[]): Promise<void>;
 	/** `restoreBackup` for the budgets the last `inspectBackup` checked, by its token. */
 	restoreInspected(token: string, picks: RestorePick[]): Promise<void>;
+	/** Lets go of the budgets the last `inspectBackup` checked, when they won't be restored. */
+	discardInspected(): void;
 	/** Whether backups made on this device are encrypted. */
 	backupEncryption(): Promise<{ on: boolean }>;
 	/**

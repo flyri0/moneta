@@ -618,6 +618,7 @@ function pick(system: SessionApi['system']): SessionApi['system'] {
 		inspectBackup: system.inspectBackup,
 		restoreBackup: system.restoreBackup,
 		restoreInspected: system.restoreInspected,
+		discardInspected: system.discardInspected,
 		wipe: system.wipe,
 		backupEncryption: system.backupEncryption,
 		setBackupEncryption: system.setBackupEncryption,

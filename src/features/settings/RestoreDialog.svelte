@@ -80,7 +80,11 @@
 			error = message;
 			busy = false;
 		});
-		return () => (current = false);
+		return () => {
+			current = false;
+			// Closed or another file picked: the worker needn't keep the budgets it checked.
+			void session.api.system.discardInspected().catch(() => {});
+		};
 	});
 
 	/** Lists the budgets of a plain backup, unless the dialog moved on to another file. */

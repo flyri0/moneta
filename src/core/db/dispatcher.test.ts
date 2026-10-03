@@ -26,6 +26,7 @@ function fakeSystem(): { system: SystemApi; opened: string[] } {
 			inspectBackup: async () => ({ token: 't', createdAt: null, budgets: [] }),
 			restoreBackup: async () => {},
 			restoreInspected: async () => {},
+			discardInspected: () => {},
 			backupEncryption: async () => ({ on: false }),
 			setBackupEncryption: async () => {},
 			clearBackupEncryption: async () => {},

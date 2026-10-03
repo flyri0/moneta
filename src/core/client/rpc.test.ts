@@ -36,6 +36,7 @@ function connect(db: Db | null, sqlite3?: Sqlite3Static) {
 			inspectBackup: async () => ({ token: 't', createdAt: null, budgets: [] }),
 			restoreBackup: async () => {},
 			restoreInspected: async () => {},
+			discardInspected: () => {},
 			backupEncryption: async () => ({ on: false }),
 			setBackupEncryption: async () => {},
 			clearBackupEncryption: async () => {},

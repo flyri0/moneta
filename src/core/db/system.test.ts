@@ -334,6 +334,17 @@ describe('inspectBackup', () => {
 		expect(system.listFiles()).toEqual([FILE]);
 	});
 
+	it("lets go of what it checked when told the backup won't be restored", async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system } = createSystem(deps);
+		const { token } = await system.inspectBackup((await system.exportBackup([FILE])).bytes);
+		system.discardInspected();
+		await expect(system.restoreInspected(token, [{ index: 0, file: THIRD }])).rejects.toMatchObject(
+			{ code: 'INVALID_INPUT' }
+		);
+	});
+
 	it('rejects a backup with a damaged budget', async () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
