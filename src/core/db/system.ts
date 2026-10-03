@@ -149,15 +149,18 @@ export function createSystem(deps: SystemDeps): {
 		return id;
 	}
 
-	/** A budget file or copy as it goes into a backup, or null when it can't be read. */
+	/**
+	 * A budget file or copy as it goes into a backup, or null when it can't be read. The copy is
+	 * vacuumed first: a file keeps deleted rows in its free space, and a backup may be shared.
+	 */
 	function backupBudget(name: string): BackupBudget | null {
 		const id = backupId(name);
 		try {
-			const image = readImage(name);
-			const copy = openImage(sqlite3, image);
+			const copy = openImage(sqlite3, readImage(name));
 			try {
 				if (!isIntact(copy)) return null;
-				return { id, name: getMeta(copy).name, image };
+				copy.exec('VACUUM');
+				return { id, name: getMeta(copy).name, image: toImage(sqlite3, copy) };
 			} finally {
 				copy.close();
 			}

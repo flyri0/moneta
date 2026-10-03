@@ -220,6 +220,19 @@ describe('exportBackup', () => {
 		]);
 	});
 
+	it('leaves out what was deleted, even from the free space of the file', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system, getDb } = createSystem(deps);
+		await system.open(FILE);
+		const marker = 'DELETED-MARKER-1234';
+		getDb()!.exec(`INSERT INTO payees (id, name) VALUES ('gone', '${marker}')`);
+		getDb()!.exec("DELETE FROM payees WHERE id = 'gone'");
+		const [budget] = readBackup((await system.exportBackup([FILE], { plain: true })).bytes).budgets;
+		expect(new TextDecoder('latin1').decode(budget.image)).not.toContain(marker);
+		expect(getMeta(openImage(deps.sqlite3, budget.image)).name).toBe('Home');
+	});
+
 	it('leaves out files it cannot read, and names them', async () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
