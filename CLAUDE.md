@@ -49,6 +49,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 
 - **Money is integer minor units** (cents), negative = outflow. Never use floats for storage or budget math.
 - **Store only facts.** Balances, activity, available and Ready to Assign are always derived (SQL aggregates plus `budget-engine.ts`), never cached.
+- Reads over the whole history (the budget engine's input, report series, search's folded texts) go through `memo` (`$db/memo.ts`): kept in the worker's memory until the next row changes (SQLite's `total_changes()`), never stored, and never used inside a transaction. Callers must not change what it returns. Every write that touches amounts must keep their total size within `Number.MAX_SAFE_INTEGER` (`$db/limits.ts`, checked in the dispatcher and on restore).
 - **The database lives only in the worker.** The main thread never imports `$db/repos/*`, `$db/connection` or `@sqlite.org/sqlite-wasm` at runtime (`import type` is fine). It goes through `api.<namespace>.<method>()`.
 - New RPC methods go in `src/core/db/api.ts`. Writes declare the tables they change: that drives live-query refreshes.
 - Multi-statement writes use `tx(db, fn)` (a nestable SAVEPOINT).
