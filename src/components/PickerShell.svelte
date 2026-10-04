@@ -62,12 +62,10 @@
 		if (!desktop.current) screen?.focus({ preventScroll: true });
 	}
 
-	/** Focuses the search rather than the back button, which comes first. */
+	/** Focuses the screen itself: the keyboard comes up only when the search is tapped. */
 	function openAutoFocus(event: Event) {
 		event.preventDefault();
-		screen
-			?.querySelector<HTMLElement>('[data-slot="command-input"]')
-			?.focus({ preventScroll: true });
+		screen?.focus({ preventScroll: true });
 	}
 
 	const triggerClass = $derived(

@@ -95,7 +95,7 @@
 	}
 </script>
 
-<ResponsiveDialog bind:open title={m.register_filters_title()} focusFirst="desktop">
+<ResponsiveDialog bind:open title={m.register_filters_title()}>
 	<form
 		class="grid gap-4 py-2"
 		onsubmit={(e) => {

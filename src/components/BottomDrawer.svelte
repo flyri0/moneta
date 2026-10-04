@@ -14,21 +14,17 @@
 	let {
 		open = $bindable(false),
 		ref = $bindable(null),
-		onOpenAutoFocus,
 		header,
 		children
 	}: {
 		open: boolean;
 		/** The drawer itself. */
 		ref?: HTMLElement | null;
-		onOpenAutoFocus?: (event: Event) => void;
 		header: Snippet;
 		children: Snippet;
 	} = $props();
 
 	const SETTLE_MS = 200;
-	const FOCUSABLE =
-		'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
 	let top = $state<HTMLElement | null>(null);
 	let body = $state<HTMLElement | null>(null);
@@ -53,17 +49,12 @@
 	});
 
 	/**
-	 * Focuses what the opener asks for, else the first field or button, else the drawer itself;
-	 * never the hidden Close, which a dialog still loading would otherwise land on and show.
+	 * Focuses the drawer itself: never a field, whose keyboard would come up before anyone chose to
+	 * type, nor the hidden Close.
 	 */
 	function openAutoFocus(event: Event) {
-		onOpenAutoFocus?.(event);
-		if (event.defaultPrevented) return;
 		event.preventDefault();
-		const first = [top, body]
-			.map((part) => part?.querySelector<HTMLElement>(FOCUSABLE))
-			.find((element) => element);
-		(first ?? ref)?.focus({ preventScroll: true });
+		ref?.focus({ preventScroll: true });
 	}
 
 	function start(event: PointerEvent & { currentTarget: HTMLElement }) {
