@@ -47,7 +47,11 @@
 			<p class="text-xs font-medium text-muted-foreground">
 				{m.onboarding_step_of({ current, total })}
 			</p>
-			<div class="mt-2 mb-3 flex gap-1" aria-hidden="true">
+			<!-- As wide as the default card's content, so wider steps don't stretch the bars. -->
+			<div
+				class="mt-2 mb-3 flex w-full max-w-[calc(var(--container-lg)-2*var(--card-spacing))] gap-1"
+				aria-hidden="true"
+			>
 				{#each { length: total }, i (i)}
 					<span class="h-1 flex-1 rounded-full {i < current ? 'bg-primary' : 'bg-muted'}"></span>
 				{/each}
