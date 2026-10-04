@@ -168,6 +168,7 @@ spans a row of its own, so the chip joins the actions instead. -->
 				variant="outline"
 				size="sm"
 				aria-label={m.budget_add_group()}
+				data-tour="add-group"
 				onclick={() => (addingGroup = true)}
 			>
 				<PlusIcon />

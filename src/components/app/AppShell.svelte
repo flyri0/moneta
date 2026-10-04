@@ -47,6 +47,9 @@
 	import DemoBanner from './DemoBanner.svelte';
 	import NavProgress from './NavProgress.svelte';
 	import { fab } from './fab.svelte';
+	import Tour from '$features/tour/Tour.svelte';
+	import { tour } from '$features/tour/tour.svelte';
+	import { noteBudgetOpened } from '$client/tour';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -69,6 +72,9 @@
 		root.style.setProperty('--app-top', APP_TOP);
 		return () => root.style.removeProperty('--app-top');
 	});
+
+	// A budget that opens before any tour was planned (a restore, an older budget) ends it here.
+	$effect(() => noteBudgetOpened(localStorage, session.isDemo));
 
 	const runSchedules = scheduleRunner(session.api);
 
@@ -101,7 +107,8 @@
 			href: resolve('/accounts'),
 			label: m.nav_accounts(),
 			icon: LandmarkIcon,
-			active: path.startsWith('/accounts')
+			active: path.startsWith('/accounts'),
+			tour: 'accounts'
 		},
 		{
 			href: resolve('/reports'),
@@ -113,7 +120,8 @@
 			href: resolve('/settings'),
 			label: m.nav_settings(),
 			icon: SettingsIcon,
-			active: path.startsWith('/settings')
+			active: path.startsWith('/settings'),
+			tour: 'settings'
 		}
 	]);
 
@@ -276,6 +284,7 @@
 	<a
 		href={item.href}
 		aria-current={item.active ? 'page' : undefined}
+		data-tour={item.tour}
 		class="flex min-w-0 flex-col items-center gap-0.5 px-0.5 py-2 text-[0.6875rem] text-muted-foreground aria-[current=page]:font-medium aria-[current=page]:text-primary"
 	>
 		<item.icon class="size-5" />
@@ -305,6 +314,7 @@
 					{...props}
 					href={item.href}
 					aria-current={item.active ? 'page' : undefined}
+					data-tour={item.tour}
 					class="flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-primary"
 				>
 					<item.icon class="size-4" />
@@ -318,7 +328,10 @@
 
 <NavProgress {busy} />
 
-<div class="flex min-h-dvh flex-col {dragging ? 'cursor-col-resize select-none' : ''}">
+<div
+	class="flex min-h-dvh flex-col {dragging ? 'cursor-col-resize select-none' : ''}"
+	inert={tour.step !== null}
+>
 	{#if session.isDemo}
 		<DemoBanner />
 	{/if}
@@ -345,6 +358,7 @@
 											{...props}
 											size="icon-lg"
 											aria-label={m.add_transaction()}
+											data-tour="add-transaction"
 											onclick={() => (adding = true)}
 										>
 											<PlusIcon />
@@ -368,7 +382,7 @@
 								</div>
 								{@render sidebarToggle()}
 							</div>
-							<Button size="lg" onclick={() => (adding = true)}>
+							<Button size="lg" data-tour="add-transaction" onclick={() => (adding = true)}>
 								<PlusIcon />
 								<span class="truncate">{m.add_transaction()}</span>
 							</Button>
@@ -378,6 +392,7 @@
 								<a
 									href={item.href}
 									aria-current={item.active ? 'page' : undefined}
+									data-tour={item.tour}
 									class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-primary"
 								>
 									<item.icon class="size-4 shrink-0" />
@@ -434,6 +449,7 @@
 		hidden={fab.hidden}
 		aria-label={m.add_transaction()}
 		data-compact={compact}
+		data-tour="add-transaction"
 		class="fixed right-4 bottom-[calc(3.5rem+0.75rem+env(safe-area-inset-bottom))] z-40 flex h-11 items-center rounded-full bg-primary pr-3.5 pl-3 text-primary-foreground shadow-lg transition-[padding] duration-200 data-[compact=true]:pr-3 md:hidden"
 	>
 		<PlusIcon class="size-5 shrink-0" />
@@ -457,6 +473,8 @@
 		{/each}
 	</nav>
 </div>
+
+<Tour />
 
 <!-- Loaded the first time it opens: most starts never add a transaction. -->
 {#if dialogLoad}

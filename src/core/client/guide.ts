@@ -30,6 +30,11 @@ export type GuideLocale = (typeof GUIDE_LOCALES)[number];
 /** Sections the app links to from its screens: a page and the heading id on it. */
 export const GUIDE_TOPICS = {
 	readyToAssign: ['budgeting', 'ready-to-assign'],
+	assigning: ['budgeting', 'assigning'],
+	overspending: ['budgeting', 'overspending'],
+	categories: ['budgeting', 'categories'],
+	accountKinds: ['accounts', 'account-kinds'],
+	entering: ['transactions', 'entering'],
 	carryover: ['budgeting', 'carryover'],
 	goals: ['budgeting', 'goals'],
 	cardBilling: ['accounts', 'card-billing'],

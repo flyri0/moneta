@@ -46,6 +46,7 @@
 	class="relative grid gap-2 px-4 py-3 transition-colors hover:bg-muted/40 {TONE_ROW[tone]}"
 	data-testid="category-row"
 	data-tone={tone}
+	data-tour="category"
 >
 	<div class="flex items-center justify-between gap-3">
 		<button

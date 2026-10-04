@@ -139,6 +139,14 @@ export async function onboard(page: Page, name = 'Home'): Promise<void> {
 	await fillNewBudget(page, name, '1000');
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await skipTour(page);
+}
+
+/** Skips the tour that opens over the first budget made on a device. */
+export async function skipTour(page: Page): Promise<void> {
+	const tour = page.getByTestId('tour');
+	await tour.getByRole('button', { name: 'Skip' }).click();
+	await expect(tour).toBeHidden();
 }
 
 export function categoryRow(page: Page, name: string) {

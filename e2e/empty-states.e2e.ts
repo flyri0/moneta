@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCombobox, nextStep, skipIntro, startApp } from './helpers';
+import { chooseCombobox, nextStep, skipIntro, startApp, skipTour } from './helpers';
 
 /** Creates a USD budget with the starter categories and no account. */
 async function onboardWithoutAccount(page: Page): Promise<void> {
@@ -12,6 +12,7 @@ async function onboardWithoutAccount(page: Page): Promise<void> {
 	await nextStep(page).click();
 	await page.getByRole('button', { name: 'Start with no account' }).click();
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 }
 
@@ -94,6 +95,7 @@ async function onboardEmpty(page: Page): Promise<void> {
 	await nextStep(page).click();
 	await page.getByRole('button', { name: 'Start with no account' }).click();
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 }
 

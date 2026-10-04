@@ -6,6 +6,10 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import { Button } from '$ui/button';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { currentMonth } from '$domain/month';
+	import { tour } from '$features/tour/tour.svelte';
 
 	const REPOSITORY_URL = 'https://github.com/flyri0/moneta';
 
@@ -19,6 +23,12 @@
 			failed: m.update_check_failed()
 		}[appUpdate.status]
 	);
+	/** Shows the tour again, on the budget screen it walks through. */
+	function takeTour() {
+		tour.replay = true;
+		void goto(resolve('/budget/[month]', { month: currentMonth() }));
+	}
+
 	const busy = $derived(appUpdate.status === 'checking' || appUpdate.status === 'downloading');
 </script>
 
@@ -35,5 +45,6 @@
 		{/snippet}
 	</SettingsRow>
 	<SettingsRow label={m.about_guide()} hint={m.about_guide_hint()} href={guidePath(getLocale())} />
+	<SettingsRow label={m.about_tour()} hint={m.about_tour_hint()} onclick={takeTour} />
 	<SettingsRow label={m.about_source()} href={REPOSITORY_URL} />
 </SettingsGroup>

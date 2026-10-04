@@ -9,7 +9,8 @@ import {
 	openSettings,
 	skipIntro,
 	startApp,
-	UNREADABLE_FILE
+	UNREADABLE_FILE,
+	skipTour
 } from './helpers';
 
 test('onboarding creates a budget that survives a reload', async ({ page }) => {
@@ -37,6 +38,7 @@ test('onboarding seeds only the categories that were picked', async ({ page }) =
 	await page.getByLabel('Current balance').fill('1000');
 	await page.getByRole('button', { name: 'Create budget' }).click();
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
 
 	await expect(categoryRow(page, 'Groceries')).toBeVisible();
 	await expect(categoryRow(page, 'New bike')).toBeVisible();
@@ -59,6 +61,7 @@ test('onboarding can start with no categories, keeping an empty Income group', a
 
 	await page.getByRole('button', { name: 'Start with no account' }).click();
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
 
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 	await expect(page.getByTestId('category-row')).toHaveCount(0);
@@ -81,6 +84,7 @@ test('onboarding can start with no account', async ({ page }) => {
 
 	await page.getByRole('button', { name: 'Start with no account' }).click();
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
 
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 	await page.getByRole('link', { name: 'Accounts' }).first().click();

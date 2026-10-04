@@ -3,6 +3,8 @@
 	import { toast } from 'svelte-sonner';
 	import { runAction, type ActionError } from '$client/notify';
 	import { createBudget, restoreAll, type SessionApi } from '$client/session';
+	import { loadRegistry } from '$client/registry';
+	import { planTour } from '$client/tour';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
 	import { parseAmount } from '$domain/money';
@@ -104,6 +106,8 @@
 			return;
 		}
 		busy = true;
+		// The tour is for someone's very first budget here, not for one more of them.
+		const first = !onCancel && loadRegistry(localStorage).budgets.length === 0;
 		error = await runAction(async () => {
 			created = await createBudget(api, localStorage, {
 				name,
@@ -124,6 +128,7 @@
 		});
 		busy = false;
 		if (!created) return;
+		if (first) planTour(localStorage, created.file);
 		void navigator.storage?.persist?.();
 		if (stepAfter(steps, step)) next();
 		else finish();

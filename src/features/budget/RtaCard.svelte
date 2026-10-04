@@ -32,6 +32,7 @@
 
 <section
 	bind:this={ref}
+	data-tour="rta"
 	class="grid gap-3 rounded-xl border p-4 text-card-foreground shadow-xs transition-colors {RTA_CARD[
 		tone
 	]}"

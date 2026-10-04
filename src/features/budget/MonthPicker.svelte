@@ -23,7 +23,7 @@
 	let open = $state(false);
 </script>
 
-<div class="flex min-w-0 items-center gap-1">
+<div class="flex min-w-0 items-center gap-1" data-tour="month">
 	<Button
 		variant="ghost"
 		size="icon"

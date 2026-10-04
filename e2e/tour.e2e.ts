@@ -1,0 +1,176 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { fillNewBudget, nextStep, onboard, openSettings, skipIntro, startApp } from './helpers';
+
+/** Onboarding's first budget, up to where the tour opens over it. */
+async function firstBudget(page: Page): Promise<void> {
+	await startApp(page);
+	await skipIntro(page);
+	await fillNewBudget(page, 'Home', '1000');
+	await page.getByRole('button', { name: 'Start budgeting' }).click();
+}
+
+function card(page: Page): Locator {
+	return page.getByTestId('tour-card');
+}
+
+async function tourState(page: Page): Promise<string | null> {
+	return page.evaluate(() => localStorage.getItem('moneta.tour'));
+}
+
+/** Waits for the spotlight to settle around `target`. */
+async function expectLit(page: Page, target: Locator): Promise<void> {
+	const spotlight = page.getByTestId('tour-spotlight');
+	await expect
+		.poll(async () => {
+			const [lit, box] = [await spotlight.boundingBox(), await target.boundingBox()];
+			if (!lit || !box) return false;
+			return (
+				lit.x <= box.x &&
+				lit.y <= box.y &&
+				lit.x + lit.width >= box.x + box.width &&
+				lit.y + lit.height >= box.y + box.height
+			);
+		})
+		.toBe(true);
+}
+
+/** Checks the card sits fully inside the window. */
+async function expectCardInView(page: Page): Promise<void> {
+	const viewport = page.viewportSize()!;
+	await expect
+		.poll(async () => {
+			const box = await card(page).boundingBox();
+			if (!box) return false;
+			return (
+				box.x >= 0 &&
+				box.y >= 0 &&
+				box.x + box.width <= viewport.width &&
+				box.y + box.height <= viewport.height
+			);
+		})
+		.toBe(true);
+}
+
+test('walks through the basics once, on the first budget', async ({ page }) => {
+	await firstBudget(page);
+
+	await expect(card(page)).toContainText('Welcome to your budget');
+	await card(page).getByRole('button', { name: 'Start tour' }).click();
+
+	await expect(card(page)).toContainText('1 of 6');
+	await expect(card(page).getByRole('heading')).toHaveText('Ready to Assign');
+	await expect(card(page).getByRole('link', { name: 'Learn more in the guide' })).toHaveAttribute(
+		'href',
+		'/guide/budgeting/#ready-to-assign'
+	);
+	await expectLit(page, page.getByTestId('rta-card'));
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Your categories');
+	await expect(card(page)).toContainText('Type an amount in Assigned');
+	await card(page).getByRole('button', { name: 'Back' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Ready to Assign');
+	await page.keyboard.press('ArrowRight');
+	await expect(card(page).getByRole('heading')).toHaveText('Your categories');
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Record transactions');
+	await expectLit(page, page.locator('#sidebar [data-tour="add-transaction"]'));
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Accounts');
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Month by month');
+	await expectLit(page, page.locator('[data-tour="month"]'));
+	await expectCardInView(page);
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText("You're ready");
+	await expect(card(page).getByRole('link', { name: 'Open the guide' })).toHaveAttribute(
+		'href',
+		'/guide/'
+	);
+	await card(page).getByRole('button', { name: 'Done' }).click();
+	await expect(page.getByTestId('tour')).toBeHidden();
+	expect(await tourState(page)).toBe('done');
+
+	await page.reload();
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(page.getByTestId('tour')).toBeHidden();
+});
+
+test('fits a phone', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await firstBudget(page);
+
+	await card(page).getByRole('button', { name: 'Start tour' }).click();
+	await expectCardInView(page);
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page)).toContainText('Tap a category');
+	// The first category that takes money, not an income one.
+	await expectLit(page, page.locator('[data-tour="category"]').first());
+	await expectCardInView(page);
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expectLit(page, page.locator('button[data-tour="add-transaction"]:visible'));
+	await expectCardInView(page);
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	const bar = page.getByRole('navigation').last();
+	await expectLit(page, bar.getByRole('link', { name: 'Accounts' }));
+	await expectCardInView(page);
+});
+
+test('skipping ends it for good', async ({ page }) => {
+	await firstBudget(page);
+	await card(page).getByRole('button', { name: 'Start tour' }).click();
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('tour')).toBeHidden();
+
+	await page.reload();
+	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(page.getByTestId('tour')).toBeHidden();
+	expect(await tourState(page)).toBe('done');
+});
+
+test('leaves a second budget alone, and comes back from Settings', async ({ page }) => {
+	await onboard(page);
+	await openSettings(page);
+	await page.getByRole('button', { name: 'New budget' }).click();
+	await fillNewBudget(page, 'Work', '250');
+	await expect(page.getByTestId('rta-amount')).toHaveText('$250.00');
+	await expect(page.getByTestId('tour')).toBeHidden();
+
+	await openSettings(page);
+	await page.getByRole('button', { name: 'Take the tour' }).click();
+	await expect(card(page)).toContainText('Welcome to your budget');
+	await card(page).getByRole('button', { name: 'Skip' }).click();
+	await expect(page.getByTestId('tour')).toBeHidden();
+});
+
+test('leaves a restored backup alone', async ({ page, browser }, testInfo) => {
+	await onboard(page);
+	await openSettings(page);
+	const backup = testInfo.outputPath('backup.moneta');
+	const downloading = page.waitForEvent('download');
+	await page.getByRole('button', { name: 'Back up now' }).click();
+	await (await downloading).saveAs(backup);
+
+	const clean = await browser.newContext();
+	const fresh = await clean.newPage();
+	await startApp(fresh);
+	await nextStep(fresh).click();
+	await fresh.getByLabel('Restore from a backup').setInputFiles(backup);
+	await expect(fresh.getByTestId('rta-amount')).toHaveText('$1,000.00');
+	await expect(fresh.getByTestId('tour')).toBeHidden();
+	expect(await tourState(fresh)).toBe('done');
+	await clean.close();
+});
+
+test('leaves the demo alone', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Try the demo' }).click();
+	await expect(page.getByTestId('rta-amount')).toBeVisible();
+	await expect(page.getByTestId('tour')).toBeHidden();
+	expect(await tourState(page)).toBeNull();
+});
