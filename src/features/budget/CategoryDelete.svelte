@@ -9,6 +9,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError, actionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import { moveTargets, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import { m } from '$i18n/paraglide/messages';
@@ -59,14 +60,21 @@
 	async function remove() {
 		if (!ready || busy) return;
 		busy = true;
+		let call: Promise<void> | undefined;
 		error = await runAction(async () => {
-			if (!used) return session.api.categories.delete(category.id);
-			// A category picked by a new name is created first.
-			const ids = await pending.resolve(session.api, [reassignTo]);
-			await session.api.categories.delete(category.id, ids.get(reassignTo) ?? reassignTo);
+			let target: string | undefined;
+			if (used) {
+				// A category picked by a new name is created first.
+				const ids = await pending.resolve(session.api, [reassignTo]);
+				target = ids.get(reassignTo) ?? reassignTo;
+			}
+			call = session.api.categories.delete(category.id, target);
+			await call;
 		});
 		busy = false;
-		if (!error) onDone();
+		if (error) return;
+		onDone();
+		if (call) offerUndo(session.client, call, m.category_deleted());
 	}
 </script>
 

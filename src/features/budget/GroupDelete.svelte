@@ -7,6 +7,7 @@
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { BudgetGroupView } from '$db/repos/budget';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -43,14 +44,21 @@
 	async function remove() {
 		if (!ready || busy) return;
 		busy = true;
+		let call: Promise<void> | undefined;
 		error = await runAction(async () => {
-			if (count === 0) return session.api.categories.deleteGroup(groupId);
-			// A group picked by a new name is created first.
-			const ids = await pending.resolve(session.api, [moveTo]);
-			await session.api.categories.deleteGroup(groupId, ids.get(moveTo) ?? moveTo);
+			let target: string | undefined;
+			if (count > 0) {
+				// A group picked by a new name is created first.
+				const ids = await pending.resolve(session.api, [moveTo]);
+				target = ids.get(moveTo) ?? moveTo;
+			}
+			call = session.api.categories.deleteGroup(groupId, target);
+			await call;
 		});
 		busy = false;
-		if (!error) onDone();
+		if (error) return;
+		onDone();
+		if (call) offerUndo(session.client, call, m.group_deleted());
 	}
 </script>
 

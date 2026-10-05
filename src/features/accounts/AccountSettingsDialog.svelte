@@ -10,6 +10,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
 	import { parseBillingDays } from '$features/accounts/account-form';
@@ -38,6 +39,12 @@
 		error = await runAction(fn);
 		busy = false;
 		if (!error) open = false;
+	}
+
+	async function remove() {
+		const call = session.api.accounts.delete(account.id);
+		await act(() => call);
+		if (!error) offerUndo(session.client, call, m.account_deleted());
 	}
 
 	/** Moves to the delete confirmation, or back to the settings. */
@@ -69,12 +76,12 @@
 >
 	{#if confirming}
 		<ConfirmPanel
-			body={m.confirm_cannot_undo()}
+			body={m.confirm_can_undo()}
 			confirmLabel={m.delete()}
 			{error}
 			{busy}
 			onCancel={() => confirm(false)}
-			onConfirm={() => act(() => session.api.accounts.delete(account.id))}
+			onConfirm={remove}
 		/>
 	{:else}
 		<div class="grid gap-4">
