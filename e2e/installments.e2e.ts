@@ -126,7 +126,8 @@ test('adds a purchase already under way from the card purchase form, on the card
 	// Installments fall on the bill's due date, as a new purchase's do: the date isn't typed.
 	await expect(dialog.getByLabel('Next date')).toHaveValue('Oct 10, 2026');
 	await expect(dialog.getByTestId('installments-due')).toContainText('Oct 10, 2026');
-	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeHidden();
+	// One row for the repeat rule and installments: it says installments are on.
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toContainText('Installments');
 
 	await chooseCombobox(dialog, 'Payee', 'TV Store', 'TV Store');
 	await dialog.getByLabel('Amount', { exact: true }).fill('80');
@@ -135,7 +136,7 @@ test('adds a purchase already under way from the card purchase form, on the card
 
 	// Saving without the numbers opens their screen, with the error.
 	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(dialog.getByRole('heading', { name: 'Installments' })).toBeVisible();
+	await expect(dialog.getByRole('heading', { name: 'Repeats' })).toBeVisible();
 	await expect(dialog.getByText("Enter the next installment's number")).toBeVisible();
 	await expect(dialog.getByRole('switch', { name: 'Installments' })).toBeChecked();
 	await dialog.getByLabel('Next installment').fill('4');
@@ -144,7 +145,7 @@ test('adds a purchase already under way from the card purchase form, on the card
 		'9 left, 4/12 to 12/12, every month · $720.00 in all'
 	);
 	await dialog.getByRole('button', { name: 'Back' }).click();
-	await expect(dialog.getByRole('button', { name: /^Installments/ })).toContainText(
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toContainText(
 		'Installment 4 of 12'
 	);
 	await dialog.getByRole('button', { name: 'Save' }).click();
@@ -186,16 +187,25 @@ test('offers installments in a schedule only for a card purchase', async ({ page
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
 	await page.getByRole('button', { name: 'Add schedule' }).first().click();
-	const installments = dialog.getByRole('button', { name: /^Installments/ });
-	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeVisible();
+	const repeats = dialog.getByRole('button', { name: /^Repeats/ });
+	const installments = dialog.getByRole('switch', { name: 'Installments' });
+	const frequency = dialog.locator('#schedule-frequency');
+	await repeats.click();
+	await expect(frequency).toBeVisible();
 	await expect(installments).toBeHidden();
-	await chooseCombobox(dialog, 'Account', 'Visa');
-	await expect(installments).toContainText('Off');
-	await installments.click();
-	await dialog.getByRole('switch', { name: 'Installments' }).click();
 	await dialog.getByRole('button', { name: 'Back' }).click();
-	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeHidden();
+
+	// A card purchase sets installments on the same screen as the repeat rule.
+	await chooseCombobox(dialog, 'Account', 'Visa');
+	await repeats.click();
+	await installments.click();
+	await expect(frequency).toBeHidden();
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	await expect(repeats).toContainText('Installments');
+
 	await chooseCombobox(dialog, 'Account', 'Checking');
+	await expect(repeats).toContainText('Every month');
+	await repeats.click();
 	await expect(installments).toBeHidden();
-	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeVisible();
+	await expect(frequency).toBeVisible();
 });

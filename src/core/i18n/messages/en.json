@@ -727,8 +727,6 @@
 	"schedule_auto_enter_hint": "Moneta enters it on its date, the next time the app is open.",
 	"schedule_manual_hint": "It waits in the account as due until you enter or skip it.",
 	"schedule_installments": "Installments",
-	"schedule_installments_on": "On",
-	"schedule_installments_off": "Off",
 	"schedule_installments_hint": "For a purchase you're already paying: enter the amount of each installment. Each one is numbered, as in 4/12.",
 	"schedule_installment_next": "Next installment",
 	"schedule_installment_of": "of",

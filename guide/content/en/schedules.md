@@ -14,8 +14,8 @@ memo), plus:
 - **Ends**: never, on a date, or after a number of times.
 - **On weekends**: what happens when a date falls on a Saturday or Sunday.
 - **Enter automatically**: on or off.
-- **Installments**, for a card purchase: a purchase you're already paying, numbered as it goes
-  (see [below](#installments-under-way)).
+- **Installments**, for a card purchase, at the top of **Repeats**: a purchase you're already
+  paying, numbered as it goes (see [below](#installments-under-way)).
 
 A monthly schedule on the 31st falls on the last day of shorter months, and goes back to the 31st
 when the month has one.
@@ -30,7 +30,7 @@ Choose the card in a new schedule, or tap **Already paying one? Add it as a sche
 Installments in a card purchase. Then:
 
 1. Fill in the payee, the category and the memo, and in **Amount** what **each** installment costs.
-2. Open **Installments**, switch it on, and enter the **next installment** and the total, as your
+2. Open **Repeats**, switch **Installments** on, and enter the **next installment** and the total, as your
    bill shows it: for "4/12", 4 of 12.
 
 For example, a TV in 12 installments of $80.00, with three already paid: the schedule enters 4/12
@@ -46,7 +46,7 @@ They follow the same rules as a new purchase in installments:
 - They're entered automatically, like the installments of a new purchase. You can turn that off.
 
 The installments you already paid aren't entered: past months of your budget stay as they are.
-To fix the numbers later, edit the schedule and change them under **Installments**.
+To fix the numbers later, edit the schedule and change them under **Repeats**.
 
 ## Search and filters {#search}
 

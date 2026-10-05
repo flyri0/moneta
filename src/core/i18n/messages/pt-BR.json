@@ -727,8 +727,6 @@
 	"schedule_auto_enter_hint": "O Moneta lança na data, na próxima vez que o app estiver aberto.",
 	"schedule_manual_hint": "Fica pendente na conta até você lançar ou pular.",
 	"schedule_installments": "Parcelas",
-	"schedule_installments_on": "Ligadas",
-	"schedule_installments_off": "Desligadas",
 	"schedule_installments_hint": "Para uma compra que você já está pagando: informe o valor de cada parcela. Cada uma é numerada, como em 4/12.",
 	"schedule_installment_next": "Próxima parcela",
 	"schedule_installment_of": "de",
