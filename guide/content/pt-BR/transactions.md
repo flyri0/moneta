@@ -76,6 +76,9 @@ Logo depois de algumas mudanças, uma mensagem oferece **Desfazer**:
 - mudar várias transações de uma vez;
 - atribuir pela tela de uma categoria, mover dinheiro e a atribuição rápida;
 - importar um extrato;
-- pular uma transação agendada.
+- pular ou excluir uma transação agendada;
+- excluir uma categoria ou um grupo;
+- excluir, mesclar ou remover favorecidos sem uso, e excluir uma regra de importação;
+- excluir uma conta.
 
 Só a última mudança pode ser desfeita, e só enquanto nada do que ela mexeu tiver mudado de novo.

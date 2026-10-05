@@ -3,10 +3,20 @@ import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { ALL_TABLES, all, run, tx, type Db } from './connection';
 import { applyInverse, record } from './undo';
-import { createAccount } from './repos/accounts';
+import { api } from './api';
+import { createAccount, deleteAccount } from './repos/accounts';
 import { moveMoney, setAssigned } from './repos/budget';
+import { createGroup, deleteCategory, deleteGroup, getCategory } from './repos/categories';
 import { importTransactions } from './repos/imports';
-import { deletePayee } from './repos/payees';
+import { createRule, deleteRule } from './repos/payee-rules';
+import {
+	deletePayee,
+	deleteUnusedPayees,
+	getOrCreatePayee,
+	mergePayee,
+	setPayeeDefaultCategory
+} from './repos/payees';
+import { createSchedule, deleteSchedule } from './repos/schedules';
 import { createTransaction, deleteTransaction, updateTransaction } from './repos/transactions';
 
 const code = (c: string) => expect.objectContaining({ code: c });
@@ -123,6 +133,138 @@ describe('record and applyInverse', () => {
 		expect(importTransactions(db, bank, input)).toMatchObject({ created: 1 });
 	});
 
+	it('brings back a deleted schedule with its splits', () => {
+		const id = createSchedule(db, {
+			accountId: bank,
+			amount: -3000,
+			payeeName: 'Market',
+			startDate: '2026-01-05',
+			frequency: 'monthly',
+			interval: 1,
+			endDate: null,
+			endCount: null,
+			weekend: 'keep',
+			autoEnter: false,
+			splits: [
+				{ categoryId: food, amount: -2000 },
+				{ categoryId: fun, amount: -1000 }
+			]
+		});
+		const before = snapshot(db);
+		const { inverse } = recorded(() => deleteSchedule(db, id));
+		expect(all(db, 'SELECT 1 FROM schedule_splits')).toHaveLength(0);
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('takes back deleting a used category, reassigned to another', () => {
+		createTransaction(db, { accountId: bank, date: '2026-01-05', amount: -3000, categoryId: fun });
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-06',
+			amount: -3000,
+			splits: [
+				{ categoryId: fun, amount: -1000 },
+				{ categoryId: food, amount: -2000 }
+			]
+		});
+		createSchedule(db, {
+			accountId: bank,
+			amount: -500,
+			categoryId: fun,
+			startDate: '2026-01-05',
+			frequency: 'monthly',
+			interval: 1,
+			endDate: null,
+			endCount: null,
+			weekend: 'keep',
+			autoEnter: false
+		});
+		setAssigned(db, fun, '2026-01', 4000);
+		setAssigned(db, food, '2026-01', 6000);
+		const payee = getOrCreatePayee(db, 'Cinema')!;
+		setPayeeDefaultCategory(db, payee, fun);
+		createRule(db, { payeeName: 'Cinema', kind: 'contains', text: 'cine', categoryId: fun });
+		const before = snapshot(db);
+
+		const { inverse } = recorded(() => deleteCategory(db, fun, food));
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('takes back deleting a group whose categories moved', () => {
+		const group = createGroup(db, { name: 'Extra' });
+		const target = getCategory(db, food).groupId;
+		const before = snapshot(db);
+		const { inverse } = recorded(() => deleteGroup(db, group, target));
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('takes back merging a payee', () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -3000,
+			payeeName: 'Mkt',
+			categoryId: food
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-06',
+			amount: -3000,
+			payeeName: 'Market',
+			categoryId: food
+		});
+		createRule(db, { payeeName: 'Mkt', kind: 'contains', text: 'mkt', categoryId: null });
+		const source = getOrCreatePayee(db, 'Mkt')!;
+		setPayeeDefaultCategory(db, source, food);
+		const target = getOrCreatePayee(db, 'Market')!;
+		const before = snapshot(db);
+		const { inverse } = recorded(() => mergePayee(db, source, target));
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('takes back deleting payees, rules and an empty account', () => {
+		const payee = getOrCreatePayee(db, 'Alone')!;
+		getOrCreatePayee(db, 'Unused');
+		const rule = createRule(db, {
+			payeeName: 'Ruled',
+			kind: 'contains',
+			text: 'r',
+			categoryId: food
+		});
+		const before = snapshot(db);
+		const steps = [
+			() => deletePayee(db, payee),
+			() => deleteRule(db, rule),
+			() => deleteUnusedPayees(db),
+			() => deleteAccount(db, savings)
+		].map((fn) => recorded(fn).inverse);
+		for (const inverse of steps.reverse()) undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('refuses to bring a deleted category back over a transaction recategorized since', () => {
+		const id = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -3000,
+			categoryId: fun
+		});
+		const { inverse } = recorded(() => deleteCategory(db, fun, food));
+		updateTransaction(db, id, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -3000,
+			categoryId: categoryId(db, 'Rent')
+		});
+		const before = snapshot(db);
+		expect(() => undo(inverse)).toThrow(code('UNDO_CONFLICT'));
+		expect(snapshot(db)).toEqual(before);
+	});
+
 	it('refuses when a row it would restore was changed since, and changes nothing', () => {
 		const id = createTransaction(db, {
 			accountId: bank,
@@ -179,5 +321,23 @@ describe('record and applyInverse', () => {
 		const before = snapshot(db);
 		undo(inverse);
 		expect(snapshot(db)).toEqual(before);
+	});
+});
+
+describe('undoable writes', () => {
+	it('include every delete and merge of budget data', () => {
+		const handlers = [
+			api.transactions.delete,
+			api.transactions.deleteMany,
+			api.schedules.delete,
+			api.categories.delete,
+			api.categories.deleteGroup,
+			api.payees.delete,
+			api.payees.merge,
+			api.payees.deleteUnused,
+			api.payeeRules.delete,
+			api.accounts.delete
+		];
+		expect(handlers.filter((h) => !h.undoable)).toEqual([]);
 	});
 });

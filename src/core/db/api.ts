@@ -65,7 +65,7 @@ export const api = {
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
 		setBilling: write(['accounts'], accounts.setBillingDays, ['string', 'object?']),
-		delete: write(['accounts'], accounts.deleteAccount, ['string']),
+		delete: write(['accounts'], accounts.deleteAccount, ['string'], { undo: true }),
 		// An adjustment is one plain transaction, with no payee.
 		reconcile: write(['accounts', 'transactions'], accounts.reconcileAccount, ['string', 'object'])
 	},
@@ -74,10 +74,12 @@ export const api = {
 		startingBalanceId: read(meta.startingBalanceCategoryId, []),
 		createGroup: write(['category_groups'], categories.createGroup, ['object']),
 		updateGroup: write(['category_groups'], categories.updateGroup, ['string', 'object']),
-		deleteGroup: write(['category_groups', 'categories'], categories.deleteGroup, [
-			'string',
-			'string?'
-		]),
+		deleteGroup: write(
+			['category_groups', 'categories'],
+			categories.deleteGroup,
+			['string', 'string?'],
+			{ undo: true }
+		),
 		usage: read(categories.categoryUsage, ['string']),
 		create: write(['categories'], categories.createCategory, ['object']),
 		// With a group that doesn't exist yet, it creates that group too.
@@ -86,7 +88,8 @@ export const api = {
 		delete: write(
 			['categories', 'budget_assignments', 'payee_rules', ...TXN, ...SCHED],
 			categories.deleteCategory,
-			['string', 'string?']
+			['string', 'string?'],
+			{ undo: true }
 		),
 		saveOrder: write(['category_groups', 'categories'], categories.saveCategoryOrder, ['array'])
 	},
@@ -96,20 +99,22 @@ export const api = {
 		options: read(payees.listPayeeOptions, []),
 		create: write(['payees'], payees.createPayee, ['object']),
 		rename: write(['payees'], payees.renamePayee, ['string', 'string']),
-		merge: write(['payees', 'transactions', 'schedules', 'payee_rules'], payees.mergePayee, [
-			'string',
-			'string'
-		]),
+		merge: write(
+			['payees', 'transactions', 'schedules', 'payee_rules'],
+			payees.mergePayee,
+			['string', 'string'],
+			{ undo: true }
+		),
 		setDefaultCategory: write(['payees'], payees.setPayeeDefaultCategory, ['string', 'string?']),
-		delete: write(['payees'], payees.deletePayee, ['string']),
-		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [])
+		delete: write(['payees'], payees.deletePayee, ['string'], { undo: true }),
+		deleteUnused: write(['payees'], payees.deleteUnusedPayees, [], { undo: true })
 	},
 	payeeRules: {
 		list: read(payeeRules.listRules, []),
 		// A rule may name a payee that doesn't exist yet, which it creates.
 		create: write(['payee_rules', 'payees'], payeeRules.createRule, ['object']),
 		update: write(['payee_rules', 'payees'], payeeRules.updateRule, ['string', 'object']),
-		delete: write(['payee_rules'], payeeRules.deleteRule, ['string'])
+		delete: write(['payee_rules'], payeeRules.deleteRule, ['string'], { undo: true })
 	},
 	transactions: {
 		list: read(transactions.listTransactions, ['object?']),
@@ -156,7 +161,7 @@ export const api = {
 			['object', 'number']
 		),
 		update: write([...SCHED, 'payees'], schedules.updateSchedule, ['string', 'object']),
-		delete: write(SCHED, schedules.deleteSchedule, ['string']),
+		delete: write(SCHED, schedules.deleteSchedule, ['string'], { undo: true }),
 		enter: write(['schedules', ...TXN], schedules.enterOccurrence, ['string', 'number', 'object']),
 		skip: write(['schedules'], schedules.skipOccurrence, ['string', 'number'], { undo: true }),
 		// Entered with the schedule's own payee, which exists.
