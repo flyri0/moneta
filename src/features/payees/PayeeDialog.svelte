@@ -21,6 +21,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { GroupNode } from '$db/repos/categories';
 	import type { PayeeRule } from '$db/repos/payee-rules';
 	import type { Payee } from '$db/repos/payees';
@@ -112,17 +113,25 @@
 		if (!confirming) return;
 		const pending = confirming;
 		if (pending.kind === 'delete-rule') {
-			void act(() => session.api.payeeRules.delete(pending.rule.id), false).then(() => {
-				if (!error) confirm(null);
+			const call = session.api.payeeRules.delete(pending.rule.id);
+			void act(() => call, false).then(() => {
+				if (error) return;
+				confirm(null);
+				offerUndo(session.client, call, m.payee_rule_deleted());
 			});
 			return;
 		}
 		if (pending.kind === 'rule') return;
-		void act(() =>
+		const [call, message] =
 			pending.kind === 'merge'
-				? session.api.payees.merge(payee.id, pending.target.id)
-				: session.api.payees.delete(payee.id)
-		);
+				? [
+						session.api.payees.merge(payee.id, pending.target.id),
+						m.payee_merged({ from: payee.name, to: pending.target.name })
+					]
+				: [session.api.payees.delete(payee.id), m.payee_deleted()];
+		void act(() => call).then(() => {
+			if (!error) offerUndo(session.client, call, message);
+		});
 	}
 
 	/** The line under a rule: its category, when it sets one. */

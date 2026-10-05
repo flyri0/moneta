@@ -15,6 +15,7 @@
 	import HelpLink from '$components/HelpLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import { enterAndReport } from '$client/schedules';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import {
@@ -197,9 +198,12 @@
 		if (!editingId || busy) return;
 		const id = editingId;
 		busy = true;
-		error = await runAction(() => session.api.schedules.delete(id));
+		const call = session.api.schedules.delete(id);
+		error = await runAction(() => call);
 		busy = false;
-		if (!error) onDone();
+		if (error) return;
+		onDone();
+		offerUndo(session.client, call, m.schedule_deleted());
 	}
 </script>
 

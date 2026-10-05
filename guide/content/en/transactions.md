@@ -68,6 +68,9 @@ Right after some changes, a message offers **Undo**:
 - changing several transactions at once;
 - assigning from a category's sheet, moving money, and quick assign;
 - importing a statement;
-- skipping a scheduled transaction.
+- skipping or deleting a scheduled transaction;
+- deleting a category or a group;
+- deleting, merging or removing unused payees, and deleting an import rule;
+- deleting an account.
 
 Only the latest change can be taken back, and only while nothing it touched has changed again.

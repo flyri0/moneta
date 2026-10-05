@@ -19,6 +19,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { Payee } from '$db/repos/payees';
 	import { categoryLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -45,6 +46,12 @@
 	const categoryNames = $derived(
 		new Map((tree.data ?? []).flatMap((g) => g.categories.map((c) => [c.id, categoryLabel(c)])))
 	);
+
+	async function removeUnused() {
+		const call = session.api.payees.deleteUnused();
+		const count = await call;
+		offerUndo(session.client, call, m.payees_deleted_unused({ count }));
+	}
 
 	function open(payee: Payee) {
 		selected = payee;
@@ -145,6 +152,6 @@
 	title={m.payees_remove_unused_title()}
 	body={m.payees_remove_unused_body({ count: unused })}
 	confirmLabel={m.payees_remove_unused_confirm()}
-	onConfirm={() => session.api.payees.deleteUnused()}
+	onConfirm={removeUnused}
 />
 <svelte:head><title>{m.nav_payees()} · {m.app_name()}</title></svelte:head>
