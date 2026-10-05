@@ -56,6 +56,11 @@ A dívida inicial de um cartão sai do Pronto para atribuir: o dinheiro para pag
 algum lugar. Se não dá para cobrir agora, dê à dívida uma categoria própria e quite aos poucos:
 veja [Um cartão de crédito que já tem dívida](situations.md#existing-card-debt).
 
+## Já estou pagando uma compra parcelada {#installments-under-way}
+
+Adicione como agendamento a partir da parcela em que você está, com o valor de cada uma: as que você
+já pagou não são lançadas. Veja [Parcelamentos em andamento](schedules.md#installments-under-way).
+
 ## Uma transação não muda o meu orçamento {#not-in-budget}
 
 Isso é esperado em dois casos: a transação está numa conta de acompanhamento (investimentos,

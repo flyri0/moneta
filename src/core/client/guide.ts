@@ -39,6 +39,8 @@ export const GUIDE_TOPICS = {
 	goals: ['budgeting', 'goals'],
 	cardBilling: ['accounts', 'card-billing'],
 	reconcile: ['accounts', 'reconcile'],
+	scheduleSearch: ['schedules', 'search'],
+	installmentsUnderWay: ['schedules', 'installments-under-way'],
 	importing: ['import', 'matching'],
 	payeeRules: ['payees', 'payee-rules'],
 	encryption: ['data', 'encryption'],

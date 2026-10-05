@@ -162,6 +162,10 @@ for (const [locale, t] of Object.entries(LOCALES) as [keyof typeof LOCALES, Mess
 				await page.getByRole('button', { name: t.onboarding_next }).click();
 				await page.getByRole('button', { name: t.onboarding_account_skip }).click();
 				await page.getByRole('button', { name: t.onboarding_done_start }).click();
+				// The first budget on a device opens the tour over it.
+				const tour = page.getByTestId('tour');
+				await tour.getByRole('button', { name: t.tour_skip }).click();
+				await expect(tour).toBeHidden();
 				await page.getByRole('link', { name: t.nav_settings }).first().click();
 				const card = page.getByTestId('backup-card');
 				await expect(card.getByTestId('last-backup')).toBeVisible();

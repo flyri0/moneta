@@ -486,7 +486,7 @@ describe('createInstallments', () => {
 				endCount: 11,
 				weekend: 'keep',
 				autoEnter: true,
-				installments: true,
+				installmentStart: 2,
 				...over
 			});
 		edit({});
@@ -494,18 +494,20 @@ describe('createInstallments', () => {
 		edit({ startDate: '2026-11-01' });
 		expect(getSchedule(db, s.id, T)).toMatchObject({ nextIndex: 0, installmentStart: 2 });
 		expect(upcomingOccurrences(db, { today: T, to: '2026-11-30' })[0].memo).toBe('TV 2/12');
-		edit({ startDate: '2026-11-01', installments: false });
+		edit({ startDate: '2026-11-01', installmentStart: null });
 		expect(getSchedule(db, s.id, T).installmentStart).toBeNull();
 	});
 
-	it('drops the numbers when the schedule stops ending after a count', () => {
+	it('refuses numbers on a schedule that doesn’t end after a count', () => {
 		createInstallments(db, tvInput(), 2);
 		const [s] = listSchedules(db, T);
-		updateSchedule(db, s.id, {
-			...rentInput({ accountId: card, startDate: '2026-10-24', categoryId: fun }),
-			installments: true
-		});
-		expect(getSchedule(db, s.id, T).installmentStart).toBeNull();
+		expect(() =>
+			updateSchedule(db, s.id, {
+				...rentInput({ accountId: card, startDate: '2026-10-24', categoryId: fun }),
+				installmentStart: 2
+			})
+		).toThrow(code('INVALID_INPUT'));
+		expect(getSchedule(db, s.id, T).installmentStart).toBe(1);
 	});
 
 	it('refuses what is not a card purchase in 2 to 99 installments', () => {
@@ -533,6 +535,142 @@ describe('createInstallments', () => {
 		}
 		expect(listTransactions(db)).toEqual([]);
 		expect(listSchedules(db, T)).toEqual([]);
+	});
+});
+
+describe('installments already under way', () => {
+	/** A TV paid in 12 installments of 80.00 on the card, on 4/12 next. */
+	function runningInput(over: Partial<ScheduleInput> = {}): ScheduleInput {
+		return rentInput({
+			accountId: card,
+			amount: -8000,
+			payeeName: 'Store',
+			categoryId: fun,
+			memo: 'TV',
+			startDate: '2026-10-10',
+			endCount: 9,
+			autoEnter: true,
+			installmentStart: 4,
+			...over
+		});
+	}
+
+	it('numbers what is left from the installment given, entering nothing before it', () => {
+		const id = createSchedule(db, runningInput());
+		expect(listTransactions(db)).toEqual([]);
+		expect(getSchedule(db, id, T)).toMatchObject({ nextIndex: 0, installmentStart: 4 });
+		const upcoming = upcomingOccurrences(db, { today: T, to: '2027-12-31' });
+		expect(upcoming.map((o) => o.memo)).toEqual([
+			'TV 4/12',
+			'TV 5/12',
+			'TV 6/12',
+			'TV 7/12',
+			'TV 8/12',
+			'TV 9/12',
+			'TV 10/12',
+			'TV 11/12',
+			'TV 12/12'
+		]);
+		expect(upcoming.at(-1)?.date).toBe('2027-06-10');
+		expect(enterDueOccurrences(db, '2026-10-10')).toBe(1);
+		expect(listTransactions(db)[0]).toMatchObject({ date: '2026-10-10', memo: 'TV 4/12' });
+	});
+
+	it('falls on the card’s due day, like a new purchase', () => {
+		setBillingDays(db, card, { closingDay: 3, dueDay: 10 });
+		expect(() => createSchedule(db, runningInput({ startDate: '2026-10-09' }))).toThrow(
+			code('INVALID_INPUT')
+		);
+		const id = createSchedule(db, runningInput());
+		expect(getSchedule(db, id, T).nextDate).toBe('2026-10-10');
+		setBillingDays(db, card, { closingDay: 20, dueDay: 31 });
+		expect(
+			getSchedule(db, createSchedule(db, runningInput({ startDate: '2027-02-28' })), T)
+		).toMatchObject({ startDate: '2027-02-28' });
+	});
+
+	it('refuses numbers out of range or a rule a purchase in installments doesn’t have', () => {
+		const bad: Partial<ScheduleInput>[] = [
+			{ installmentStart: 0 },
+			{ installmentStart: 1.5 },
+			{ endCount: null },
+			{ installmentStart: 92, endCount: 9 },
+			{ frequency: 'weekly' },
+			{ interval: 2 },
+			{ weekend: 'after' },
+			{ endDate: '2027-12-31', endCount: null },
+			{ accountId: bank },
+			{ amount: 8000 },
+			{ payeeName: null, categoryId: null, transferAccountId: bank }
+		];
+		for (const over of bad)
+			expect(() => createSchedule(db, runningInput(over))).toThrow(code('INVALID_INPUT'));
+		expect(listSchedules(db, T)).toEqual([]);
+		expect(createSchedule(db, runningInput({ installmentStart: 91, endCount: 9 }))).toBeTruthy();
+	});
+
+	it('keeps its place when edited, and restarts when the number goes below what passed', () => {
+		const id = createSchedule(db, runningInput());
+		enterDueOccurrences(db, '2026-11-10');
+		expect(getSchedule(db, id, T)).toMatchObject({ nextIndex: 2, installmentStart: 4 });
+		updateSchedule(
+			db,
+			id,
+			runningInput({ startDate: '2026-12-10', endCount: 6, installmentStart: 7 })
+		);
+		expect(getSchedule(db, id, T)).toMatchObject({
+			nextIndex: 2,
+			installmentStart: 5,
+			endCount: 8
+		});
+		expect(upcomingOccurrences(db, { today: T, to: '2026-12-31' })[0].memo).toBe('TV 7/12');
+		updateSchedule(
+			db,
+			id,
+			runningInput({ startDate: '2026-12-10', endCount: 7, installmentStart: 2 })
+		);
+		expect(getSchedule(db, id, T)).toMatchObject({
+			nextIndex: 0,
+			installmentStart: 2,
+			endCount: 7
+		});
+		expect(upcomingOccurrences(db, { today: T, to: '2026-12-31' })[0].memo).toBe('TV 2/8');
+	});
+
+	it('renumbers in place a schedule whose dates are off the due day', () => {
+		// Made before the card had billing days.
+		createInstallments(db, tvInput({ date: '2026-09-12' }), 4);
+		setBillingDays(db, card, { closingDay: 3, dueDay: 15 });
+		const [s] = listSchedules(db, T);
+		expect(s.nextDate).toBe('2026-10-12');
+		updateSchedule(
+			db,
+			s.id,
+			runningInput({ amount: -25000, startDate: '2026-10-12', endCount: 4, installmentStart: 1 })
+		);
+		expect(getSchedule(db, s.id, T)).toMatchObject({
+			nextIndex: 0,
+			installmentStart: 1,
+			nextDate: '2026-10-12'
+		});
+	});
+
+	it('restarts on the card’s due day only', () => {
+		setBillingDays(db, card, { closingDay: 3, dueDay: 10 });
+		const id = createSchedule(db, runningInput());
+		expect(() =>
+			updateSchedule(
+				db,
+				id,
+				runningInput({ startDate: '2026-11-11', endCount: 8, installmentStart: 5 })
+			)
+		).toThrow(code('INVALID_INPUT'));
+		updateSchedule(
+			db,
+			id,
+			runningInput({ startDate: '2026-11-10', endCount: 8, installmentStart: 5 })
+		);
+		expect(getSchedule(db, id, T).nextDate).toBe('2026-11-10');
 	});
 });
 

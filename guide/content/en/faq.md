@@ -52,6 +52,11 @@ A card's starting debt comes out of Ready to Assign: the money to pay it has to 
 somewhere. If you can't cover it now, give the debt a category of its own and pay it off over time:
 see [A credit card that already has debt](situations.md#existing-card-debt).
 
+## I'm already paying a purchase in installments {#installments-under-way}
+
+Add it as a schedule from the installment you're on, with the amount of each one: the ones you
+already paid aren't entered. See [Installments already under way](schedules.md#installments-under-way).
+
 ## A transaction doesn't change my budget {#not-in-budget}
 
 That is expected in two cases: the transaction is in a tracking account (investments, loans), or

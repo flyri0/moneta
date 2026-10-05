@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CreditCardIcon from '@lucide/svelte/icons/credit-card';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import * as Alert from '$ui/alert';
@@ -12,6 +13,7 @@
 	import SheetLink from '$components/SheetLink.svelte';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import HelpLink from '$components/HelpLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
@@ -27,6 +29,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import { canSplit, splitRemaining, type FormContext } from '$features/transactions/form';
+	import { canInstall } from '$features/transactions/installments';
 	import { FORM_ERRORS } from '$features/transactions/form-errors';
 	import TransactionFields from '$features/transactions/TransactionFields.svelte';
 	import {
@@ -38,6 +41,9 @@
 		buildScheduleInput,
 		draftRuleSummary,
 		FREQUENCY_LABELS,
+		installmentDate,
+		installmentsLeft,
+		paysInstallments,
 		MANY_DUE,
 		type Ends,
 		type ScheduleDraft,
@@ -75,7 +81,10 @@
 		...FORM_ERRORS,
 		INTERVAL_INVALID: m.form_error_interval_invalid,
 		END_DATE_INVALID: m.form_error_end_date_invalid,
-		END_COUNT_INVALID: m.form_error_end_count_invalid
+		END_COUNT_INVALID: m.form_error_end_count_invalid,
+		INSTALLMENT_NUMBER_INVALID: m.form_error_installment_number_invalid,
+		INSTALLMENT_TOTAL_INVALID: m.form_error_installment_total_invalid,
+		INSTALLMENT_DATE_PAST: m.form_error_installment_date_past
 	};
 	const UNIT_LABELS: Record<Frequency, () => string> = {
 		once: () => '',
@@ -103,6 +112,32 @@
 			splitRemaining(draft.txn, ctx.money) !== 0
 	);
 
+	/** Only a card purchase offers installments, as a new purchase does. */
+	const installable = $derived(canInstall(draft.txn, ctx));
+	const installing = $derived(paysInstallments(draft, ctx));
+	/** On a card with billing days, installments fall on its due dates: the date isn't typed. */
+	const lockedDate = $derived(installmentDate(draft, ctx, todayIso()));
+	const left = $derived(installmentsLeft(draft, ctx));
+	const leftText = $derived.by(() => {
+		if (!left) return '';
+		const count = m.schedule_installments_left({
+			count: left.left,
+			next: left.next,
+			total: left.total
+		});
+		return left.sum === null
+			? count
+			: `${count} · ${m.schedule_installments_sum({ amount: session.format(left.sum) })}`;
+	});
+
+	const installmentsDetail = $derived(
+		!installing
+			? m.schedule_installments_off()
+			: left
+				? m.schedules_installment({ n: left.next, total: left.total })
+				: m.schedule_installments_on()
+	);
+
 	/** How many transactions saving enters at once, when that many that it asks first. */
 	let manyDue = $state(0);
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
@@ -117,10 +152,18 @@
 	async function submit(confirmed: boolean) {
 		const result = buildScheduleInput(draft, ctx);
 		if (!result.ok) {
+			// The installment numbers are on their own screen: show the error there.
+			if (
+				result.error === 'INSTALLMENT_NUMBER_INVALID' ||
+				result.error === 'INSTALLMENT_TOTAL_INVALID'
+			)
+				view = 'installments';
 			error = { message: ERRORS[result.error]() };
 			return;
 		}
 		const input = result.input;
+		// The date the form shows is the one saved, even when it was locked to a due date.
+		if (lockedDate) draft.txn.date = lockedDate;
 		// A year typed wrong would stretch every budget computation to it: ask once.
 		if (isFarFuture(input.startDate, todayIso()) && farDate !== input.startDate) {
 			farDate = input.startDate;
@@ -166,7 +209,19 @@
 
 <form class="grid gap-4" onsubmit={save}>
 	{#if view === 'main'}
-		<TransactionFields {ctx} bind:draft={draft.txn} dateLabel={m.schedule_next_date()} {pending} />
+		<TransactionFields
+			{ctx}
+			bind:draft={draft.txn}
+			dateLabel={m.schedule_next_date()}
+			{lockedDate}
+			{pending}
+		/>
+
+		{#if lockedDate}
+			<p class="-mt-2 text-xs text-muted-foreground" data-testid="installments-due">
+				{m.schedule_installments_due({ date: formatDate(lockedDate, getLocale()) })}
+			</p>
+		{/if}
 
 		<div class="flex items-center justify-between gap-4 rounded-lg border p-3">
 			<div class="grid gap-1">
@@ -181,12 +236,23 @@
 		<Separator />
 
 		<nav class="-mx-2 grid gap-0.5">
-			<SheetLink
-				icon={RepeatIcon}
-				label={m.schedule_frequency()}
-				detail={draftRuleSummary(draft.rule)}
-				onclick={() => go('repeat')}
-			/>
+			<!-- Installments are always monthly, until the last one: no repeat rule to set. -->
+			{#if !installing}
+				<SheetLink
+					icon={RepeatIcon}
+					label={m.schedule_frequency()}
+					detail={draftRuleSummary(draft.rule)}
+					onclick={() => go('repeat')}
+				/>
+			{/if}
+			{#if installable}
+				<SheetLink
+					icon={CreditCardIcon}
+					label={m.schedule_installments()}
+					detail={installmentsDetail}
+					onclick={() => go('installments')}
+				/>
+			{/if}
 			{#if editingId}
 				<SheetLink
 					icon={Trash2Icon}
@@ -317,6 +383,49 @@
 				{/if}
 			{/if}
 		</div>
+
+		<FormMessage {error} />
+	{:else if view === 'installments'}
+		<div class="grid divide-y rounded-lg border">
+			<div class="flex items-center justify-between gap-4 p-3">
+				<div class="grid gap-1">
+					<Label for="schedule-installments">{m.schedule_installments()}</Label>
+					<p class="text-xs text-muted-foreground">{m.schedule_installments_hint()}</p>
+				</div>
+				<Switch id="schedule-installments" bind:checked={draft.installments.on} />
+			</div>
+			{#if draft.installments.on}
+				<div class="grid gap-2 p-3">
+					<div class="flex flex-wrap items-center gap-2">
+						<Label for="schedule-installment-next">{m.schedule_installment_next()}</Label>
+						<Input
+							id="schedule-installment-next"
+							class="w-16"
+							bind:value={draft.installments.next}
+							inputmode="numeric"
+							autocomplete="off"
+							placeholder="4"
+						/>
+						<span class="text-sm text-muted-foreground">{m.schedule_installment_of()}</span>
+						<Input
+							id="schedule-installment-total"
+							class="w-16"
+							bind:value={draft.installments.total}
+							inputmode="numeric"
+							autocomplete="off"
+							placeholder="12"
+							aria-label={m.schedule_installment_total()}
+						/>
+					</div>
+					{#if leftText}
+						<p class="text-sm text-muted-foreground tabular-nums" data-testid="installments-left">
+							{leftText}
+						</p>
+					{/if}
+				</div>
+			{/if}
+		</div>
+		<HelpLink topic="installmentsUnderWay" text class="justify-self-start" />
 
 		<FormMessage {error} />
 	{:else if view === 'enter-many'}

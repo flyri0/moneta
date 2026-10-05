@@ -80,7 +80,7 @@ Uma transação que o banco ainda não processou. O extrato mostra o total delas
 
 ### Parcelas {#installments}
 
-Uma compra no cartão paga em partes iguais, uma por mês, cada uma lançada na sua data ([Parcelas](accounts.md#installments)).
+Uma compra no cartão paga em partes iguais, uma por mês, cada uma lançada na sua data ([Parcelas](accounts.md#installments)). Uma que já está em andamento entra como agendamento a partir da próxima parcela ([Parcelamentos em andamento](schedules.md#installments-under-way)).
 
 ### Patrimônio líquido {#net-worth}
 

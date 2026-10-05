@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
@@ -90,6 +92,15 @@
 		return `${split} · ${m.transaction_installments_first_due({ date })}`;
 	});
 
+	/** A purchase already being paid is a schedule from its next installment: open that form. */
+	function addRunning() {
+		const query = new URLSearchParams({ add: 'installments', account: draft.accountId });
+		onDone(null);
+		// The path is resolve()d; only the query is added to it.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(`${resolve('/transactions/scheduled')}?${query}`);
+	}
+
 	/** Split lines that don't add up yet keep Save disabled. */
 	const blocked = $derived(
 		draft.splits !== null && canSplit(draft, ctx) && splitRemaining(draft, ctx.money) !== 0
@@ -179,6 +190,13 @@
 						</span>
 					{/if}
 				</div>
+				<button
+					type="button"
+					class="justify-self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+					onclick={addRunning}
+				>
+					{m.transaction_installments_running()}
+				</button>
 			</div>
 		{/if}
 

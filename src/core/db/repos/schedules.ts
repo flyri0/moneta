@@ -1,5 +1,5 @@
 import { uuidv7 } from 'uuidv7';
-import { installmentDueDate } from '$domain/card-bill';
+import { installmentDueDate, isDueDay } from '$domain/card-bill';
 import { DomainError } from '$domain/errors';
 import { groupBy } from '$domain/group-by';
 import {
@@ -23,8 +23,12 @@ import { createTransaction, validateTransaction, type TransactionInput } from '.
 /** A schedule as the form writes it: a transaction without its date, and the rule that dates it. */
 export interface ScheduleInput extends Omit<TransactionInput, 'date' | 'cleared'>, Rule {
 	autoEnter: boolean;
-	/** Whether it keeps numbering its occurrences as installments ("2/12"). Needs `endCount`. */
-	installments?: boolean;
+	/**
+	 * The installment number of the occurrence on `startDate`, when it pays a purchase in
+	 * installments and numbers what it enters ("4/12"). Needs `endCount`, and the rule a purchase
+	 * in installments has (see `validateInstallments`).
+	 */
+	installmentStart?: number | null;
 }
 
 export interface ScheduleSplitRow {
@@ -199,6 +203,7 @@ function insert(
 ): void {
 	validateRule(input);
 	validateTransaction(db, transactionAt(input, input.startDate));
+	if (installmentStart !== null) validateInstallments(input, installmentStart);
 	const splits = input.splits ?? [];
 	run(
 		db,
@@ -223,7 +228,7 @@ function insert(
 			input.weekend,
 			input.autoEnter ? 1 : 0,
 			nextIndex,
-			input.endCount === null ? null : installmentStart,
+			installmentStart,
 			createdAt
 		]
 	);
@@ -234,6 +239,47 @@ function insert(
 			[uuidv7(), id, s.categoryId, s.amount, s.memo ?? '']
 		);
 	}
+}
+
+/**
+ * A schedule that numbers installments follows the rule of a purchase in installments: monthly,
+ * keeping its dates, and ending after the last one, at most the 99th. `start` is the number of
+ * occurrence 0.
+ */
+function validateInstallments(input: ScheduleInput, start: number): void {
+	if (!Number.isInteger(start) || start < 1)
+		throw new DomainError('INVALID_INPUT', 'Installment numbers start at 1');
+	if (input.endCount === null)
+		throw new DomainError('INVALID_INPUT', 'Installments end after a count');
+	if (start + input.endCount - 1 > MAX_INSTALLMENTS)
+		throw new DomainError('INVALID_INPUT', 'Installments must be 99 at most');
+	if (
+		input.frequency !== 'monthly' ||
+		input.interval !== 1 ||
+		input.weekend !== 'keep' ||
+		input.endDate !== null
+	)
+		throw new DomainError('INVALID_INPUT', 'Installments are monthly');
+}
+
+/**
+ * Throws INVALID_INPUT unless the input is a card purchase (an outflow, not a transfer or split),
+ * as a new purchase in installments must be. With `checkDate`, its date must also be the card's
+ * due day when it has billing days: installments are entered on their bill's due date.
+ */
+function checkInstallmentPurchase(db: Db, input: ScheduleInput, checkDate: boolean): void {
+	const account = one<{ type: string; closingDay: number | null; dueDay: number | null }>(
+		db,
+		'SELECT type, closing_day AS closingDay, due_day AS dueDay FROM accounts WHERE id = ?',
+		[input.accountId]
+	);
+	if (account?.type !== 'credit_card')
+		throw new DomainError('INVALID_INPUT', 'Only card purchases are paid in installments');
+	if (input.transferAccountId || (input.splits?.length ?? 0) > 0 || input.amount >= 0)
+		throw new DomainError('INVALID_INPUT', 'Only purchases are paid in installments');
+	if (!checkDate || account.closingDay === null || account.dueDay === null) return;
+	if (!isDueDay({ closingDay: account.closingDay, dueDay: account.dueDay }, input.startDate))
+		throw new DomainError('INVALID_INPUT', 'Installments fall on the card’s due day');
 }
 
 type Stored = Rule & { nextIndex: number; installmentStart: number | null; createdAt: string };
@@ -254,7 +300,9 @@ function requireSchedule(db: Db, id: string): Stored {
 export function createSchedule(db: Db, input: ScheduleInput): string {
 	return tx(db, () => {
 		const id = uuidv7();
-		insert(db, id, input, nowIso());
+		const start = input.installmentStart ?? null;
+		if (start !== null) checkInstallmentPurchase(db, input, true);
+		insert(db, id, input, nowIso(), 0, start);
 		return id;
 	});
 }
@@ -264,19 +312,26 @@ export function createSchedule(db: Db, input: ScheduleInput): string {
  * `endCount` counts the occurrences from there. When the next date is where the schedule picks up
  * anyway (see `resumeDate`) and the cadence is the same, it keeps its place: a month-end day stays
  * put, and occurrences already entered or skipped never come back. Otherwise the rule restarts
- * at the new date. Installment numbers go on from where they were either way.
+ * at the new date. `input.installmentStart` is the installment number of the next date; a number
+ * lower than the occurrences already passed also restarts the rule, and a restarted installment
+ * schedule falls on the card's due day like a new one.
  */
 export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 	tx(db, () => {
 		const stored = requireSchedule(db, id);
+		const next = input.installmentStart ?? null;
 		const keep =
 			input.frequency === stored.frequency &&
 			input.interval === stored.interval &&
-			input.startDate === resumeDate(stored, stored.nextIndex);
-		const start = input.installments ? stored.installmentStart : null;
+			input.startDate === resumeDate(stored, stored.nextIndex) &&
+			(next === null || next - stored.nextIndex >= 1);
+		// The schedule's own dates stand, even from before the card had billing days, or a due day
+		// past the end of the month its first installment fell in.
+		const ownDate = input.startDate === resumeDate(stored, stored.nextIndex);
+		if (next !== null) checkInstallmentPurchase(db, input, !ownDate);
 		run(db, 'DELETE FROM schedules WHERE id = ?', [id]);
 		if (!keep) {
-			insert(db, id, input, stored.createdAt, 0, start === null ? null : start + stored.nextIndex);
+			insert(db, id, input, stored.createdAt, 0, next);
 			return;
 		}
 		const endCount = input.endCount === null ? null : input.endCount + stored.nextIndex;
@@ -286,7 +341,7 @@ export function updateSchedule(db: Db, id: string, input: ScheduleInput): void {
 			{ ...input, startDate: stored.startDate, endCount },
 			stored.createdAt,
 			stored.nextIndex,
-			start
+			next === null ? null : next - stored.nextIndex
 		);
 	});
 }

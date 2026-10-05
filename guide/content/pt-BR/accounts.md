@@ -65,7 +65,8 @@ lançá-la. O Moneta mostra o plano antes de salvar, por exemplo "1ª de R$ 333,
   você paga a cada mês.
 
 As parcelas restantes aparecem em **Agendamentos**, como "Parcela 2 de 12", e na lista de próximos
-lançamentos do cartão.
+lançamentos do cartão. Uma compra que você já vinha pagando entra como agendamento a partir da
+próxima parcela: veja [Parcelamentos em andamento](schedules.md#installments-under-way).
 
 ## O extrato {#register}
 

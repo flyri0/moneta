@@ -17,12 +17,21 @@
 	} from './form';
 	import ScheduleForm from './ScheduleForm.svelte';
 
-	/** Adds a schedule (in `accountId` when given), or edits `schedule`. */
+	/**
+	 * Adds a schedule (in `accountId` when given), or edits `schedule`. With `preset`
+	 * 'installments', a new one starts as a purchase in installments already under way.
+	 */
 	let {
 		open = $bindable(false),
 		accountId,
-		schedule = null
-	}: { open: boolean; accountId?: string; schedule?: ScheduleRow | null } = $props();
+		schedule = null,
+		preset
+	}: {
+		open: boolean;
+		accountId?: string;
+		schedule?: ScheduleRow | null;
+		preset?: 'installments';
+	} = $props();
 
 	const session = useSession();
 	let ctx = $state.raw<FormContext | null>(null);
@@ -36,6 +45,7 @@
 			: {
 					main: schedule ? m.schedule_edit_title() : m.schedule_add_title(),
 					repeat: m.schedule_frequency(),
+					installments: m.schedule_installments(),
 					delete: m.schedule_delete_title(),
 					'enter-many': m.schedule_enter_many_title()
 				}[view]
@@ -54,7 +64,7 @@
 				const openAccounts = context.accounts.filter((a) => !a.closed);
 				const pick =
 					openAccounts.find((a) => a.id === preferredAccount)?.id ?? openAccounts[0]?.id ?? '';
-				initial = newScheduleDraft(pick, todayIso());
+				initial = newScheduleDraft(pick, todayIso(), { installments: preset === 'installments' });
 			}
 			ctx = context;
 		} catch (err) {

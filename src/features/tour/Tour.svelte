@@ -41,6 +41,11 @@
 			body: () => m.tour_add_transaction_body()
 		},
 		accounts: { title: () => m.tour_accounts_title(), body: () => m.tour_accounts_body() },
+		schedules: { title: () => m.tour_schedules_title(), body: () => m.tour_schedules_body() },
+		'schedules-phone': {
+			title: () => m.tour_schedules_title(),
+			body: () => m.tour_schedules_phone_body()
+		},
 		month: { title: () => m.tour_month_title(), body: () => m.tour_month_body() },
 		done: { title: () => m.tour_done_title(), body: () => m.tour_done_body() }
 	};

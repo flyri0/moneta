@@ -52,7 +52,7 @@ A category in the Income group, such as Salary. Money recorded in it goes to Rea
 
 ### Installments {#installments}
 
-A card purchase paid in equal parts, one a month, each entered on its date ([Installments](accounts.md#installments)).
+A card purchase paid in equal parts, one a month, each entered on its date ([Installments](accounts.md#installments)). One already under way is added as a schedule from its next installment ([Installments already under way](schedules.md#installments-under-way)).
 
 ### Net worth {#net-worth}
 

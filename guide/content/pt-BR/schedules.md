@@ -14,9 +14,48 @@ memorando), e mais:
 - **Termina**: nunca, numa data, ou depois de um número de vezes.
 - **Em fins de semana**: o que acontece quando uma data cai num sábado ou domingo.
 - **Lançar automaticamente**: ligado ou desligado.
+- **Parcelas**, numa compra no cartão: uma compra que você já está pagando, numerada a cada
+  parcela (veja [abaixo](#installments-under-way)).
 
 Um agendamento mensal no dia 31 cai no último dia dos meses mais curtos, e volta ao dia 31 quando o
 mês tem um.
+
+## Parcelamentos em andamento {#installments-under-way}
+
+Uma compra parcelada que começou antes de você usar o Moneta, ou que você nunca lançou, ainda pode
+ser agendada a partir da parcela em que você está. Para uma compra lançada agora, use **Parcelas**
+na própria transação ([Parcelas](accounts.md#installments)).
+
+Escolha o cartão num novo agendamento, ou toque em **Já está pagando uma? Adicione como
+agendamento**, abaixo de Parcelas, numa compra no cartão. Depois:
+
+1. Preencha o favorecido, a categoria e o memorando, e em **Valor** quanto custa **cada** parcela.
+2. Abra **Parcelas**, ligue, e informe a **próxima parcela** e o total, como a fatura mostra: para
+   "4/12", 4 de 12.
+
+Por exemplo, uma TV em 12x de R$ 80,00, com três já pagas: o agendamento lança de 4/12 a 12/12,
+nove parcelas, R$ 720,00 no total, com o memorando numerado ("TV 4/12").
+
+Elas seguem as mesmas regras de uma compra parcelada nova:
+
+- Só uma compra no cartão as oferece: não uma transferência, uma entrada ou uma divisão. Troque de
+  conta e a opção some.
+- Repetem todo mês e terminam na última, então o agendamento não pergunta como se repete.
+- Num cartão com fechamento e vencimento, cada uma cai no vencimento da sua fatura, a próxima no
+  próximo vencimento a partir de hoje, e você não escolhe a data. Sem essas datas, você escolhe a
+  data da próxima.
+- São lançadas automaticamente, como as parcelas de uma compra nova. Dá para desligar.
+
+As parcelas que você já pagou não são lançadas: os meses passados do orçamento ficam como estão.
+Para corrigir os números depois, edite o agendamento e mude-os em **Parcelas**.
+
+## Busca e filtros {#search}
+
+A caixa de busca encontra agendamentos pelo favorecido, conta, categoria, memorando ou valor, sem
+diferenciar acentos nem maiúsculas. Todas as palavras precisam bater. **Filtros** restringem a
+lista por próxima data, conta, categoria, favorecido, valor, situação (pendentes, próximos,
+pausados ou encerrados) e tipo: lançados automaticamente, lançados à mão ou parcelados. **Limpar
+filtros** mostra todos de novo.
 
 ## Fins de semana {#weekend-rule}
 

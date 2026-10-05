@@ -94,3 +94,108 @@ test('puts the installments of a card with billing days on its bills’ due date
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
 	await expect(page.getByTestId('schedule-row')).toContainText('Nov 15, 2026');
 });
+
+test('adds a purchase already under way from the card purchase form, on the card’s due dates', async ({
+	page
+}) => {
+	await page.clock.setFixedTime(new Date('2026-10-04T12:00:00'));
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Add account' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Credit card' }).click();
+	await dialog.getByLabel('Account name').fill('Visa');
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await expect(dialog).toBeHidden();
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Visa' })
+		.getByRole('link')
+		.click();
+	await page.getByRole('main').getByRole('button', { name: 'Settings for Visa' }).click();
+	await dialog.getByLabel('Closing day').fill('3');
+	await dialog.getByLabel('Due day').fill('10');
+	await dialog.getByLabel('Due day').press('Enter');
+	await expect(dialog).toBeHidden();
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	await dialog.getByRole('button', { name: 'Already paying one? Add it as a schedule' }).click();
+	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
+	await expect(dialog.getByRole('heading', { name: 'New schedule' })).toBeVisible();
+	// Installments fall on the bill's due date, as a new purchase's do: the date isn't typed.
+	await expect(dialog.getByLabel('Next date')).toHaveValue('Oct 10, 2026');
+	await expect(dialog.getByTestId('installments-due')).toContainText('Oct 10, 2026');
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeHidden();
+
+	await chooseCombobox(dialog, 'Payee', 'TV Store', 'TV Store');
+	await dialog.getByLabel('Amount', { exact: true }).fill('80');
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+	await dialog.getByLabel('Memo').fill('TV');
+
+	// Saving without the numbers opens their screen, with the error.
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Installments' })).toBeVisible();
+	await expect(dialog.getByText("Enter the next installment's number")).toBeVisible();
+	await expect(dialog.getByRole('switch', { name: 'Installments' })).toBeChecked();
+	await dialog.getByLabel('Next installment').fill('4');
+	await dialog.getByLabel('Total installments').fill('12');
+	await expect(dialog.getByTestId('installments-left')).toHaveText(
+		'9 left, 4/12 to 12/12, every month · $720.00 in all'
+	);
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	await expect(dialog.getByRole('button', { name: /^Installments/ })).toContainText(
+		'Installment 4 of 12'
+	);
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	const schedule = page.getByTestId('schedule-row');
+	await expect(schedule).toContainText('TV Store');
+	await expect(schedule).toContainText('-$80.00');
+	await expect(schedule).toContainText('Installment 4 of 12');
+	await expect(schedule).toContainText('Next Oct 10, 2026');
+
+	// The link's query is gone from history too: going back and forth doesn't open it again.
+	await page.goBack();
+	await expect(page.getByTestId('register-title')).toHaveText('Visa');
+	await page.goForward();
+	await expect(schedule).toContainText('Installment 4 of 12');
+	await expect(dialog).toBeHidden();
+
+	// Nothing before it was entered.
+	await page.reload();
+	await expect(dialog).toBeHidden();
+	await expect(schedule).toContainText('Installment 4 of 12');
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Transactions' }).click();
+	await expect(page.getByTestId('register-row').first()).toBeVisible();
+	await expect(page.getByTestId('register-row').filter({ hasText: 'TV Store' })).toHaveCount(0);
+});
+
+test('offers installments in a schedule only for a card purchase', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Add account' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Credit card' }).click();
+	await dialog.getByLabel('Account name').fill('Visa');
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await expect(dialog).toBeHidden();
+
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	const installments = dialog.getByRole('button', { name: /^Installments/ });
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeVisible();
+	await expect(installments).toBeHidden();
+	await chooseCombobox(dialog, 'Account', 'Visa');
+	await expect(installments).toContainText('Off');
+	await installments.click();
+	await dialog.getByRole('switch', { name: 'Installments' }).click();
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeHidden();
+	await chooseCombobox(dialog, 'Account', 'Checking');
+	await expect(installments).toBeHidden();
+	await expect(dialog.getByRole('button', { name: /^Repeats/ })).toBeVisible();
+});

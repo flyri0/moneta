@@ -65,7 +65,8 @@ $333.33": the first installment takes the cents left over.
   what you pay each month.
 
 The remaining installments show under **Schedules**, as "Installment 2 of 12", and in the card's
-upcoming list.
+upcoming list. A purchase you were already paying before goes in as a schedule from the next
+installment: see [Installments already under way](schedules.md#installments-under-way).
 
 ## The register {#register}
 

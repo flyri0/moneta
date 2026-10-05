@@ -57,7 +57,7 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 	await expect(card(page)).toContainText('Welcome to your budget');
 	await card(page).getByRole('button', { name: 'Start tour' }).click();
 
-	await expect(card(page)).toContainText('1 of 6');
+	await expect(card(page)).toContainText('1 of 7');
 	await expect(card(page).getByRole('heading')).toHaveText('Ready to Assign');
 	await expect(card(page).getByRole('link', { name: 'Learn more in the guide' })).toHaveAttribute(
 		'href',
@@ -79,6 +79,10 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 
 	await card(page).getByRole('button', { name: 'Next' }).click();
 	await expect(card(page).getByRole('heading')).toHaveText('Accounts');
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page).getByRole('heading')).toHaveText('Schedules');
+	await expect(card(page)).toContainText("even ones you're already paying");
+	await expectLit(page, page.locator('#sidebar [data-tour="schedules"]'));
 	await card(page).getByRole('button', { name: 'Next' }).click();
 	await expect(card(page).getByRole('heading')).toHaveText('Month by month');
 	await expectLit(page, page.locator('[data-tour="month"]'));
@@ -118,6 +122,11 @@ test('fits a phone', async ({ page }) => {
 	await card(page).getByRole('button', { name: 'Next' }).click();
 	const bar = page.getByRole('navigation').last();
 	await expectLit(page, bar.getByRole('link', { name: 'Accounts' }));
+	await expectCardInView(page);
+
+	await card(page).getByRole('button', { name: 'Next' }).click();
+	await expect(card(page)).toContainText('the Scheduled tab');
+	await expectLit(page, bar.getByRole('link', { name: 'Transactions' }));
 	await expectCardInView(page);
 });
 
