@@ -9,58 +9,94 @@ export type TourTarget =
 	| 'accounts'
 	| 'schedules'
 	| 'transactions'
+	| 'scheduled-tab'
 	| 'month'
-	| 'settings';
+	| 'reports'
+	| 'report-card'
+	| 'settings'
+	| 'backup'
+	| 'about';
 
-/** Which text a step shows: its own, or one that fits the layout or the fallback it fell to. */
-export type TourCopy =
+/** The screen a step shows on. */
+export type TourRoute = 'budget' | 'scheduled' | 'reports' | 'settings';
+
+/** Each screen's SvelteKit route id. */
+export const TOUR_ROUTE_IDS = {
+	budget: '/budget/[month]',
+	scheduled: '/transactions/scheduled',
+	reports: '/reports',
+	settings: '/settings'
+} as const satisfies Record<TourRoute, string>;
+
+type StepId =
 	| 'intro'
 	| 'rta'
 	| 'category'
-	| 'category-wide'
-	| 'add-group'
 	| 'add-transaction'
-	| 'accounts'
-	| 'schedules'
-	| 'schedules-phone'
 	| 'month'
+	| 'accounts'
+	| 'schedules-way'
+	| 'schedules'
+	| 'reports-way'
+	| 'reports'
+	| 'settings-way'
+	| 'backup'
 	| 'done';
 
+/** Which text a step shows: its own, or one that fits the layout or the fallback it fell to. */
+export type TourCopy =
+	StepId | 'category-wide' | 'add-group' | 'schedules-way-phone' | 'backup-cloud';
+
 export interface TourStep {
-	id:
-		'intro' | 'rta' | 'category' | 'add-transaction' | 'accounts' | 'schedules' | 'month' | 'done';
+	id: StepId;
+	route: TourRoute;
 	target?: TourTarget;
 	/** The guide's section on it, behind "Learn more". */
 	topic?: GuideTopic;
 	/** Used when the target isn't on the page, with its own text and section. */
-	fallback?: { target: TourTarget; copy: TourCopy; topic: GuideTopic };
+	fallback?: { target: TourTarget; copy: TourCopy; topic?: GuideTopic };
+	/** The screen the next step opens: this step lights the way there. */
+	leadsTo?: TourRoute;
 }
 
 /**
  * The first-budget tour, in the guide's order: what Ready to Assign is, assigning it, recording
- * what happens, the other accounts, what repeats (installments too), the months, and where the
- * guide is.
+ * what happens, the months, the other accounts, then the screens around the budget (what repeats,
+ * reports, backups), each first shown in the navigation and then opened. It ends in Settings,
+ * where it can be taken again.
  */
 export const TOUR_STEPS: readonly TourStep[] = [
-	{ id: 'intro' },
-	{ id: 'rta', target: 'rta', topic: 'readyToAssign' },
+	{ id: 'intro', route: 'budget' },
+	{ id: 'rta', route: 'budget', target: 'rta', topic: 'readyToAssign' },
 	{
 		id: 'category',
+		route: 'budget',
 		target: 'category',
 		topic: 'assigning',
 		fallback: { target: 'add-group', copy: 'add-group', topic: 'categories' }
 	},
-	{ id: 'add-transaction', target: 'add-transaction', topic: 'entering' },
-	{ id: 'accounts', target: 'accounts', topic: 'accountKinds' },
+	{ id: 'add-transaction', route: 'budget', target: 'add-transaction', topic: 'entering' },
+	{ id: 'month', route: 'budget', target: 'month', topic: 'overspending' },
+	{ id: 'accounts', route: 'budget', target: 'accounts', topic: 'accountKinds' },
+	{
+		id: 'schedules-way',
+		route: 'budget',
+		target: 'schedules',
+		// Phones have no Schedules link: it is a tab inside Transactions.
+		fallback: { target: 'transactions', copy: 'schedules-way-phone' },
+		leadsTo: 'scheduled'
+	},
 	{
 		id: 'schedules',
-		target: 'schedules',
-		topic: 'installmentsUnderWay',
-		// Phones have no Schedules link: it is a tab inside Transactions.
-		fallback: { target: 'transactions', copy: 'schedules-phone', topic: 'installmentsUnderWay' }
+		route: 'scheduled',
+		target: 'scheduled-tab',
+		topic: 'installmentsUnderWay'
 	},
-	{ id: 'month', target: 'month', topic: 'overspending' },
-	{ id: 'done', target: 'settings' }
+	{ id: 'reports-way', route: 'scheduled', target: 'reports', leadsTo: 'reports' },
+	{ id: 'reports', route: 'reports', target: 'report-card', topic: 'reports' },
+	{ id: 'settings-way', route: 'reports', target: 'settings', leadsTo: 'settings' },
+	{ id: 'backup', route: 'settings', target: 'backup', topic: 'backups' },
+	{ id: 'done', route: 'settings', target: 'about' }
 ];
 
 export interface ResolvedStep<E> {
@@ -70,21 +106,29 @@ export interface ResolvedStep<E> {
 	topic?: GuideTopic;
 }
 
-/**
- * What a step shows on this page. `find` returns the visible element for a target, if any;
- * `wide` is whether the budget grid has its inline Assigned column.
- */
+/** What a step's text depends on besides the page: the grid's inline column, cloud backups. */
+export interface TourLayout {
+	/** Whether the budget grid has its inline Assigned column. */
+	wide: boolean;
+	/** Whether this build offers automatic backups to the cloud. */
+	cloud: boolean;
+}
+
+/** What a step shows on this page. `find` returns the visible element for a target, if any. */
 export function resolveStep<E>(
 	step: TourStep,
 	find: (target: TourTarget) => E | null,
-	wide: boolean
+	layout: TourLayout
 ): ResolvedStep<E> {
-	const copy: TourCopy = step.id === 'category' && wide ? 'category-wide' : step.id;
-	if (!step.target) return { element: null, copy, topic: step.topic };
+	let copy: TourCopy = step.id;
+	let topic = step.topic;
+	if (step.id === 'category' && layout.wide) copy = 'category-wide';
+	if (step.id === 'backup' && layout.cloud) [copy, topic] = ['backup-cloud', 'googleDrive'];
+	if (!step.target) return { element: null, copy, topic };
 	const element = find(step.target);
-	if (element || !step.fallback) return { element, copy, topic: step.topic };
+	if (element || !step.fallback) return { element, copy, topic };
 	const other = find(step.fallback.target);
-	if (!other) return { element: null, copy, topic: step.topic };
+	if (!other) return { element: null, copy, topic };
 	return { element: other, copy: step.fallback.copy, topic: step.fallback.topic };
 }
 

@@ -32,7 +32,7 @@
 	const busy = $derived(appUpdate.status === 'checking' || appUpdate.status === 'downloading');
 </script>
 
-<SettingsGroup title={m.settings_about()}>
+<SettingsGroup title={m.settings_about()} tour="about">
 	<SettingsRow label={m.about_updates()} {hint}>
 		{#snippet control()}
 			{#if appUpdate.status === 'ready'}

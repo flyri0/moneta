@@ -115,7 +115,8 @@
 			href: resolve('/reports'),
 			label: m.nav_reports(),
 			icon: ChartColumnIcon,
-			active: path.startsWith('/reports')
+			active: path.startsWith('/reports'),
+			tour: 'reports'
 		},
 		{
 			href: resolve('/settings'),

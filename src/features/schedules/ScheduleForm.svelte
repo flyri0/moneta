@@ -8,7 +8,6 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
-	import { Separator } from '$ui/separator';
 	import { Switch } from '$ui/switch';
 	import SheetLink from '$components/SheetLink.svelte';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
@@ -130,12 +129,9 @@
 			: `${count} · ${m.schedule_installments_sum({ amount: session.format(left.sum) })}`;
 	});
 
+	/** What the repeat row says while installments are on: which one comes next, once typed. */
 	const installmentsDetail = $derived(
-		!installing
-			? m.schedule_installments_off()
-			: left
-				? m.schedules_installment({ n: left.next, total: left.total })
-				: m.schedule_installments_on()
+		left ? m.schedules_installment({ n: left.next, total: left.total }) : m.schedule_installments()
 	);
 
 	/** How many transactions saving enters at once, when that many that it asks first. */
@@ -157,7 +153,7 @@
 				result.error === 'INSTALLMENT_NUMBER_INVALID' ||
 				result.error === 'INSTALLMENT_TOTAL_INVALID'
 			)
-				view = 'installments';
+				view = 'repeat';
 			error = { message: ERRORS[result.error]() };
 			return;
 		}
@@ -223,36 +219,23 @@
 			</p>
 		{/if}
 
-		<div class="flex items-center justify-between gap-4 rounded-lg border p-3">
-			<div class="grid gap-1">
-				<Label for="schedule-auto">{m.schedule_auto_enter()}</Label>
-				<p class="text-xs text-muted-foreground">
-					{draft.autoEnter ? m.schedule_auto_enter_hint() : m.schedule_manual_hint()}
-				</p>
-			</div>
-			<Switch id="schedule-auto" bind:checked={draft.autoEnter} />
-		</div>
-
-		<Separator />
-
 		<nav class="-mx-2 grid gap-0.5">
-			<!-- Installments are always monthly, until the last one: no repeat rule to set. -->
-			{#if !installing}
-				<SheetLink
-					icon={RepeatIcon}
-					label={m.schedule_frequency()}
-					detail={draftRuleSummary(draft.rule)}
-					onclick={() => go('repeat')}
-				/>
-			{/if}
-			{#if installable}
-				<SheetLink
-					icon={CreditCardIcon}
-					label={m.schedule_installments()}
-					detail={installmentsDetail}
-					onclick={() => go('installments')}
-				/>
-			{/if}
+			<div class="flex min-h-11 items-center justify-between gap-4 px-2 py-1">
+				<div class="grid gap-0.5">
+					<Label for="schedule-auto">{m.schedule_auto_enter()}</Label>
+					<p class="text-xs text-muted-foreground">
+						{draft.autoEnter ? m.schedule_auto_enter_hint() : m.schedule_manual_hint()}
+					</p>
+				</div>
+				<Switch id="schedule-auto" bind:checked={draft.autoEnter} />
+			</div>
+			<!-- On a card purchase, the same screen sets installments: one row for both. -->
+			<SheetLink
+				icon={installing ? CreditCardIcon : RepeatIcon}
+				label={m.schedule_frequency()}
+				detail={installing ? installmentsDetail : draftRuleSummary(draft.rule)}
+				onclick={() => go('repeat')}
+			/>
 			{#if editingId}
 				<SheetLink
 					icon={Trash2Icon}
@@ -280,152 +263,155 @@
 			</Button>
 		</div>
 	{:else if view === 'repeat'}
-		<div class="grid divide-y rounded-lg border">
-			<div class="grid gap-2 p-3">
-				<Label for="schedule-frequency">{m.schedule_frequency()}</Label>
-				<Select.Root
-					type="single"
-					value={draft.rule.frequency}
-					onValueChange={(v) => (draft.rule.frequency = v as Frequency)}
-				>
-					<Select.Trigger id="schedule-frequency" class="w-full">
-						{FREQUENCY_LABELS[draft.rule.frequency]()}
-					</Select.Trigger>
-					<Select.Content>
-						{#each FREQUENCIES as frequency (frequency)}
-							<Select.Item value={frequency} label={FREQUENCY_LABELS[frequency]()}>
-								{FREQUENCY_LABELS[frequency]()}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-
-			{#if draft.rule.frequency !== 'once'}
-				<div class="grid gap-2 p-3">
-					<Label for="schedule-interval">{m.schedule_interval()}</Label>
-					<div class="flex items-center gap-2">
-						<Input
-							id="schedule-interval"
-							bind:value={draft.rule.interval}
-							inputmode="numeric"
-							autocomplete="off"
-							class="w-20"
-						/>
-						<span class="text-sm text-muted-foreground">
-							{UNIT_LABELS[draft.rule.frequency]()}
-						</span>
+		{#if installable}
+			<div class="grid divide-y rounded-lg border">
+				<div class="flex items-center justify-between gap-4 p-3">
+					<div class="grid gap-1">
+						<Label for="schedule-installments">{m.schedule_installments()}</Label>
+						<p class="text-xs text-muted-foreground">{m.schedule_installments_hint()}</p>
 					</div>
+					<Switch id="schedule-installments" bind:checked={draft.installments.on} />
 				</div>
-
-				{#if draft.rule.frequency !== 'daily'}
+				{#if draft.installments.on}
 					<div class="grid gap-2 p-3">
-						<Label for="schedule-weekend">{m.schedule_weekend()}</Label>
-						<Select.Root
-							type="single"
-							value={draft.rule.weekend}
-							onValueChange={(v) => (draft.rule.weekend = v as WeekendRule)}
-						>
-							<Select.Trigger id="schedule-weekend" class="w-full">
-								{WEEKEND_LABELS[draft.rule.weekend]()}
-							</Select.Trigger>
-							<Select.Content>
-								{#each WEEKEND_RULES as weekend (weekend)}
-									<Select.Item value={weekend} label={WEEKEND_LABELS[weekend]()}>
-										{WEEKEND_LABELS[weekend]()}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
+						<div class="flex flex-wrap items-center gap-2">
+							<Label for="schedule-installment-next">{m.schedule_installment_next()}</Label>
+							<Input
+								id="schedule-installment-next"
+								class="w-16"
+								bind:value={draft.installments.next}
+								inputmode="numeric"
+								autocomplete="off"
+								placeholder="4"
+							/>
+							<span class="text-sm text-muted-foreground">{m.schedule_installment_of()}</span>
+							<Input
+								id="schedule-installment-total"
+								class="w-16"
+								bind:value={draft.installments.total}
+								inputmode="numeric"
+								autocomplete="off"
+								placeholder="12"
+								aria-label={m.schedule_installment_total()}
+							/>
+						</div>
+						{#if leftText}
+							<p class="text-sm text-muted-foreground tabular-nums" data-testid="installments-left">
+								{leftText}
+							</p>
+						{/if}
 					</div>
 				{/if}
+			</div>
+			<HelpLink topic="installmentsUnderWay" text class="justify-self-start" />
+		{/if}
 
+		<!-- Installments are always monthly, until the last one: no repeat rule to set. -->
+		{#if !installing}
+			<div class="grid divide-y rounded-lg border">
 				<div class="grid gap-2 p-3">
-					<Label for="schedule-ends">{m.schedule_ends()}</Label>
+					<Label for="schedule-frequency">{m.schedule_frequency()}</Label>
 					<Select.Root
 						type="single"
-						value={draft.rule.ends}
-						onValueChange={(v) => (draft.rule.ends = v as Ends)}
+						value={draft.rule.frequency}
+						onValueChange={(v) => (draft.rule.frequency = v as Frequency)}
 					>
-						<Select.Trigger id="schedule-ends" class="w-full">
-							{ENDS_LABELS[draft.rule.ends]()}
+						<Select.Trigger id="schedule-frequency" class="w-full">
+							{FREQUENCY_LABELS[draft.rule.frequency]()}
 						</Select.Trigger>
 						<Select.Content>
-							{#each ENDS as ends (ends)}
-								<Select.Item value={ends} label={ENDS_LABELS[ends]()}>
-									{ENDS_LABELS[ends]()}
+							{#each FREQUENCIES as frequency (frequency)}
+								<Select.Item value={frequency} label={FREQUENCY_LABELS[frequency]()}>
+									{FREQUENCY_LABELS[frequency]()}
 								</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
 				</div>
 
-				{#if draft.rule.ends === 'on'}
+				{#if draft.rule.frequency !== 'once'}
 					<div class="grid gap-2 p-3">
-						<Label for="schedule-end-date">{m.schedule_end_date()}</Label>
-						<DatePicker
-							id="schedule-end-date"
-							bind:value={draft.rule.endDate}
-							ariaLabel={m.schedule_end_date()}
-						/>
+						<Label for="schedule-interval">{m.schedule_interval()}</Label>
+						<div class="flex items-center gap-2">
+							<Input
+								id="schedule-interval"
+								bind:value={draft.rule.interval}
+								inputmode="numeric"
+								autocomplete="off"
+								class="w-20"
+							/>
+							<span class="text-sm text-muted-foreground">
+								{UNIT_LABELS[draft.rule.frequency]()}
+							</span>
+						</div>
 					</div>
-				{:else if draft.rule.ends === 'after'}
-					<div class="grid gap-2 p-3">
-						<Label for="schedule-end-count">{m.schedule_end_count()}</Label>
-						<Input
-							id="schedule-end-count"
-							bind:value={draft.rule.endCount}
-							inputmode="numeric"
-							autocomplete="off"
-							class="w-20"
-						/>
-					</div>
-				{/if}
-			{/if}
-		</div>
 
-		<FormMessage {error} />
-	{:else if view === 'installments'}
-		<div class="grid divide-y rounded-lg border">
-			<div class="flex items-center justify-between gap-4 p-3">
-				<div class="grid gap-1">
-					<Label for="schedule-installments">{m.schedule_installments()}</Label>
-					<p class="text-xs text-muted-foreground">{m.schedule_installments_hint()}</p>
-				</div>
-				<Switch id="schedule-installments" bind:checked={draft.installments.on} />
-			</div>
-			{#if draft.installments.on}
-				<div class="grid gap-2 p-3">
-					<div class="flex flex-wrap items-center gap-2">
-						<Label for="schedule-installment-next">{m.schedule_installment_next()}</Label>
-						<Input
-							id="schedule-installment-next"
-							class="w-16"
-							bind:value={draft.installments.next}
-							inputmode="numeric"
-							autocomplete="off"
-							placeholder="4"
-						/>
-						<span class="text-sm text-muted-foreground">{m.schedule_installment_of()}</span>
-						<Input
-							id="schedule-installment-total"
-							class="w-16"
-							bind:value={draft.installments.total}
-							inputmode="numeric"
-							autocomplete="off"
-							placeholder="12"
-							aria-label={m.schedule_installment_total()}
-						/>
-					</div>
-					{#if leftText}
-						<p class="text-sm text-muted-foreground tabular-nums" data-testid="installments-left">
-							{leftText}
-						</p>
+					{#if draft.rule.frequency !== 'daily'}
+						<div class="grid gap-2 p-3">
+							<Label for="schedule-weekend">{m.schedule_weekend()}</Label>
+							<Select.Root
+								type="single"
+								value={draft.rule.weekend}
+								onValueChange={(v) => (draft.rule.weekend = v as WeekendRule)}
+							>
+								<Select.Trigger id="schedule-weekend" class="w-full">
+									{WEEKEND_LABELS[draft.rule.weekend]()}
+								</Select.Trigger>
+								<Select.Content>
+									{#each WEEKEND_RULES as weekend (weekend)}
+										<Select.Item value={weekend} label={WEEKEND_LABELS[weekend]()}>
+											{WEEKEND_LABELS[weekend]()}
+										</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						</div>
 					{/if}
-				</div>
-			{/if}
-		</div>
-		<HelpLink topic="installmentsUnderWay" text class="justify-self-start" />
+
+					<div class="grid gap-2 p-3">
+						<Label for="schedule-ends">{m.schedule_ends()}</Label>
+						<Select.Root
+							type="single"
+							value={draft.rule.ends}
+							onValueChange={(v) => (draft.rule.ends = v as Ends)}
+						>
+							<Select.Trigger id="schedule-ends" class="w-full">
+								{ENDS_LABELS[draft.rule.ends]()}
+							</Select.Trigger>
+							<Select.Content>
+								{#each ENDS as ends (ends)}
+									<Select.Item value={ends} label={ENDS_LABELS[ends]()}>
+										{ENDS_LABELS[ends]()}
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+
+					{#if draft.rule.ends === 'on'}
+						<div class="grid gap-2 p-3">
+							<Label for="schedule-end-date">{m.schedule_end_date()}</Label>
+							<DatePicker
+								id="schedule-end-date"
+								bind:value={draft.rule.endDate}
+								ariaLabel={m.schedule_end_date()}
+							/>
+						</div>
+					{:else if draft.rule.ends === 'after'}
+						<div class="grid gap-2 p-3">
+							<Label for="schedule-end-count">{m.schedule_end_count()}</Label>
+							<Input
+								id="schedule-end-count"
+								bind:value={draft.rule.endCount}
+								inputmode="numeric"
+								autocomplete="off"
+								class="w-20"
+							/>
+						</div>
+					{/if}
+				{/if}
+			</div>
+		{/if}
 
 		<FormMessage {error} />
 	{:else if view === 'enter-many'}
