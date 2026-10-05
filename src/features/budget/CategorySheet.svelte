@@ -212,12 +212,7 @@
 	}
 </script>
 
-<ResponsiveDialog
-	bind:open
-	{title}
-	onBack={view === 'main' ? undefined : () => go('main')}
-	focusFirst="desktop"
->
+<ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
 	{#if view === 'main'}
 		<div class="grid gap-5">
 			{#if isIncome}

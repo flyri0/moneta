@@ -10,9 +10,9 @@
 
 	/**
 	 * A dialog on desktop and a drawer on phones (below 768px). `onBack` adds a back button
-	 * before the title, for screens nested inside one dialog. `focusFirst={false}` keeps focus on the
-	 * dialog itself when it opens instead of its first field, so a phone's keyboard stays down;
-	 * `'desktop'` does that on phones only.
+	 * before the title, for screens nested inside one dialog. On desktop it focuses its first field
+	 * when it opens, unless `focusFirst={false}`; on phones it never does, so the keyboard comes up
+	 * only when a field is tapped.
 	 */
 	let {
 		open = $bindable(false),
@@ -26,7 +26,7 @@
 		title: string;
 		description?: string;
 		onBack?: () => void;
-		focusFirst?: boolean | 'desktop';
+		focusFirst?: boolean;
 		children: Snippet;
 	} = $props();
 
@@ -34,7 +34,7 @@
 	let content = $state<HTMLElement | null>(null);
 
 	function openAutoFocus(event: Event) {
-		if (focusFirst === 'desktop' ? desktop.current : focusFirst) return;
+		if (focusFirst) return;
 		event.preventDefault();
 		content?.focus({ preventScroll: true });
 	}
@@ -67,7 +67,7 @@
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
-	<BottomDrawer bind:open bind:ref={content} onOpenAutoFocus={openAutoFocus}>
+	<BottomDrawer bind:open bind:ref={content}>
 		{#snippet header()}
 			<Sheet.Header class="pt-3">
 				<div class="flex min-w-0 items-center gap-1">
