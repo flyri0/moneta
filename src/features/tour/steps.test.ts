@@ -8,32 +8,47 @@ const step = (id: string) => {
 };
 
 describe('TOUR_STEPS', () => {
-	it('opens with an intro and ends on the way to the guide', () => {
-		expect(TOUR_STEPS[0].id).toBe('intro');
-		expect(TOUR_STEPS.at(-1)?.id).toBe('done');
+	it('opens with an intro on the budget and ends in Settings', () => {
+		expect(TOUR_STEPS[0]).toMatchObject({ id: 'intro', route: 'budget' });
+		expect(TOUR_STEPS.at(-1)).toMatchObject({ id: 'done', route: 'settings' });
+	});
+
+	it('shows the way into every screen before going there', () => {
+		for (let i = 1; i < TOUR_STEPS.length; i++) {
+			const [before, step] = [TOUR_STEPS[i - 1], TOUR_STEPS[i]];
+			if (step.route === before.route) continue;
+			expect(before.leadsTo, `${before.id} leads to ${step.route}`).toBe(step.route);
+			expect(before.target).toBeDefined();
+		}
+	});
+
+	it('only leads somewhere from a step that goes there next', () => {
+		TOUR_STEPS.forEach((step, i) => {
+			if (step.leadsTo) expect(TOUR_STEPS[i + 1].route).toBe(step.leadsTo);
+		});
 	});
 });
 
 describe('resolveStep', () => {
+	const all = (target: string) => `#${target}`;
+	const plain = { wide: false, cloud: false };
+
 	it('points at Schedules, or at Transactions where Schedules is a tab inside it', () => {
-		const all = (target: string) => `#${target}`;
-		expect(resolveStep(step('schedules'), all, false)).toEqual({
+		expect(resolveStep(step('schedules-way'), all, plain)).toEqual({
 			element: '#schedules',
-			copy: 'schedules',
-			topic: 'installmentsUnderWay'
+			copy: 'schedules-way',
+			topic: undefined
 		});
 		const phone = (target: string) => (target === 'schedules' ? null : `#${target}`);
-		expect(resolveStep(step('schedules'), phone, false)).toEqual({
+		expect(resolveStep(step('schedules-way'), phone, plain)).toEqual({
 			element: '#transactions',
-			copy: 'schedules-phone',
-			topic: 'installmentsUnderWay'
+			copy: 'schedules-way-phone',
+			topic: undefined
 		});
 	});
 
-	const all = (target: string) => `#${target}`;
-
 	it('spotlights the step target', () => {
-		expect(resolveStep(step('rta'), all, false)).toEqual({
+		expect(resolveStep(step('rta'), all, plain)).toEqual({
 			element: '#rta',
 			copy: 'rta',
 			topic: 'readyToAssign'
@@ -41,13 +56,26 @@ describe('resolveStep', () => {
 	});
 
 	it('explains the inline Assigned column where the grid has one', () => {
-		expect(resolveStep(step('category'), all, true).copy).toBe('category-wide');
-		expect(resolveStep(step('category'), all, false).copy).toBe('category');
+		expect(resolveStep(step('category'), all, { wide: true, cloud: false }).copy).toBe(
+			'category-wide'
+		);
+		expect(resolveStep(step('category'), all, plain).copy).toBe('category');
+	});
+
+	it('mentions automatic backups only where this build has them', () => {
+		expect(resolveStep(step('backup'), all, plain)).toMatchObject({
+			copy: 'backup',
+			topic: 'backups'
+		});
+		expect(resolveStep(step('backup'), all, { wide: false, cloud: true })).toMatchObject({
+			copy: 'backup-cloud',
+			topic: 'googleDrive'
+		});
 	});
 
 	it('points at Add group when the budget has no categories', () => {
 		const find = (target: string) => (target === 'category' ? null : `#${target}`);
-		expect(resolveStep(step('category'), find, true)).toEqual({
+		expect(resolveStep(step('category'), find, plain)).toEqual({
 			element: '#add-group',
 			copy: 'add-group',
 			topic: 'categories'
@@ -55,13 +83,13 @@ describe('resolveStep', () => {
 	});
 
 	it('shows a step with nothing to point at in the middle', () => {
-		const resolved = resolveStep(step('category'), () => null, false);
+		const resolved = resolveStep(step('category'), () => null, plain);
 		expect(resolved.element).toBeNull();
 		expect(resolved.copy).toBe('category');
 	});
 
 	it('has nothing to look for on the intro', () => {
-		expect(resolveStep(step('intro'), all, false).element).toBeNull();
+		expect(resolveStep(step('intro'), all, plain).element).toBeNull();
 	});
 });
 

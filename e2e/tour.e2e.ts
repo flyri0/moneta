@@ -13,6 +13,13 @@ function card(page: Page): Locator {
 	return page.getByTestId('tour-card');
 }
 
+/** Moves on, with the card's button named for where the tour is. */
+async function next(page: Page): Promise<void> {
+	await card(page)
+		.getByRole('button', { name: /^(Start tour|Next)$/ })
+		.click();
+}
+
 async function tourState(page: Page): Promise<string | null> {
 	return page.evaluate(() => localStorage.getItem('moneta.tour'));
 }
@@ -57,7 +64,7 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 	await expect(card(page)).toContainText('Welcome to your budget');
 	await card(page).getByRole('button', { name: 'Start tour' }).click();
 
-	await expect(card(page)).toContainText('1 of 7');
+	await expect(card(page)).toContainText('1 of 12');
 	await expect(card(page).getByRole('heading')).toHaveText('Ready to Assign');
 	await expect(card(page).getByRole('link', { name: 'Learn more in the guide' })).toHaveAttribute(
 		'href',
@@ -76,29 +83,63 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 	await card(page).getByRole('button', { name: 'Next' }).click();
 	await expect(card(page).getByRole('heading')).toHaveText('Record transactions');
 	await expectLit(page, page.locator('#sidebar [data-tour="add-transaction"]'));
-
-	await card(page).getByRole('button', { name: 'Next' }).click();
-	await expect(card(page).getByRole('heading')).toHaveText('Accounts');
-	await card(page).getByRole('button', { name: 'Next' }).click();
-	await expect(card(page).getByRole('heading')).toHaveText('Schedules');
-	await expect(card(page)).toContainText("even ones you're already paying");
-	await expectLit(page, page.locator('#sidebar [data-tour="schedules"]'));
-	await card(page).getByRole('button', { name: 'Next' }).click();
+	await next(page);
 	await expect(card(page).getByRole('heading')).toHaveText('Month by month');
 	await expectLit(page, page.locator('[data-tour="month"]'));
 	await expectCardInView(page);
+	await next(page);
+	await expect(card(page).getByRole('heading')).toHaveText('Accounts');
 
-	await card(page).getByRole('button', { name: 'Next' }).click();
+	// Each screen around the budget: the way in first, then the screen itself.
+	await next(page);
+	await expect(card(page).getByRole('heading')).toHaveText('Bills that repeat');
+	await expectLit(page, page.locator('#sidebar [data-tour="schedules"]'));
+	await next(page);
+	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
+	await expect(card(page).getByRole('heading')).toHaveText('Schedules');
+	await expect(card(page)).toContainText("even ones you're already paying");
+	await expectLit(page, page.getByRole('link', { name: 'Scheduled', exact: true }));
+
+	// Back across screens returns to the budget, and Next opens Schedules again.
+	await card(page).getByRole('button', { name: 'Back' }).click();
+	await expect(page).toHaveURL(/\/budget\//);
+	await expect(card(page).getByRole('heading')).toHaveText('Bills that repeat');
+	await next(page);
+	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
+
+	await next(page);
+	await expect(card(page).getByRole('heading')).toHaveText('Where your money goes');
+	await expectLit(page, page.locator('#sidebar [data-tour="reports"]'));
+	await next(page);
+	await expect(page).toHaveURL(/\/reports$/);
+	await expect(card(page).getByRole('heading')).toHaveText('Reports');
+	await expectLit(page, page.getByTestId('report-cards'));
+
+	await next(page);
+	await expect(card(page).getByRole('heading')).toHaveText('Settings');
+	await expectLit(page, page.locator('#sidebar [data-tour="settings"]'));
+	await next(page);
+	await expect(page).toHaveURL(/\/settings$/);
+	await expect(card(page).getByRole('heading')).toHaveText('Backups');
+	await expect(card(page)).toContainText('Google Drive');
+	await expectLit(page, page.getByTestId('backup-card'));
+	await expectCardInView(page);
+
+	await next(page);
 	await expect(card(page).getByRole('heading')).toHaveText("You're ready");
+	await expectLit(page, page.locator('[data-tour="about"]'));
 	await expect(card(page).getByRole('link', { name: 'Open the guide' })).toHaveAttribute(
 		'href',
 		'/guide/'
 	);
+
 	await card(page).getByRole('button', { name: 'Done' }).click();
 	await expect(page.getByTestId('tour')).toBeHidden();
 	expect(await tourState(page)).toBe('done');
 
-	await page.reload();
+	await expect(page).toHaveURL(/\/settings$/);
+
+	await page.goto('/budget');
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await expect(page.getByTestId('tour')).toBeHidden();
 });
@@ -119,15 +160,81 @@ test('fits a phone', async ({ page }) => {
 	await expectLit(page, page.locator('button[data-tour="add-transaction"]:visible'));
 	await expectCardInView(page);
 
-	await card(page).getByRole('button', { name: 'Next' }).click();
+	await next(page);
+	await expectLit(page, page.locator('[data-tour="month"]'));
+	await expectCardInView(page);
+
+	await next(page);
 	const bar = page.getByRole('navigation').last();
 	await expectLit(page, bar.getByRole('link', { name: 'Accounts' }));
 	await expectCardInView(page);
 
-	await card(page).getByRole('button', { name: 'Next' }).click();
-	await expect(card(page)).toContainText('the Scheduled tab');
+	await next(page);
+	await expect(card(page)).toContainText('in the Scheduled tab');
 	await expectLit(page, bar.getByRole('link', { name: 'Transactions' }));
 	await expectCardInView(page);
+
+	await next(page);
+	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
+	await expectLit(page, page.getByRole('link', { name: 'Scheduled', exact: true }));
+	await expectCardInView(page);
+
+	await next(page);
+	await expectLit(page, bar.getByRole('link', { name: 'Reports' }));
+	await next(page);
+	await expect(page).toHaveURL(/\/reports$/);
+	await expectCardInView(page);
+
+	await next(page);
+	await expectLit(page, bar.getByRole('link', { name: 'Settings' }));
+	await next(page);
+	await expect(page).toHaveURL(/\/settings$/);
+	await expectLit(page, page.getByTestId('backup-card'));
+	await expectCardInView(page);
+});
+
+test('keeps the page still under it on a phone', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 500 });
+	await firstBudget(page);
+	await next(page);
+	await next(page);
+	const spotlight = page.getByTestId('tour-spotlight');
+	await expectLit(page, page.locator('[data-tour="category"]').first());
+	const [scrolled, lit] = [
+		await page.evaluate(() => window.scrollY),
+		await spotlight.boundingBox()
+	];
+
+	// A swipe or the wheel over the dimmed page would scroll it, and on a phone hide the toolbar.
+	await page.mouse.move(200, 250);
+	await page.mouse.wheel(0, 600);
+	const touch = await page.context().newCDPSession(page);
+	const point = (y: number) => [{ x: 200, y }];
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(400) });
+	for (const y of [350, 300, 250, 200, 150]) {
+		await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(y) });
+	}
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+	expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+	expect(await spotlight.boundingBox()).toEqual(lit);
+	await expectCardInView(page);
+
+	await page.keyboard.press('Escape');
+	expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe(
+		'visible'
+	);
+});
+
+test("follows the browser's back button", async ({ page }) => {
+	await firstBudget(page);
+	await next(page);
+	for (let i = 0; i < 6; i++) await next(page);
+	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
+	await page.goBack();
+	await expect(card(page).getByRole('heading')).toHaveText('Bills that repeat');
+	await page.goForward();
+	await expect(card(page).getByRole('heading')).toHaveText('Schedules');
 });
 
 test('skipping ends it for good', async ({ page }) => {

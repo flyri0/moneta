@@ -32,7 +32,7 @@ decimals would change every value.
 ## About {#about}
 
 - **User guide** opens this guide.
-- **Take the tour** shows the tour of the budget screen again.
+- **Take the tour** shows the tour of the budget and the other screens again.
 - **Updates** checks for a new version. Moneta also looks by itself and offers to reload when one
   is ready.
 - **Source code** opens the project on GitHub.

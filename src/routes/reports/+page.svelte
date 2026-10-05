@@ -54,7 +54,7 @@
 	{#if editing}
 		<ReportsEditor {layout} onSave={save} onCancel={() => (editing = false)} />
 	{:else}
-		<div class="grid gap-4 lg:grid-cols-2" data-testid="report-cards">
+		<div class="grid gap-4 lg:grid-cols-2" data-testid="report-cards" data-tour="report-cards">
 			{#each visible as id (id)}
 				{@const Card = REPORTS[id].card}
 				<Card />
