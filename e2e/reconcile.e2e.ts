@@ -24,6 +24,8 @@ test('reconciles a matching balance and locks the cleared transactions', async (
 	// Editing still works, with a warning, and the transaction stays cleared.
 	await row.getByRole('button', { name: 'Starting balance' }).click();
 	const edit = page.getByRole('dialog');
+	await expect(edit.getByTestId('transaction-overview')).toContainText('Reconciled');
+	await edit.getByRole('button', { name: 'Edit transaction' }).click();
 	await expect(edit.getByTestId('reconciled-notice')).toBeVisible();
 	await expect(edit.getByLabel('Cleared')).toBeDisabled();
 });

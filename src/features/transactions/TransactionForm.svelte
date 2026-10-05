@@ -6,13 +6,9 @@
 	import { Checkbox } from '$ui/checkbox';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
-	import SheetLink from '$components/SheetLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
-	import { offerUndo } from '$client/undo';
 	import type { TransactionInput } from '$db/repos/transactions';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import { formatDate } from '$i18n/formats';
@@ -45,7 +41,7 @@
 		editingId,
 		reconciled = false,
 		onSave,
-		confirming = $bindable(false),
+		onCancel,
 		onDone
 	}: {
 		ctx: FormContext;
@@ -54,8 +50,8 @@
 		/** The transaction being edited was reconciled: it stays cleared while in its account. */
 		reconciled?: boolean;
 		onSave?: (input: TransactionInput) => Promise<unknown>;
-		/** Whether the delete confirmation shows in place of the form (the dialog titles it). */
-		confirming?: boolean;
+		/** What Cancel does when it doesn't just close (`onDone(null)`), e.g. back to an overview. */
+		onCancel?: () => void;
 		onDone: (savedAccountId: string | null) => void;
 	} = $props();
 
@@ -140,103 +136,64 @@
 		busy = false;
 		if (!error) onDone(input.accountId);
 	}
-
-	function confirm(next: boolean) {
-		confirming = next;
-		error = null;
-	}
-
-	async function remove() {
-		if (!editingId || busy) return;
-		const id = editingId;
-		busy = true;
-		const call = session.api.transactions.delete(id);
-		error = await runAction(() => call);
-		busy = false;
-		if (error) return;
-		onDone(null);
-		offerUndo(session.client, call, m.transaction_deleted());
-	}
 </script>
 
-{#if confirming}
-	<ConfirmPanel
-		body={m.transaction_delete_body()}
-		confirmLabel={m.delete()}
-		{error}
-		{busy}
-		onCancel={() => confirm(false)}
-		onConfirm={remove}
-	/>
-{:else}
-	<form class="grid gap-4" onsubmit={save}>
-		<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} />
+<form class="grid gap-4" onsubmit={save}>
+	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} />
 
-		{#if installable}
-			<div class="grid gap-2">
-				<Label for="txn-installments">{m.transaction_installments()}</Label>
-				<div class="flex items-center gap-3">
-					<Input
-						id="txn-installments"
-						class="w-20"
-						bind:value={installments}
-						inputmode="numeric"
-						autocomplete="off"
-						placeholder="1"
-					/>
-					{#if plan}
-						<span class="text-sm text-muted-foreground tabular-nums" data-testid="installment-plan">
-							{planText}
-						</span>
-					{/if}
-				</div>
-				<button
-					type="button"
-					class="justify-self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-					onclick={addRunning}
-				>
-					{m.transaction_installments_running()}
-				</button>
-			</div>
-		{/if}
-
-		{#if reconciled}
-			<Alert.Root data-testid="reconciled-notice">
-				<Alert.Description>{m.transaction_reconciled_notice()}</Alert.Description>
-			</Alert.Root>
-		{/if}
-
-		<div class="flex items-center gap-2">
-			<Checkbox id="txn-cleared" bind:checked={draft.cleared} disabled={lockedCleared} />
-			<Label for="txn-cleared">{m.transaction_cleared()}</Label>
-		</div>
-
-		{#if askingFar}
-			<Alert.Root data-testid="far-future">
-				<Alert.Description>
-					{m.date_far_future({ date: formatDate(draft.date, getLocale()) })}
-				</Alert.Description>
-			</Alert.Root>
-		{/if}
-
-		{#if editingId}
-			<div class="-mx-2 grid">
-				<SheetLink
-					icon={Trash2Icon}
-					label={m.transaction_delete()}
-					destructive
-					onclick={() => confirm(true)}
+	{#if installable}
+		<div class="grid gap-2">
+			<Label for="txn-installments">{m.transaction_installments()}</Label>
+			<div class="flex items-center gap-3">
+				<Input
+					id="txn-installments"
+					class="w-20"
+					bind:value={installments}
+					inputmode="numeric"
+					autocomplete="off"
+					placeholder="1"
 				/>
+				{#if plan}
+					<span class="text-sm text-muted-foreground tabular-nums" data-testid="installment-plan">
+						{planText}
+					</span>
+				{/if}
 			</div>
-		{/if}
-
-		<FormMessage {error} />
-
-		<div class="grid grid-cols-2 gap-2">
-			<Button variant="outline" onclick={() => onDone(null)}>{m.cancel()}</Button>
-			<Button type="submit" disabled={busy || blocked}>
-				{askingFar ? m.save_anyway() : m.save()}
-			</Button>
+			<button
+				type="button"
+				class="justify-self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+				onclick={addRunning}
+			>
+				{m.transaction_installments_running()}
+			</button>
 		</div>
-	</form>
-{/if}
+	{/if}
+
+	{#if reconciled}
+		<Alert.Root data-testid="reconciled-notice">
+			<Alert.Description>{m.transaction_reconciled_notice()}</Alert.Description>
+		</Alert.Root>
+	{/if}
+
+	<div class="flex items-center gap-2">
+		<Checkbox id="txn-cleared" bind:checked={draft.cleared} disabled={lockedCleared} />
+		<Label for="txn-cleared">{m.transaction_cleared()}</Label>
+	</div>
+
+	{#if askingFar}
+		<Alert.Root data-testid="far-future">
+			<Alert.Description>
+				{m.date_far_future({ date: formatDate(draft.date, getLocale()) })}
+			</Alert.Description>
+		</Alert.Root>
+	{/if}
+
+	<FormMessage {error} />
+
+	<div class="grid grid-cols-2 gap-2">
+		<Button variant="outline" onclick={onCancel ?? (() => onDone(null))}>{m.cancel()}</Button>
+		<Button type="submit" disabled={busy || blocked}>
+			{askingFar ? m.save_anyway() : m.save()}
+		</Button>
+	</div>
+</form>

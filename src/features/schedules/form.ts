@@ -3,7 +3,13 @@ import { nextDueDate } from '$domain/card-bill';
 import { MAX_INSTALLMENTS } from '$domain/installments';
 import { isDate, todayIso } from '$domain/month';
 import { parseAmount } from '$domain/money';
-import { resumeDate, type Frequency, type Rule, type WeekendRule } from '$domain/schedule';
+import {
+	occurrenceDate,
+	resumeDate,
+	type Frequency,
+	type Rule,
+	type WeekendRule
+} from '$domain/schedule';
 import { m } from '$i18n/paraglide/messages';
 import { canInstall } from '$features/transactions/installments';
 import {
@@ -18,7 +24,7 @@ import {
 export type Ends = 'never' | 'on' | 'after';
 
 /** The schedule sheet's screens. */
-export type ScheduleView = 'main' | 'repeat' | 'delete' | 'enter-many';
+export type ScheduleView = 'overview' | 'enter' | 'main' | 'repeat' | 'delete' | 'enter-many';
 
 /** How many due occurrences an automatic schedule may enter at once before saving asks first. */
 export const MANY_DUE = 20;
@@ -192,6 +198,42 @@ export function installmentsLeft(draft: ScheduleDraft, ctx: FormContext): Instal
 	const each = parseAmount(draft.txn.amount, ctx.money);
 	const sum = each === null ? null : Math.abs(each) * left;
 	return { left, next, total, sum: sum !== null && Number.isSafeInteger(sum) ? sum : null };
+}
+
+/** A schedule's installments left, from its next one; null when it pays none or none are left. */
+export function scheduleInstallments(s: ScheduleRow): InstallmentsLeft | null {
+	if (s.installmentStart === null || s.endCount === null || s.nextDate === null) return null;
+	const left = s.endCount - s.nextIndex;
+	if (left < 1) return null;
+	const sum = Math.abs(s.amount) * left;
+	return {
+		next: s.installmentStart + s.nextIndex,
+		total: s.installmentStart + s.endCount - 1,
+		left,
+		sum: Number.isSafeInteger(sum) ? sum : null
+	};
+}
+
+export interface NextOccurrence {
+	index: number;
+	date: string;
+	/** Its installment number, when the schedule pays a purchase in installments. */
+	installment: number | null;
+}
+
+/** Up to `count` of a schedule's occurrences, from the next one on. */
+export function nextOccurrences(s: ScheduleRow, count: number): NextOccurrence[] {
+	const out: NextOccurrence[] = [];
+	for (let n = s.nextIndex; out.length < count; n++) {
+		const date = occurrenceDate(s, n);
+		if (date === null) break;
+		out.push({
+			index: n,
+			date,
+			installment: s.installmentStart === null ? null : s.installmentStart + n
+		});
+	}
+	return out;
 }
 
 /**

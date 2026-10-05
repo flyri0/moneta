@@ -9,7 +9,9 @@ import {
 	installmentDate,
 	installmentsLeft,
 	newScheduleDraft,
+	nextOccurrences,
 	ruleSummary,
+	scheduleInstallments,
 	type ScheduleDraft
 } from './form';
 
@@ -398,5 +400,53 @@ describe('draftRuleSummary', () => {
 	it('names only the frequency while the interval is not a whole number', () => {
 		expect(draftRuleSummary({ ...rule, frequency: 'weekly', interval: '' })).toBe('Weekly');
 		expect(draftRuleSummary({ ...rule, frequency: 'yearly', interval: '0' })).toBe('Yearly');
+	});
+});
+
+describe('nextOccurrences', () => {
+	it("lists the next dates from the schedule's next occurrence on", () => {
+		expect(nextOccurrences(schedule({ nextIndex: 2 }), 3)).toEqual([
+			{ index: 2, date: '2026-10-01', installment: null },
+			{ index: 3, date: '2026-11-01', installment: null },
+			{ index: 4, date: '2026-12-01', installment: null }
+		]);
+	});
+
+	it('stops at the end of the rule', () => {
+		expect(nextOccurrences(schedule({ nextIndex: 1, endCount: 2 }), 5)).toEqual([
+			{ index: 1, date: '2026-09-01', installment: null }
+		]);
+		expect(nextOccurrences(schedule({ frequency: 'once', nextIndex: 1 }), 5)).toEqual([]);
+	});
+
+	it('numbers each installment', () => {
+		const s = schedule({ installmentStart: 3, endCount: 4, nextIndex: 2 });
+		expect(nextOccurrences(s, 5)).toEqual([
+			{ index: 2, date: '2026-10-01', installment: 5 },
+			{ index: 3, date: '2026-11-01', installment: 6 }
+		]);
+	});
+
+	it('moves dates off the weekend as the rule says', () => {
+		// 2026-08-01 is a Saturday.
+		expect(nextOccurrences(schedule({ weekend: 'after' }), 1)).toEqual([
+			{ index: 0, date: '2026-08-03', installment: null }
+		]);
+	});
+});
+
+describe('scheduleInstallments', () => {
+	it('says which installment comes next, how many are left and what they come to', () => {
+		const s = schedule({ installmentStart: 3, endCount: 4, nextIndex: 2, amount: -10000 });
+		expect(scheduleInstallments(s)).toEqual({ next: 5, total: 6, left: 2, sum: 20000 });
+	});
+
+	it('is null for a schedule that pays no installments, or has paid them all', () => {
+		expect(scheduleInstallments(schedule())).toBeNull();
+		expect(
+			scheduleInstallments(
+				schedule({ installmentStart: 1, endCount: 3, nextIndex: 3, nextDate: null })
+			)
+		).toBeNull();
 	});
 });

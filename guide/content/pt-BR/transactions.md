@@ -24,8 +24,13 @@ antes de salvar.
 
 ### Editar ou excluir uma {#editing}
 
-Toque numa transação para abri-la, mude o que precisar e salve. **Excluir transação**, na mesma
-janela, pergunta antes; logo depois, ainda dá para [desfazer](#undo).
+Toque numa transação para ver tudo dela: valor, data, conta, favorecido, categoria (ou cada linha
+de uma divisão), memorando e se já foi compensada. Dali:
+
+- **Editar transação** abre o formulário: mude o que precisar e salve, ou cancele para voltar.
+- **Abrir ‹conta›** vai para a conta dela. Já estando nessa conta, uma transferência abre a outra
+  conta.
+- **Excluir transação** pergunta antes; logo depois, ainda dá para [desfazer](#undo).
 
 ## Dividir {#splits}
 

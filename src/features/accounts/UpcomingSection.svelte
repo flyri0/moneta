@@ -18,7 +18,7 @@
 
 	/**
 	 * An account's scheduled occurrences for the next days, each with the balance it leaves.
-	 * Each schedule's next occurrence can be entered, skipped, or its schedule edited.
+	 * Each schedule's next occurrence can be entered or skipped, or its schedule opened.
 	 */
 	let { occurrences, balances }: { occurrences: UpcomingOccurrence[]; balances: number[] } =
 		$props();
@@ -27,8 +27,8 @@
 	const rows = $derived(collapseOverdue(occurrences));
 	let entering = $state<OccurrenceToEnter | null>(null);
 	let enterOpen = $state(false);
-	let editing = $state<ScheduleRow | null>(null);
-	let editOpen = $state(false);
+	let viewing = $state<ScheduleRow | null>(null);
+	let viewOpen = $state(false);
 
 	async function scheduleOf(o: UpcomingOccurrence): Promise<ScheduleRow | null> {
 		try {
@@ -46,9 +46,9 @@
 		enterOpen = true;
 	}
 
-	async function edit(o: UpcomingOccurrence) {
-		editing = await scheduleOf(o);
-		if (editing) editOpen = true;
+	async function view(o: UpcomingOccurrence) {
+		viewing = await scheduleOf(o);
+		if (viewing) viewOpen = true;
 	}
 
 	/** The occurrence's date, and its category when it has one. */
@@ -106,8 +106,8 @@
 							{m.upcoming_enter()}
 						</Button>
 						<Button size="sm" variant="ghost" onclick={() => skip(o)}>{m.upcoming_skip()}</Button>
-						<Button size="sm" variant="ghost" onclick={() => edit(o)}>
-							{m.schedule_edit_title()}
+						<Button size="sm" variant="ghost" onclick={() => view(o)}>
+							{m.schedule_view()}
 						</Button>
 					</div>
 				{/if}
@@ -117,4 +117,4 @@
 </section>
 
 <TransactionDialog bind:open={enterOpen} occurrence={entering} />
-<ScheduleDialog bind:open={editOpen} schedule={editing} />
+<ScheduleDialog bind:open={viewOpen} schedule={viewing} />

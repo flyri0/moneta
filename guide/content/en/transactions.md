@@ -22,8 +22,13 @@ A date more than two years from now is usually a typo, so Moneta asks before sav
 
 ### Editing or deleting one {#editing}
 
-Tap a transaction to open it, change what you need and save. **Delete transaction**, in the same
-dialog, asks first; right after, you can still [undo](#undo) it.
+Tap a transaction to see all of it: amount, date, account, payee, category (or each line of a
+split), memo, and whether it cleared. From there:
+
+- **Edit transaction** opens the form: change what you need and save, or cancel to go back.
+- **Open ‹account›** goes to its account. In that account already, a transfer opens the other
+  account instead.
+- **Delete transaction** asks first; right after, you can still [undo](#undo) it.
 
 ## Splits {#splits}
 

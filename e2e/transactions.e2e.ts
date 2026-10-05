@@ -177,3 +177,42 @@ test('asks before saving a transaction dated years ahead', async ({ page }) => {
 	await dialog.getByRole('button', { name: 'Save anyway' }).click();
 	await expect(dialog).toBeHidden();
 });
+
+test('opens a transaction on its overview, with editing and its account a tap away', async ({
+	page
+}) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Bakery', 'Bakery');
+	await dialog.getByLabel('Amount', { exact: true }).fill('12');
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+	await dialog.getByLabel('Memo').fill('Bread');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Transactions' }).click();
+	await page.getByTestId('register-row').filter({ hasText: 'Bakery' }).click();
+	const overview = dialog.getByTestId('transaction-overview');
+	await expect(dialog.getByRole('heading', { name: 'Bakery' })).toBeVisible();
+	await expect(dialog.getByTestId('transaction-overview-amount')).toHaveText('-$12.00');
+	await expect(overview).toContainText('Checking');
+	await expect(overview).toContainText('Groceries');
+	await expect(overview).toContainText('Bread');
+
+	// Cancel in the form goes back to the overview.
+	await dialog.getByRole('button', { name: 'Edit transaction' }).click();
+	await expect(dialog.getByLabel('Amount', { exact: true })).toHaveValue(/12/);
+	await dialog.getByRole('button', { name: 'Cancel' }).click();
+	await expect(overview).toBeVisible();
+
+	await dialog.getByRole('button', { name: 'Open Checking' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('register-title')).toHaveText('Checking');
+
+	// Its own account's page doesn't link to itself.
+	await page.getByTestId('register-row').filter({ hasText: 'Bakery' }).click();
+	await expect(overview).toBeVisible();
+	await expect(dialog.getByRole('button', { name: 'Open Checking' })).toHaveCount(0);
+});

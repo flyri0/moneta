@@ -70,6 +70,7 @@ test('edits the repeat rule on its own screen and deletes a schedule', async ({ 
 
 	const schedule = page.getByTestId('schedule-row');
 	await schedule.click();
+	await dialog.getByRole('button', { name: 'Edit schedule' }).click();
 	await dialog.getByRole('button', { name: /^Repeats/ }).click();
 	await expect(dialog.getByRole('heading', { name: 'Repeats' })).toBeVisible();
 	await chooseSelect(dialog, 'Repeats', 'Weekly');
@@ -87,6 +88,76 @@ test('edits the repeat rule on its own screen and deletes a schedule', async ({ 
 	await dialog.getByRole('button', { name: 'Delete schedule' }).click();
 	await expect(dialog).toBeHidden();
 	await expect(page.getByText('No schedules yet')).toBeVisible();
+});
+
+test('opens a schedule on its overview, to skip or enter what comes next', async ({ page }) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
+	await dialog.getByLabel('Amount', { exact: true }).fill('30');
+	await chooseCombobox(dialog, 'Category', 'Rent', 'Rent');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page.getByTestId('schedule-row').click();
+	await expect(dialog.getByRole('heading', { name: 'Gym' })).toBeVisible();
+	await expect(dialog.getByTestId('schedule-overview-amount')).toHaveText('-$30.00');
+	await expect(dialog.getByTestId('schedule-overview')).toContainText('Every month');
+	const dates = dialog.getByTestId('schedule-overview-date');
+	await expect(dates).toHaveCount(4);
+	const first = await dates.first().textContent();
+	const second = await dates.nth(1).textContent();
+
+	// Skipping stays on the overview, which moves on to the next date; Undo brings it back.
+	await dialog.getByRole('button', { name: 'Skip next' }).click();
+	await expect(dates.first()).toHaveText(second!);
+	const toast = page.getByRole('region', { name: /Notifications/ });
+	await toast.getByRole('button', { name: 'Undo' }).click();
+	await expect(dates.first()).toHaveText(first!);
+
+	// Cancel goes back to the overview; entering saves the transaction and closes.
+	await dialog.getByRole('button', { name: 'Enter next' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Enter scheduled transaction' })).toBeVisible();
+	await dialog.getByRole('button', { name: 'Cancel' }).click();
+	await expect(dialog.getByTestId('schedule-overview')).toBeVisible();
+	await dialog.getByRole('button', { name: 'Enter next' }).click();
+	await expect(dialog.getByLabel('Amount', { exact: true })).toHaveValue(/30/);
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await sidebar.getByRole('link', { name: 'Transactions' }).click();
+	await expect(page.getByTestId('register-row').filter({ hasText: 'Gym' })).toContainText(
+		'-$30.00'
+	);
+});
+
+test('takes a skip back from the toast while the phone drawer stays open', async ({ page }) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
+	await dialog.getByLabel('Amount', { exact: true }).fill('30');
+	await chooseCombobox(dialog, 'Category', 'Rent', 'Rent');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.getByTestId('schedule-row').click();
+	await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible();
+	const dates = dialog.getByTestId('schedule-overview-date');
+	const first = await dates.first().textContent();
+	await dialog.getByRole('button', { name: 'Skip next' }).click();
+	await expect(dates.first()).not.toHaveText(first!);
+	const toast = page.getByRole('region', { name: /Notifications/ });
+	await toast.getByRole('button', { name: 'Undo' }).click();
+	await expect(toast).toContainText('Undone.');
+	await expect(dialog).toBeVisible();
+	await expect(dates.first()).toHaveText(first!);
 });
 
 /** Adds an automatic $2,000 paycheck from "Employer" to Checking, next on `date`. */

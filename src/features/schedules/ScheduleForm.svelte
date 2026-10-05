@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CreditCardIcon from '@lucide/svelte/icons/credit-card';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
@@ -52,19 +51,22 @@
 
 	/**
 	 * Adds a schedule, or edits the one `editingId` names. `view` is the screen: the transaction
-	 * first, the repeat rule and delete one tap away. The draft is kept across screens.
+	 * first, the repeat rule one tap away. The draft is kept across screens. Cancel calls
+	 * `onCancel` when given (back to the schedule's overview), or `onDone`.
 	 */
 	let {
 		ctx,
 		initial,
 		editingId,
 		view = $bindable(),
+		onCancel,
 		onDone
 	}: {
 		ctx: FormContext;
 		initial: ScheduleDraft;
 		editingId: string | null;
 		view: ScheduleView;
+		onCancel?: () => void;
 		onDone: () => void;
 	} = $props();
 
@@ -192,15 +194,6 @@
 		view = next;
 		error = null;
 	}
-
-	async function remove() {
-		if (!editingId || busy) return;
-		const id = editingId;
-		busy = true;
-		error = await runAction(() => session.api.schedules.delete(id));
-		busy = false;
-		if (!error) onDone();
-	}
 </script>
 
 <form class="grid gap-4" onsubmit={save}>
@@ -236,14 +229,6 @@
 				detail={installing ? installmentsDetail : draftRuleSummary(draft.rule)}
 				onclick={() => go('repeat')}
 			/>
-			{#if editingId}
-				<SheetLink
-					icon={Trash2Icon}
-					label={m.schedule_delete()}
-					destructive
-					onclick={() => go('delete')}
-				/>
-			{/if}
 		</nav>
 
 		{#if askingFar}
@@ -257,7 +242,7 @@
 		<FormMessage {error} />
 
 		<div class="grid grid-cols-2 gap-2">
-			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
+			<Button variant="outline" onclick={onCancel ?? onDone}>{m.cancel()}</Button>
 			<Button type="submit" disabled={busy || blocked}>
 				{askingFar ? m.save_anyway() : m.save()}
 			</Button>
@@ -423,15 +408,6 @@
 			{busy}
 			onCancel={() => go('main')}
 			onConfirm={() => void submit(true)}
-		/>
-	{:else}
-		<ConfirmPanel
-			body={m.schedule_delete_body()}
-			confirmLabel={m.schedule_delete()}
-			{error}
-			{busy}
-			onCancel={() => go('main')}
-			onConfirm={remove}
 		/>
 	{/if}
 </form>
