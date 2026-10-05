@@ -56,8 +56,9 @@ The first time you open Moneta, a few steps set up your budget:
 5. **Your first account**: usually your checking account and its current balance. You can skip
    this and add accounts later.
 6. **You're all set**: the budget opens, with a short tour of the basics: Ready to Assign, your
-   categories, adding a transaction, your accounts, schedules and installments, and the months. **Skip** ends it, and it
-   doesn't come back by itself; **Settings → About → Take the tour** shows it again.
+   categories, adding a transaction, the months and your accounts. It then shows where schedules,
+   reports and backups are, and opens each of those screens. **Skip** ends it, and it doesn't come
+   back by itself; **Settings → About → Take the tour** shows it again.
 
 A budget you add later from **Settings → Budget files → New budget** asks only for steps 3 to 5.
 

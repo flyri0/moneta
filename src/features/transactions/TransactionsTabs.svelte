@@ -18,6 +18,7 @@
 	<a
 		href={resolve('/transactions/scheduled')}
 		aria-current={scheduled ? 'page' : undefined}
+		data-tour="scheduled-tab"
 		class="rounded-md px-3 py-1 text-muted-foreground transition-colors aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
 	>
 		{m.transactions_tab_scheduled()}
