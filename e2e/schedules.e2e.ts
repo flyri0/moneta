@@ -173,3 +173,49 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	await expect(overdue).toHaveCount(1);
 	await expect(overdue.getByTestId('upcoming-more-overdue')).toHaveText(/^\+\d\d overdue$/);
 });
+
+test('searches and filters the schedules', async ({ page }) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	const dialog = page.getByRole('dialog');
+	for (const [payee, amount, category] of [
+		['Landlord', '400', 'Rent'],
+		['Açougue', '50', 'Groceries']
+	]) {
+		await page.getByRole('button', { name: 'Add schedule' }).first().click();
+		await chooseCombobox(dialog, 'Payee', payee, payee);
+		await dialog.getByLabel('Amount', { exact: true }).fill(amount);
+		await chooseCombobox(dialog, 'Category', category, category);
+		await pickDate(dialog, 'Next date', daysFromToday(3));
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden();
+	}
+	const rows = page.getByTestId('schedule-row');
+	await expect(rows).toHaveCount(2);
+
+	const search = page.getByRole('searchbox', { name: /Search name, account/ });
+	await search.fill('acougue');
+	await expect(rows).toHaveCount(1);
+	await expect(rows).toContainText('Açougue');
+	await search.fill('400');
+	await expect(rows).toHaveCount(1);
+	await expect(rows).toContainText('Landlord');
+	await search.fill('');
+	await expect(rows).toHaveCount(2);
+
+	await page.getByRole('button', { name: /^Filters/ }).click();
+	await chooseCombobox(dialog, 'Category', 'Rent');
+	await dialog.getByRole('button', { name: 'Apply' }).click();
+	await expect(rows).toHaveCount(1);
+	await expect(rows).toContainText('Landlord');
+	await expect(page.getByLabel('1 filters in use')).toBeVisible();
+
+	await page.getByRole('button', { name: /^Filters/ }).click();
+	await chooseSelect(dialog, 'Type', 'Entered automatically');
+	await dialog.getByRole('button', { name: 'Apply' }).click();
+	await expect(rows).toHaveCount(0);
+	await expect(page.getByText('No schedules match this search or these filters.')).toBeVisible();
+	await page.getByTestId('empty-state').getByRole('button', { name: 'Clear filters' }).click();
+	await expect(rows).toHaveCount(2);
+});

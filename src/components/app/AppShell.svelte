@@ -101,7 +101,8 @@
 			href: resolve('/transactions'),
 			label: m.nav_transactions(),
 			icon: ReceiptTextIcon,
-			active: path.startsWith('/transactions') || path.startsWith('/payees')
+			active: path.startsWith('/transactions') || path.startsWith('/payees'),
+			tour: 'transactions'
 		},
 		{
 			href: resolve('/accounts'),
@@ -148,7 +149,8 @@
 			href: resolve('/transactions/scheduled'),
 			label: m.nav_schedules(),
 			icon: CalendarClockIcon,
-			active: path.startsWith('/transactions/scheduled')
+			active: path.startsWith('/transactions/scheduled'),
+			tour: 'schedules'
 		},
 		nav[4]
 	]);

@@ -7,8 +7,10 @@
 	import { Combobox, type ComboboxGroup } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
 	import { useSession } from '$client/app-state.svelte';
+	import { formatDate } from '$i18n/formats';
 	import { accountOptionLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import type { NewCategories } from '$features/categories/new-categories';
 	import {
@@ -25,18 +27,21 @@
 
 	/**
 	 * The fields a transaction and a schedule share: account, date, payee or transfer, amount,
-	 * category or split lines, and memo. `dateLabel` names the date field. A category picked by a
-	 * name that doesn't exist yet goes into `pending`.
+	 * category or split lines, and memo. `dateLabel` names the date field; `lockedDate` shows that
+	 * date instead, not editable. A category picked by a name that doesn't exist yet goes into
+	 * `pending`.
 	 */
 	let {
 		ctx,
 		draft = $bindable(),
 		dateLabel,
+		lockedDate = null,
 		pending
 	}: {
 		ctx: FormContext;
 		draft: TransactionDraft;
 		dateLabel: string;
+		lockedDate?: string | null;
 		/** New categories picked in the form, created when it saves. */
 		pending: NewCategories;
 	} = $props();
@@ -161,7 +166,11 @@
 	</div>
 	<div class="grid gap-2">
 		<Label for="txn-date">{dateLabel}</Label>
-		<DatePicker id="txn-date" bind:value={draft.date} required ariaLabel={dateLabel} />
+		{#if lockedDate}
+			<Input id="txn-date" value={formatDate(lockedDate, getLocale())} readonly />
+		{:else}
+			<DatePicker id="txn-date" bind:value={draft.date} required ariaLabel={dateLabel} />
+		{/if}
 	</div>
 </div>
 

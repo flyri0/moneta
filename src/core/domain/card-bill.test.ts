@@ -3,6 +3,8 @@ import {
 	billClosingDate,
 	billDueDate,
 	installmentDueDate,
+	isDueDay,
+	nextDueDate,
 	validateBillingDays,
 	type BillingDays
 } from './card-bill';
@@ -73,5 +75,41 @@ describe('installmentDueDate', () => {
 
 	it('crosses into the next year', () => {
 		expect(installmentDueDate(days(25, 5), '2026-11-30', 1)).toBe('2027-02-05');
+	});
+});
+
+describe('nextDueDate', () => {
+	it('is this month’s due day when it hasn’t passed', () => {
+		expect(nextDueDate(days(3, 10), '2026-10-04')).toBe('2026-10-10');
+	});
+
+	it('is today on the due day', () => {
+		expect(nextDueDate(days(3, 10), '2026-10-10')).toBe('2026-10-10');
+	});
+
+	it('is next month’s once the due day has passed', () => {
+		expect(nextDueDate(days(3, 10), '2026-10-11')).toBe('2026-11-10');
+	});
+
+	it('falls on the last day of a shorter month', () => {
+		expect(nextDueDate(days(20, 31), '2027-02-10')).toBe('2027-02-28');
+		expect(nextDueDate(days(20, 31), '2027-03-01')).toBe('2027-03-31');
+	});
+
+	it('crosses into the next year', () => {
+		expect(nextDueDate(days(25, 5), '2026-12-20')).toBe('2027-01-05');
+	});
+});
+
+describe('isDueDay', () => {
+	it('accepts the due day, or the last day of a shorter month', () => {
+		expect(isDueDay(days(20, 31), '2027-02-28')).toBe(true);
+		expect(isDueDay(days(20, 31), '2027-03-31')).toBe(true);
+		expect(isDueDay(days(3, 10), '2026-10-10')).toBe(true);
+	});
+
+	it('rejects any other day', () => {
+		expect(isDueDay(days(20, 31), '2027-03-30')).toBe(false);
+		expect(isDueDay(days(3, 10), '2026-10-11')).toBe(false);
 	});
 });

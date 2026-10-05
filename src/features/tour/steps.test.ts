@@ -15,6 +15,21 @@ describe('TOUR_STEPS', () => {
 });
 
 describe('resolveStep', () => {
+	it('points at Schedules, or at Transactions where Schedules is a tab inside it', () => {
+		const all = (target: string) => `#${target}`;
+		expect(resolveStep(step('schedules'), all, false)).toEqual({
+			element: '#schedules',
+			copy: 'schedules',
+			topic: 'installmentsUnderWay'
+		});
+		const phone = (target: string) => (target === 'schedules' ? null : `#${target}`);
+		expect(resolveStep(step('schedules'), phone, false)).toEqual({
+			element: '#transactions',
+			copy: 'schedules-phone',
+			topic: 'installmentsUnderWay'
+		});
+	});
+
 	const all = (target: string) => `#${target}`;
 
 	it('spotlights the step target', () => {

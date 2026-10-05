@@ -14,9 +14,46 @@ memo), plus:
 - **Ends**: never, on a date, or after a number of times.
 - **On weekends**: what happens when a date falls on a Saturday or Sunday.
 - **Enter automatically**: on or off.
+- **Installments**, for a card purchase: a purchase you're already paying, numbered as it goes
+  (see [below](#installments-under-way)).
 
 A monthly schedule on the 31st falls on the last day of shorter months, and goes back to the 31st
 when the month has one.
+
+## Installments already under way {#installments-under-way}
+
+A purchase paid in installments that started before you used Moneta, or that you never entered,
+can still be scheduled from the installment you're on. For a purchase entered now, use
+**Installments** in the transaction instead ([Installments](accounts.md#installments)).
+
+Choose the card in a new schedule, or tap **Already paying one? Add it as a schedule** below
+Installments in a card purchase. Then:
+
+1. Fill in the payee, the category and the memo, and in **Amount** what **each** installment costs.
+2. Open **Installments**, switch it on, and enter the **next installment** and the total, as your
+   bill shows it: for "4/12", 4 of 12.
+
+For example, a TV in 12 installments of $80.00, with three already paid: the schedule enters 4/12
+to 12/12, nine of them, $720.00 in all, with the memo numbered ("TV 4/12").
+
+They follow the same rules as a new purchase in installments:
+
+- Only a card purchase offers them: not a transfer, an income or a split. Switch to another
+  account and the option goes away.
+- They repeat every month and end after the last one, so the schedule doesn't ask how it repeats.
+- On a card with billing days, each one falls on its bill's due date, the next one on the next due
+  date from today, and you don't pick the date. Without billing days, you pick the next one's date.
+- They're entered automatically, like the installments of a new purchase. You can turn that off.
+
+The installments you already paid aren't entered: past months of your budget stay as they are.
+To fix the numbers later, edit the schedule and change them under **Installments**.
+
+## Search and filters {#search}
+
+The search box finds schedules by payee, account, category, memo or amount, ignoring accents and
+case. Every word must match. **Filters** narrow the list by next date, account, category, payee,
+amount, status (due, upcoming, paused or ended) and type: entered automatically, entered by hand,
+or installments. **Clear filters** shows them all again.
 
 ## The weekend rule {#weekend-rule}
 

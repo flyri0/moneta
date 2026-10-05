@@ -49,3 +49,18 @@ export function installmentDueDate(days: BillingDays, date: string, n: number): 
 	const closingMonth = monthOf(billClosingDate(days, date));
 	return dayIn(addMonths(closingMonth, n + dueOffset(days)), days.dueDay);
 }
+
+/**
+ * The first due date on or after `today`: when the next installment still to be entered falls,
+ * since installments are entered on their bill's due date.
+ */
+export function nextDueDate(days: BillingDays, today: string): string {
+	const month = monthOf(today);
+	const due = dayIn(month, days.dueDay);
+	return due >= today ? due : dayIn(addMonths(month, 1), days.dueDay);
+}
+
+/** Whether `date` is the card's due day in its month (the last day, when the month is shorter). */
+export function isDueDay(days: BillingDays, date: string): boolean {
+	return dayIn(monthOf(date), days.dueDay) === date;
+}

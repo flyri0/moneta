@@ -2,7 +2,15 @@ import type { GuideTopic } from '$client/guide';
 
 /** Where a step points: the `data-tour` value of the element it spotlights. */
 export type TourTarget =
-	'rta' | 'category' | 'add-group' | 'add-transaction' | 'accounts' | 'month' | 'settings';
+	| 'rta'
+	| 'category'
+	| 'add-group'
+	| 'add-transaction'
+	| 'accounts'
+	| 'schedules'
+	| 'transactions'
+	| 'month'
+	| 'settings';
 
 /** Which text a step shows: its own, or one that fits the layout or the fallback it fell to. */
 export type TourCopy =
@@ -13,11 +21,14 @@ export type TourCopy =
 	| 'add-group'
 	| 'add-transaction'
 	| 'accounts'
+	| 'schedules'
+	| 'schedules-phone'
 	| 'month'
 	| 'done';
 
 export interface TourStep {
-	id: 'intro' | 'rta' | 'category' | 'add-transaction' | 'accounts' | 'month' | 'done';
+	id:
+		'intro' | 'rta' | 'category' | 'add-transaction' | 'accounts' | 'schedules' | 'month' | 'done';
 	target?: TourTarget;
 	/** The guide's section on it, behind "Learn more". */
 	topic?: GuideTopic;
@@ -27,7 +38,8 @@ export interface TourStep {
 
 /**
  * The first-budget tour, in the guide's order: what Ready to Assign is, assigning it, recording
- * what happens, the other accounts, the months, and where the guide is.
+ * what happens, the other accounts, what repeats (installments too), the months, and where the
+ * guide is.
  */
 export const TOUR_STEPS: readonly TourStep[] = [
 	{ id: 'intro' },
@@ -40,6 +52,13 @@ export const TOUR_STEPS: readonly TourStep[] = [
 	},
 	{ id: 'add-transaction', target: 'add-transaction', topic: 'entering' },
 	{ id: 'accounts', target: 'accounts', topic: 'accountKinds' },
+	{
+		id: 'schedules',
+		target: 'schedules',
+		topic: 'installmentsUnderWay',
+		// Phones have no Schedules link: it is a tab inside Transactions.
+		fallback: { target: 'transactions', copy: 'schedules-phone', topic: 'installmentsUnderWay' }
+	},
 	{ id: 'month', target: 'month', topic: 'overspending' },
 	{ id: 'done', target: 'settings' }
 ];
