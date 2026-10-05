@@ -44,7 +44,9 @@ export const GUIDE_TOPICS = {
 	importing: ['import', 'matching'],
 	payeeRules: ['payees', 'payee-rules'],
 	encryption: ['data', 'encryption'],
-	googleDrive: ['data', 'google-drive']
+	backups: ['data', 'backups'],
+	googleDrive: ['data', 'google-drive'],
+	reports: ['reports', 'list']
 } as const satisfies Record<string, readonly [GuidePage, string]>;
 
 export type GuideTopic = keyof typeof GUIDE_TOPICS;

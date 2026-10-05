@@ -57,8 +57,9 @@ Na primeira vez que você abre o Moneta, alguns passos montam o seu orçamento:
 5. **Sua primeira conta**: geralmente a conta corrente e o saldo atual dela. Dá para pular e
    adicionar contas depois.
 6. **Tudo pronto**: o orçamento abre, com um tour rápido pelo básico: o Pronto para atribuir, as
-   categorias, como lançar uma transação, as contas, os agendamentos e as parcelas, e os meses. **Pular** encerra o tour, e ele
-   não volta sozinho; **Ajustes → Sobre → Fazer o tour** mostra de novo.
+   categorias, como lançar uma transação, os meses e as contas. Depois ele mostra onde ficam os
+   agendamentos, os relatórios e os backups, e abre cada uma dessas telas. **Pular** encerra o
+   tour, e ele não volta sozinho; **Ajustes → Sobre → Fazer o tour** mostra de novo.
 
 Um orçamento que você adiciona depois, em **Ajustes → Arquivos de orçamento → Novo orçamento**,
 pede só os passos 3 a 5.

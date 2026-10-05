@@ -14,8 +14,8 @@ memorando), e mais:
 - **Termina**: nunca, numa data, ou depois de um número de vezes.
 - **Em fins de semana**: o que acontece quando uma data cai num sábado ou domingo.
 - **Lançar automaticamente**: ligado ou desligado.
-- **Parcelas**, numa compra no cartão: uma compra que você já está pagando, numerada a cada
-  parcela (veja [abaixo](#installments-under-way)).
+- **Parcelas**, numa compra no cartão, no alto de **Repetição**: uma compra que você já está
+  pagando, numerada a cada parcela (veja [abaixo](#installments-under-way)).
 
 Um agendamento mensal no dia 31 cai no último dia dos meses mais curtos, e volta ao dia 31 quando o
 mês tem um.
@@ -30,7 +30,7 @@ Escolha o cartão num novo agendamento, ou toque em **Já está pagando uma? Adi
 agendamento**, abaixo de Parcelas, numa compra no cartão. Depois:
 
 1. Preencha o favorecido, a categoria e o memorando, e em **Valor** quanto custa **cada** parcela.
-2. Abra **Parcelas**, ligue, e informe a **próxima parcela** e o total, como a fatura mostra: para
+2. Abra **Repetição**, ligue **Parcelas**, e informe a **próxima parcela** e o total, como a fatura mostra: para
    "4/12", 4 de 12.
 
 Por exemplo, uma TV em 12x de R$ 80,00, com três já pagas: o agendamento lança de 4/12 a 12/12,
@@ -47,7 +47,7 @@ Elas seguem as mesmas regras de uma compra parcelada nova:
 - São lançadas automaticamente, como as parcelas de uma compra nova. Dá para desligar.
 
 As parcelas que você já pagou não são lançadas: os meses passados do orçamento ficam como estão.
-Para corrigir os números depois, edite o agendamento e mude-os em **Parcelas**.
+Para corrigir os números depois, edite o agendamento e mude-os em **Repetição**.
 
 ## Busca e filtros {#search}
 
