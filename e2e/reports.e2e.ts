@@ -36,7 +36,7 @@ async function expectInsideCards(page: Page, ids: string[]) {
 async function expectEvenCards(page: Page) {
 	const sizes = await page
 		.getByTestId('report-cards')
-		.locator('> section')
+		.locator('> div > section')
 		.evaluateAll((cards) =>
 			cards.map((card) => ({
 				height: Math.round(card.getBoundingClientRect().height),
@@ -188,7 +188,7 @@ test('opens the payee, trend and account reports from their cards', async ({ pag
 test('hides and reorders the report cards, remembering them', async ({ page }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Reports' }).first().click();
-	const cards = page.getByTestId('report-cards').locator('> section');
+	const cards = page.getByTestId('report-cards').locator('> div > section');
 	await expect(cards).toHaveCount(7);
 	await expect(cards.first()).toHaveAttribute('data-testid', 'spending-card');
 
@@ -238,7 +238,7 @@ test('reorders the report cards by dragging', async ({ page }) => {
 	await page.mouse.up();
 	await expect(rows.first()).toContainText('Cash flow');
 	await page.getByRole('button', { name: 'Save' }).click();
-	await expect(page.getByTestId('report-cards').locator('> section').first()).toHaveAttribute(
+	await expect(page.getByTestId('report-cards').locator('> div > section').first()).toHaveAttribute(
 		'data-testid',
 		'cash-flow-card'
 	);

@@ -33,7 +33,7 @@ casas mudaria todos eles.
 ## Sobre {#about}
 
 - **Guia de uso** abre este guia.
-- **Fazer o tour** mostra de novo o tour pela tela do orçamento.
+- **Fazer o tour** mostra de novo o tour pelo orçamento e pelas outras telas.
 - **Atualizações** procura uma versão nova. O Moneta também procura sozinho e oferece recarregar
   quando uma fica pronta.
 - **Código-fonte** abre o projeto no GitHub.

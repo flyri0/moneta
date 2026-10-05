@@ -130,7 +130,12 @@
 	}
 </script>
 
-<SettingsGroup title={m.settings_backup()} description={m.backup_hint()} testId="backup-card">
+<SettingsGroup
+	title={m.settings_backup()}
+	description={m.backup_hint()}
+	testId="backup-card"
+	tour="backup"
+>
 	{#if demo}
 		<div class="px-4 py-3">
 			<Alert.Root data-testid="backup-demo">
