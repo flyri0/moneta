@@ -3,6 +3,7 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError, runAction, type ActionError } from '$client/notify';
+	import { offerUndo } from '$client/undo';
 	import type { ScheduleRow } from '$db/repos/schedules';
 	import { occurrenceMemo } from '$domain/installments';
 	import { todayIso } from '$domain/month';
@@ -123,9 +124,12 @@
 		if (!schedule || busy) return;
 		const id = schedule.id;
 		busy = true;
-		error = await runAction(() => session.api.schedules.delete(id));
+		const call = session.api.schedules.delete(id);
+		error = await runAction(() => call);
 		busy = false;
-		if (!error) open = false;
+		if (error) return;
+		open = false;
+		offerUndo(session.client, call, m.schedule_deleted());
 	}
 </script>
 
