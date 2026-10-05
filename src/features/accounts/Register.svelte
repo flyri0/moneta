@@ -22,7 +22,7 @@
 	/**
 	 * The paged transaction list of one account, or of every account (showing each row's account)
 	 * without `accountId`, narrowed by `filters` (whose controls sit in the page header). Rows open
-	 * in the edit dialog, or, while `selection` is active, are chosen for its bar. With no rows it
+	 * on their overview, or, while `selection` is active, are chosen for its bar. With no rows it
 	 * offers to add one (unless `canAdd` is false, as on a closed account) or to clear the filters.
 	 */
 	let {
@@ -83,7 +83,7 @@
 	const filtered = $derived(filters.active);
 
 	let dialogOpen = $state(false);
-	let editing = $state<TransactionRow | null>(null);
+	let opened = $state<TransactionRow | null>(null);
 
 	/** A long press starts selecting with that row, or adds it to the rows already chosen. */
 	function startWith(selection: RegisterSelection, row: TransactionRow) {
@@ -91,8 +91,8 @@
 		selection.select(row.id);
 	}
 
-	function edit(row: TransactionRow | null) {
-		editing = row;
+	function openRow(row: TransactionRow | null) {
+		opened = row;
 		dialogOpen = true;
 	}
 </script>
@@ -109,7 +109,7 @@
 			<RegisterRow
 				{row}
 				showAccount={!accountId}
-				onEdit={edit}
+				onOpen={openRow}
 				selecting={selection?.active}
 				selected={selection?.has(row.id)}
 				onSelect={(r) => selection?.toggle(r.id)}
@@ -132,7 +132,7 @@
 					description={m.register_empty_body()}
 				>
 					{#if canAdd}
-						<Button size="sm" onclick={() => edit(null)}>
+						<Button size="sm" onclick={() => openRow(null)}>
 							<PlusIcon />
 							{m.register_add()}
 						</Button>
@@ -155,4 +155,4 @@
 	<SelectionBar {selection} rows={rows.data ?? []} />
 {/if}
 
-<TransactionDialog bind:open={dialogOpen} {accountId} transaction={editing} />
+<TransactionDialog bind:open={dialogOpen} {accountId} transaction={opened} />

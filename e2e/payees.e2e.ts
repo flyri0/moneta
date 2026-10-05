@@ -22,6 +22,7 @@ test('renames, merges, sets defaults for and removes payees', async ({ page }) =
 	await sidebar.getByRole('link', { name: 'Transactions' }).click();
 	await page.getByTestId('register-row').getByRole('button', { name: 'Typo shop' }).click();
 	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Edit transaction' }).click();
 	await chooseCombobox(dialog, 'Payee', 'Amazon', 'Amazon');
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();

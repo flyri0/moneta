@@ -332,6 +332,8 @@
  */
 [data-sonner-toaster] {
 	font-family: inherit;
+	/* An open dialog turns pointer events off on the body: its toasts (Undo) stay tappable. */
+	pointer-events: auto;
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'] {

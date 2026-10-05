@@ -16,13 +16,13 @@
 
 	/**
 	 * `showAccount` adds the row's account, for lists that span every account. Tapping anywhere on
-	 * the row opens it (`onEdit`). While `selecting`, a checkbox leads the row and a tap chooses it
+	 * the row opens it (`onOpen`). While `selecting`, a checkbox leads the row and a tap chooses it
 	 * instead; holding a finger on it calls `onLongPress`. `highlighted` marks a row an action just changed.
 	 */
 	let {
 		row,
 		showAccount = false,
-		onEdit,
+		onOpen,
 		selecting = false,
 		selected = false,
 		onSelect,
@@ -31,7 +31,7 @@
 	}: {
 		row: TransactionRow;
 		showAccount?: boolean;
-		onEdit?: (row: TransactionRow) => void;
+		onOpen?: (row: TransactionRow) => void;
 		selecting?: boolean;
 		selected?: boolean;
 		onSelect?: (row: TransactionRow) => void;
@@ -56,7 +56,7 @@
 		if ((event.target as Element).closest('a, button')) return;
 		if (selecting) onSelect?.(row);
 		// Not when the tap ends a drag that selected some text, e.g. to copy the memo.
-		else if (onEdit && !getSelection()?.toString()) onEdit(row);
+		else if (onOpen && !getSelection()?.toString()) onOpen(row);
 	}
 </script>
 
@@ -67,7 +67,7 @@ the rest of the row is a shortcut. -->
 	class={[
 		'flex items-center gap-3 px-4 py-3 transition-colors [contain-intrinsic-size:auto_3.5rem] [content-visibility:auto] hover:bg-muted/40',
 		selected && 'bg-primary/5',
-		(selecting || onEdit) && 'cursor-pointer',
+		(selecting || onOpen) && 'cursor-pointer',
 		highlighted && 'motion-safe:animate-row-flash',
 		onLongPress && '[-webkit-touch-callout:none] pointer-coarse:select-none'
 	]}
@@ -112,11 +112,11 @@ the rest of the row is a shortcut. -->
 			{/if}
 		{/snippet}
 
-		{#if onEdit && !selecting}
+		{#if onOpen && !selecting}
 			<button
 				type="button"
 				class="min-w-0 truncate text-left text-sm font-medium hover:underline"
-				onclick={() => onEdit(row)}>{@render payeeText()}</button
+				onclick={() => onOpen(row)}>{@render payeeText()}</button
 			>
 		{:else}
 			<span class="min-w-0 truncate text-sm font-medium">{@render payeeText()}</span>

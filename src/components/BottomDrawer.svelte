@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { keepOpenForToasts } from '$client/notify';
 	import type { Snippet } from 'svelte';
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
@@ -140,6 +141,7 @@
 		data-expanded={expanded ? '' : undefined}
 		class="max-h-[90dvh] gap-0 rounded-t-2xl outline-none data-expanded:h-dvh data-expanded:max-h-dvh data-expanded:rounded-none data-expanded:pt-[env(safe-area-inset-top)] data-dragged:data-closed:animate-none"
 		onOpenAutoFocus={openAutoFocus}
+		onInteractOutside={keepOpenForToasts}
 	>
 		<!-- Dragging is a pointer shortcut: keyboards and screen readers have Escape and Close. -->
 		<div

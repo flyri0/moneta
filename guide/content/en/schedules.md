@@ -84,5 +84,10 @@ Each account lists the occurrences of the next 30 days and its **projected** bal
 see whether the money will be there. The schedules screen groups them as **Due**, **Upcoming**, and
 **Paused or ended**. A schedule pauses when its account is closed.
 
+Tapping a schedule opens its overview: the amount, account, category, how it repeats (or which
+installment is next and how many are left) and its next dates. From there, **Enter next** or
+**Skip next** handles its next occurrence, and **Edit schedule** or **Delete schedule** is one tap
+away. In an account, **View schedule** opens the same overview.
+
 Editing a schedule changes the occurrences still to come. Deleting it keeps the transactions it
 already entered.

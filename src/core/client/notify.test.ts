@@ -7,7 +7,7 @@ const { errorMock, successMock } = vi.hoisted(() => ({
 vi.mock('svelte-sonner', () => ({ toast: { error: errorMock, success: successMock } }));
 
 import { DomainError } from '$domain/errors';
-import { copyDetails, runAction, runActionToast, watchUncaught } from './notify';
+import { copyDetails, keepOpenForToasts, runAction, runActionToast, watchUncaught } from './notify';
 
 describe('runAction', () => {
 	it('returns null on success', async () => {
@@ -125,5 +125,27 @@ describe('watchUncaught', () => {
 			message: 'ResizeObserver loop completed with undelivered notifications.'
 		});
 		expect(errorMock).not.toHaveBeenCalled();
+	});
+});
+
+describe('keepOpenForToasts', () => {
+	/** A pointer event on an element that is, or isn't, inside the toasts. */
+	function tapOn(inToasts: boolean) {
+		const target = {
+			closest: (selector: string) => (inToasts && selector === '[data-sonner-toaster]' ? {} : null)
+		};
+		return { target, preventDefault: vi.fn() };
+	}
+
+	it('keeps a dialog open when a toast is tapped, e.g. its Undo', () => {
+		const event = tapOn(true);
+		keepOpenForToasts(event as unknown as Event);
+		expect(event.preventDefault).toHaveBeenCalled();
+	});
+
+	it('lets a tap anywhere else outside close it', () => {
+		const event = tapOn(false);
+		keepOpenForToasts(event as unknown as Event);
+		expect(event.preventDefault).not.toHaveBeenCalled();
 	});
 });

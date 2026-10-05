@@ -82,3 +82,12 @@ export async function runActionToast(fn: () => Promise<unknown>): Promise<void> 
 		else toast.error(errorMessage(err));
 	}
 }
+
+/**
+ * A dialog's `onInteractOutside`: a tap on a toast (its Undo or its close button) doesn't count
+ * as outside, so the dialog stays open under it.
+ */
+export function keepOpenForToasts(event: Event): void {
+	const target = event.target as Element | null;
+	if (target?.closest?.('[data-sonner-toaster]')) event.preventDefault();
+}
