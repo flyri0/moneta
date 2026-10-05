@@ -54,10 +54,13 @@
 	{#if editing}
 		<ReportsEditor {layout} onSave={save} onCancel={() => (editing = false)} />
 	{:else}
-		<div class="grid gap-4 lg:grid-cols-2" data-testid="report-cards" data-tour="report-cards">
-			{#each visible as id (id)}
+		<div class="grid gap-4 lg:grid-cols-2" data-testid="report-cards">
+			{#each visible as id, index (id)}
 				{@const Card = REPORTS[id].card}
-				<Card />
+				<!-- The tour shows the first card as an example of them all. -->
+				<div class="grid" data-tour={index === 0 ? 'report-card' : undefined}>
+					<Card />
+				</div>
 			{/each}
 		</div>
 

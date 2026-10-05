@@ -12,7 +12,7 @@ export type TourTarget =
 	| 'scheduled-tab'
 	| 'month'
 	| 'reports'
-	| 'report-cards'
+	| 'report-card'
 	| 'settings'
 	| 'backup'
 	| 'about';
@@ -93,7 +93,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
 		topic: 'installmentsUnderWay'
 	},
 	{ id: 'reports-way', route: 'scheduled', target: 'reports', leadsTo: 'reports' },
-	{ id: 'reports', route: 'reports', target: 'report-cards', topic: 'reports' },
+	{ id: 'reports', route: 'reports', target: 'report-card', topic: 'reports' },
 	{ id: 'settings-way', route: 'reports', target: 'settings', leadsTo: 'settings' },
 	{ id: 'backup', route: 'settings', target: 'backup', topic: 'backups' },
 	{ id: 'done', route: 'settings', target: 'about' }

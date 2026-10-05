@@ -113,7 +113,8 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 	await next(page);
 	await expect(page).toHaveURL(/\/reports$/);
 	await expect(card(page).getByRole('heading')).toHaveText('Reports');
-	await expectLit(page, page.getByTestId('report-cards'));
+	await expect(card(page)).toContainText('Like this one');
+	await expectLit(page, page.getByTestId('report-cards').locator('[data-tour="report-card"]'));
 
 	await next(page);
 	await expect(card(page).getByRole('heading')).toHaveText('Settings');
@@ -195,6 +196,8 @@ test('fits a phone', async ({ page }) => {
 
 test('keeps the page still under it on a phone', async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 500 });
+	// The tour's own scroll to each step is then instant, so it's over before the page is measured.
+	await page.emulateMedia({ reducedMotion: 'reduce' });
 	await firstBudget(page);
 	await next(page);
 	await next(page);
