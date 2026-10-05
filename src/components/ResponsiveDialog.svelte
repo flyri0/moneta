@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { keepOpenForToasts } from '$client/notify';
 	import type { Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -55,6 +56,7 @@
 			bind:ref={content}
 			class="max-h-[90dvh] overflow-y-auto sm:max-w-lg"
 			onOpenAutoFocus={openAutoFocus}
+			onInteractOutside={keepOpenForToasts}
 		>
 			<Dialog.Header>
 				<div class="flex min-w-0 items-center gap-1 pr-8">
