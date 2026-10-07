@@ -130,7 +130,14 @@ test('a worker waits for one still holding the storage, and never tries to delet
 		worker.postMessage({ id: 1, method: 'system.listFiles', args: [] });
 	}, workerUrl);
 
-	await other.waitForTimeout(1500);
+	// It asked for the pool's lock and is still waiting for it.
+	await expect
+		.poll(() =>
+			other.evaluate(async () =>
+				((await navigator.locks.query()).pending ?? []).some((l) => l.name === 'moneta-opfs')
+			)
+		)
+		.toBe(true);
 	expect(
 		await other.evaluate(() => (window as unknown as { reply?: unknown }).reply)
 	).toBeUndefined();
@@ -139,6 +146,31 @@ test('a worker waits for one still holding the storage, and never tries to delet
 		.poll(() => other.evaluate(() => (window as unknown as { reply?: unknown }).reply))
 		.toMatchObject({ id: 1, ok: true });
 	expect(errors).toEqual([]);
+});
+
+test('a tab whose storage stays taken says so and opens once it is let go', async ({ context }) => {
+	test.setTimeout(60_000);
+	await context.route('**/blank.html', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>blank</title>' })
+	);
+	const holder = await context.newPage();
+	await holder.goto('/blank.html');
+	await holder.evaluate(() => {
+		const w = window as unknown as { letGo?: () => void };
+		void navigator.locks.request(
+			'moneta-opfs',
+			() => new Promise<void>((resolve) => (w.letGo = resolve))
+		);
+	});
+
+	const page = await context.newPage();
+	await startApp(page);
+	await expect(page.getByText('Moneta is still closing in another tab')).toBeVisible({
+		timeout: 20_000
+	});
+	await holder.evaluate(() => (window as unknown as { letGo: () => void }).letGo());
+	await page.getByRole('button', { name: 'Try again' }).click();
+	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 });
 
 test('onboarding allows choosing theme, accent, and language on the welcome step', async ({

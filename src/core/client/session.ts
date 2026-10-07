@@ -326,9 +326,19 @@ export async function restoreAll(
 }
 
 export type StartupErrorCode =
-	'STORAGE_UNAVAILABLE' | 'SCHEMA_TOO_NEW' | 'QUOTA_EXCEEDED' | 'WORKER_FAILED' | 'INTERNAL';
+	| 'STORAGE_UNAVAILABLE'
+	| 'STORAGE_BUSY'
+	| 'SCHEMA_TOO_NEW'
+	| 'QUOTA_EXCEEDED'
+	| 'WORKER_FAILED'
+	| 'INTERNAL';
 
-const STARTUP_CODES = new Set<string>(['STORAGE_UNAVAILABLE', 'SCHEMA_TOO_NEW', 'WORKER_FAILED']);
+const STARTUP_CODES = new Set<string>([
+	'STORAGE_UNAVAILABLE',
+	'STORAGE_BUSY',
+	'SCHEMA_TOO_NEW',
+	'WORKER_FAILED'
+]);
 
 /** Which full-screen message a failure while opening the database deserves. */
 export function startupError(err: unknown): { code: StartupErrorCode; message: string } {

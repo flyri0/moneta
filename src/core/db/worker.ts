@@ -11,12 +11,17 @@ import { transferablesOf, type CallRequest } from './protocol';
 const POOL_ATTEMPTS = 5;
 
 async function initPool(): Promise<{ sqlite3: Sqlite3Static; pool: SAHPoolUtil }> {
+	// Wait for any worker still holding the pool (a tab just reloaded or handed over): opening it
+	// while that one has its files fails, and sqlite-wasm then tries to delete the pool.
+	let held: boolean;
+	try {
+		held = await holdPoolLock('locks' in navigator ? navigator.locks : undefined);
+	} catch (err) {
+		throw new DomainError('STORAGE_UNAVAILABLE', err instanceof Error ? err.message : String(err));
+	}
+	if (!held) throw new DomainError('STORAGE_BUSY');
 	let lastError: unknown;
 	try {
-		// Wait for any worker still holding the pool (a tab just reloaded or handed over): opening
-		// it while that one has its files fails, and sqlite-wasm then tries to delete the pool.
-		if (!(await holdPoolLock('locks' in navigator ? navigator.locks : undefined)))
-			throw new Error('Another copy of Moneta is still using the storage');
 		const sqlite3 = await sqlite3InitModule();
 		// Something outside the app may still be letting go of the files, so retry briefly.
 		// `forceReinitIfPreviouslyFailed` is supported by sqlite-wasm but missing from its types.

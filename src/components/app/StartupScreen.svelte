@@ -9,12 +9,15 @@
 	let {
 		boot,
 		onTakeOver,
-		onForce
+		onForce,
+		onRetry
 	}: {
 		boot: Extract<BootState, { kind: 'loading' | 'blocked' | 'error' }>;
 		onTakeOver: () => void;
 		/** Takes the database from a tab that didn't hand it over. */
 		onForce: () => Promise<void>;
+		/** Starts the database again, for a failure that can pass. */
+		onRetry: () => void;
 	} = $props();
 
 	let forcing = $state(false);
@@ -37,6 +40,10 @@
 		STORAGE_UNAVAILABLE: {
 			title: m.startup_storage_unavailable_title,
 			body: m.startup_storage_unavailable_body
+		},
+		STORAGE_BUSY: {
+			title: m.startup_storage_busy_title,
+			body: m.startup_storage_busy_body
 		},
 		QUOTA_EXCEEDED: { title: m.startup_quota_title, body: m.startup_quota_body },
 		SCHEMA_TOO_NEW: { title: m.startup_schema_title, body: m.startup_schema_body },
@@ -66,9 +73,14 @@
 		{:else}
 			<h1 class="text-lg font-medium">{ERRORS[boot.code].title()}</h1>
 			<p class="text-muted-foreground">{ERRORS[boot.code].body()}</p>
-			<pre
-				class="max-w-full overflow-x-auto rounded-md bg-muted p-2 text-left text-xs">{boot.message}</pre>
-			<Button onclick={reload}>{m.startup_reload()}</Button>
+			{#if boot.code === 'STORAGE_BUSY'}
+				<!-- Nothing broke: the other tab only has to let go. -->
+				<Button onclick={onRetry}>{m.startup_blocked_try_again()}</Button>
+			{:else}
+				<pre
+					class="max-w-full overflow-x-auto rounded-md bg-muted p-2 text-left text-xs">{boot.message}</pre>
+				<Button onclick={reload}>{m.startup_reload()}</Button>
+			{/if}
 		{/if}
 	</div>
 </main>
