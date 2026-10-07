@@ -658,6 +658,7 @@ describe('startupError', () => {
 			'STORAGE_UNAVAILABLE'
 		);
 		expect(startupError(new DomainError('SCHEMA_TOO_NEW')).code).toBe('SCHEMA_TOO_NEW');
+		expect(startupError(new RpcError('STORAGE_BUSY', 'held')).code).toBe('STORAGE_BUSY');
 		expect(startupError(new RpcError('INTERNAL', 'QuotaExceededError: full')).code).toBe(
 			'QUOTA_EXCEEDED'
 		);

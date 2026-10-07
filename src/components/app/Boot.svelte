@@ -140,6 +140,13 @@
 		await start();
 	}
 
+	/** Starts a new worker, after one that couldn't get the storage from another tab's. */
+	async function retry() {
+		app.boot = { kind: 'loading' };
+		await stopWorker();
+		await start();
+	}
+
 	/** Opens the database here even though the other tab didn't hand it over. */
 	async function forceTakeOver() {
 		app.boot = { kind: 'loading' };
@@ -247,5 +254,5 @@
 		/>
 	{/await}
 {:else if app.boot.kind === 'loading' || app.boot.kind === 'blocked' || app.boot.kind === 'error'}
-	<StartupScreen boot={app.boot} onTakeOver={takeOver} onForce={forceTakeOver} />
+	<StartupScreen boot={app.boot} onTakeOver={takeOver} onForce={forceTakeOver} onRetry={retry} />
 {/if}

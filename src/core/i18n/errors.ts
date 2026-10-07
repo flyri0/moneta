@@ -11,6 +11,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	NO_DATABASE_OPEN: m.error_no_database_open,
 	UNKNOWN_METHOD: m.error_internal,
 	STORAGE_UNAVAILABLE: m.error_storage_unavailable,
+	STORAGE_BUSY: m.error_storage_busy,
 	ACCOUNT_CLOSED: m.error_account_closed,
 	ACCOUNT_HAS_TRANSACTIONS: m.error_account_has_transactions,
 	ACCOUNT_HAS_SCHEDULES: m.error_account_has_schedules,
