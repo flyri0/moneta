@@ -7,6 +7,12 @@ Um orçamento só pode estar aberto em um lugar por vez. Feche a outra aba ou ja
 plano), **Abrir aqui mesmo assim** assume; o que a outra aba ainda não tinha salvo se perde. O app
 instalado e uma aba do navegador contam como dois lugares.
 
+## "O Moneta ainda está fechando em outra aba" {#storage-busy}
+
+Uma aba ou janela que você acabou de fechar ou recarregar pode continuar usando seus orçamentos por
+mais um instante. O Moneta espera por ela e mostra isto quando demora demais. Feche as outras abas
+ou janelas do Moneta e escolha **Tentar de novo**. Nada se perde.
+
 ## "O armazenamento não está disponível" {#storage-unavailable}
 
 O Moneta precisa do armazenamento privado do navegador para o site. Janelas anônimas ou privadas, e

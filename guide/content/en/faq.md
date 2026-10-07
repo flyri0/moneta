@@ -7,6 +7,12 @@ Moneta here**. If the other tab doesn't answer (a phone may have frozen it in th
 **Open here anyway** takes over; whatever the other tab hadn't saved is lost. An installed app and a
 browser tab count as two places.
 
+## "Moneta is still closing in another tab" {#storage-busy}
+
+A tab or window you just closed or reloaded can hold on to your budgets for a moment longer. Moneta
+waits for it, and shows this when it takes too long. Close any other Moneta tab or window, then
+choose **Try again**. Nothing is lost.
+
 ## "Storage isn't available" {#storage-unavailable}
 
 Moneta needs the browser's private storage for the site. Private or incognito windows, and some
