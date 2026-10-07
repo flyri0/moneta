@@ -30,6 +30,7 @@ function input(today: string, scale = 100): DemoInput {
 		today,
 		scale,
 		accounts: { checking: 'Checking', savings: 'Savings', card: 'Card' },
+		groups: { bills: 'Bills', everyday: 'Everyday', goals: 'Goals', fun: 'Fun' },
 		payees: {
 			salary: 'Paycheck',
 			newEmployer: 'New Job',

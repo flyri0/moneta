@@ -7,6 +7,7 @@ import type { Db } from '../connection';
 import { createTestDb } from '../testing';
 import { listAccounts } from './accounts';
 import { getBudgetMonth } from './budget';
+import { listCategoryTree } from './categories';
 import { createDemo } from './demo';
 import { listSchedules } from './schedules';
 import { listTransactions } from './transactions';
@@ -43,6 +44,7 @@ async function demoDb(): Promise<Db> {
 			today: todayIso(),
 			scale: 100,
 			accounts: { checking: 'Checking', savings: 'Savings', card: 'Credit Card' },
+			groups: { bills: bills.name, everyday: everyday.name, goals: goals.name, fun: fun.name },
 			payees: {
 				salary: 'Paycheck',
 				newEmployer: 'New Job Payroll',
@@ -91,6 +93,20 @@ describe('seedDemo', () => {
 		expect(accounts[0].balance).toBeGreaterThan(0);
 		expect(accounts[1].balance).toBeGreaterThan(0);
 		expect(accounts[2].balance).toBeLessThanOrEqual(0);
+	});
+
+	it('gives the accounts, the groups and every category an emoji', () => {
+		expect(listAccounts(db).map((a) => a.icon)).toEqual(['🏦', '🐷', '💳']);
+		const tree = listCategoryTree(db);
+		const income = tree.find((g) => g.system === 'income')!;
+		expect(income.icon).toBeNull();
+		expect(tree.filter((g) => !g.system).map((g) => g.icon)).toEqual(['🧾', '🛒', '🎯', '🎉']);
+		const named = tree
+			.flatMap((g) => g.categories)
+			.filter((c) => Object.values(CATEGORIES).includes(c.name));
+		expect(named).toHaveLength(Object.keys(CATEGORIES).length);
+		expect(named.filter((c) => c.icon === null).map((c) => c.name)).toEqual([]);
+		expect(named.find((c) => c.name === CATEGORIES.groceries)!.icon).toBe('🥦');
 	});
 
 	it('records a year of history, most of it cleared', () => {

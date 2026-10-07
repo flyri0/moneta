@@ -8,6 +8,28 @@ export interface DemoAccountNames {
 	card: string;
 }
 
+/** The starter groups' names, in the UI language. */
+export interface DemoGroupNames {
+	bills: string;
+	everyday: string;
+	goals: string;
+	fun: string;
+}
+
+/** The demo's emoji, the same in every language. */
+const ACCOUNT_ICONS: Record<keyof DemoAccountNames, string> = {
+	checking: '🏦',
+	savings: '🐷',
+	card: '💳'
+};
+
+const GROUP_ICONS: Record<keyof DemoGroupNames, string> = {
+	bills: '🧾',
+	everyday: '🛒',
+	goals: '🎯',
+	fun: '🎉'
+};
+
 /** Payee names for the demo, in the UI language. */
 export interface DemoPayeeNames {
 	salary: string;
@@ -56,8 +78,34 @@ export interface DemoInput {
 	/** Minor units in one major unit, e.g. 100 for USD and 1 for JPY. */
 	scale: number;
 	accounts: DemoAccountNames;
+	groups: DemoGroupNames;
 	payees: DemoPayeeNames;
 	categories: DemoCategoryNames;
+}
+
+const CATEGORY_ICONS: Record<keyof DemoCategoryNames, string> = {
+	salary: '💼',
+	otherIncome: '💸',
+	rent: '🏠',
+	utilities: '💡',
+	phone: '📱',
+	insurance: '🛡️',
+	groceries: '🥦',
+	transport: '🚌',
+	dining: '🍽️',
+	household: '🧺',
+	emergencyFund: '☂️',
+	vacation: '🏖️',
+	entertainment: '🎬',
+	hobbies: '🎨'
+};
+
+/** Pairs each name with the emoji of its key. */
+function icons<K extends string>(
+	names: Record<K, string>,
+	emoji: Record<K, string>
+): { name: string; icon: string }[] {
+	return (Object.keys(emoji) as K[]).map((key) => ({ name: names[key], icon: emoji[key] }));
 }
 
 type Income = 'salary' | 'otherIncome';
@@ -343,7 +391,7 @@ interface Charge {
  * get better, then much worse, then slowly better again.
  */
 export function buildDemo(input: DemoInput): DemoSeed {
-	const { today, scale, accounts, payees, categories } = input;
+	const { today, scale, accounts, groups, payees, categories } = input;
 	const money = (major: number) => Math.round(major * scale);
 	const current = monthOf(today);
 	const first = addMonths(current, -(STORY.length - 1));
@@ -358,6 +406,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 			{
 				key: CHECKING,
 				name: accounts.checking,
+				icon: ACCOUNT_ICONS.checking,
 				type: 'checking',
 				onBudget: true,
 				startingBalance: money(CHECKING_START),
@@ -366,6 +415,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 			{
 				key: SAVINGS,
 				name: accounts.savings,
+				icon: ACCOUNT_ICONS.savings,
 				type: 'savings',
 				onBudget: true,
 				startingBalance: money(SAVINGS_START),
@@ -374,6 +424,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 			{
 				key: CARD,
 				name: accounts.card,
+				icon: ACCOUNT_ICONS.card,
 				type: 'credit_card',
 				onBudget: true,
 				startingBalance: 0,
@@ -383,7 +434,9 @@ export function buildDemo(input: DemoInput): DemoSeed {
 		],
 		transactions: [],
 		assignments: [],
-		schedules: []
+		schedules: [],
+		groupIcons: icons(groups, GROUP_ICONS),
+		categoryIcons: icons(categories, CATEGORY_ICONS)
 	};
 
 	const add = (t: DemoTransactionSeed) => {
