@@ -35,6 +35,7 @@ describe('buildCatalog', () => {
 			['Pizza']
 		]);
 		expect(catalog.find('🍕')?.search).toBe('pizza cheese');
+		expect(catalog.find('🍕')?.searchName).toBe('pizza');
 	});
 
 	it('leaves out emoji newer than the device shows, keeping the names aligned', () => {

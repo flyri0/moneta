@@ -23,7 +23,7 @@ export function searchEmoji(emojis: readonly PickerEmoji[], query: string): Pick
 }
 
 function score(emoji: PickerEmoji, query: string, first: string): number {
-	const name = fold(emoji.name);
+	const name = emoji.searchName;
 	if (name === query) return 0;
 	if (name.startsWith(query)) return 1;
 	if (` ${name}`.includes(` ${first}`)) return 2;

@@ -21,6 +21,8 @@ export interface PickerEmoji {
 	skin: boolean;
 	/** Its name and keywords, folded for search (`fold`). */
 	search: string;
+	/** Its name alone, folded, to rank the results. */
+	searchName: string;
 }
 
 export interface EmojiCatalog {
@@ -65,7 +67,13 @@ export function buildCatalog(
 		for (const [emoji, version, skin] of group.emojis) {
 			const [name = '', keywords = ''] = (lines[index++] ?? '').split('\t');
 			if (version > maxVersion) continue;
-			emojis.push({ emoji, name, skin: skin === 1, search: fold(`${name} ${keywords}`) });
+			emojis.push({
+				emoji,
+				name,
+				skin: skin === 1,
+				search: fold(`${name} ${keywords}`),
+				searchName: fold(name)
+			});
 		}
 		return { id: group.id, emojis };
 	});
