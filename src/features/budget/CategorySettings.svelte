@@ -4,6 +4,7 @@
 	import { Label } from '$ui/label';
 	import { Switch } from '$ui/switch';
 	import FormMessage from '$components/FormMessage.svelte';
+	import IconField from '$components/emoji-picker/IconField.svelte';
 	import GroupCombobox from '$features/categories/GroupCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
@@ -81,6 +82,10 @@
 			<Label for="category-name">{m.category_name()}</Label>
 			<Input id="category-name" bind:value={name} onchange={saveName} required autocomplete="off" />
 		</form>
+		<div class="grid gap-2 p-3">
+			<Label for="category-icon">{m.icon_label()}</Label>
+			<IconField id="category-icon" value={category.icon} onchange={(icon) => save({ icon })} />
+		</div>
 		{#if !isIncome}
 			<div class="grid gap-2 p-3">
 				<Label for="category-group">{m.category_group()}</Label>

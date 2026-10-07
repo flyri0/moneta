@@ -59,6 +59,7 @@ describe('accountSections', () => {
 	const account = (p: Partial<Account>): Account => ({
 		id: p.name ?? 'x',
 		name: 'x',
+		icon: null,
 		type: 'checking',
 		onBudget: true,
 		closed: false,

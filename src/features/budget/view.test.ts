@@ -15,6 +15,7 @@ import {
 const cat = (id: string, p: Partial<BudgetCategoryView> = {}): BudgetCategoryView => ({
 	id,
 	name: id,
+	icon: null,
 	hidden: false,
 	carryoverOverspending: false,
 	goal: null,
@@ -33,6 +34,7 @@ const group = (
 ): BudgetGroupView => ({
 	id,
 	name: id,
+	icon: null,
 	hidden: false,
 	system: null,
 	assigned: 0,

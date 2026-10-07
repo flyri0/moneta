@@ -51,6 +51,12 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 				savings: m.demo_account_savings(),
 				card: m.demo_account_card()
 			},
+			groups: {
+				bills: bills.name,
+				everyday: everyday.name,
+				goals: goals.name,
+				fun: fun.name
+			},
 			payees: {
 				salary: m.demo_payee_salary(),
 				newEmployer: m.demo_payee_new_employer(),

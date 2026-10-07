@@ -1,4 +1,5 @@
 <script lang="ts">
+	import IconLabel from '$components/IconLabel.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { categoryProgress, type CategoryProgress } from '$features/budget/progress';
 	import { availableTone } from '$features/budget/view';
@@ -52,7 +53,8 @@
 		<button
 			type="button"
 			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium after:absolute after:inset-0 hover:underline"
-			onclick={() => onSelect(category.id)}>{category.name}</button
+			onclick={() => onSelect(category.id)}
+			><IconLabel icon={category.icon} label={category.name} /></button
 		>
 		<AvailablePill {category} />
 	</div>

@@ -20,6 +20,7 @@ pnpm test:e2e         # builds, then runs Playwright in Chromium against `pnpm p
 pnpm preview          # serves ./build with a static server (sirv), like a host would
 pnpm bench            # times the budget recompute on a large budget
 pnpm icons            # regenerates the PWA icons in static/ from static/icon.svg
+pnpm emoji            # regenerates the emoji picker's data from emojibase-data
 pnpm lint             # Prettier check + ESLint
 pnpm check            # svelte-check / TypeScript
 pnpm format           # Prettier write
@@ -41,6 +42,7 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - `guide/`: the user guide, served at `/guide/` (English) and `/guide/pt-BR/`. Markdown pages in `content/<locale>/`, one per slug in `GUIDE_PAGES` (`$client/guide.ts`); `render.ts` turns them into plain HTML pages with their own CSP and `guide.css`, and `build.ts` writes them after `vite build`; in `pnpm dev`, `dev.ts` serves them from the sources. Images come from `guide/img/` (`pnpm guide:screenshots` takes them from the demo) or the README's `.github/screenshots/`; a `-light` image shows its `-dark` twin in dark mode. The app links to it with `guidePath()`, and to a section with `HelpLink` (`$components/HelpLink.svelte`) and a topic of `GUIDE_TOPICS`.
 - `netlify/`: the optional token function (`functions/oauth-token.mts`, logic in `lib/token-proxy.ts`), which adds OAuth client secrets to token requests for cloud backups.
 - `src/components/`: shared Svelte components (`app/` holds the app shell and navigation; `ui/` holds the generated shadcn-svelte primitives). Aliases: `$components`, `$ui`.
+- `src/components/emoji-picker/`: the emoji icons of groups, categories and accounts (`icon` column, one emoji as text, checked by `$domain/icon`). `EmojiPicker` (`value`, `onselect`) searches names and keywords (`emoji-search.ts`), browses by group and keeps a skin tone and the recent ones per device (`prefs.ts`); `IconField` puts it in `PickerShell`. `emoji-data.ts` and `names/<locale>.ts` are generated from `emojibase-data` by `pnpm emoji` (`generate.ts`), never edited, and loaded only when a picker opens; emoji newer than the device draws are left out.
 - `src/utils.ts`: utility helpers (e.g. `cn`). Alias: `$utils`.
 - `src/routes/`: SvelteKit pages (`ssr = false`, `adapter-static` with an `index.html` fallback). `/` is the welcome page: it presents the project and offers to install the PWA, and it renders outside `Boot`, so it opens no database. It redirects to `/budget/[month]` once this browser has a budget (`$client/welcome.ts`), and the manifest's `start_url` is `/budget` so an installed window never sees it. Every other route goes through the root layout's `Boot`, which claims the tab lock, starts the worker, registers the service worker (`$client/sw.ts`, `@vite-pwa/sveltekit`, prompt to update) and renders onboarding, a startup screen or the app.
 - `e2e/`: Playwright tests against the production build. It is built with a fake `VITE_GOOGLE_CLIENT_ID` (`playwright.config.ts`), and `cloud-backup.e2e.ts` answers Google's addresses with the fake Drive.

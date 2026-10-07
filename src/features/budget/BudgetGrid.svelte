@@ -7,6 +7,7 @@
 	import { amountTone, availableTone, overspentCount, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { Month } from '$domain/month';
+	import IconLabel from '$components/IconLabel.svelte';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import AssignedInput from './AssignedInput.svelte';
@@ -82,7 +83,8 @@
 		<button
 			type="button"
 			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
-			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+			onclick={() => onSelectCategory(category.id)}
+			><IconLabel icon={category.icon} label={category.name} /></button
 		>
 		<div>
 			<AssignedInput
@@ -104,7 +106,8 @@
 		<button
 			type="button"
 			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
-			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+			onclick={() => onSelectCategory(category.id)}
+			><IconLabel icon={category.icon} label={category.name} /></button
 		>
 		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 		<span
@@ -127,7 +130,8 @@
 		<button
 			type="button"
 			class="-my-1 min-w-0 flex-1 cursor-pointer truncate py-1 text-left font-medium hover:underline"
-			onclick={() => onSelectCategory(category.id)}>{category.name}</button
+			onclick={() => onSelectCategory(category.id)}
+			><IconLabel icon={category.icon} label={category.name} /></button
 		>
 		<span class="text-sm font-medium tabular-nums {AMOUNT_TEXT[amountTone(category.activity)]}">
 			{session.format(category.activity)}
@@ -177,7 +181,8 @@
 						<button
 							type="button"
 							class="cursor-pointer truncate text-left font-semibold hover:underline"
-							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+							onclick={() => onSelectGroup(group.id)}
+							><IconLabel icon={group.icon} label={groupLabel(group)} /></button
 						>
 						{@render overspentBadge(group)}
 					</div>
@@ -227,7 +232,8 @@
 						<button
 							type="button"
 							class="-my-2 min-w-0 flex-1 cursor-pointer truncate py-2 text-left hover:text-foreground"
-							onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+							onclick={() => onSelectGroup(group.id)}
+							><IconLabel icon={group.icon} label={groupLabel(group)} /></button
 						>
 						{@render overspentBadge(group)}
 					</div>
@@ -290,7 +296,8 @@
 					<button
 						type="button"
 						class="cursor-pointer truncate px-1 text-left text-xs font-semibold tracking-wider text-muted-foreground uppercase hover:text-foreground"
-						onclick={() => onSelectGroup(group.id)}>{groupLabel(group)}</button
+						onclick={() => onSelectGroup(group.id)}
+						><IconLabel icon={group.icon} label={groupLabel(group)} /></button
 					>
 					{#if group.categories.length > 0}
 						<div

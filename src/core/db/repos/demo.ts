@@ -1,9 +1,9 @@
 import type { DemoBudgetSeed } from '$features/demo/seed';
 import { DomainError } from '$domain/errors';
 import { tx, type Db } from '../connection';
-import { createAccount } from './accounts';
+import { createAccount, setAccountIcon } from './accounts';
 import { setAssigned } from './budget';
-import { listCategoryTree } from './categories';
+import { listCategoryTree, updateCategory, updateGroup } from './categories';
 import { initBudget } from './meta';
 import { createSchedule } from './schedules';
 import { createTransaction } from './transactions';
@@ -24,14 +24,24 @@ export function createDemo(db: Db, budget: DemoBudgetSeed): void {
 	tx(db, () => {
 		initBudget(db, budget.init);
 		const accounts = new Map<string, string>();
-		for (const { key, ...input } of seed.accounts) accounts.set(key, createAccount(db, input));
+		for (const { key, icon, ...input } of seed.accounts) {
+			const id = createAccount(db, input);
+			if (icon) setAccountIcon(db, id, icon);
+			accounts.set(key, id);
+		}
 
+		const groups = new Map<string, string>();
 		const categories = new Map<string, string>();
 		for (const group of listCategoryTree(db)) {
+			if (!group.system) groups.set(group.name, group.id);
 			for (const category of group.categories) {
 				categories.set(category.name, category.id);
 			}
 		}
+		for (const { name, icon } of seed.groupIcons)
+			updateGroup(db, lookup(groups, name, 'group'), { icon });
+		for (const { name, icon } of seed.categoryIcons)
+			updateCategory(db, lookup(categories, name, 'category'), { icon });
 
 		for (const t of seed.transactions) {
 			createTransaction(db, {

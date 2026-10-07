@@ -16,8 +16,9 @@ When you add an account, you first pick its type. Types come in two kinds:
 ![Adding an account: on-budget types (checking, savings, cash, credit card) above, tracking types (investment, loan, other) below.](img/account-types-light.png)
 
 Credit cards are always on budget. The type can't be changed once the account exists: its
-settings rename it, set a card's billing days, and close or delete it. If you chose the wrong
-kind, add the account again with the right one and change the account of its transactions.
+settings rename it, give it an emoji **Icon** in place of its type's, set a card's billing days,
+and close or delete it. If you chose the wrong kind, add the account again with the right one and
+change the account of its transactions.
 
 ## Starting balance {#starting-balance}
 

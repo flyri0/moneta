@@ -11,6 +11,7 @@ import categoryGoals from './migrations/0008_category_goals.sql?raw';
 import importReconcile from './migrations/0009_import_reconcile.sql?raw';
 import payeeRules from './migrations/0010_payee_rules.sql?raw';
 import cardBilling from './migrations/0011_card_billing.sql?raw';
+import icons from './migrations/0012_icons.sql?raw';
 
 export const MIGRATIONS: readonly string[] = [
 	init,
@@ -23,7 +24,8 @@ export const MIGRATIONS: readonly string[] = [
 	categoryGoals,
 	importReconcile,
 	payeeRules,
-	cardBilling
+	cardBilling,
+	icons
 ];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

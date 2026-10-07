@@ -37,6 +37,7 @@
 		ariaLabel,
 		disabled = false,
 		class: className,
+		contentClass,
 		children
 	}: {
 		open?: boolean;
@@ -50,6 +51,8 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		class?: string;
+		/** Classes for the popover on desktop, to size it otherwise than to the field. */
+		contentClass?: string;
 		children: Snippet<[PickerLayout]>;
 	} = $props();
 
@@ -96,7 +99,7 @@
 		</Popover.Trigger>
 		<PopoverUi.Content
 			data-picker
-			class="z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0"
+			class={cn('z-[60] w-[var(--bits-popover-anchor-width)] min-w-[220px] p-0', contentClass)}
 			align="start"
 		>
 			{@render children({

@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { validateIcon } from '$domain/icon';
 import { GOAL_TYPES, type CategoryGoal } from '$domain/goal';
 import { isMonth } from '$domain/month';
 import { groupBy } from '$domain/group-by';
@@ -9,6 +10,8 @@ export interface CategoryNode {
 	id: string;
 	groupId: string;
 	name: string;
+	/** An emoji, or null. */
+	icon: string | null;
 	sortOrder: number;
 	hidden: boolean;
 	carryoverOverspending: boolean;
@@ -18,6 +21,8 @@ export interface CategoryNode {
 export interface GroupNode {
 	id: string;
 	name: string;
+	/** An emoji, or null. */
+	icon: string | null;
 	sortOrder: number;
 	hidden: boolean;
 	system: 'income' | null;
@@ -28,6 +33,7 @@ interface CategoryRow {
 	id: string;
 	groupId: string;
 	name: string;
+	icon: string | null;
 	sortOrder: number;
 	hidden: number;
 	carryoverOverspending: number;
@@ -39,12 +45,13 @@ interface CategoryRow {
 interface GroupRow {
 	id: string;
 	name: string;
+	icon: string | null;
 	sortOrder: number;
 	hidden: number;
 	system: GroupNode['system'];
 }
 
-const CATEGORY_COLUMNS = `id, group_id AS groupId, name, sort_order AS sortOrder, hidden,
+const CATEGORY_COLUMNS = `id, group_id AS groupId, name, icon, sort_order AS sortOrder, hidden,
 	carryover_overspending AS carryoverOverspending, goal_type AS goalType,
 	goal_amount AS goalAmount, goal_month AS goalMonth`;
 
@@ -69,6 +76,7 @@ export function getCategory(db: Db, id: string): CategoryNode {
 export interface GroupRecord {
 	id: string;
 	name: string;
+	icon: string | null;
 	sortOrder: number;
 	hidden: boolean;
 	system: GroupNode['system'];
@@ -81,7 +89,7 @@ function toGroup(r: GroupRow): GroupRecord {
 export function getGroup(db: Db, id: string): GroupRecord {
 	const row = one<GroupRow>(
 		db,
-		'SELECT id, name, sort_order AS sortOrder, hidden, system FROM category_groups WHERE id = ?',
+		'SELECT id, name, icon, sort_order AS sortOrder, hidden, system FROM category_groups WHERE id = ?',
 		[id]
 	);
 	if (!row) throw new DomainError('NOT_FOUND', `Group ${id} not found`);
@@ -91,7 +99,7 @@ export function getGroup(db: Db, id: string): GroupRecord {
 export function listCategoryTree(db: Db): GroupNode[] {
 	const groups = all<GroupRow>(
 		db,
-		'SELECT id, name, sort_order AS sortOrder, hidden, system FROM category_groups ORDER BY sort_order, name'
+		'SELECT id, name, icon, sort_order AS sortOrder, hidden, system FROM category_groups ORDER BY sort_order, name'
 	);
 	const categories = all<CategoryRow>(
 		db,
@@ -121,7 +129,14 @@ export function createGroup(db: Db, input: { name: string }): string {
 	return id;
 }
 
-export function updateGroup(db: Db, id: string, patch: { name?: string; hidden?: boolean }): void {
+export interface GroupPatch {
+	name?: string;
+	hidden?: boolean;
+	/** An emoji; `null` removes it. */
+	icon?: string | null;
+}
+
+export function updateGroup(db: Db, id: string, patch: GroupPatch): void {
 	tx(db, () => {
 		const group = getGroup(db, id);
 		if (group.system) throw new DomainError('SYSTEM_ENTITY_READONLY');
@@ -129,6 +144,8 @@ export function updateGroup(db: Db, id: string, patch: { name?: string; hidden?:
 			run(db, 'UPDATE category_groups SET name = ? WHERE id = ?', [requireName(patch.name), id]);
 		if (patch.hidden !== undefined)
 			run(db, 'UPDATE category_groups SET hidden = ? WHERE id = ?', [patch.hidden ? 1 : 0, id]);
+		if (patch.icon !== undefined)
+			run(db, 'UPDATE category_groups SET icon = ? WHERE id = ?', [validateIcon(patch.icon), id]);
 	});
 }
 
@@ -190,6 +207,8 @@ export interface CategoryPatch {
 	name?: string;
 	groupId?: string;
 	hidden?: boolean;
+	/** An emoji; `null` removes it. */
+	icon?: string | null;
 	carryoverOverspending?: boolean;
 	/** `null` removes the goal. */
 	goal?: CategoryGoal | null;
@@ -225,6 +244,9 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 
 		if (patch.hidden !== undefined)
 			run(db, 'UPDATE categories SET hidden = ? WHERE id = ?', [patch.hidden ? 1 : 0, id]);
+
+		if (patch.icon !== undefined)
+			run(db, 'UPDATE categories SET icon = ? WHERE id = ?', [validateIcon(patch.icon), id]);
 
 		if (patch.carryoverOverspending !== undefined) {
 			const effectiveGroup =

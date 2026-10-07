@@ -9,6 +9,14 @@ import type { Month } from '$domain/month';
  */
 export interface DemoAccountSeed extends CreateAccountInput {
 	key: string;
+	/** An emoji, set once the account exists. */
+	icon?: string;
+}
+
+/** An emoji for a starter group or category, found by its name. */
+export interface DemoIconSeed {
+	name: string;
+	icon: string;
 }
 
 export interface DemoSplitSeed {
@@ -51,6 +59,8 @@ export interface DemoSeed {
 	transactions: DemoTransactionSeed[];
 	assignments: DemoAssignmentSeed[];
 	schedules: DemoScheduleSeed[];
+	groupIcons: DemoIconSeed[];
+	categoryIcons: DemoIconSeed[];
 }
 
 /** A demo budget from nothing: what any budget starts with, plus what fills this one in. */
