@@ -43,7 +43,8 @@ explains how to budget with it, screen by screen.
 ## Features
 
 - **Zero-based envelope budget.** Income lands in Ready to Assign and you spread it across
-  categories, organized in groups. Overspending carries over per category, and quick-assign
+  categories, organized in groups. Groups, categories and accounts can wear an emoji from the
+  whole Unicode set. Overspending carries over per category, and quick-assign
   fills a month for you: same as last month, the average spent over 3, 6 or 12 months, cover
   overspending, or clear.
 - **Accounts and transactions.** Budget and tracking accounts, credit cards whose payments

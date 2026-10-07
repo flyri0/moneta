@@ -11,6 +11,7 @@ import {
 	reconcileAccount,
 	renameAccount,
 	reopenAccount,
+	setAccountIcon,
 	setBillingDays,
 	type CreateAccountInput
 } from './accounts';
@@ -202,6 +203,25 @@ describe('account lifecycle', () => {
 				categoryId: categoryId(db, 'Food')
 			})
 		).toThrow(code('ACCOUNT_CLOSED'));
+	});
+});
+
+describe('setAccountIcon', () => {
+	it('sets and removes an account icon', async () => {
+		const db = await createBudgetDb();
+		const id = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		expect(getAccount(db, id).icon).toBeNull();
+		setAccountIcon(db, id, '🏦');
+		expect(getAccount(db, id).icon).toBe('🏦');
+		expect(listAccounts(db)[0].icon).toBe('🏦');
+		setAccountIcon(db, id);
+		expect(getAccount(db, id).icon).toBeNull();
+	});
+
+	it('refuses an icon that is not one emoji', async () => {
+		const db = await createBudgetDb();
+		const id = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		expect(() => setAccountIcon(db, id, 'bank')).toThrow(code('INVALID_INPUT'));
 	});
 });
 

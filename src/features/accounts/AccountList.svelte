@@ -4,7 +4,7 @@
 	import { Button } from '$ui/button';
 	import * as Tooltip from '$ui/tooltip';
 	import { accountSections, type AccountSectionKey } from '$features/accounts/account-form';
-	import { accountTypeIcon } from '$features/accounts/account-icons';
+	import AccountIcon from './AccountIcon.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { Account } from '$db/repos/accounts';
 	import { accountTypeLabel } from '$i18n/labels';
@@ -39,7 +39,6 @@
 				aria-label={TITLES[section.key]()}
 			>
 				{#each section.accounts as account (account.id)}
-					{@const Icon = accountTypeIcon(account.type)}
 					{@const balance = session.format(account.balance)}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -51,7 +50,7 @@
 									data-testid="account-row"
 									class="relative flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
 								>
-									<Icon class="size-4" />
+									<AccountIcon {account} class="size-4 text-base" />
 									{#if account.balance < 0}
 										<span
 											aria-hidden="true"
@@ -131,7 +130,6 @@
 					class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
 				>
 					{#each section.accounts as account (account.id)}
-						{@const Icon = accountTypeIcon(account.type)}
 						<div
 							class="flex items-center transition-colors hover:bg-muted/40"
 							data-testid="account-row"
@@ -144,7 +142,7 @@
 									<div
 										class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
 									>
-										<Icon class="size-4" />
+										<AccountIcon {account} class="size-4 text-lg" />
 									</div>
 									<div class="grid min-w-0 gap-0.5">
 										<span class="truncate text-sm font-medium">{account.name}</span>

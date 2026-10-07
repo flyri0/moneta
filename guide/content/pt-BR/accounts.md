@@ -16,9 +16,9 @@ Ao adicionar uma conta, você primeiro escolhe o tipo. Os tipos se dividem em do
 ![Adicionando uma conta: os tipos no orçamento (corrente, poupança, dinheiro, cartão de crédito) em cima, os de acompanhamento (investimento, empréstimo, outro) embaixo.](img/account-types-light.pt-BR.png)
 
 Cartões de crédito estão sempre no orçamento. O tipo não muda depois que a conta existe: os ajustes
-dela servem para renomeá-la, informar o fechamento e o vencimento de um cartão, e encerrá-la ou
-excluí-la. Se escolheu o tipo errado, adicione a conta de novo com o tipo certo e mude a conta das
-transações dela.
+dela servem para renomeá-la, dar a ela um emoji como **Ícone** no lugar do ícone do tipo, informar
+o fechamento e o vencimento de um cartão, e encerrá-la ou excluí-la. Se escolheu o tipo errado,
+adicione a conta de novo com o tipo certo e mude a conta das transações dela.
 
 ## Saldo inicial {#starting-balance}
 

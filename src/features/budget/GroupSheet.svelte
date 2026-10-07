@@ -11,9 +11,11 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import IconField from '$components/emoji-picker/IconField.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import type { BudgetGroupView } from '$db/repos/budget';
+	import type { GroupPatch } from '$db/repos/categories';
 	import type { Month } from '$domain/month';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
@@ -81,7 +83,7 @@
 		if (!error) newCategory = '';
 	}
 
-	async function save(patch: { name?: string; hidden?: boolean }) {
+	async function save(patch: GroupPatch) {
 		error = await runAction(() => session.api.categories.updateGroup(group.id, patch));
 		if (error) reset();
 		// A hidden group can leave the grid: close rather than let the sheet vanish while open.
@@ -155,6 +157,10 @@
 						autocomplete="off"
 					/>
 				</form>
+				<div class="grid gap-2 p-3">
+					<Label for="group-icon">{m.icon_label()}</Label>
+					<IconField id="group-icon" value={group.icon} onchange={(icon) => save({ icon })} />
+				</div>
 				<div class="flex min-h-12 items-center justify-between gap-4 p-3">
 					<Label for="group-hidden">{m.group_hidden()}</Label>
 					<Switch

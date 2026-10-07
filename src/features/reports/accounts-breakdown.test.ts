@@ -5,6 +5,7 @@ import { accountBreakdown, debtProgress } from './accounts-breakdown';
 const account = (id: string, balance: number, fields: Partial<Account> = {}): Account => ({
 	id,
 	name: id,
+	icon: null,
 	type: 'checking',
 	onBudget: true,
 	closed: false,

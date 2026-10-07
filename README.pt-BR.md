@@ -44,7 +44,8 @@ explica como fazer o orçamento nele, tela por tela.
 ## Recursos
 
 - **Orçamento de base zero por envelopes.** A receita cai em Pronto para atribuir e você a
-  distribui entre categorias organizadas em grupos. O gasto a mais passa para o mês seguinte
+  distribui entre categorias organizadas em grupos. Grupos, categorias e contas podem ganhar um
+  emoji de todo o conjunto Unicode. O gasto a mais passa para o mês seguinte
   em cada categoria, e a atribuição rápida preenche o mês para você: igual ao mês passado, a
   média gasta em 3, 6 ou 12 meses, cobrir o gasto a mais, ou zerar.
 - **Contas e transações.** Contas do orçamento e de acompanhamento, cartões de crédito cujos

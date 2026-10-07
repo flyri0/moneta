@@ -20,6 +20,7 @@ import { getCategory, getGroup, listCategoryTree, type GroupNode } from './categ
 export interface BudgetCategoryView {
 	id: string;
 	name: string;
+	icon: string | null;
 	hidden: boolean;
 	carryoverOverspending: boolean;
 	goal: CategoryGoal | null;
@@ -34,6 +35,7 @@ export interface BudgetCategoryView {
 export interface BudgetGroupView {
 	id: string;
 	name: string;
+	icon: string | null;
 	hidden: boolean;
 	system: GroupNode['system'];
 	assigned: number;
@@ -81,6 +83,7 @@ export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {
 			return {
 				id: c.id,
 				name: c.name,
+				icon: c.icon,
 				hidden: c.hidden,
 				carryoverOverspending: c.carryoverOverspending,
 				goal: c.goal,
@@ -93,6 +96,7 @@ export function getBudgetMonth(db: Db, month: Month): BudgetMonthView {
 		return {
 			id: g.id,
 			name: g.name,
+			icon: g.icon,
 			hidden: g.hidden,
 			system: g.system,
 			assigned: sum('assigned'),

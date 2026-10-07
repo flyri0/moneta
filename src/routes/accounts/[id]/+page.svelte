@@ -15,7 +15,7 @@
 	import ReconcileDialog from '$features/accounts/ReconcileDialog.svelte';
 	import { importHandoff } from '$features/accounts/import/pending.svelte';
 	import { readStatement } from '$features/accounts/import/read';
-	import { accountTypeIcon } from '$features/accounts/account-icons';
+	import AccountIcon from '$features/accounts/AccountIcon.svelte';
 	import Register from '$features/accounts/Register.svelte';
 	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
 	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
@@ -41,7 +41,6 @@
 		session.api.accounts.get(accountId)
 	);
 	const balances = $derived(account.data ? registerBalances(account.data) : null);
-	const AccountIcon = $derived(account.data ? accountTypeIcon(account.data.type) : null);
 
 	const today = todayIso();
 	const upcoming = useLive(
@@ -106,13 +105,13 @@
 	<PageHeader back={{ route: '/accounts', label: m.nav_accounts() }}>
 		{#snippet title()}
 			<div class="flex min-w-0 items-center gap-3">
-				{#if AccountIcon}
-					<div
-						class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
-					>
-						<AccountIcon class="size-5" />
-					</div>
-				{/if}
+				<div
+					class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+				>
+					{#if account.data}
+						<AccountIcon account={account.data} class="size-5 text-xl" />
+					{/if}
+				</div>
 				<div class="grid min-w-0 gap-0.5">
 					<div class="flex min-w-0 items-center gap-1">
 						<h1 class="truncate text-xl font-semibold tracking-tight" data-testid="register-title">

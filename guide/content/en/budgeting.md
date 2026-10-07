@@ -111,6 +111,9 @@ amount, and leaves categories without a goal as they are.
 - **Groups** gather categories (Bills, Everyday…). Add one with **Add group**; tap a group's name to
   add a category to it, run Quick assign on it, or delete it, and open **Group settings** to rename
   or hide it. Tap the arrow to collapse it.
+- **Icons**: give a group or a category an emoji in its settings (**Icon**), shown before its name.
+  Search the emoji by name, browse them by group, and pick a skin tone with the hand beside the
+  search; the ones you picked last come first. The **×** beside the field takes the icon away.
 - **Edit order** lets you drag groups and categories, or move them with the arrows.
 - **Hiding** a category or a group keeps its history and money but takes it off the budget screen.
   Both wait at the bottom, under **Hidden**: to bring one back, tap it, open **Category settings**

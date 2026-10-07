@@ -8,6 +8,7 @@
 	import SheetLink from '$components/SheetLink.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
+	import IconField from '$components/emoji-picker/IconField.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
@@ -19,6 +20,7 @@
 	let { open = $bindable(false), account }: { open: boolean; account: Account } = $props();
 	const session = useSession();
 	let name = $state('');
+	let icon = $state<string | null>(null);
 	let closingDay = $state('');
 	let dueDay = $state('');
 	let confirming = $state(false);
@@ -28,6 +30,7 @@
 	$effect(() => {
 		if (!open) return;
 		name = account.name;
+		icon = account.icon;
 		closingDay = account.closingDay?.toString() ?? '';
 		dueDay = account.dueDay?.toString() ?? '';
 		confirming = false;
@@ -53,7 +56,7 @@
 		error = null;
 	}
 
-	/** Saves the name and, on a card, its billing days (both left blank clears them). */
+	/** Saves the name, the icon and, on a card, its billing days (both left blank clears them). */
 	function save(event: SubmitEvent) {
 		event.preventDefault();
 		const isCard = account.type === 'credit_card';
@@ -64,6 +67,7 @@
 		}
 		void act(async () => {
 			if (name !== account.name) await session.api.accounts.rename(account.id, name);
+			if (icon !== account.icon) await session.api.accounts.setIcon(account.id, icon ?? undefined);
 			if (isCard) await session.api.accounts.setBilling(account.id, days ?? undefined);
 		});
 	}
@@ -89,6 +93,10 @@
 				<div class="grid gap-2">
 					<Label for="account-rename">{m.account_name()}</Label>
 					<Input id="account-rename" bind:value={name} required autocomplete="off" />
+				</div>
+				<div class="grid gap-2">
+					<Label for="account-icon">{m.icon_label()}</Label>
+					<IconField id="account-icon" value={icon} onchange={(next) => (icon = next)} />
 				</div>
 				{#if account.type === 'credit_card'}
 					<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="account" />

@@ -62,6 +62,7 @@ export const api = {
 			'object'
 		]),
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
+		setIcon: write(['accounts'], accounts.setAccountIcon, ['string', 'string?']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
 		setBilling: write(['accounts'], accounts.setBillingDays, ['string', 'object?']),

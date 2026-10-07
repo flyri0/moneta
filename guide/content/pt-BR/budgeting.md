@@ -113,6 +113,10 @@ aumenta valores, e deixa como estão as categorias sem meta.
   toque no nome de um grupo para criar uma categoria nele, usar a Atribuição rápida nele ou
   excluí-lo, e abra **Configurações do grupo** para renomeá-lo ou ocultá-lo. Toque na seta para
   recolhê-lo.
+- **Ícones**: dê a um grupo ou a uma categoria um emoji nas configurações dele (**Ícone**), que
+  aparece antes do nome. Busque o emoji pelo nome, navegue pelos grupos e escolha o tom de pele na
+  mão ao lado da busca; os que você usou por último vêm primeiro. O **×** ao lado do campo tira o
+  ícone.
 - **Reordenar** deixa você arrastar grupos e categorias, ou movê-los com as setas.
 - **Ocultar** uma categoria ou um grupo mantém o histórico e o dinheiro, mas os tira da tela do
   orçamento. Os dois ficam no fim, em **Ocultos**: para trazer um de volta, toque nele, abra

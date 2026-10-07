@@ -366,6 +366,38 @@ describe('categories', () => {
 	});
 });
 
+describe('icons', () => {
+	it('sets and removes a group icon', async () => {
+		const db = await createBudgetDb();
+		const id = createGroup(db, { name: 'Food' });
+		expect(listCategoryTree(db).find((g) => g.id === id)!.icon).toBeNull();
+		updateGroup(db, id, { icon: '🍕' });
+		expect(listCategoryTree(db).find((g) => g.id === id)!.icon).toBe('🍕');
+		updateGroup(db, id, { icon: null });
+		expect(listCategoryTree(db).find((g) => g.id === id)!.icon).toBeNull();
+	});
+
+	it('sets and removes a category icon, ZWJ sequences and flags included', async () => {
+		const db = await createBudgetDb();
+		const id = categoryId(db, 'Rent');
+		updateCategory(db, id, { icon: '🧑🏽‍🍳' });
+		expect(getCategory(db, id).icon).toBe('🧑🏽‍🍳');
+		updateCategory(db, id, { icon: '🇧🇷' });
+		expect(getCategory(db, id).icon).toBe('🇧🇷');
+		updateCategory(db, id, { icon: null });
+		expect(getCategory(db, id).icon).toBeNull();
+	});
+
+	it('refuses an icon that is not one emoji', async () => {
+		const db = await createBudgetDb();
+		const id = categoryId(db, 'Rent');
+		expect(() => updateCategory(db, id, { icon: 'food' })).toThrow(code('INVALID_INPUT'));
+		expect(() => updateCategory(db, id, { icon: '🍕🍔' })).toThrow(code('INVALID_INPUT'));
+		expect(() => updateCategory(db, id, { icon: '' })).toThrow(code('INVALID_INPUT'));
+		expect(getCategory(db, id).icon).toBeNull();
+	});
+});
+
 describe('createCategoryIn', () => {
 	it('adds a category to an existing group', async () => {
 		const db = await createBudgetDb();

@@ -32,6 +32,7 @@ const category = (
 	id,
 	groupId,
 	name: id[0].toUpperCase() + id.slice(1),
+	icon: null,
 	sortOrder: 0,
 	hidden: false,
 	carryoverOverspending: false,
@@ -43,6 +44,7 @@ const tree: GroupNode[] = [
 	{
 		id: 'income',
 		name: 'Income',
+		icon: null,
 		sortOrder: 0,
 		hidden: false,
 		system: 'income',
@@ -51,6 +53,7 @@ const tree: GroupNode[] = [
 	{
 		id: 'everyday',
 		name: 'Everyday',
+		icon: null,
 		sortOrder: 1,
 		hidden: false,
 		system: null,

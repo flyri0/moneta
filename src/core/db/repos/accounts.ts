@@ -1,6 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import { validateBillingDays, type BillingDays } from '$domain/card-bill';
 import { DomainError } from '$domain/errors';
+import { validateIcon } from '$domain/icon';
 import { isDate } from '$domain/month';
 import { all, nowIso, one, run, tx, type Db } from '../connection';
 import { ensureStartingBalanceCategory } from './meta';
@@ -12,6 +13,8 @@ export type AccountType =
 export interface Account {
 	id: string;
 	name: string;
+	/** An emoji shown instead of the type's icon, or null. */
+	icon: string | null;
 	type: AccountType;
 	onBudget: boolean;
 	closed: boolean;
@@ -39,7 +42,7 @@ export interface CreateAccountInput {
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
 
-const SELECT_SQL = `SELECT a.id, a.name, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
+const SELECT_SQL = `SELECT a.id, a.name, a.icon, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
 	a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay,
 	COALESCE(SUM(t.amount), 0) AS balance,
 	COALESCE(SUM(CASE WHEN t.cleared = 1 THEN t.amount END), 0) AS clearedBalance
@@ -63,7 +66,7 @@ export type AccountOption = Omit<Account, 'balance' | 'clearedBalance'>;
 export function listAccountOptions(db: Db): AccountOption[] {
 	return all<Omit<AccountRow, 'balance' | 'clearedBalance'>>(
 		db,
-		`SELECT a.id, a.name, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
+		`SELECT a.id, a.name, a.icon, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
 			a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay
 		 FROM accounts a ORDER BY a.closed, a.on_budget DESC, a.sort_order, a.name`
 	).map((r) => ({ ...r, onBudget: r.onBudget === 1, closed: r.closed === 1 }));
@@ -115,6 +118,14 @@ export function renameAccount(db: Db, id: string, name: string): void {
 		getAccount(db, id);
 		const trimmed = requireName(name);
 		run(db, 'UPDATE accounts SET name = ? WHERE id = ?', [trimmed, id]);
+	});
+}
+
+/** Sets an account's emoji icon, or removes it when `icon` is left out. */
+export function setAccountIcon(db: Db, id: string, icon?: string): void {
+	tx(db, () => {
+		getAccount(db, id);
+		run(db, 'UPDATE accounts SET icon = ? WHERE id = ?', [validateIcon(icon ?? null), id]);
 	});
 }
 

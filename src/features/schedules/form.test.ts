@@ -19,6 +19,7 @@ const tree: GroupNode[] = [
 	{
 		id: 'bills',
 		name: 'Bills',
+		icon: null,
 		sortOrder: 0,
 		hidden: false,
 		system: null,
@@ -27,6 +28,7 @@ const tree: GroupNode[] = [
 				id: 'rent',
 				groupId: 'bills',
 				name: 'Rent',
+				icon: null,
 				sortOrder: 0,
 				hidden: false,
 				carryoverOverspending: false,
