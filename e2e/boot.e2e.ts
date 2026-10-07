@@ -103,6 +103,44 @@ test('a second tab waits until it takes over', async ({ context }) => {
 	await expect(first.getByText('Moneta is open in another tab')).toBeVisible();
 });
 
+test('a worker waits for one still holding the storage, and never tries to delete it', async ({
+	context
+}) => {
+	const first = await context.newPage();
+	await onboard(first);
+	const workerUrl = await first.evaluate(() =>
+		performance
+			.getEntriesByType('resource')
+			.map((e) => e.name)
+			.find((n) => /\/workers\/worker-.*\.js$/.test(n))!
+	);
+
+	// A worker the tab lock knows nothing about, as from a tab whose page let go before its worker.
+	await context.route('**/blank.html', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>blank</title>' })
+	);
+	const other = await context.newPage();
+	const errors: string[] = [];
+	other.on('worker', (w) => w.on('console', (m) => m.type() === 'error' && errors.push(m.text())));
+	await other.goto('/blank.html');
+	await other.evaluate((url) => {
+		const worker = new Worker(url, { type: 'module' });
+		const w = window as unknown as { reply?: unknown };
+		worker.onmessage = (event) => (w.reply = event.data);
+		worker.postMessage({ id: 1, method: 'system.listFiles', args: [] });
+	}, workerUrl);
+
+	await other.waitForTimeout(1500);
+	expect(
+		await other.evaluate(() => (window as unknown as { reply?: unknown }).reply)
+	).toBeUndefined();
+	await first.close();
+	await expect
+		.poll(() => other.evaluate(() => (window as unknown as { reply?: unknown }).reply))
+		.toMatchObject({ id: 1, ok: true });
+	expect(errors).toEqual([]);
+});
+
 test('onboarding allows choosing theme, accent, and language on the welcome step', async ({
 	page
 }) => {

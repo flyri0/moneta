@@ -4,6 +4,7 @@ import { DomainError } from '$domain/errors';
 import { createDispatcher } from './dispatcher';
 import type { BackupKeys } from './backup-crypto';
 import { opfsStore } from './opfs-store';
+import { holdPoolLock } from './pool-lock';
 import { createSystem, type KeyStore } from './system';
 import { transferablesOf, type CallRequest } from './protocol';
 
@@ -12,8 +13,12 @@ const POOL_ATTEMPTS = 5;
 async function initPool(): Promise<{ sqlite3: Sqlite3Static; pool: SAHPoolUtil }> {
 	let lastError: unknown;
 	try {
+		// Wait for any worker still holding the pool (a tab just reloaded or handed over): opening
+		// it while that one has its files fails, and sqlite-wasm then tries to delete the pool.
+		if (!(await holdPoolLock('locks' in navigator ? navigator.locks : undefined)))
+			throw new Error('Another copy of Moneta is still using the storage');
 		const sqlite3 = await sqlite3InitModule();
-		// A tab that just handed over may still be letting go of its file handles, so retry briefly.
+		// Something outside the app may still be letting go of the files, so retry briefly.
 		// `forceReinitIfPreviouslyFailed` is supported by sqlite-wasm but missing from its types.
 		const options = { name: 'moneta', initialCapacity: 12, forceReinitIfPreviouslyFailed: true };
 		for (let attempt = 1; attempt <= POOL_ATTEMPTS; attempt++) {
