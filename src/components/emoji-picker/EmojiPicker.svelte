@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
+	import { flushSync, type Component } from 'svelte';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import DumbbellIcon from '@lucide/svelte/icons/dumbbell';
 	import FlagIcon from '@lucide/svelte/icons/flag';
@@ -45,6 +45,8 @@
 		/** What is shown and picked, in the chosen tone. */
 		text: string;
 		name: string;
+		/** The same in every tone, so changing it keeps the buttons. */
+		key: string;
 	}
 
 	interface Section {
@@ -92,6 +94,8 @@
 	const TONES: SkinTone[] = [0, 1, 2, 3, 4, 5];
 	/** The emoji the skin tone control shows. */
 	const TONE_SAMPLE = '✋';
+	/** How many emoji the first frame draws: more than fit on a phone screen, the rest come next. */
+	const FIRST_ITEMS = 160;
 
 	const store = deviceStore();
 	let catalog = $state<EmojiCatalog | null>(null);
@@ -107,6 +111,10 @@
 	let current = $state<SectionId>('smileys');
 	let body = $state<HTMLElement | null>(null);
 	let toneButton = $state<HTMLElement | null>(null);
+	/** Whether every emoji is drawn, or only the first `FIRST_ITEMS`. */
+	let full = $state(false);
+	/** The grid's layout, measured on screen, so a group not drawn yet takes its real height. */
+	let grid = $state<{ columns: number; cell: number; header: number } | null>(null);
 
 	loadCatalog(getLocale()).then(
 		(loaded) => (catalog = loaded),
@@ -120,16 +128,25 @@
 		if (q) {
 			const items = searchEmoji(catalog.all, q).map((e) => ({
 				text: catalog!.tone(e, tone),
-				name: e.name
+				name: e.name,
+				key: e.emoji
 			}));
 			list.push({ id: 'results', label: GROUP_LABELS.results(), items });
 		} else {
 			if (recent.length > 0) {
-				const items = recent.map((text) => ({ text, name: catalog!.find(text)?.name ?? text }));
+				const items = recent.map((text) => ({
+					text,
+					name: catalog!.find(text)?.name ?? text,
+					key: text
+				}));
 				list.push({ id: 'recent', label: GROUP_LABELS.recent(), items });
 			}
 			for (const group of catalog.groups) {
-				const items = group.emojis.map((e) => ({ text: catalog!.tone(e, tone), name: e.name }));
+				const items = group.emojis.map((e) => ({
+					text: catalog!.tone(e, tone),
+					name: e.name,
+					key: e.emoji
+				}));
 				list.push({ id: group.id, label: GROUP_LABELS[group.id](), items });
 			}
 		}
@@ -142,6 +159,14 @@
 	});
 
 	const count = $derived(sections.reduce((n, s) => n + s.items.length, 0));
+	/** The sections drawn now: the first `FIRST_ITEMS` emoji until `full`. */
+	const shown = $derived(
+		full
+			? sections
+			: sections
+					.filter((s) => s.start < FIRST_ITEMS)
+					.map((s) => ({ ...s, items: s.items.slice(0, FIRST_ITEMS - s.start) }))
+	);
 	const valueKey = $derived(value ? emojiKey(value) : '');
 	const footer = $derived(
 		previewed ?? (value ? { text: value, name: catalog?.find(value)?.name ?? '' } : null)
@@ -153,6 +178,27 @@
 		active = 0;
 		if (body) body.scrollTop = 0;
 	});
+
+	// Drawing about 1,900 emoji takes long on a phone: the first frame shows the top of the list, and
+	// the rest is drawn right after it is on screen.
+	$effect(() => {
+		void query;
+		if (!catalog) return;
+		full = false;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const frame = requestAnimationFrame(() => (timer = setTimeout(() => (full = true))));
+		return () => {
+			cancelAnimationFrame(frame);
+			clearTimeout(timer);
+		};
+	});
+
+	/** Draws every emoji now, for what needs them all in the page. */
+	function showAll() {
+		if (full) return;
+		full = true;
+		flushSync();
+	}
 
 	function pick(item: Item) {
 		recent = addRecent(store, item.text);
@@ -173,6 +219,7 @@
 
 	/** Scrolls a group to the top, and makes its first emoji the one Tab lands on. */
 	function jumpTo(section: Section) {
+		showAll();
 		const el = sectionElement(section.id);
 		if (!body || !el) return;
 		body.scrollTop = el.offsetTop;
@@ -198,6 +245,7 @@
 
 	function focusItem(index: number) {
 		const next = Math.max(0, Math.min(count - 1, index));
+		showAll();
 		active = next;
 		itemAt(next)?.focus();
 	}
@@ -256,12 +304,64 @@
 		group?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
 	}
 
-	function itemFrom(event: Event): Item | null {
+	/** The index of the emoji button `event` happened on, if any. */
+	function indexFrom(event: Event): number | null {
 		const el = (event.target as HTMLElement).closest<HTMLElement>('[data-index]');
-		if (!el) return null;
-		const index = Number(el.dataset.index);
+		return el ? Number(el.dataset.index) : null;
+	}
+
+	function itemAtIndex(index: number | null): Item | null {
+		if (index === null) return null;
 		const section = sections.findLast((s) => s.start <= index);
 		return section?.items[index - section.start] ?? null;
+	}
+
+	function onGridFocusin(event: FocusEvent) {
+		const index = indexFrom(event);
+		if (index !== null) active = index;
+		previewed = itemAtIndex(index);
+	}
+
+	function onGridClick(event: MouseEvent) {
+		const item = itemAtIndex(indexFrom(event));
+		if (item) pick(item);
+	}
+
+	/** Measures the grid from an emoji on screen; every group is laid out alike. */
+	function measureGrid() {
+		const button = itemAt(0);
+		const section = button?.closest('section');
+		const header = section?.querySelector('h3');
+		if (!button || !section || !header) return;
+		const next = {
+			columns: columns(button),
+			cell: parseFloat(getComputedStyle(button).height),
+			header: parseFloat(getComputedStyle(header).height)
+		};
+		if (JSON.stringify(next) !== JSON.stringify(grid)) grid = next;
+	}
+
+	$effect(() => {
+		if (!body) return;
+		const observer = new ResizeObserver(measureGrid);
+		observer.observe(body);
+		return () => observer.disconnect();
+	});
+
+	$effect(() => {
+		void shown;
+		measureGrid();
+	});
+
+	/**
+	 * A group's height while it is not drawn: the real one, so that jumping to a group lands on it
+	 * even when the groups above it are drawn on the way.
+	 */
+	function sectionHeight(section: Section): string | undefined {
+		if (!grid) return undefined;
+		const header = section.id === 'results' ? 0 : grid.header;
+		const rows = Math.ceil(section.items.length / grid.columns);
+		return `${header + rows * grid.cell}px`;
 	}
 </script>
 
@@ -336,23 +436,25 @@
 		</nav>
 	{/if}
 
-	<!-- Its handlers serve the emoji buttons inside: arrow keys, and naming the one pointed at. -->
+	<!-- Its handlers serve the emoji buttons inside: picking, arrow keys, and naming the one pointed
+	at. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={body}
-		class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2"
+		class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2"
 		{onscroll}
+		onclick={onGridClick}
 		onkeydown={onGridKeydown}
-		onpointerover={(event) => (previewed = itemFrom(event))}
+		onpointerover={(event) => (previewed = itemAtIndex(indexFrom(event)))}
 		onpointerleave={() => (previewed = null)}
-		onfocusin={(event) => (previewed = itemFrom(event))}
+		onfocusin={onGridFocusin}
 		onfocusout={() => (previewed = null)}
 	>
 		{#if failed !== undefined}
-			<FormMessage class="p-2" error={{ message: m.emoji_load_failed(), cause: failed }} />
+			<FormMessage class="px-4 py-2" error={{ message: m.emoji_load_failed(), cause: failed }} />
 		{:else if !catalog}
 			<Delayed>
-				<div class="grid animate-in grid-cols-8 gap-1 pt-2 fade-in" aria-hidden="true">
+				<div class="grid animate-in grid-cols-8 gap-1 px-2 pt-2 fade-in" aria-hidden="true">
 					{#each { length: 32 }, i (i)}
 						<Skeleton class="aspect-square" />
 					{/each}
@@ -361,8 +463,14 @@
 		{:else if count === 0}
 			<p class="py-8 text-center text-sm text-muted-foreground">{m.emoji_empty()}</p>
 		{:else}
-			{#each sections as section (section.id)}
-				<section data-section={section.id} aria-labelledby="emoji-section-{section.id}">
+			{#each shown as section (section.id)}
+				<!-- Sections out of view are left undrawn; the padding keeps focus rings inside. -->
+				<section
+					data-section={section.id}
+					aria-labelledby="emoji-section-{section.id}"
+					class={cn('px-2 pb-1', grid && '[content-visibility:auto]')}
+					style:contain-intrinsic-block-size={sectionHeight(section)}
+				>
 					<h3
 						id="emoji-section-{section.id}"
 						class={cn(
@@ -375,7 +483,7 @@
 					<div
 						class="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] md:grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))]"
 					>
-						{#each section.items as item, i (item.text)}
+						{#each section.items as item, i (item.key)}
 							{@const index = section.start + i}
 							<button
 								type="button"
@@ -384,8 +492,6 @@
 								aria-label={item.name}
 								aria-current={emojiKey(item.text) === valueKey ? 'true' : undefined}
 								class="flex aspect-square items-center justify-center rounded-md text-2xl leading-none transition-colors outline-none select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=true]:bg-accent md:text-xl"
-								onfocus={() => (active = index)}
-								onclick={() => pick(item)}
 							>
 								{item.text}
 							</button>

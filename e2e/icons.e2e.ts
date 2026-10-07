@@ -88,6 +88,24 @@ test('picks with the keyboard alone, flags included', async ({ page }) => {
 	await expect(page.getByRole('main')).toContainText('😀');
 });
 
+test('jumps to a group, and to the last emoji, before they are drawn', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Fun', exact: true }).click();
+	const sheet = page.getByRole('dialog').first();
+	await sheet.getByRole('button', { name: 'Group settings' }).click();
+	await sheet.getByRole('combobox', { name: 'Icon' }).click();
+
+	const tab = picker(page).getByRole('button', { name: 'Flags', exact: true });
+	await tab.click();
+	await expect(tab).toHaveAttribute('aria-current', 'true');
+	const flags = picker(page).getByRole('region', { name: 'Flags', exact: true });
+	await expect(flags.getByRole('button').first()).toBeInViewport({ ratio: 1 });
+
+	await flags.getByRole('button').first().press('End');
+	await expect(flags.getByRole('button').last()).toBeFocused();
+	await expect(flags.getByRole('button').last()).toBeInViewport({ ratio: 1 });
+});
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
