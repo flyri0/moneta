@@ -82,27 +82,46 @@ export function buildCatalog(
 	};
 }
 
+/** What a catalog is built from: the generated data and one locale's names. */
+export interface CatalogSources {
+	data: Pick<typeof import('./emoji-data'), 'EMOJI_GROUPS' | 'TONE_EXCEPTIONS' | 'VERSION_SAMPLES'>;
+	names: string;
+}
+
+/** Fetches the data and the names in `locale` (English when it has none of its own). */
+async function importSources(locale: string): Promise<CatalogSources> {
+	const [data, names] = await Promise.all([
+		import('./emoji-data'),
+		locale === 'pt-BR' ? import('./names/pt-BR') : import('./names/en')
+	]);
+	return { data, names: names.default };
+}
+
 const catalogs = new Map<string, Promise<EmojiCatalog>>();
 
 /**
- * The catalog in `locale` (English when it has no names of its own), with only the emoji this
- * device can show. Loaded once: the data is its own chunk, fetched the first time a picker opens.
+ * The catalog in `locale`, with only the emoji this device can show. Loaded once: the data is its
+ * own chunk, fetched the first time a picker opens. A failed load is forgotten, so the next picker
+ * tries again.
  */
-export function loadCatalog(locale: string): Promise<EmojiCatalog> {
+export function loadCatalog(
+	locale: string,
+	load: (locale: string) => Promise<CatalogSources> = importSources
+): Promise<EmojiCatalog> {
 	let catalog = catalogs.get(locale);
 	if (!catalog) {
-		catalog = Promise.all([
-			import('./emoji-data'),
-			locale === 'pt-BR' ? import('./names/pt-BR') : import('./names/en')
-		]).then(([data, names]) =>
+		catalog = load(locale).then(({ data, names }) =>
 			buildCatalog(
 				data.EMOJI_GROUPS,
 				data.TONE_EXCEPTIONS,
-				names.default,
+				names,
 				supportedVersion(data.VERSION_SAMPLES)
 			)
 		);
 		catalogs.set(locale, catalog);
+		catalog.catch(() => {
+			if (catalogs.get(locale) === catalog) catalogs.delete(locale);
+		});
 	}
 	return catalog;
 }

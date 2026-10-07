@@ -36,6 +36,12 @@ describe('recent emoji', () => {
 		store.setItem(RECENT_EMOJI_KEY, '["🍕", 3]');
 		expect(readRecent(store)).toEqual(['🍕']);
 	});
+
+	it('drops repeats, which would break the list', () => {
+		const store = memoryStore();
+		store.setItem(RECENT_EMOJI_KEY, '["🍕", "🚗", "🍕"]');
+		expect(readRecent(store)).toEqual(['🍕', '🚗']);
+	});
 });
 
 describe('skin tone', () => {

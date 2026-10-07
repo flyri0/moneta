@@ -21,7 +21,10 @@ export function readRecent(store: KeyValueStore | null): string[] {
 	try {
 		const raw: unknown = JSON.parse(store?.getItem(RECENT_EMOJI_KEY) ?? '[]');
 		if (Array.isArray(raw))
-			return raw.filter((e): e is string => typeof e === 'string').slice(0, RECENT_LIMIT);
+			return [...new Set(raw.filter((e): e is string => typeof e === 'string'))].slice(
+				0,
+				RECENT_LIMIT
+			);
 	} catch {
 		// Garbage or blocked storage: nothing recent.
 	}

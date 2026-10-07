@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { buildCatalog, emojiKey, fold, type EmojiGroupData } from './emoji';
+import { describe, expect, it, vi } from 'vitest';
+import { buildCatalog, emojiKey, fold, loadCatalog, type EmojiGroupData } from './emoji';
 
 const DATA: EmojiGroupData[] = [
 	{
@@ -52,5 +52,26 @@ describe('buildCatalog', () => {
 		expect(catalog.tone(catalog.find('👋')!, 4)).toBe('👋🏾');
 		expect(catalog.tone(catalog.find('🍕')!, 4)).toBe('🍕');
 		expect(catalog.tone(catalog.find('👋')!, 0)).toBe('👋');
+	});
+});
+
+describe('loadCatalog', () => {
+	const sources = {
+		data: { EMOJI_GROUPS: DATA, TONE_EXCEPTIONS: {}, VERSION_SAMPLES: [] },
+		names: NAMES
+	};
+
+	it('loads once', async () => {
+		const load = vi.fn().mockResolvedValue(sources);
+		const first = await loadCatalog('test-once', load);
+		expect(await loadCatalog('test-once', load)).toBe(first);
+		expect(load).toHaveBeenCalledTimes(1);
+	});
+
+	it('tries again after a failed load', async () => {
+		const load = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(sources);
+		await expect(loadCatalog('test-retry', load)).rejects.toThrow('offline');
+		const catalog = await loadCatalog('test-retry', load);
+		expect(catalog.all.map((e) => e.emoji)).toContain('🍕');
 	});
 });
