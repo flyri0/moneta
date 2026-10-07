@@ -23,8 +23,11 @@ function fakeLocks(): PoolLocks & { release(name: string): void; held(name: stri
 				const queue = queues.get(name) ?? [];
 				queues.set(name, queue);
 				queue.push(start);
+				// As in Web Locks, aborting only cancels a request still waiting.
 				options.signal?.addEventListener('abort', () => {
-					queue.splice(queue.indexOf(start), 1);
+					const index = queue.indexOf(start);
+					if (index === -1) return;
+					queue.splice(index, 1);
 					reject(options.signal!.reason);
 				});
 			});
@@ -33,6 +36,22 @@ function fakeLocks(): PoolLocks & { release(name: string): void; held(name: stri
 		held: (name) => holders.has(name)
 	};
 }
+
+describe('fakeLocks', () => {
+	it('keeps the others waiting when a granted request is aborted later', async () => {
+		const locks = fakeLocks();
+		const late = new AbortController();
+		let second = false;
+		void locks.request('pool', {}, () => new Promise(() => {}));
+		void locks.request('pool', { signal: late.signal }, () => new Promise(() => {}));
+		void locks.request('pool', {}, async () => void (second = true)).catch(() => {});
+		locks.release('pool');
+		late.abort();
+		locks.release('pool');
+		await Promise.resolve();
+		expect(second).toBe(true);
+	});
+});
 
 describe('holdPoolLock', () => {
 	it('takes a free lock and keeps it', async () => {
