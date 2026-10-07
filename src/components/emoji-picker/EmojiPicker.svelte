@@ -201,8 +201,9 @@
 	}
 
 	function pick(item: Item) {
-		recent = addRecent(store, item.text);
-		query = '';
+		// Only stored: the picker closes on a pick, and updating `recent` or `query` here would redraw
+		// the ~1,900 emoji (every index after the new Recent group shifts) just before it goes away.
+		addRecent(store, item.text);
 		onselect(item.text);
 	}
 
