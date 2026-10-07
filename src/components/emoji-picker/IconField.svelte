@@ -37,7 +37,7 @@
 		muted={!value}
 		title={ariaLabel}
 		class={value ? 'text-lg' : undefined}
-		contentClass="w-80"
+		contentClass="w-80 data-closed:animate-none!"
 	>
 		{#snippet children(layout)}
 			<EmojiPicker
