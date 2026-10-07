@@ -109,6 +109,7 @@
 	/** The item under the pointer or focus, named in the footer. */
 	let previewed = $state<Item | null>(null);
 	let current = $state<SectionId>('smileys');
+	let root = $state<HTMLElement | null>(null);
 	let body = $state<HTMLElement | null>(null);
 	let toneButton = $state<HTMLElement | null>(null);
 	/** Whether every emoji is drawn, or only the first `FIRST_ITEMS`. */
@@ -180,18 +181,32 @@
 	});
 
 	// Drawing about 1,900 emoji takes long on a phone: the first frame shows the top of the list, and
-	// the rest is drawn right after it is on screen.
+	// the rest is drawn once it is on screen and the popover or screen around it has finished opening,
+	// so the work doesn't land in the middle of its animation.
 	$effect(() => {
 		void query;
 		if (!catalog) return;
 		full = false;
+		let cancelled = false;
 		let timer: ReturnType<typeof setTimeout> | undefined;
-		const frame = requestAnimationFrame(() => (timer = setTimeout(() => (full = true))));
+		const frame = requestAnimationFrame(() => {
+			void settled(root).then(() => {
+				if (!cancelled) timer = setTimeout(() => (full = true));
+			});
+		});
 		return () => {
+			cancelled = true;
 			cancelAnimationFrame(frame);
 			clearTimeout(timer);
 		};
 	});
+
+	/** Resolves once the animations running on `el` and the elements around it are over. */
+	function settled(el: Element | null): Promise<unknown> {
+		const running: Animation[] = [];
+		for (let node = el; node; node = node.parentElement) running.push(...node.getAnimations());
+		return Promise.allSettled(running.map((animation) => animation.finished));
+	}
 
 	/** Draws every emoji now, for what needs them all in the page. */
 	function showAll() {
@@ -366,7 +381,7 @@
 	}
 </script>
 
-<div class={cn('flex min-h-0 flex-col', className)} data-emoji-picker>
+<div bind:this={root} class={cn('flex min-h-0 flex-col', className)} data-emoji-picker>
 	<div class="flex shrink-0 items-center gap-1 p-2 pb-1">
 		<InputGroup.Root class="h-9 md:h-8">
 			<InputGroup.Addon>
