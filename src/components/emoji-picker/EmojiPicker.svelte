@@ -97,12 +97,17 @@
 	const TONE_SAMPLE = '✋';
 	/** How far past the visible part of the list rows are drawn, in px, so scrolling finds them. */
 	const OVERSCAN = 160;
+	/** How long typing pauses before the results follow it, in ms. */
+	const SEARCH_DELAY = 120;
 	/** Below the bottom of every group, in px. */
 	const SECTION_GAP = 4;
 
 	const store = deviceStore();
 	let catalog = $state<EmojiCatalog | null>(null);
 	let failed = $state<unknown>(undefined);
+	/** What is typed in the search. */
+	let typed = $state('');
+	/** What the list shows results for: `typed`, once typing pauses. */
 	let query = $state('');
 	let tone = $state<SkinTone>(readTone(store));
 	let recent = $state(readRecent(store));
@@ -212,6 +217,18 @@
 		return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 	}
 
+	// Each new set of results costs Chrome a long paint for the emoji it hasn't drawn yet, so the
+	// results wait for a pause in typing instead of following every key. Clearing is at once.
+	$effect(() => {
+		const next = typed;
+		if (!next.trim()) {
+			query = next;
+			return;
+		}
+		const timer = setTimeout(() => (query = next), SEARCH_DELAY);
+		return () => clearTimeout(timer);
+	});
+
 	// A new search starts again from the top.
 	$effect(() => {
 		void query;
@@ -301,6 +318,7 @@
 
 	/** Down goes from the search into the emoji; Enter picks the first result. */
 	function onSearchKeydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowDown' || event.key === 'Enter') query = typed;
 		if (event.key === 'ArrowDown' && count > 0) {
 			event.preventDefault();
 			focusItem(0);
@@ -385,7 +403,7 @@
 			<InputGroup.Input
 				type="search"
 				class="[&::-webkit-search-cancel-button]:hidden"
-				bind:value={query}
+				bind:value={typed}
 				placeholder={m.emoji_search()}
 				aria-label={m.emoji_search()}
 				autocomplete="off"
