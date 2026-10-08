@@ -100,6 +100,7 @@ describe('newDraft', () => {
 			direction: 'outflow',
 			memo: '',
 			cleared: false,
+			flag: null,
 			splits: null
 		});
 	});
@@ -139,6 +140,7 @@ describe('transferTarget', () => {
 				amount: -5000,
 				memo: '',
 				cleared: false,
+				flag: null,
 				payeeName: 'Transferência: Mercado',
 				categoryId: 'food'
 			}
@@ -240,6 +242,7 @@ describe('buildTransactionInput', () => {
 				amount: -1250,
 				memo: 'pão',
 				cleared: true,
+				flag: null,
 				payeeName: 'Mercado',
 				categoryId: 'food'
 			}
@@ -281,6 +284,7 @@ describe('buildTransactionInput', () => {
 				amount: -500,
 				memo: '',
 				cleared: false,
+				flag: null,
 				transferAccountId: 'savings',
 				categoryId: null
 			}
@@ -388,6 +392,7 @@ describe('draftFromTransaction', () => {
 		isSplit: false,
 		isOpening: false,
 		reconciled: false,
+		flag: null,
 		splits: [],
 		...p
 	});
@@ -399,6 +404,12 @@ describe('draftFromTransaction', () => {
 			ok: true,
 			input: { amount: -1250, payeeName: 'Mercado', categoryId: 'food', memo: 'pão', cleared: true }
 		});
+	});
+
+	it('round-trips a flag', () => {
+		const d = draftFromTransaction(row({ flag: 'purple' }), ctx);
+		expect(d.flag).toBe('purple');
+		expect(buildTransactionInput(d, ctx)).toMatchObject({ ok: true, input: { flag: 'purple' } });
 	});
 
 	it('round-trips a split with a line in the other direction', () => {

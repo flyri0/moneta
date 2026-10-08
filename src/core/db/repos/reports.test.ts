@@ -461,3 +461,72 @@ describe('series between writes', () => {
 		expect(netWorth(db, '2026-03').at(-1)!.netWorth).toBe(before.at(-1)!.netWorth - 700);
 	});
 });
+
+describe('flag filter', () => {
+	const range = { from: '2026-09-01', to: '2026-09-30' };
+
+	beforeEach(() => {
+		const food = categoryId(db, 'Food');
+		const fun = categoryId(db, 'Fun');
+		const add = (amount: number, categoryId: string, flag?: 'red' | 'blue', payeeName = 'Shop') =>
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-09-10',
+				amount,
+				categoryId,
+				payeeName,
+				flag
+			});
+		add(-1000, food, 'red', 'Market');
+		add(-2000, fun, 'blue', 'Cinema');
+		add(-4000, food);
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-09-11',
+			amount: -500,
+			payeeName: 'Split',
+			flag: 'red',
+			splits: [
+				{ categoryId: food, amount: -200 },
+				{ categoryId: fun, amount: -300 }
+			]
+		});
+	});
+
+	it('keeps only the flagged spending', () => {
+		const spending = (flags?: ('red' | 'blue' | 'none')[]) =>
+			spendingByCategory(db, { ...range, flags }).map((r) => [r.name, r.amount]);
+		expect(spending(['red'])).toEqual([
+			['Food', 1200],
+			['Fun', 300]
+		]);
+		expect(spending(['blue', 'none'])).toEqual([
+			['Food', 4000],
+			['Fun', 2000]
+		]);
+		expect(spending()).toEqual([
+			['Food', 5200],
+			['Fun', 2300]
+		]);
+		expect(spending([])).toEqual([]);
+	});
+
+	it('filters cash flow, category trends and payees too', () => {
+		expect(cashFlow(db, { ...range, flags: ['red'] })).toEqual([
+			{ month: '2026-09', income: 0, spending: 1500 }
+		]);
+		expect(
+			categoryMonths(db, { ...range, flags: ['blue'] }).map((r) => [r.name, r.amount])
+		).toEqual([['Fun', -2000]]);
+		expect(spendingByPayee(db, { ...range, flags: ['red'] }).map((r) => r.name)).toEqual([
+			'Market',
+			'Split'
+		]);
+	});
+
+	it('refuses an unknown flag', () => {
+		expect(() => spendingByCategory(db, { ...range, flags: ['pink' as 'red'] })).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
+});

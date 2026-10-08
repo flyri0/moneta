@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { Button } from '$ui/button';
 	import { DateRangePicker } from '$ui/date-range-picker';
@@ -10,15 +11,20 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	/** The period control of a report page: it scopes everything below it. */
+	/**
+	 * The period control of a report page: it scopes everything below it. `children` adds more
+	 * controls to its row.
+	 */
 	let {
 		preset = $bindable(),
 		custom = $bindable(),
-		range
+		range,
+		children
 	}: {
 		preset: RangePreset | 'custom';
 		custom: DateRange;
 		range: DateRange;
+		children?: Snippet;
 	} = $props();
 
 	const PRESETS: Record<RangePreset, () => string> = {
@@ -93,6 +99,7 @@
 			</Select.Item>
 		</Select.Content>
 	</Select.Root>
+	{@render children?.()}
 	<!-- On phones the dates take a line of their own, under the select. -->
 	<button
 		type="button"

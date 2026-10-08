@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { Badge } from '$ui/badge';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
+	import FlagIcon from '$features/flags/FlagIcon.svelte';
+	import { flagLabel } from '$features/flags/flags';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import type { ScheduleRow } from '$db/repos/schedules';
 	import { formatDate } from '$i18n/formats';
@@ -13,6 +16,7 @@
 		$props();
 
 	const session = useSession();
+	const flags = useFlags();
 	const sections = $derived(
 		[
 			{ title: m.schedules_due(), rows: schedules.filter((s) => s.status === 'due') },
@@ -57,6 +61,9 @@
 						onclick={() => onOpen(s)}
 					>
 						<span class="flex min-w-0 items-center gap-2">
+							{#if s.flag}
+								<FlagIcon color={s.flag} label={flagLabel(s.flag, flags.data)} class="size-3.5" />
+							{/if}
 							<span class="truncate text-sm font-medium">{payeeText(payeeDisplay(s))}</span>
 							{#if s.autoEnter}<Badge variant="secondary">{m.schedules_auto()}</Badge>{/if}
 						</span>

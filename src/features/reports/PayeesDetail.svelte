@@ -1,9 +1,11 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import PeriodEmpty from './PeriodEmpty.svelte';
+	import ReportEmpty from './ReportEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -24,7 +26,11 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/** Spending by who it went to, with each payee's transactions a click away. */
-	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
+	let {
+		range,
+		flags = [],
+		onClear
+	}: { range: DateRange; flags?: FlagFilter; onClear?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds, as in the spending report. */
@@ -38,7 +44,7 @@
 	let expanded = $state(false);
 
 	const payees = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.payees({ from: range.from, to: range.to })
+		session.api.reports.payees({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const slices = $derived(payeeSlices(payees.data ?? []));
 	const report = $derived(withShares(slices));
@@ -53,6 +59,7 @@
 					payeeId: selected,
 					from: range.from,
 					to: range.to,
+					flags: flagQuery(flags),
 					limit: pages * PAGE_SIZE
 				})
 			: Promise.resolve<TransactionRow[]>([])
@@ -62,6 +69,7 @@
 	$effect(() => {
 		void selected;
 		void range;
+		void flags;
 		untrack(() => (pages = 1));
 	});
 
@@ -84,7 +92,7 @@
 		{#if payees.error}
 			<FormMessage error={actionError(payees.error)} />
 		{:else if payees.data && report.rows.length === 0}
-			<PeriodEmpty icon={ChartColumnIcon} description={m.reports_spending_empty()} {onShowAll} />
+			<ReportEmpty icon={ChartColumnIcon} description={m.reports_spending_empty()} {onClear} />
 		{:else if report.rows.length > 0}
 			<StatTile
 				value={session.format(report.total)}

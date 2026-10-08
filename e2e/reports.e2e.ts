@@ -111,12 +111,12 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	await expect(table.locator('tbody tr')).toContainText('$115.00');
 	await page.getByRole('button', { name: 'Categories' }).click();
 
-	// An empty month says the period is what hides the spending, and offers all of it.
+	// An empty month says the filters are what hide the spending, and offers to clear them.
 	await chooseSelect(page, 'Period', 'Last month');
-	await expect(page.getByText(/Nothing in this period/)).toBeVisible();
+	await expect(page.getByText('Nothing matches the period or the flags in use.')).toBeVisible();
 
 	// All time reaches back over the empty month to the spending again.
-	await page.getByRole('button', { name: 'Show all time' }).click();
+	await page.getByRole('button', { name: 'Clear filters' }).click();
 	await expect(page.getByLabel('Period')).toHaveText('All time');
 	await expect(table.locator('tfoot')).toContainText('$115.00');
 

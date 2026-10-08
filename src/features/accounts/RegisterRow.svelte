@@ -5,6 +5,9 @@
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import { Checkbox } from '$ui/checkbox';
 	import { longPress } from '$features/accounts/long-press';
+	import FlagIcon from '$features/flags/FlagIcon.svelte';
+	import { flagLabel } from '$features/flags/flags';
+	import type { FlagRow } from '$db/repos/flags';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
@@ -27,7 +30,8 @@
 		selected = false,
 		onSelect,
 		onLongPress,
-		highlighted = false
+		highlighted = false,
+		flags
 	}: {
 		row: TransactionRow;
 		showAccount?: boolean;
@@ -37,6 +41,8 @@
 		onSelect?: (row: TransactionRow) => void;
 		onLongPress?: (row: TransactionRow) => void;
 		highlighted?: boolean;
+		/** The flags' names, for the row's flag. */
+		flags?: readonly FlagRow[];
 	} = $props();
 
 	const session = useSession();
@@ -99,6 +105,13 @@ the rest of the row is a shortcut. -->
 		{/if}
 
 		{#snippet payeeText()}
+			{#if row.flag}
+				<FlagIcon
+					color={row.flag}
+					label={flagLabel(row.flag, flags)}
+					class="mr-1 inline size-3.5 align-[-0.125em]"
+				/>
+			{/if}
 			{#if payee.kind === 'transfer'}
 				{payee.direction === 'to'
 					? m.register_transfer_to({ account: payee.accountName })

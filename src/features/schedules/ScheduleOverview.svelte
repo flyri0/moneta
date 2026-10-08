@@ -7,6 +7,9 @@
 	import SheetLink from '$components/SheetLink.svelte';
 	import { payeeDisplay } from '$features/accounts/register';
 	import SplitLines from '$features/transactions/SplitLines.svelte';
+	import FlagIcon from '$features/flags/FlagIcon.svelte';
+	import { flagLabel } from '$features/flags/flags';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runActionToast } from '$client/notify';
@@ -36,6 +39,7 @@
 	} = $props();
 
 	const session = useSession();
+	const flags = useFlags();
 	const live = useLive(
 		session.client,
 		['schedules', 'schedule_splits', 'accounts', 'payees', 'categories'],
@@ -109,6 +113,14 @@
 			{#if s.memo}
 				<dt class="text-muted-foreground">{m.transaction_memo()}</dt>
 				<dd class="min-w-0 text-right break-words">{s.memo}</dd>
+			{/if}
+
+			{#if s.flag}
+				<dt class="text-muted-foreground">{m.flag_label()}</dt>
+				<dd class="flex min-w-0 items-center justify-end gap-1.5 text-right break-words">
+					<FlagIcon color={s.flag} />
+					{flagLabel(s.flag, flags.data)}
+				</dd>
 			{/if}
 
 			<dt class="text-muted-foreground">{m.schedule_frequency()}</dt>

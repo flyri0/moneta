@@ -67,6 +67,8 @@ Then:
 1. Look at **Ready to Assign**: the money in your accounts that has no job yet.
 2. Assign it to your categories until Ready to Assign reaches zero.
 3. Record what you spend and receive as it happens, or import your bank statements.
+4. Mark what you want to follow with a [flag](transactions.md#flags), like the dinners your job
+   pays back or the costs of a trip, and find it again with the filters and the reports.
 
 [How the budget works](budgeting.md) explains each number on the budget screen. New to envelope
 budgeting? The [glossary](glossary.md) explains the words, and [Everyday situations](situations.md)

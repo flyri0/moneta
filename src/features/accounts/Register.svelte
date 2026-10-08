@@ -10,6 +10,7 @@
 	import RegisterRow from '$features/accounts/RegisterRow.svelte';
 	import SelectionBar from '$features/accounts/SelectionBar.svelte';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import { PAGE_SIZE } from '$features/accounts/register';
 	import type { RegisterFilters } from '$features/accounts/register-filters.svelte';
 	import type { RegisterSelection } from '$features/accounts/selection.svelte';
@@ -51,7 +52,8 @@
 			filters.payeeId,
 			filters.amountMin,
 			filters.amountMax,
-			filters.status
+			filters.status,
+			filters.flags
 		];
 		pages = 1;
 	});
@@ -76,9 +78,12 @@
 				amountMin: filters.amountMin ?? undefined,
 				amountMax: filters.amountMax ?? undefined,
 				cleared: filters.status ? filters.status === 'cleared' : undefined,
+				// A plain copy: a reactive array can't be posted to the worker.
+				flags: filters.flags.length > 0 ? [...filters.flags] : undefined,
 				limit: pages * PAGE_SIZE
 			})
 	);
+	const flags = useFlags();
 	const hasMore = $derived((rows.data?.length ?? 0) >= pages * PAGE_SIZE);
 	const filtered = $derived(filters.active);
 
@@ -115,6 +120,7 @@
 				onSelect={(r) => selection?.toggle(r.id)}
 				onLongPress={selection && ((r) => startWith(selection, r))}
 				highlighted={selection?.changed.has(row.id)}
+				flags={flags.data}
 			/>
 		{:else}
 			{#if rows.data && filtered}

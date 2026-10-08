@@ -5,8 +5,8 @@ themselves, or with a tap. Find them under **Schedules** in the sidebar, or the 
 
 ## Creating a schedule {#creating}
 
-**Add schedule** asks for the same fields as a transaction (account, payee, amount, category and
-memo), plus:
+**Add schedule** asks for the same fields as a transaction (account, payee, amount, category,
+memo and [flag](transactions.md#flags)), plus:
 
 - **Next date**: the first occurrence.
 - **Repeats**: once, daily, weekly, monthly or yearly, and **every** how many days, weeks, months

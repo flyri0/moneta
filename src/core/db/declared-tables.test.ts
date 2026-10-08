@@ -326,9 +326,12 @@ const SCENARIOS: Record<string, Scenario[]> = {
 	],
 	'transactions.delete': [{ args: (f) => [f.split] }],
 	'transactions.setCleared': [{ args: (f) => [f.plain, true] }],
+	'transactions.setFlag': [{ args: (f) => [f.plain, 'red'] }],
+	'flags.rename': [{ args: () => [{ red: 'Reimbursable' }] }],
 	'transactions.updateMany': [
 		{ args: (f) => [[f.plain, f.split], { categoryId: f.fun }] },
-		{ args: (f) => [[f.transfer], { date: '2026-01-20', cleared: true }] }
+		{ args: (f) => [[f.transfer], { date: '2026-01-20', cleared: true }] },
+		{ args: (f) => [[f.plain], { flag: 'blue' }] }
 	],
 	'transactions.deleteMany': [{ args: (f) => [[f.plain, f.split]] }],
 	'schedules.create': [

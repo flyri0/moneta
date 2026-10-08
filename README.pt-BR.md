@@ -51,8 +51,10 @@ explica como fazer o orçamento nele, tela por tela.
 - **Contas e transações.** Contas do orçamento e de acompanhamento, cartões de crédito cujos
   pagamentos não mexem no orçamento, transações divididas, transferências entre contas e
   favorecidos que você pode renomear em todo lugar, mesclar e associar a uma categoria padrão.
-  Selecione várias transações para definir a categoria ou a data, compensar ou excluir todas
-  de uma vez, e desfaça uma exclusão, uma movimentação de dinheiro ou uma importação logo depois.
+  Seis flags coloridas, que você pode nomear, marcam transações para achá-las de novo nos filtros
+  e nos relatórios. Selecione várias transações para definir a categoria, a data ou a flag,
+  compensar ou excluir todas de uma vez, e desfaça uma exclusão, uma movimentação de dinheiro ou
+  uma importação logo depois.
 - **Extratos bancários.** Importe extratos OFX e CSV: o que você já lançou é correspondido em
   vez de duplicado, um extrato importado duas vezes não acrescenta nada, e a categoria de
   costume de cada favorecido volta sozinha. Concilie uma conta com o saldo do banco para
@@ -241,6 +243,7 @@ src/features/          módulos de funcionalidades (lógica de tela + componente
   accounts/            lista de contas, extrato, diálogos de criação de contas, conciliação,
                        importação de extratos (import/: leitores de OFX e CSV, revisão)
   transactions/        diálogo de transação, validação de formulário
+  flags/               seletor de flags, nomes das flags, filtros por flag
   schedules/           tela de agendamentos, formulário, resumo da repetição
   reports/             cards e páginas dos relatórios, layout do painel, intervalos de datas
   settings/            backup e restauração, armazenamento, tema, arquivos de orçamento

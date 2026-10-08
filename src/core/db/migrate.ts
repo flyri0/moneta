@@ -12,6 +12,7 @@ import importReconcile from './migrations/0009_import_reconcile.sql?raw';
 import payeeRules from './migrations/0010_payee_rules.sql?raw';
 import cardBilling from './migrations/0011_card_billing.sql?raw';
 import icons from './migrations/0012_icons.sql?raw';
+import flags from './migrations/0013_flags.sql?raw';
 
 export const MIGRATIONS: readonly string[] = [
 	init,
@@ -25,7 +26,8 @@ export const MIGRATIONS: readonly string[] = [
 	importReconcile,
 	payeeRules,
 	cardBilling,
-	icons
+	icons,
+	flags
 ];
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

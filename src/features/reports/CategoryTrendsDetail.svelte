@@ -1,9 +1,11 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import PeriodEmpty from './PeriodEmpty.svelte';
+	import ReportEmpty from './ReportEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
@@ -24,7 +26,11 @@
 	 * Spending month by month, stacked by the biggest categories, and every category's last month
 	 * against its average over the period.
 	 */
-	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
+	let {
+		range,
+		flags = [],
+		onClear
+	}: { range: DateRange; flags?: FlagFilter; onClear?: () => void } = $props();
 
 	const session = useSession();
 	/** Categories with a colour of their own in the chart; the rest stack as one. */
@@ -35,7 +41,7 @@
 	let expanded = $state(false);
 
 	const rows = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.categoryMonths({ from: range.from, to: range.to })
+		session.api.reports.categoryMonths({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const months = $derived(
 		reportMonths(
@@ -99,12 +105,7 @@
 	{#if rows.error}
 		<FormMessage error={actionError(rows.error)} />
 	{:else if rows.data && trends.categories.length === 0}
-		<PeriodEmpty
-			framed
-			icon={ChartColumnIcon}
-			description={m.reports_spending_empty()}
-			{onShowAll}
-		/>
+		<ReportEmpty framed icon={ChartColumnIcon} description={m.reports_spending_empty()} {onClear} />
 	{:else if rows.data && last}
 		<ReportSection title={m.reports_category_trends()}>
 			{#snippet actions()}

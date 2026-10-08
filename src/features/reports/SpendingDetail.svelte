@@ -1,9 +1,11 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
-	import PeriodEmpty from './PeriodEmpty.svelte';
+	import ReportEmpty from './ReportEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -29,7 +31,11 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
+	let {
+		range,
+		flags = [],
+		onClear
+	}: { range: DateRange; flags?: FlagFilter; onClear?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds. Enough to see the shape of a month's spending. */
@@ -44,7 +50,7 @@
 	let grouped = $state(false);
 
 	const spending = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.spending({ from: range.from, to: range.to })
+		session.api.reports.spending({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const source = $derived(grouped ? byGroup(spending.data ?? []) : (spending.data ?? []));
 	const report = $derived(withShares(source));
@@ -63,6 +69,7 @@
 					categoryId: selected,
 					from: range.from,
 					to: range.to,
+					flags: flagQuery(flags),
 					limit: pages * PAGE_SIZE
 				})
 			: Promise.resolve<TransactionRow[]>([])
@@ -72,6 +79,7 @@
 	$effect(() => {
 		void selected;
 		void range;
+		void flags;
 		untrack(() => (pages = 1));
 	});
 
@@ -96,7 +104,7 @@
 		{#if spending.error}
 			<FormMessage error={actionError(spending.error)} />
 		{:else if spending.data && report.rows.length === 0}
-			<PeriodEmpty icon={ChartPieIcon} description={m.reports_spending_empty()} {onShowAll} />
+			<ReportEmpty icon={ChartPieIcon} description={m.reports_spending_empty()} {onClear} />
 		{:else if report.rows.length > 0}
 			<div class="flex flex-wrap items-end justify-between gap-3">
 				<StatTile

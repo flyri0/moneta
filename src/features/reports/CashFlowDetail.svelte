@@ -1,8 +1,10 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import CashFlowChart from './CashFlowChart.svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import PeriodEmpty from './PeriodEmpty.svelte';
+	import ReportEmpty from './ReportEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetFlowChart from './NetFlowChart.svelte';
@@ -19,7 +21,11 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
+	let {
+		range,
+		flags = [],
+		onClear
+	}: { range: DateRange; flags?: FlagFilter; onClear?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the table folds, matching the other reports. */
@@ -28,7 +34,7 @@
 	let expanded = $state(false);
 
 	const flow = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.cashFlow({ from: range.from, to: range.to })
+		session.api.reports.cashFlow({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const months = $derived(
 		reportMonths(
@@ -71,11 +77,11 @@
 	{#if flow.error}
 		<FormMessage error={actionError(flow.error)} />
 	{:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
-		<PeriodEmpty
+		<ReportEmpty
 			framed
 			icon={ChartColumnIcon}
 			description={m.reports_income_expense_empty()}
-			{onShowAll}
+			{onClear}
 		/>
 	{:else if flow.data}
 		<dl

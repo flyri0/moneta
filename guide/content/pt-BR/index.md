@@ -69,6 +69,8 @@ Depois:
 1. Olhe o **Pronto para atribuir**: o dinheiro nas suas contas que ainda não tem função.
 2. Atribua esse dinheiro às categorias até o Pronto para atribuir chegar a zero.
 3. Registre o que gasta e recebe conforme acontece, ou importe os extratos do banco.
+4. Marque com uma [flag](transactions.md#flags) o que você quer acompanhar, como os jantares que o
+   trabalho reembolsa ou os gastos de uma viagem, e encontre de novo pelos filtros e relatórios.
 
 [Como o orçamento funciona](budgeting.md) explica cada número da tela do orçamento. Nunca usou
 orçamento por envelopes? O [glossário](glossary.md) explica as palavras, e [Situações do dia a

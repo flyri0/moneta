@@ -49,9 +49,10 @@ explains how to budget with it, screen by screen.
   overspending, or clear.
 - **Accounts and transactions.** Budget and tracking accounts, credit cards whose payments
   don't touch the budget, split transactions, transfers between accounts, and payees you can
-  rename everywhere, merge, and give a default category. Select several transactions to set
-  their category or date, clear or delete them at once, and undo a deletion, a money move or an
-  import right after.
+  rename everywhere, merge, and give a default category. Six colored flags you can name mark
+  transactions to find them again in the filters and the reports. Select several transactions to
+  set their category, date or flag, clear or delete them at once, and undo a deletion, a money
+  move or an import right after.
 - **Bank statements.** Import OFX and CSV statements: lines you already entered are matched
   instead of doubled, a statement imported twice adds nothing, and each payee's usual category
   comes back by itself. Reconcile an account against the bank's balance to lock what was
@@ -236,6 +237,7 @@ src/features/          feature modules (colocated screen logic + Svelte componen
   accounts/            account list, register, account creation dialogs, reconciliation,
                        statement import (import/: OFX and CSV parsers, review)
   transactions/        transaction entry dialog, form validation
+  flags/               flag picker, flag names, flag filters
   schedules/           schedules screen, schedule form, rule summaries
   reports/             report cards and pages, overview layout, date ranges
   settings/            backup & restore, storage, theme, budget files

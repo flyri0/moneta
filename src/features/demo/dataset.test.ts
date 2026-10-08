@@ -53,7 +53,8 @@ function input(today: string, scale = 100): DemoInput {
 			pharmacy: 'Pharmacy',
 			clinic: 'Clinic'
 		},
-		categories: CATEGORIES
+		categories: CATEGORIES,
+		flags: { reimbursable: 'Reimbursable', trip: 'Trip', deductible: 'Deductible' }
 	};
 }
 
@@ -152,6 +153,19 @@ describe('buildDemo', () => {
 	const seed = buildDemo(input(today));
 	/** The demo's months, oldest first: 0-4 the good times, 5-7 the hard ones, 8-11 the way back. */
 	const months = Array.from({ length: 12 }, (_, i) => addMonths(current, i - 11));
+
+	it('flags work dinners, the trip and health costs, and names those flags', () => {
+		const flagged = (flag: string) =>
+			new Set(seed.transactions.filter((t) => t.flag === flag).map((t) => t.payeeName));
+		expect(flagged('red')).toEqual(new Set(['Restaurant']));
+		expect(flagged('blue')).toEqual(new Set(['Airline', 'Hotel']));
+		expect(flagged('green')).toEqual(new Set(['Clinic', 'Pharmacy']));
+		expect(seed.flagNames).toEqual([
+			{ color: 'red', name: 'Reimbursable' },
+			{ color: 'blue', name: 'Trip' },
+			{ color: 'green', name: 'Deductible' }
+		]);
+	});
 
 	it('is deterministic', () => {
 		expect(buildDemo(input(today))).toEqual(seed);

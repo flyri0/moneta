@@ -731,3 +731,30 @@ describe('what schedules keep in use', () => {
 		expect(() => getAccount(db, old)).toThrow(code('NOT_FOUND'));
 	});
 });
+
+describe('flags', () => {
+	it("keeps a schedule's flag and passes it on to what it enters", () => {
+		const id = createSchedule(
+			db,
+			rentInput({ autoEnter: true, startDate: '2026-08-05', flag: 'purple' })
+		);
+		expect(getSchedule(db, id, T).flag).toBe('purple');
+		expect(upcomingOccurrences(db, { today: T, to: '2026-10-31' })[0].flag).toBe('purple');
+		enterDueOccurrences(db, T);
+		expect(listTransactions(db).map((t) => t.flag)).toEqual(['purple', 'purple']);
+		updateSchedule(db, id, rentInput({ autoEnter: true, startDate: '2026-10-05' }));
+		expect(getSchedule(db, id, T).flag).toBeNull();
+	});
+
+	it('refuses an unknown flag', () => {
+		expect(() => createSchedule(db, rentInput({ flag: 'pink' as 'red' }))).toThrow(
+			code('INVALID_INPUT')
+		);
+	});
+
+	it('flags every installment of a purchase', () => {
+		createInstallments(db, { ...tvInput(), flag: 'green' }, 3);
+		enterDueOccurrences(db, '2027-12-31');
+		expect(listTransactions(db).map((t) => t.flag)).toEqual(['green', 'green', 'green']);
+	});
+});

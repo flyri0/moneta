@@ -7,27 +7,27 @@
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
-	 * An empty report. When the period may be what hides everything (`onShowAll`), it says so and
-	 * offers all time, like the register's "Clear filters"; otherwise it shows the report's own text.
+	 * An empty report. When the period or the flags may be what hides everything (`onClear`), it
+	 * says so and offers to clear them, like the register; otherwise it shows the report's own text.
 	 */
 	let {
 		icon,
 		description,
 		framed = false,
-		onShowAll
+		onClear
 	}: {
 		icon: Component;
 		description: string;
 		framed?: boolean;
-		onShowAll?: () => void;
+		onClear?: () => void;
 	} = $props();
 </script>
 
-{#if onShowAll}
+{#if onClear}
 	<EmptyState {framed} icon={SearchXIcon} description={m.reports_no_results()}>
-		<Button size="sm" variant="outline" onclick={onShowAll}>
+		<Button size="sm" variant="outline" onclick={onClear}>
 			<XIcon />
-			{m.reports_show_all_time()}
+			{m.register_clear_filters()}
 		</Button>
 	</EmptyState>
 {:else}
