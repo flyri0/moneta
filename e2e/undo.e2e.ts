@@ -104,3 +104,24 @@ test('brings back a deleted category and the money that moved out of it', async 
 	await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
 	await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$0.00');
 });
+
+test('saving an amount unchanged offers nothing to undo', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	const assigned = sheet.getByLabel('Assigned this month');
+	await assigned.fill('100+25.5');
+	await expect(sheet.getByText('= $125.50')).toBeVisible();
+	await sheet.getByRole('button', { name: 'Save' }).first().click();
+	await expect(sheet).toBeHidden();
+	const toast = page.getByRole('region', { name: /Notifications/ });
+	await expect(toast).toContainText('Assigned $125.50 to Groceries.');
+	await toast.getByRole('button', { name: 'Undo' }).waitFor();
+
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	await sheet.getByRole('button', { name: 'Save' }).first().click();
+	await expect(sheet).toBeHidden();
+	// The earlier toast still offers its Undo: nothing replaced it.
+	await expect(toast.getByRole('button', { name: 'Undo' })).toHaveCount(1);
+	await expect(toast).toContainText('Assigned $125.50 to Groceries.');
+});

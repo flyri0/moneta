@@ -214,6 +214,7 @@
 		bind:onBudget
 		bind:balance
 		bind:date
+		money={{ currency, locale }}
 	/>
 {:else if step === 'done'}
 	<DoneStep current={stepNumber(steps, step)} {total} onNext={finish} />

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import HelpLink from '$components/HelpLink.svelte';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -93,6 +94,7 @@
 			autocomplete="off"
 			placeholder="0"
 		/>
+		<AmountPreview text={amountText} />
 	</div>
 
 	{#if type === 'target'}

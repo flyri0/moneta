@@ -18,9 +18,13 @@ interface Button {
 	onClick: () => void;
 }
 
-function fakeClient(token: string | null, apply = vi.fn(async () => {})) {
+function fakeClient(token: string | null, apply = vi.fn(async () => {}), changedNothing = false) {
 	return {
-		client: { undoToken: () => token, api: { undo: { apply } } } as unknown as RpcClient,
+		client: {
+			undoToken: () => token,
+			changedNothing: () => changedNothing,
+			api: { undo: { apply } }
+		} as unknown as RpcClient,
 		apply
 	};
 }
@@ -63,6 +67,25 @@ describe('offerUndo', () => {
 		const { client } = fakeClient(null);
 		offerUndo(client, Promise.resolve(), 'Deleted');
 		expect(lastOptions().action).toBeUndefined();
+	});
+
+	it('says nothing when the write changed nothing, and keeps the previous Undo', () => {
+		successMock.mockClear();
+		dismissMock.mockClear();
+		offerUndo(fakeClient('7').client, Promise.resolve(), 'First');
+		offerUndo(fakeClient(null, undefined, true).client, Promise.resolve(), 'Assigned');
+		expect(successMock).toHaveBeenCalledTimes(1);
+		expect(dismissMock).not.toHaveBeenCalled();
+	});
+
+	it("still shows a toast's own action when the write changed nothing", () => {
+		successMock.mockClear();
+		const reconcile = { label: 'Reconcile', onClick: () => {} };
+		offerUndo(fakeClient(null, undefined, true).client, Promise.resolve(), 'Imported', {
+			action: reconcile
+		});
+		expect(lastOptions().action).toBe(reconcile);
+		expect(lastOptions().cancel).toBeUndefined();
 	});
 
 	it('reports an undo that could not run', async () => {

@@ -5,6 +5,7 @@
 	import { defaultOnBudget } from '$features/accounts/account-form';
 	import type { ActionError } from '$client/notify';
 	import type { AccountType } from '$db/repos/accounts';
+	import type { MoneyFormat } from '$domain/money';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
 
@@ -20,7 +21,8 @@
 		type = $bindable(),
 		onBudget = $bindable(),
 		balance = $bindable(),
-		date = $bindable()
+		date = $bindable(),
+		money
 	}: {
 		current: number;
 		total: number;
@@ -35,6 +37,8 @@
 		onBudget: boolean;
 		balance: string;
 		date: string;
+		/** The new budget's currency, for the balance's preview. */
+		money: MoneyFormat;
 	} = $props();
 
 	let step = $state<1 | 2>(1);
@@ -85,6 +89,7 @@
 				bind:onBudget
 				bind:balance
 				bind:date
+				{money}
 				onChangeType={() => (step = 1)}
 			/>
 		{/if}

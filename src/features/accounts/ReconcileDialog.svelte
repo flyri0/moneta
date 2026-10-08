@@ -3,6 +3,7 @@
 	import HelpLink from '$components/HelpLink.svelte';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Label } from '$ui/label';
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -158,6 +159,7 @@
 						placeholder="0"
 						required
 					/>
+					<AmountPreview text={typed} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="reconcile-date">{m.reconcile_date()}</Label>

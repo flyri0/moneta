@@ -13,6 +13,7 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
 	import Amount from '$components/Amount.svelte';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
@@ -166,6 +167,10 @@
 			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
+		if (value === category.assigned) {
+			open = false;
+			return;
+		}
 		let call = null as ReturnType<typeof session.api.budget.setAssigned> | null;
 		error = await runAction(async () => {
 			call = session.api.budget.setAssigned(category.id, month, value);
@@ -287,6 +292,7 @@
 						/>
 						<Button type="submit">{m.save()}</Button>
 					</div>
+					<AmountPreview text={assignedText} />
 					<FormMessage {error} />
 				</form>
 			{/if}
@@ -357,6 +363,7 @@
 					placeholder="0"
 				/>
 			</div>
+			<AmountPreview text={moveAmount} class="text-right" />
 			<FormMessage {error} />
 			<Button type="submit">{m.budget_move()}</Button>
 		</form>

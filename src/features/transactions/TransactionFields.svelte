@@ -3,6 +3,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Label } from '$ui/label';
 	import { Combobox, type ComboboxGroup } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
@@ -218,6 +219,7 @@
 			required
 		/>
 	</div>
+	<AmountPreview text={draft.amount} class="text-right" />
 </div>
 
 {#if mode !== 'hidden'}
@@ -266,6 +268,7 @@
 					aria-label={m.transaction_split_remove({ line: i + 1 })}
 					onclick={() => removeLine(i)}><XIcon /></Button
 				>
+				<AmountPreview text={line.amount} class="col-span-3 text-right" />
 				<Input
 					class="col-span-3"
 					bind:value={line.memo}

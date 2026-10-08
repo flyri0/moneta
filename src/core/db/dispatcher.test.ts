@@ -275,6 +275,26 @@ describe('undo', () => {
 		expect(assigned()).toBe(500);
 	});
 
+	it('gives no token for a write that changed nothing, and keeps the latest one', async () => {
+		const { db, dispatch, move, assigned, undo } = await setUp();
+		const first = await move(1, 500);
+		if (!first.ok) throw new Error('move failed');
+		const setFun = (id: number, month: string, amount: number) =>
+			dispatch({
+				id,
+				method: 'budget.setAssigned',
+				args: [categoryId(db, 'Fun'), month, amount]
+			});
+		const same = await setFun(2, '2026-01', 500);
+		expect(same).toMatchObject({ ok: true, changed: [] });
+		expect(same).not.toHaveProperty('undo');
+		const missing = await setFun(3, '2026-02', 0);
+		expect(missing).toMatchObject({ ok: true, changed: [] });
+		expect(missing).not.toHaveProperty('undo');
+		expect(await undo(4, first.undo)).toMatchObject({ ok: true });
+		expect(assigned()).toBe(0);
+	});
+
 	it('forgets it when another budget opens', async () => {
 		const { dispatch, move, undo } = await setUp();
 		const res = await move(1, 500);

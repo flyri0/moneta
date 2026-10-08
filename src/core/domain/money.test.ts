@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	amountPreview,
 	currencyDigits,
 	formatAmountInput,
 	formatMoney,
@@ -120,6 +121,22 @@ describe('formatAmountInput', () => {
 	])('formats %i for editing and parses back', (minor, fmt, text) => {
 		expect(formatAmountInput(minor, fmt)).toBe(text);
 		expect(parseAmount(text, fmt)).toBe(minor);
+	});
+});
+
+describe('amountPreview', () => {
+	it.each([
+		['120+35,5', BRL, 15550],
+		['1234', BRL, 123400],
+		['12,5', BRL, 1250],
+		[' 1234,56 ', BRL, null],
+		['-12.50', USD, null],
+		['-12.5', USD, -1250],
+		['', BRL, null],
+		['   ', BRL, null],
+		['12,,3', BRL, null]
+	])('previews %j as %s', (text, fmt, expected) => {
+		expect(amountPreview(text, fmt)).toBe(expected);
 	});
 });
 

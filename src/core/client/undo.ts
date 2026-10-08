@@ -16,7 +16,8 @@ let latest: string | number | undefined;
 
 /**
  * Says what a write did, with an Undo button, once `call` (an undoable write, see `undo.ts` in
- * `$db`) has succeeded. A toast that has its own `action` gets Undo as its second button.
+ * `$db`) has succeeded. A toast that has its own `action` gets Undo as its second button. A write
+ * that changed nothing says nothing (unless it has an action to offer) and leaves the last Undo be.
  */
 export function offerUndo(
 	client: RpcClient,
@@ -24,6 +25,11 @@ export function offerUndo(
 	message: string,
 	options: { action?: ToastButton; duration?: number } = {}
 ): void {
+	if (client.changedNothing(call)) {
+		if (options.action)
+			toast.success(message, { action: options.action, duration: options.duration });
+		return;
+	}
 	if (latest !== undefined) toast.dismiss(latest);
 	latest = undefined;
 	const token = client.undoToken(call);

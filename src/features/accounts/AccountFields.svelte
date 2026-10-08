@@ -2,6 +2,7 @@
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
@@ -13,6 +14,7 @@
 	} from '$features/accounts/account-form';
 	import { accountTypeIcon } from '$features/accounts/account-icons';
 	import type { AccountType } from '$db/repos/accounts';
+	import type { MoneyFormat } from '$domain/money';
 	import { accountTypeDescription, accountTypeLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -23,6 +25,7 @@
 		balance = $bindable(),
 		date = $bindable(),
 		idPrefix = 'account',
+		money,
 		onChangeType
 	}: {
 		name: string;
@@ -31,6 +34,8 @@
 		balance: string; // as typed
 		date: string;
 		idPrefix?: string;
+		/** The currency to preview the balance in, where no budget is open yet. */
+		money?: MoneyFormat;
 		onChangeType?: () => void;
 	} = $props();
 
@@ -119,6 +124,7 @@
 			autocomplete="off"
 			placeholder="0"
 		/>
+		<AmountPreview text={balance} {money} />
 	</div>
 	<div class="grid gap-2">
 		<Label for="{idPrefix}-date">{m.account_balance_date()}</Label>
