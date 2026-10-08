@@ -4,6 +4,10 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import { m } from '$i18n/paraglide/messages';
+	import { cn } from '$utils';
+
+	/** `fill` stretches the toggle across its row, with equal buttons. */
+	let { fill = false }: { fill?: boolean } = $props();
 
 	type Mode = 'system' | 'light' | 'dark';
 	const MODES: { value: Mode; label: () => string; icon: typeof SunIcon }[] = [
@@ -13,13 +17,20 @@
 	];
 </script>
 
-<div class="flex rounded-md border p-0.5" role="group" aria-label={m.settings_theme()}>
+<div
+	class={cn('flex rounded-md border p-0.5', fill && 'w-full')}
+	role="group"
+	aria-label={m.settings_theme()}
+>
 	{#each MODES as mode (mode.value)}
 		<button
 			type="button"
 			aria-pressed={userPrefersMode.current === mode.value}
 			onclick={() => setMode(mode.value)}
-			class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+			class={cn(
+				'flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-primary aria-pressed:text-primary-foreground',
+				fill && 'flex-1 justify-center'
+			)}
 		>
 			<mode.icon class="size-3.5" aria-hidden />
 			{mode.label()}

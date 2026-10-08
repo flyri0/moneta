@@ -39,9 +39,9 @@
 		</SettingsRow>
 	{/if}
 
-	<SettingsRow label={m.settings_theme()}>
+	<SettingsRow stacked={!desktop.current} label={m.settings_theme()}>
 		{#snippet control()}
-			<ThemeToggle />
+			<ThemeToggle fill={!desktop.current} />
 		{/snippet}
 	</SettingsRow>
 
