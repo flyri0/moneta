@@ -9,6 +9,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
+	import Amount from '$components/Amount.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runActionToast } from '$client/notify';
@@ -64,14 +65,12 @@
 {#if t && payee}
 	<div class="grid gap-4" data-testid="transaction-overview">
 		<div class="grid gap-2">
-			<p
-				class="text-2xl font-semibold tabular-nums {t.amount < 0
-					? ''
-					: 'text-emerald-700 dark:text-emerald-400'}"
+			<Amount
+				amount={t.amount}
+				flow
+				class="text-2xl font-semibold"
 				data-testid="transaction-overview-amount"
-			>
-				{session.format(t.amount)}
-			</p>
+			/>
 			<div class="flex flex-wrap gap-1.5">
 				{#if t.reconciled}
 					<Badge variant="secondary">{m.register_reconciled()}</Badge>

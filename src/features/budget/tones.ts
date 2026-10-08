@@ -2,7 +2,7 @@ import type { Component } from 'svelte';
 import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-import type { AmountTone, AvailableTone, RtaTone } from '$features/budget/view';
+import type { AvailableTone, RtaTone } from '$features/budget/view';
 
 /** The Available pill's tint, per tone. */
 export const TONE_PILL: Record<AvailableTone, string> = {
@@ -30,13 +30,6 @@ export const TONE_ROW: Record<AvailableTone, string> = {
 	carryover: '',
 	overspent:
 		'bg-red-50/60 shadow-[inset_3px_0_0_var(--color-red-500)] dark:bg-red-950/20 dark:shadow-[inset_3px_0_0_var(--color-red-400)]'
-};
-
-/** An income amount's text: green only for money in, like the register. */
-export const AMOUNT_TEXT: Record<AmountTone, string> = {
-	inflow: 'text-emerald-600 dark:text-emerald-400',
-	zero: 'text-muted-foreground',
-	outflow: 'text-foreground'
 };
 
 /** The Ready to Assign card's tint: green once every unit has a job, amber or red until then. */

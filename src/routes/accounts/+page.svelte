@@ -48,10 +48,7 @@
 			<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
 				{m.accounts_total_balance()}
 			</span>
-			<span
-				class="text-2xl font-bold tracking-tight {totalBalance < 0 ? 'text-destructive' : ''}"
-				data-testid="accounts-total-balance"
-			>
+			<span class="text-2xl font-bold tracking-tight" data-testid="accounts-total-balance">
 				{session.format(totalBalance)}
 			</span>
 		</section>

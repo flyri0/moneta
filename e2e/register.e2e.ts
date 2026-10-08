@@ -9,7 +9,7 @@ test('shows the register with balances, cleared toggles and search', async ({ pa
 	const row = page.getByTestId('register-row');
 	await expect(row).toHaveCount(1);
 	await expect(row).toContainText('Starting balance');
-	await expect(row.getByTestId('register-amount')).toHaveText('$1,000.00');
+	await expect(row.getByTestId('register-amount')).toHaveText('+$1,000.00');
 	await expect(page.getByTestId('register-balance')).toHaveText('$1,000.00');
 
 	await row.getByRole('button', { name: 'Cleared' }).click();

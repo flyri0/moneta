@@ -5,6 +5,7 @@
 	import CashFlowChart from './CashFlowChart.svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import ReportEmpty from './ReportEmpty.svelte';
+	import Amount from '$components/Amount.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetFlowChart from './NetFlowChart.svelte';
@@ -59,12 +60,10 @@
 	const percent = $derived(
 		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
-	const signed = (minor: number) =>
-		minor > 0 ? `+${session.format(minor)}` : session.format(minor);
 	const tiles = $derived([
 		{ key: 'income', label: m.reports_income(), value: session.format(income) },
 		{ key: 'expenses', label: m.reports_expenses(), value: session.format(spending) },
-		{ key: 'net', label: m.reports_net(), value: signed(income - spending) },
+		{ key: 'net', label: m.reports_net(), value: session.formatSigned(income - spending) },
 		{
 			key: 'rate',
 			label: m.reports_savings_rate(),
@@ -138,12 +137,8 @@
 							</td>
 							<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.income)}</td>
 							<td class="hidden py-1.5 text-right sm:table-cell">{session.format(row.spending)}</td>
-							<td
-								class="py-1.5 text-right whitespace-nowrap {row.net < 0
-									? 'text-red-700 dark:text-red-400'
-									: ''}"
-							>
-								{signed(row.net)}
+							<td class="py-1.5 text-right whitespace-nowrap">
+								<Amount amount={row.net} flow />
 							</td>
 							<td class="py-1.5 pl-2 text-right text-muted-foreground">
 								{row.rate === null ? '—' : percent.format(row.rate / 100)}

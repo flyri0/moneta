@@ -12,6 +12,7 @@
 	import { Separator } from '$ui/separator';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
+	import Amount from '$components/Amount.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
@@ -20,7 +21,6 @@
 	import { offerUndo } from '$client/undo';
 	import { categoryProgress } from '$features/budget/progress';
 	import {
-		amountTone,
 		coverableFromReady,
 		isOverspent,
 		moveTargets,
@@ -38,7 +38,7 @@
 	import CategorySettings from './CategorySettings.svelte';
 	import GoalForm from './GoalForm.svelte';
 	import QuickAssign from './QuickAssign.svelte';
-	import { AMOUNT_TEXT, TONE_PILL } from './tones';
+	import { TONE_PILL } from './tones';
 
 	let {
 		open = $bindable(false),
@@ -218,11 +218,7 @@
 			{#if isIncome}
 				<div class="flex items-center justify-between text-sm">
 					<span class="text-muted-foreground">{m.budget_activity()}</span>
-					<span
-						class="text-sm font-semibold tabular-nums {AMOUNT_TEXT[amountTone(category.activity)]}"
-					>
-						{session.format(category.activity)}
-					</span>
+					<Amount amount={category.activity} flow class="text-sm font-semibold" />
 				</div>
 			{:else}
 				<div class="grid gap-1">

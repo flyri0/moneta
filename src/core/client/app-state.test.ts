@@ -18,11 +18,13 @@ describe('BudgetSession.format', () => {
 	it('formats amounts in the budget currency', () => {
 		expect(session.format(123456)).toBe('$1,234.56');
 		expect(session.formatCompact(123456)).not.toBe(MASK);
+		expect(session.formatSigned(123456)).toBe('+$1,234.56');
 	});
 
 	it('masks every amount while amounts are hidden', () => {
 		amounts.hidden = true;
 		expect(session.format(123456)).toBe(MASK);
 		expect(session.formatCompact(-5)).toBe(MASK);
+		expect(session.formatSigned(5)).toBe(MASK);
 	});
 });

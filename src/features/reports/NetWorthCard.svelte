@@ -31,8 +31,7 @@
 		stat && stat.months > 1
 			? {
 					text: m.reports_change_since({
-						amount:
-							stat.change > 0 ? `+${session.format(stat.change)}` : session.format(stat.change),
+						amount: session.formatSigned(stat.change),
 						month: formatMonth(stat.from, getLocale())
 					}),
 					up: stat.change >= 0

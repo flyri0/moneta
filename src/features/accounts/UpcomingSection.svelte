@@ -9,6 +9,7 @@
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import type { OccurrenceToEnter } from '$features/schedules/form';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
+	import Amount from '$components/Amount.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError, runActionToast } from '$client/notify';
 	import { offerUndo } from '$client/undo';
@@ -92,14 +93,12 @@
 						</Badge>
 					{/if}
 				</span>
-				<span
-					class="text-right text-sm font-semibold tabular-nums {o.amount < 0
-						? ''
-						: 'text-emerald-700 dark:text-emerald-400'}"
+				<Amount
+					amount={o.amount}
+					flow
+					class="text-right text-sm font-semibold"
 					data-testid="upcoming-amount"
-				>
-					{session.format(o.amount)}
-				</span>
+				/>
 				<span class="min-w-0 truncate text-xs text-muted-foreground">
 					{detail(o)}
 				</span>

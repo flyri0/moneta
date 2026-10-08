@@ -4,6 +4,7 @@
 	import * as Chart from '$ui/chart';
 	import ChartLineIcon from '@lucide/svelte/icons/chart-line';
 	import EmptyState from '$components/EmptyState.svelte';
+	import Amount from '$components/Amount.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import NetWorthTooltip from './NetWorthTooltip.svelte';
 	import ReportSection from './ReportSection.svelte';
@@ -74,13 +75,11 @@
 	const percent = $derived(
 		numberFormat(getLocale(), { style: 'percent', maximumFractionDigits: 1 })
 	);
-	const signed = (minor: number) =>
-		minor > 0 ? `+${session.format(minor)}` : session.format(minor);
 	const delta = $derived(
 		stat && stat.months > 1
 			? {
 					text: m.reports_change_since({
-						amount: signed(stat.change),
+						amount: session.formatSigned(stat.change),
 						month: formatMonth(stat.from, getLocale())
 					}),
 					up: stat.change >= 0
@@ -219,12 +218,8 @@
 							<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
 								{session.format(row.spending)}
 							</td>
-							<td
-								class="hidden py-1.5 text-right tabular-nums md:table-cell {row.net < 0
-									? 'text-red-700 dark:text-red-400'
-									: ''}"
-							>
-								{signed(row.net)}
+							<td class="hidden py-1.5 text-right tabular-nums md:table-cell">
+								<Amount amount={row.net} flow />
 							</td>
 							<td class="py-1.5 text-right font-medium whitespace-nowrap tabular-nums">
 								{session.format(row.netWorth)}

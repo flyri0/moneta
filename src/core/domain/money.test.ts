@@ -4,6 +4,7 @@ import {
 	formatAmountInput,
 	formatMoney,
 	formatMoneyCompact,
+	formatMoneySigned,
 	parseAmount
 } from './money';
 
@@ -35,6 +36,20 @@ describe('formatMoney', () => {
 		expect(formatMoney(-0, USD)).toBe('$0.00');
 		expect(formatMoneyCompact(-0, USD)).toBe('$0');
 		expect(formatAmountInput(-0, USD)).toBe('0.00');
+		expect(formatMoneySigned(-0, USD)).toBe('$0.00');
+	});
+});
+
+describe('formatMoneySigned', () => {
+	it('adds a plus to money in and keeps the minus of money out', () => {
+		expect(formatMoneySigned(123450, USD)).toBe('+$1,234.50');
+		expect(formatMoneySigned(-123450, USD)).toBe('-$1,234.50');
+		expect(norm(formatMoneySigned(123456, BRL))).toBe('+R$ 1.234,56');
+		expect(norm(formatMoneySigned(-123456, BRL))).toBe('-R$ 1.234,56');
+	});
+
+	it('leaves zero unsigned', () => {
+		expect(formatMoneySigned(0, USD)).toBe('$0.00');
 	});
 });
 

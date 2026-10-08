@@ -187,10 +187,7 @@
 					<span class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
 						{m.register_total_balance()}
 					</span>
-					<span
-						class="text-2xl font-bold tracking-tight {balances.total < 0 ? 'text-destructive' : ''}"
-						data-testid="register-balance"
-					>
+					<span class="text-2xl font-bold tracking-tight" data-testid="register-balance">
 						{session.format(balances.total)}
 					</span>
 				</div>

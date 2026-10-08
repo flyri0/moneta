@@ -4,16 +4,17 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import * as Collapsible from '$ui/collapsible';
 	import { useSession } from '$client/app-state.svelte';
-	import { amountTone, availableTone, overspentCount, type GridModel } from '$features/budget/view';
+	import { availableTone, overspentCount, type GridModel } from '$features/budget/view';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { Month } from '$domain/month';
+	import Amount from '$components/Amount.svelte';
 	import IconLabel from '$components/IconLabel.svelte';
 	import { groupLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import AssignedInput from './AssignedInput.svelte';
 	import AvailablePill from './AvailablePill.svelte';
 	import CategoryCard from './CategoryCard.svelte';
-	import { AMOUNT_TEXT, TONE_PILL, TONE_ROW } from './tones';
+	import { TONE_PILL, TONE_ROW } from './tones';
 
 	let {
 		model,
@@ -94,9 +95,12 @@
 				label={m.budget_assigned_for({ name: category.name })}
 			/>
 		</div>
-		<span class="text-right text-sm text-muted-foreground tabular-nums" data-testid="activity">
-			{session.format(category.activity)}
-		</span>
+		<Amount
+			amount={category.activity}
+			flow
+			class="text-right text-sm text-muted-foreground"
+			data-testid="activity"
+		/>
 		<span class="text-right"><AvailablePill {category} /></span>
 	</div>
 {/snippet}
@@ -110,14 +114,12 @@
 			><IconLabel icon={category.icon} label={category.name} /></button
 		>
 		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
-		<span
-			class="text-right text-sm font-semibold tabular-nums {AMOUNT_TEXT[
-				amountTone(category.activity)
-			]}"
+		<Amount
+			amount={category.activity}
+			flow
+			class="text-right text-sm font-semibold"
 			data-testid="activity"
-		>
-			{session.format(category.activity)}
-		</span>
+		/>
 		<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 	</div>
 {/snippet}
@@ -133,9 +135,7 @@
 			onclick={() => onSelectCategory(category.id)}
 			><IconLabel icon={category.icon} label={category.name} /></button
 		>
-		<span class="text-sm font-medium tabular-nums {AMOUNT_TEXT[amountTone(category.activity)]}">
-			{session.format(category.activity)}
-		</span>
+		<Amount amount={category.activity} flow class="text-sm font-medium" />
 	</div>
 {/snippet}
 
@@ -188,18 +188,12 @@
 					</div>
 					{#if isIncome}
 						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
-						<span
-							class="text-right text-sm font-semibold tabular-nums {AMOUNT_TEXT[
-								amountTone(group.activity)
-							]}">{session.format(group.activity)}</span
-						>
+						<Amount amount={group.activity} flow class="text-right text-sm font-semibold" />
 						<span class="text-right text-sm text-muted-foreground tabular-nums">—</span>
 					{:else}
 						<span class="text-right font-medium tabular-nums">{session.format(group.assigned)}</span
 						>
-						<span class="text-right text-sm text-muted-foreground tabular-nums"
-							>{session.format(group.activity)}</span
-						>
+						<Amount amount={group.activity} flow class="text-right text-sm text-muted-foreground" />
 						<span class="text-right font-semibold tabular-nums"
 							>{session.format(group.available)}</span
 						>
@@ -238,15 +232,12 @@
 						{@render overspentBadge(group)}
 					</div>
 					{#if isIncome}
-						<!-- The sign comes from the amount: "+" only for money in, "-" from the format. -->
-						<span
-							class="shrink-0 text-sm font-semibold tabular-nums {AMOUNT_TEXT[
-								amountTone(group.activity)
-							]}"
+						<Amount
+							amount={group.activity}
+							flow
+							class="shrink-0 text-sm font-semibold"
 							data-testid="income-total"
-						>
-							{group.activity > 0 ? '+' : ''}{session.format(group.activity)}
-						</span>
+						/>
 					{:else}
 						<span class="shrink-0 text-sm font-semibold text-foreground tabular-nums">
 							{session.format(group.available)}

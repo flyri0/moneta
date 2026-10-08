@@ -40,7 +40,7 @@
 	{:else if flow.data}
 		<div class="flex items-end justify-between gap-3">
 			<StatTile
-				value={net > 0 ? `+${session.format(net)}` : session.format(net)}
+				value={session.formatSigned(net)}
 				caption="{m.reports_net()} · {m.reports_range_this_month()}"
 				testId="cash-flow-card-net"
 			/>

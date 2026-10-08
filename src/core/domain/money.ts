@@ -20,6 +20,15 @@ export function formatMoney(minor: number, fmt: MoneyFormat): string {
 	);
 }
 
+/** An amount that moved money, signed both ways: "+$5.00" in, "-$5.00" out, "$0.00" for zero. */
+export function formatMoneySigned(minor: number, fmt: MoneyFormat): string {
+	return numberFormat(fmt.locale, {
+		style: 'currency',
+		currency: fmt.currency,
+		signDisplay: 'exceptZero'
+	}).format(major(minor, fmt));
+}
+
 /** A short form for chart axes, e.g. "$1.2M" or "R$ 1,5 mil". */
 export function formatMoneyCompact(minor: number, fmt: MoneyFormat): string {
 	return numberFormat(fmt.locale, {

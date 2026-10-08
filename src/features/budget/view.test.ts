@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
 import {
-	amountTone,
 	availableTone,
 	coverableFromReady,
 	gridModel,
@@ -78,14 +77,6 @@ describe('rtaHint', () => {
 	it('blames funds below zero, not assigning, when the funds themselves are negative', () => {
 		// A credit card's starting debt in an income category, with nothing assigned.
 		expect(rtaHint({ readyToAssign: -126596, availableFunds: -126596 })).toBe('negativeFunds');
-	});
-});
-
-describe('amountTone', () => {
-	it('takes the tone from the sign alone', () => {
-		expect(amountTone(1)).toBe('inflow');
-		expect(amountTone(0)).toBe('zero');
-		expect(amountTone(-1)).toBe('outflow');
 	});
 });
 
