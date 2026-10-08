@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SpendingDetail from '$features/reports/SpendingDetail.svelte';
+	import FlagFilterButton from '$features/reports/FlagFilterButton.svelte';
 	import PeriodBar from '$features/reports/PeriodBar.svelte';
 	import ReportPage from '$features/reports/ReportPage.svelte';
 	import { todayIso } from '$domain/month';
@@ -16,7 +17,9 @@
 			bind:preset={() => period.preset ?? 'this_month', (v) => (period.preset = v)}
 			bind:custom={period.custom}
 			{range}
-		/>
+		>
+			<FlagFilterButton />
+		</PeriodBar>
 	{/snippet}
-	<SpendingDetail {range} />
+	<SpendingDetail {range} flags={period.flags} />
 </ReportPage>

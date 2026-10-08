@@ -9,6 +9,14 @@ full report, with a chart, a table and a **period** to choose: this month, last 
 Spending, cash flow and trends read your budget accounts; transfers between your own accounts are
 neither spending nor income. Net worth and the accounts report include tracking accounts too.
 
+## Flags {#flags}
+
+Spending by category, spending by payee, cash flow and spending trends have a **Flags** button next
+to the period. Pick one or more [flags](transactions.md#flags), or **No flag**, and those reports
+count only the transactions marked that way: what the trip cost, what you are owed back. The
+choice stays as you move between reports, like the period; **Clear filters** counts everything
+again. The overview's cards always count everything.
+
 ## The reports {#list}
 
 - **Spending by category**: where the money went, by category or by group, with each one's share.

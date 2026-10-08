@@ -1,6 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import { installmentDueDate, isDueDay } from '$domain/card-bill';
 import { DomainError } from '$domain/errors';
+import type { FlagColor } from '$domain/flag';
 import { groupBy } from '$domain/group-by';
 import {
 	installmentMemo,
@@ -57,6 +58,8 @@ export interface ScheduleRow extends Rule {
 	transferAccountId: string | null;
 	transferAccountName: string | null;
 	memo: string;
+	/** Passed on to the transactions it enters. */
+	flag: FlagColor | null;
 	isSplit: boolean;
 	splits: ScheduleSplitRow[];
 	autoEnter: boolean;
@@ -81,6 +84,8 @@ export interface UpcomingOccurrence {
 	transferAccountId: string | null;
 	transferAccountName: string | null;
 	memo: string;
+	/** The schedule's flag, on its own account's side only. */
+	flag: FlagColor | null;
 	autoEnter: boolean;
 	/** The schedule's next occurrence: the only one that can be entered or skipped. */
 	isNext: boolean;
@@ -105,7 +110,7 @@ type Raw = Omit<ScheduleRow, 'isSplit' | 'autoEnter' | 'splits' | 'nextDate' | '
 const SELECT_SQL = `SELECT s.id, s.account_id AS accountId, a.name AS accountName, s.amount,
 	s.payee_id AS payeeId, p.name AS payeeName, s.category_id AS categoryId, c.name AS categoryName,
 	s.transfer_account_id AS transferAccountId, ta.name AS transferAccountName, s.memo,
-	s.is_split AS isSplit, s.start_date AS startDate, s.frequency, s.interval,
+	s.flag, s.is_split AS isSplit, s.start_date AS startDate, s.frequency, s.interval,
 	s.end_date AS endDate, s.end_count AS endCount, s.weekend, s.auto_enter AS autoEnter,
 	s.next_index AS nextIndex, s.installment_start AS installmentStart,
 	(a.closed = 1 OR COALESCE(ta.closed, 0) = 1) AS paused
@@ -176,7 +181,14 @@ export function getSchedule(db: Db, id: string, today: string): ScheduleRow {
 
 type Template = Pick<
 	ScheduleInput,
-	'accountId' | 'amount' | 'payeeName' | 'categoryId' | 'memo' | 'splits' | 'transferAccountId'
+	| 'accountId'
+	| 'amount'
+	| 'payeeName'
+	| 'categoryId'
+	| 'memo'
+	| 'splits'
+	| 'transferAccountId'
+	| 'flag'
 >;
 
 /** The transaction a template makes on `date`. */
@@ -189,7 +201,8 @@ function transactionAt(t: Template, date: string, memo = t.memo): TransactionInp
 		categoryId: t.categoryId,
 		memo,
 		splits: t.splits,
-		transferAccountId: t.transferAccountId
+		transferAccountId: t.transferAccountId,
+		flag: t.flag
 	};
 }
 
@@ -209,8 +222,8 @@ function insert(
 		db,
 		`INSERT INTO schedules (id, account_id, amount, payee_id, category_id, transfer_account_id,
 			memo, is_split, start_date, frequency, interval, end_date, end_count, weekend, auto_enter,
-			next_index, installment_start, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			next_index, installment_start, created_at, flag)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			id,
 			input.accountId,
@@ -229,7 +242,8 @@ function insert(
 			input.autoEnter ? 1 : 0,
 			nextIndex,
 			installmentStart,
-			createdAt
+			createdAt,
+			input.flag ?? null
 		]
 	);
 	for (const s of splits) {
@@ -391,6 +405,7 @@ export function createInstallments(db: Db, input: TransactionInput, count: numbe
 			payeeName: input.payeeName ?? null,
 			categoryId: input.categoryId ?? null,
 			memo,
+			flag: input.flag ?? null,
 			startDate: date,
 			frequency: 'monthly',
 			interval: 1,
@@ -501,7 +516,8 @@ export function upcomingOccurrences(db: Db, query: UpcomingQuery): UpcomingOccur
 							amount: s.amount,
 							categoryName: s.categoryName,
 							transferAccountId: s.transferAccountId,
-							transferAccountName: s.transferAccountName
+							transferAccountName: s.transferAccountName,
+							flag: s.flag
 						}
 					: {
 							...base,
@@ -509,7 +525,8 @@ export function upcomingOccurrences(db: Db, query: UpcomingQuery): UpcomingOccur
 							amount: -s.amount,
 							categoryName: null,
 							transferAccountId: s.accountId,
-							transferAccountName: s.accountName
+							transferAccountName: s.accountName,
+							flag: null
 						}
 			);
 		}

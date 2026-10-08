@@ -12,6 +12,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import FlagField from '$features/flags/FlagField.svelte';
 	import type { NewCategories } from '$features/categories/new-categories';
 	import {
 		canSplit,
@@ -27,7 +28,7 @@
 
 	/**
 	 * The fields a transaction and a schedule share: account, date, payee or transfer, amount,
-	 * category or split lines, and memo. `dateLabel` names the date field; `lockedDate` shows that
+	 * category or split lines, memo and flag. `dateLabel` names the date field; `lockedDate` shows that
 	 * date instead, not editable. A category picked by a name that doesn't exist yet goes into
 	 * `pending`.
 	 */
@@ -298,4 +299,9 @@
 <div class="grid gap-2">
 	<Label for="txn-memo">{m.transaction_memo()}</Label>
 	<Input id="txn-memo" bind:value={draft.memo} autocomplete="off" />
+</div>
+
+<div class="grid gap-2">
+	<Label for="txn-flag">{m.flag_label()}</Label>
+	<FlagField id="txn-flag" value={draft.flag} onchange={(flag) => (draft.flag = flag)} />
 </div>

@@ -7,6 +7,7 @@ import type {
 	TransactionInput,
 	TransactionRow
 } from '$db/repos/transactions';
+import type { FlagColor } from '$domain/flag';
 import { formatAmountInput, parseAmount, type MoneyFormat } from '$domain/money';
 import { isDate } from '$domain/month';
 
@@ -29,6 +30,7 @@ export interface TransactionDraft {
 	direction: Direction;
 	memo: string;
 	cleared: boolean;
+	flag: FlagColor | null;
 	splits: SplitDraft[] | null; // null when not split
 }
 
@@ -59,6 +61,7 @@ export function newDraft(accountId: string, date: string): TransactionDraft {
 		direction: 'outflow',
 		memo: '',
 		cleared: false,
+		flag: null,
 		splits: null
 	};
 }
@@ -205,7 +208,8 @@ export function buildTransactionInput(draft: TransactionDraft, ctx: FormContext)
 		date: draft.date,
 		amount,
 		memo: draft.memo.trim(),
-		cleared: draft.cleared
+		cleared: draft.cleared,
+		flag: draft.flag
 	};
 	const mode = categoryMode(draft, ctx);
 	const categoryId = mode === 'hidden' ? null : draft.categoryId || null;
@@ -249,7 +253,10 @@ export type DraftSource = Pick<
 	| 'cleared'
 	| 'transferAccountId'
 	| 'isSplit'
-> & { splits: Pick<SplitRow, 'categoryId' | 'amount' | 'memo'>[] };
+> &
+	Partial<Pick<TransactionRow, 'flag'>> & {
+		splits: Pick<SplitRow, 'categoryId' | 'amount' | 'memo'>[];
+	};
 
 export function draftFromTransaction(
 	row: DraftSource,
@@ -269,6 +276,7 @@ export function draftFromTransaction(
 		direction,
 		memo: row.memo,
 		cleared: row.cleared,
+		flag: row.flag ?? null,
 		splits: row.isSplit
 			? row.splits.map((s) => ({
 					categoryId: s.categoryId,

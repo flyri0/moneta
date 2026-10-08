@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
@@ -24,7 +26,7 @@
 	 * Spending month by month, stacked by the biggest categories, and every category's last month
 	 * against its average over the period.
 	 */
-	let { range }: { range: DateRange } = $props();
+	let { range, flags = [] }: { range: DateRange; flags?: FlagFilter } = $props();
 
 	const session = useSession();
 	/** Categories with a colour of their own in the chart; the rest stack as one. */
@@ -35,7 +37,7 @@
 	let expanded = $state(false);
 
 	const rows = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.categoryMonths({ from: range.from, to: range.to })
+		session.api.reports.categoryMonths({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const months = $derived(
 		reportMonths(

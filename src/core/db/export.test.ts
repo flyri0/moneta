@@ -37,7 +37,8 @@ async function sampleBudget() {
 		amount: 100000,
 		payeeName: '=Employer',
 		categoryId: categoryId(db, 'Salário'),
-		cleared: true
+		cleared: true,
+		flag: 'green'
 	});
 	createTransaction(db, {
 		accountId: bank,
@@ -57,12 +58,12 @@ describe('transactionsCsv', () => {
 		const csv = transactionsCsv(listTransactions(db).reverse(), 'BRL');
 		expect(csv.startsWith('\uFEFF')).toBe(true);
 		expect(csv.slice(1).split('\r\n')).toEqual([
-			'Date,Account,Payee,Transfer,Category,Memo,Amount,Cleared',
-			"2026-09-02,Bank,'=Employer,,Salário,,1000.00,cleared",
-			'2026-09-03,Bank,"Market, ""Central""",,Food,food,-20.00,uncleared',
-			'2026-09-03,Bank,"Market, ""Central""",,Fun,week,-10.00,uncleared',
-			'2026-09-04,Bank,,Cash,,,-50.00,uncleared',
-			'2026-09-04,Cash,,Bank,,,50.00,uncleared',
+			'Date,Account,Payee,Transfer,Category,Memo,Amount,Cleared,Flag',
+			"2026-09-02,Bank,'=Employer,,Salário,,1000.00,cleared,green",
+			'2026-09-03,Bank,"Market, ""Central""",,Food,food,-20.00,uncleared,',
+			'2026-09-03,Bank,"Market, ""Central""",,Fun,week,-10.00,uncleared,',
+			'2026-09-04,Bank,,Cash,,,-50.00,uncleared,',
+			'2026-09-04,Cash,,Bank,,,50.00,uncleared,',
 			''
 		]);
 	});

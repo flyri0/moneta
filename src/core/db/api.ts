@@ -14,6 +14,7 @@ import * as reports from './repos/reports';
 import * as demo from './repos/demo';
 import * as imports from './repos/imports';
 import * as payeeRules from './repos/payee-rules';
+import * as flags from './repos/flags';
 
 interface Handler<A extends unknown[], R> {
 	kind: 'read' | 'write';
@@ -129,6 +130,7 @@ export const api = {
 			{ undo: true }
 		),
 		setCleared: write(['transactions'], transactions.setCleared, ['string', 'boolean']),
+		setFlag: write(['transactions'], transactions.setFlag, ['string', 'string?']),
 		updateMany: write(['transactions'], transactions.updateTransactions, ['array', 'object'], {
 			undo: true
 		}),
@@ -138,6 +140,10 @@ export const api = {
 			['array'],
 			{ undo: true }
 		)
+	},
+	flags: {
+		list: read(flags.listFlags, []),
+		rename: write(['flags'], flags.renameFlags, ['object'])
 	},
 	imports: {
 		preview: read(imports.previewImport, ['string', 'array']),

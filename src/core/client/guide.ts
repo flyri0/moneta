@@ -35,6 +35,7 @@ export const GUIDE_TOPICS = {
 	categories: ['budgeting', 'categories'],
 	accountKinds: ['accounts', 'account-kinds'],
 	entering: ['transactions', 'entering'],
+	flags: ['transactions', 'flags'],
 	carryover: ['budgeting', 'carryover'],
 	goals: ['budgeting', 'goals'],
 	cardBilling: ['accounts', 'card-billing'],

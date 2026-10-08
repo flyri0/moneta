@@ -1,5 +1,6 @@
 import type { CreateAccountInput } from '$db/repos/accounts';
 import type { InitBudgetInput } from '$db/repos/meta';
+import type { FlagColor } from '$domain/flag';
 import type { Month } from '$domain/month';
 
 /**
@@ -35,6 +36,7 @@ export interface DemoTransactionSeed {
 	cleared?: boolean;
 	splits?: DemoSplitSeed[];
 	transferAccountKey?: string | null;
+	flag?: FlagColor;
 }
 
 /** A monthly schedule in the demo, starting on its first date after today. */
@@ -61,6 +63,8 @@ export interface DemoSeed {
 	schedules: DemoScheduleSeed[];
 	groupIcons: DemoIconSeed[];
 	categoryIcons: DemoIconSeed[];
+	/** The flags the demo renames; the others keep their color's name. */
+	flagNames: { color: FlagColor; name: string }[];
 }
 
 /** A demo budget from nothing: what any budget starts with, plus what fills this one in. */

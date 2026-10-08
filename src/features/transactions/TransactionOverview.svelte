@@ -11,12 +11,13 @@
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { actionError } from '$client/notify';
+	import { actionError, runActionToast } from '$client/notify';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
 	import { storedCategoryLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+	import FlagField from '$features/flags/FlagField.svelte';
 	import SplitLines from './SplitLines.svelte';
 
 	/**
@@ -118,6 +119,19 @@
 				<dt class="text-muted-foreground">{m.transaction_memo()}</dt>
 				<dd class="min-w-0 text-right break-words whitespace-pre-line">{t.memo}</dd>
 			{/if}
+
+			<dt class="self-center text-muted-foreground">
+				<label for="overview-flag">{m.flag_label()}</label>
+			</dt>
+			<dd class="flex justify-end">
+				<FlagField
+					id="overview-flag"
+					class="w-auto max-w-56"
+					value={t.flag}
+					onchange={(flag) =>
+						runActionToast(() => session.api.transactions.setFlag(t.id, flag ?? undefined))}
+				/>
+			</dd>
 		</dl>
 
 		<nav class="-mx-2 grid gap-0.5">

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import CashFlowChart from './CashFlowChart.svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
@@ -19,7 +21,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range }: { range: DateRange } = $props();
+	let { range, flags = [] }: { range: DateRange; flags?: FlagFilter } = $props();
 
 	const session = useSession();
 	/** Rows shown before the table folds, matching the other reports. */
@@ -28,7 +30,7 @@
 	let expanded = $state(false);
 
 	const flow = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.cashFlow({ from: range.from, to: range.to })
+		session.api.reports.cashFlow({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const months = $derived(
 		reportMonths(

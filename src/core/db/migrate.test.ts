@@ -33,6 +33,7 @@ describe('migrate', () => {
 			'budget_assignments',
 			'categories',
 			'category_groups',
+			'flags',
 			'meta',
 			'payee_rules',
 			'payees',
@@ -222,6 +223,23 @@ describe('migrate', () => {
 		run(db, 'UPDATE accounts SET closing_day = 5, due_day = 15');
 		expect(() => run(db, 'UPDATE accounts SET closing_day = 0')).toThrow();
 		expect(() => run(db, 'UPDATE accounts SET due_day = 32')).toThrow();
+	});
+
+	it('adds flags to transactions and schedules, none for the ones there', async () => {
+		const s = await loadSqlite();
+		const db = new s.oo1.DB(':memory:', 'c');
+		configure(db);
+		migrate(db, MIGRATIONS.slice(0, 12));
+		db.exec(`INSERT INTO accounts (id, name, type, on_budget, created_at) VALUES
+			('a1', 'Bank', 'checking', 1, '2026-01-01');
+			INSERT INTO transactions (id, account_id, date, amount) VALUES ('t1', 'a1', '2026-01-02', 5)`);
+		migrate(db);
+		expect(all(db, 'SELECT flag FROM transactions')).toEqual([{ flag: null }]);
+		run(db, "UPDATE transactions SET flag = 'red'");
+		expect(() => run(db, "UPDATE transactions SET flag = 'pink'")).toThrow();
+		run(db, "INSERT INTO flags (color, name) VALUES ('red', 'Reimbursable')");
+		expect(() => run(db, "INSERT INTO flags (color, name) VALUES ('pink', 'x')")).toThrow();
+		expect(() => run(db, "INSERT INTO flags (color, name) VALUES ('blue', '')")).toThrow();
 	});
 
 	it('is idempotent', async () => {

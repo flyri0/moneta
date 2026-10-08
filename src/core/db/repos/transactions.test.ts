@@ -9,6 +9,7 @@ import {
 	getTransaction,
 	listTransactions,
 	setCleared,
+	setFlag,
 	updateTransaction,
 	updateTransactions
 } from './transactions';
@@ -877,5 +878,93 @@ describe('several transactions at once', () => {
 		run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [visa]);
 		expect(deleteTransactions(db, [a, b])).toEqual({ changed: 1, skipped: 1 });
 		expect(getTransaction(db, a).id).toBe(a);
+	});
+});
+
+describe('flags', () => {
+	const spend = (flag?: 'red' | 'blue' | null, date = '2026-01-05') =>
+		createTransaction(db, { accountId: bank, date, amount: -100, categoryId: food, flag });
+
+	it('creates and edits a transaction with a flag', () => {
+		const id = spend('red');
+		expect(getTransaction(db, id).flag).toBe('red');
+		updateTransaction(db, id, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -100,
+			categoryId: food,
+			flag: 'blue'
+		});
+		expect(getTransaction(db, id).flag).toBe('blue');
+		updateTransaction(db, id, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -100,
+			categoryId: food
+		});
+		expect(getTransaction(db, id).flag).toBeNull();
+	});
+
+	it('refuses an unknown flag', () => {
+		expect(() =>
+			createTransaction(db, {
+				accountId: bank,
+				date: '2026-01-05',
+				amount: -100,
+				categoryId: food,
+				flag: 'pink' as 'red'
+			})
+		).toThrow(code('INVALID_INPUT'));
+		const id = spend();
+		expect(() => setFlag(db, id, 'pink' as 'red')).toThrow(code('INVALID_INPUT'));
+	});
+
+	it("flags each side of a transfer on its own, and an edit keeps the other side's", () => {
+		const transfer = {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -100,
+			transferAccountId: savings
+		};
+		const id = createTransaction(db, { ...transfer, flag: 'red' });
+		const pairId = getTransaction(db, id).transferId!;
+		expect(getTransaction(db, pairId).flag).toBeNull();
+		setFlag(db, pairId, 'blue');
+		updateTransaction(db, id, { ...transfer, amount: -200, flag: 'red' });
+		expect(getTransaction(db, id).flag).toBe('red');
+		expect(getTransaction(db, pairId).flag).toBe('blue');
+	});
+
+	it('sets and takes off a flag', () => {
+		const id = spend();
+		setFlag(db, id, 'blue');
+		expect(getTransaction(db, id).flag).toBe('blue');
+		setFlag(db, id);
+		expect(getTransaction(db, id).flag).toBeNull();
+	});
+
+	it('filters by flags, none included', () => {
+		const red = spend('red', '2026-01-03');
+		const blue = spend('blue', '2026-01-04');
+		const none = spend(null, '2026-01-05');
+		const ids = (flags: ('red' | 'blue' | 'none')[]) =>
+			listTransactions(db, { accountId: bank, flags }).map((t) => t.id);
+		expect(ids(['red'])).toEqual([red]);
+		expect(ids(['red', 'blue'])).toEqual([blue, red]);
+		expect(ids(['none'])).toEqual([none]);
+		expect(ids([])).toEqual([]);
+		expect(() => listTransactions(db, { flags: ['pink' as 'red'] })).toThrow(code('INVALID_INPUT'));
+	});
+
+	it('flags several at once, and takes them off', () => {
+		const a = spend();
+		const b = spend('red');
+		expect(updateTransactions(db, [a, b], { flag: 'blue' })).toEqual({ changed: 2, skipped: 0 });
+		expect([getTransaction(db, a).flag, getTransaction(db, b).flag]).toEqual(['blue', 'blue']);
+		updateTransactions(db, [a], { flag: null });
+		expect(getTransaction(db, a).flag).toBeNull();
+		expect(() => updateTransactions(db, [a], { flag: 'pink' as 'red' })).toThrow(
+			code('INVALID_INPUT')
+		);
 	});
 });

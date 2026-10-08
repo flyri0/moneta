@@ -1,5 +1,6 @@
 import { ageOfMoneySeries, type AgeOfMoneyPoint, type CashFlowEntry } from '$domain/age-of-money';
 import { DomainError } from '$domain/errors';
+import { validateFlagFilter, type FlagFilter } from '$domain/flag';
 import { isDate, isMonth, type Month } from '$domain/month';
 import {
 	accountBalanceSeries,
@@ -21,7 +22,12 @@ export interface SpendingRow {
 export interface SpendingQuery {
 	from: string; // YYYY-MM-DD, inclusive
 	to: string;
+	/** Only transactions with these flags, `'none'` for those without one; all when left out. */
+	flags?: FlagFilter;
 }
+
+/** The condition `flagFilter` binds as `:flags`: true for every row when there is no filter. */
+const FLAG_SQL = `(:flags IS NULL OR COALESCE(t.flag, 'none') IN (SELECT value FROM json_each(:flags)))`;
 
 /**
  * Net spending per category over a date range, on-budget accounts only, largest first.
@@ -36,13 +42,13 @@ export function spendingByCategory(db: Db, query: SpendingQuery): SpendingRow[] 
 			SELECT t.category_id AS categoryId, t.amount
 			FROM transactions t JOIN accounts a ON a.id = t.account_id
 			WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
-			  AND t.date BETWEEN :from AND :to
+			  AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}
 			UNION ALL
 			SELECT s.category_id, s.amount
 			FROM transaction_splits s
 			JOIN transactions t ON t.id = s.transaction_id
 			JOIN accounts a ON a.id = t.account_id
-			WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to
+			WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}
 		 ) e
 		 JOIN categories c ON c.id = e.categoryId
 		 JOIN category_groups g ON g.id = c.group_id
@@ -50,7 +56,7 @@ export function spendingByCategory(db: Db, query: SpendingQuery): SpendingRow[] 
 		 GROUP BY c.id
 		 HAVING SUM(e.amount) < 0
 		 ORDER BY SUM(e.amount), c.name`,
-		{ ':from': query.from, ':to': query.to }
+		rangeBinds(query)
 	);
 }
 
@@ -77,26 +83,36 @@ export function cashFlow(db: Db, query: SpendingQuery): CashFlowRow[] {
 				t.is_opening AS opening
 			FROM transactions t JOIN accounts a ON a.id = t.account_id
 			WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
-			  AND t.date BETWEEN :from AND :to
+			  AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}
 			UNION ALL
 			SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.is_opening
 			FROM transaction_splits s
 			JOIN transactions t ON t.id = s.transaction_id
 			JOIN accounts a ON a.id = t.account_id
-			WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to
+			WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}
 		 ) e
 		 JOIN categories c ON c.id = e.categoryId
 		 JOIN category_groups g ON g.id = c.group_id
 		 WHERE NOT e.opening
 		 GROUP BY e.month
 		 ORDER BY e.month`,
-		{ ':from': query.from, ':to': query.to }
+		rangeBinds(query)
 	);
 }
 
 function checkRange(query: SpendingQuery): void {
 	if (!isDate(query.from) || !isDate(query.to) || query.from > query.to)
 		throw new DomainError('INVALID_INPUT', 'Invalid date range');
+	if (query.flags !== undefined) validateFlagFilter(query.flags);
+}
+
+/** The range and the flag filter, bound by name. */
+function rangeBinds(query: SpendingQuery) {
+	return {
+		':from': query.from,
+		':to': query.to,
+		':flags': query.flags === undefined ? null : JSON.stringify(query.flags)
+	};
 }
 
 /**
@@ -108,13 +124,13 @@ const CATEGORIZED_SQL = `
 		t.transfer_id, t.is_opening AS opening
 	FROM transactions t JOIN accounts a ON a.id = t.account_id
 	WHERE a.on_budget = 1 AND t.is_split = 0 AND t.category_id IS NOT NULL
-	  AND t.date BETWEEN :from AND :to
+	  AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}
 	UNION ALL
 	SELECT substr(t.date, 1, 7), s.category_id, s.amount, t.payee_id, t.transfer_id, t.is_opening
 	FROM transaction_splits s
 	JOIN transactions t ON t.id = s.transaction_id
 	JOIN accounts a ON a.id = t.account_id
-	WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to`;
+	WHERE a.on_budget = 1 AND t.date BETWEEN :from AND :to AND ${FLAG_SQL}`;
 
 export interface CategoryMonthRow {
 	month: Month;
@@ -144,7 +160,7 @@ export function categoryMonths(db: Db, query: SpendingQuery): CategoryMonthRow[]
 		 GROUP BY e.month, c.id
 		 HAVING SUM(e.amount) <> 0
 		 ORDER BY g.sort_order, g.name, c.sort_order, c.name, e.month`,
-		{ ':from': query.from, ':to': query.to }
+		rangeBinds(query)
 	).map((r) => ({ ...r, income: r.income === 1 }));
 }
 
@@ -172,7 +188,7 @@ export function spendingByPayee(db: Db, query: SpendingQuery): PayeeSpendingRow[
 		 GROUP BY p.id
 		 HAVING SUM(e.amount) < 0
 		 ORDER BY SUM(e.amount), p.name IS NULL, p.name`,
-		{ ':from': query.from, ':to': query.to }
+		rangeBinds(query)
 	);
 }
 

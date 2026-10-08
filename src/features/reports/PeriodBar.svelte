@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
@@ -10,15 +11,20 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	/** The period control of a report page: it scopes everything below it. */
+	/**
+	 * The period control of a report page: it scopes everything below it. `children` adds more
+	 * controls to its row.
+	 */
 	let {
 		preset = $bindable(),
 		custom = $bindable(),
-		range
+		range,
+		children
 	}: {
 		preset: RangePreset | 'custom';
 		custom: DateRange;
 		range: DateRange;
+		children?: Snippet;
 	} = $props();
 
 	const PRESETS: Record<RangePreset, () => string> = {
@@ -107,6 +113,7 @@
 	>
 		{summary}
 	</button>
+	{@render children?.()}
 </div>
 
 <ResponsiveDialog bind:open={editing} title={m.reports_custom_range()}>

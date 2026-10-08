@@ -257,6 +257,7 @@ export function buildScheduleInput(
 		memo: t.memo ?? '',
 		splits: t.splits,
 		transferAccountId: t.transferAccountId ?? null,
+		flag: t.flag ?? null,
 		startDate: t.date,
 		autoEnter: draft.autoEnter
 	};

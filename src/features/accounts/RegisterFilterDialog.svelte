@@ -9,17 +9,20 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
+	import FlagFilterField from '$features/flags/FlagFilterField.svelte';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import type { RegisterFilters } from '$features/accounts/register-filters.svelte';
 	import type { StatusFilter } from '$features/accounts/register-filters';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import type { ActionError } from '$client/notify';
+	import type { FlagFilter } from '$domain/flag';
 	import { formatAmountInput } from '$domain/money';
 	import { MAX_DATE, MIN_DATE } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
-	 * The register's filters beyond the search: period, category, payee, amount and status. The
+	 * The register's filters beyond the search: period, category, payee, amount, status and flags. The
 	 * fields are a draft until Apply, so the list doesn't reload on every pick.
 	 */
 	let { open = $bindable(false), filters }: { open: boolean; filters: RegisterFilters } = $props();
@@ -29,6 +32,7 @@
 		session.api.categories.tree()
 	);
 	const payees = useLive(session.client, ['payees'], () => session.api.payees.options());
+	const flagNames = useFlags();
 	// Filtering never creates a category, but the picker's contract wants somewhere to put one.
 	const pending = new NewCategories();
 
@@ -38,6 +42,7 @@
 	let amountMin = $state('');
 	let amountMax = $state('');
 	let status = $state<StatusFilter>('');
+	let flags = $state.raw<FlagFilter>([]);
 	let error = $state<ActionError | null>(null);
 
 	const STATUS: Record<StatusFilter, () => string> = {
@@ -58,6 +63,7 @@
 		amountMax =
 			filters.amountMax === null ? '' : formatAmountInput(filters.amountMax, session.money);
 		status = filters.status;
+		flags = filters.flags;
 		error = null;
 	});
 
@@ -86,6 +92,7 @@
 		filters.amountMin = min;
 		filters.amountMax = max;
 		filters.status = status;
+		filters.flags = flags;
 		open = false;
 	}
 
@@ -159,6 +166,14 @@
 					{/each}
 				</Select.Content>
 			</Select.Root>
+		</div>
+		<div class="grid gap-2">
+			<span class="text-sm font-medium">{m.register_filter_flags()}</span>
+			<FlagFilterField
+				bind:value={flags}
+				flags={flagNames.data}
+				ariaLabel={m.register_filter_flags()}
+			/>
 		</div>
 		<FormMessage {error} />
 		<Button type="button" variant="ghost" class="justify-self-start" onclick={reset}>
