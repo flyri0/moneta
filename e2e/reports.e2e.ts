@@ -385,7 +385,7 @@ test.describe('on a phone', () => {
 
 			await expectInsideCards(page, ['net-worth-chart', 'net-worth-table', 'net-worth-tiles']);
 
-			// A custom period's dates wrap under the select instead of drawing over it.
+			// A custom period's dates go on their own line, under the select, not over it.
 			await page.locator('#report-period').click();
 			await page
 				.locator('[data-slot="select-item"]')
@@ -398,12 +398,10 @@ test.describe('on a phone', () => {
 			const select = await page.locator('#report-period').boundingBox();
 			const dates = await page.getByTestId('report-period-range').boundingBox();
 			expect(select && dates).toBeTruthy();
-			expect(
-				dates!.x >= select!.x + select!.width || dates!.y >= select!.y + select!.height,
-				'the period dates overlap the select'
-			).toBe(true);
+			expect(dates!.y, 'the period dates are not under the select').toBeGreaterThanOrEqual(
+				select!.y + select!.height
+			);
 			expect(dates!.x + dates!.width).toBeLessThanOrEqual(width);
-			// A squeezed select keeps its box clear of the dates but spills its label under them.
 			expect(
 				await page.locator('#report-period').evaluate((el) => el.scrollWidth <= el.clientWidth),
 				'the select is too narrow for its label'

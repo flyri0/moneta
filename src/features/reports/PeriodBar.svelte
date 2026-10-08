@@ -81,9 +81,7 @@
 			}
 		}}
 	>
-		<!-- Neither side shrinks: when the range doesn't fit beside the select, it wraps under it
-		rather than drawing over it. -->
-		<Select.Trigger id="report-period" size="sm" class="flex-1 shrink-0 sm:flex-none">
+		<Select.Trigger id="report-period" size="sm" class="flex-1 sm:flex-none">
 			{choice === 'custom' ? m.reports_range_custom() : PRESETS[choice as RangePreset]()}
 		</Select.Trigger>
 		<Select.Content>
@@ -95,6 +93,7 @@
 			</Select.Item>
 		</Select.Content>
 	</Select.Root>
+	<!-- On phones the dates take a line of their own, under the select. -->
 	<button
 		type="button"
 		aria-label={m.reports_custom_range()}
@@ -103,7 +102,7 @@
 			editing = true;
 		}}
 		data-testid="report-period-range"
-		class="ml-auto max-w-full shrink-0 truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground {preset ===
+		class="max-w-full basis-full truncate rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground sm:ml-auto sm:basis-auto {preset ===
 		'custom'
 			? ''
 			: 'hidden sm:block'}"
