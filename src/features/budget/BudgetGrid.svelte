@@ -39,6 +39,12 @@
 	// the four money columns leave nothing for the category name.
 	const desktop = new MediaQuery('min-width: 1024px');
 	const COLUMNS = 'grid grid-cols-[1fr_9rem_8rem_9rem] items-center gap-2';
+	/**
+	 * A card of rows (any width for hidden categories). Its rows round their own corners instead of the card clipping them,
+	 * so an Assigned cell's amount preview can show past the last row.
+	 */
+	const CARD =
+		'divide-y rounded-xl border bg-card text-card-foreground shadow-xs *:first:rounded-t-[inherit] *:last:rounded-b-[inherit]';
 
 	const toggleLabel = (group: BudgetGroupView, open: boolean) =>
 		open
@@ -173,10 +179,7 @@
 		{#each model.groups as group (group.id)}
 			{@const open = !collapsed.has(group.id)}
 			{@const isIncome = group.system === 'income'}
-			<div
-				class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
-				data-testid="group-card"
-			>
+			<div class={CARD} data-testid="group-card">
 				<div
 					class="{COLUMNS} bg-muted/40 px-4 py-2.5 font-medium transition-colors"
 					data-testid="group-row"
@@ -278,9 +281,7 @@
 		</Collapsible.Trigger>
 		<Collapsible.Content class="grid gap-4">
 			{#if loose.length > 0}
-				<div
-					class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
-				>
+				<div class={CARD}>
 					{#each loose as { category, group } (category.id)}
 						{@render categoryItem(category, group.system === 'income')}
 					{/each}
@@ -296,9 +297,7 @@
 						><IconLabel icon={group.icon} label={groupLabel(group)} /></button
 					>
 					{#if group.categories.length > 0}
-						<div
-							class="divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
-						>
+						<div class={CARD}>
 							{#each group.categories as category (category.id)}
 								{@render categoryItem(category, group.system === 'income')}
 							{/each}

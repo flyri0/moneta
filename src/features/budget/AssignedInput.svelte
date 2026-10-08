@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
 	import { formatAmountInput } from '$domain/money';
@@ -74,17 +75,21 @@
 	}
 </script>
 
-<input
-	class="w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-right tabular-nums hover:border-input focus:border-ring focus:outline-none aria-invalid:border-destructive"
-	inputmode="decimal"
-	autocomplete="off"
-	aria-label={label}
-	data-testid="assigned"
-	data-assigned-input
-	aria-invalid={invalid}
-	value={editing ? text : session.format(assigned)}
-	oninput={(e) => (text = e.currentTarget.value)}
-	onfocus={focus}
-	onblur={commit}
-	onkeydown={keydown}
-/>
+<!-- The preview floats under the cell, so typing never changes the row's height. -->
+<div class="relative">
+	<input
+		class="w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-right tabular-nums hover:border-input focus:border-ring focus:outline-none aria-invalid:border-destructive"
+		inputmode="decimal"
+		autocomplete="off"
+		aria-label={label}
+		data-testid="assigned"
+		data-assigned-input
+		aria-invalid={invalid}
+		value={editing ? text : session.format(assigned)}
+		oninput={(e) => (text = e.currentTarget.value)}
+		onfocus={focus}
+		onblur={commit}
+		onkeydown={keydown}
+	/>
+	{#if editing}<AmountPreview {text} floating />{/if}
+</div>

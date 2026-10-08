@@ -8,19 +8,31 @@
 	/**
 	 * What a typed amount will be saved as, under its field, while the text isn't written that way
 	 * yet ("120+35", "1234"). Blank while amounts are hidden or the text can't be read. It reads in
-	 * the open budget's currency, or in `money` where none is open yet (onboarding).
+	 * the open budget's currency, or in `money` where none is open yet (onboarding). `floating` shows
+	 * it as a tag under a cell that has no room for a line (the budget grid), only while there is text.
 	 */
 	let {
 		text,
 		money,
+		floating = false,
 		class: className
-	}: { text: string; money?: MoneyFormat; class?: string } = $props();
+	}: { text: string; money?: MoneyFormat; floating?: boolean; class?: string } = $props();
 	const app = getApp();
 	const fmt = $derived(money ?? app.session?.money);
 	const value = $derived(!fmt || amounts.hidden ? null : amountPreview(text, fmt));
 </script>
 
 <!-- The line keeps its height while empty: the text is information, it must not move the form. -->
-<p class={cn('min-h-4 text-xs text-muted-foreground tabular-nums', className)} aria-live="polite">
+<p
+	class={cn(
+		'text-xs text-muted-foreground tabular-nums',
+		floating
+			? 'pointer-events-none absolute top-full right-0 z-10 mt-1 rounded-md border bg-popover px-1.5 py-0.5 whitespace-nowrap shadow-sm'
+			: 'min-h-4',
+		floating && value === null && 'sr-only',
+		className
+	)}
+	aria-live="polite"
+>
 	{#if value !== null && fmt}{m.amount_preview({ amount: formatMoney(value, fmt) })}{/if}
 </p>

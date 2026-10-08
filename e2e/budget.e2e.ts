@@ -77,7 +77,10 @@ test('assigns inline with arithmetic on desktop', async ({ page }) => {
 	await onboard(page);
 	const groceries = categoryRow(page, 'Groceries');
 	await groceries.getByTestId('assigned').fill('250+50');
+	const preview = groceries.getByText('= $300.00');
+	await expect(preview).toBeVisible();
 	await groceries.getByTestId('assigned').press('Enter');
+	await expect(preview).toBeHidden();
 	await expect(page.getByTestId('rta-amount')).toHaveText('$700.00');
 	await expect(groceries.getByTestId('available')).toHaveText('$300.00');
 });
