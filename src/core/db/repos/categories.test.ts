@@ -377,6 +377,22 @@ describe('icons', () => {
 		expect(listCategoryTree(db).find((g) => g.id === id)!.icon).toBeNull();
 	});
 
+	it("changes the Income group's icon but nothing else of it", async () => {
+		const db = await createBudgetDb();
+		const income = () => listCategoryTree(db).find((g) => g.system === 'income')!;
+		updateGroup(db, income().id, { icon: '💰' });
+		expect(income().icon).toBe('💰');
+		updateGroup(db, income().id, { icon: null });
+		expect(income().icon).toBeNull();
+		expect(() => updateGroup(db, income().id, { hidden: true })).toThrow(
+			code('SYSTEM_ENTITY_READONLY')
+		);
+		expect(() => updateGroup(db, income().id, { name: 'x', icon: '💰' })).toThrow(
+			code('SYSTEM_ENTITY_READONLY')
+		);
+		expect(income().icon).toBeNull();
+	});
+
 	it('sets and removes a category icon, ZWJ sequences and flags included', async () => {
 		const db = await createBudgetDb();
 		const id = categoryId(db, 'Rent');

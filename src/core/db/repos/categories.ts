@@ -139,7 +139,9 @@ export interface GroupPatch {
 export function updateGroup(db: Db, id: string, patch: GroupPatch): void {
 	tx(db, () => {
 		const group = getGroup(db, id);
-		if (group.system) throw new DomainError('SYSTEM_ENTITY_READONLY');
+		// A system group keeps its name and stays visible; only its icon changes.
+		if (group.system && (patch.name !== undefined || patch.hidden !== undefined))
+			throw new DomainError('SYSTEM_ENTITY_READONLY');
 		if (patch.name !== undefined)
 			run(db, 'UPDATE category_groups SET name = ? WHERE id = ?', [requireName(patch.name), id]);
 		if (patch.hidden !== undefined)

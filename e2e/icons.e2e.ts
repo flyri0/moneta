@@ -31,6 +31,22 @@ test('gives a group an emoji found by name, and takes it away', async ({ page })
 	await expect(fun).not.toContainText('🍕');
 });
 
+test('gives the Income group an emoji, with nothing else to change', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Income', exact: true }).click();
+	const sheet = page.getByRole('dialog').first();
+	await expect(sheet.getByRole('button', { name: 'Delete group' })).toHaveCount(0);
+	await sheet.getByRole('button', { name: 'Group settings' }).click();
+	await expect(sheet.getByLabel('Group name')).toHaveCount(0);
+	await expect(sheet.getByLabel('Hidden')).toHaveCount(0);
+	await sheet.getByRole('combobox', { name: 'Icon' }).click();
+	await picker(page).getByRole('searchbox', { name: 'Search emoji' }).fill('money bag');
+	await picker(page).getByRole('button', { name: 'money bag', exact: true }).click();
+	await closed(page);
+
+	await expect(page.getByTestId('group-row').filter({ hasText: 'Income' })).toContainText('💰');
+});
+
 test('gives a category an emoji in the chosen skin tone, and remembers both', async ({ page }) => {
 	await onboard(page);
 	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
