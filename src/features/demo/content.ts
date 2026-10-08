@@ -28,6 +28,7 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 	const categories: DemoCategoryNames = {
 		salary: income[0],
 		otherIncome: income[1],
+		startingBalance: income[2],
 		rent: bills.categories[0],
 		utilities: bills.categories[1],
 		phone: bills.categories[2],

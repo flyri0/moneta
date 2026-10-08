@@ -31,6 +31,9 @@ const GROUP_ICONS: Record<keyof DemoGroupNames, string> = {
 	fun: '🎉'
 };
 
+/** The system Income group's emoji, looked up by its role rather than its name. */
+const INCOME_GROUP_ICON = '💰';
+
 /** Payee names for the demo, in the UI language. */
 export interface DemoPayeeNames {
 	salary: string;
@@ -75,6 +78,7 @@ const FLAG_COLORS: Record<keyof DemoFlagNames, FlagColor> = {
 export interface DemoCategoryNames {
 	salary: string;
 	otherIncome: string;
+	startingBalance: string;
 	rent: string;
 	utilities: string;
 	phone: string;
@@ -104,6 +108,7 @@ export interface DemoInput {
 const CATEGORY_ICONS: Record<keyof DemoCategoryNames, string> = {
 	salary: '💼',
 	otherIncome: '💸',
+	startingBalance: '🏁',
 	rent: '🏠',
 	utilities: '💡',
 	phone: '📱',
@@ -126,7 +131,7 @@ function icons<K extends string>(
 	return (Object.keys(emoji) as K[]).map((key) => ({ name: names[key], icon: emoji[key] }));
 }
 
-type Income = 'salary' | 'otherIncome';
+type Income = 'salary' | 'otherIncome' | 'startingBalance';
 type Budgeted = Exclude<keyof DemoCategoryNames, Income>;
 
 const BUDGETED: Budgeted[] = [
@@ -488,6 +493,7 @@ export function buildDemo(input: DemoInput): DemoSeed {
 		transactions: [],
 		assignments: [],
 		schedules: [],
+		incomeGroupIcon: INCOME_GROUP_ICON,
 		groupIcons: icons(groups, GROUP_ICONS),
 		categoryIcons: icons(categories, CATEGORY_ICONS),
 		flagNames: (Object.keys(FLAG_COLORS) as (keyof DemoFlagNames)[]).map((key) => ({

@@ -61,6 +61,8 @@ export interface DemoSeed {
 	transactions: DemoTransactionSeed[];
 	assignments: DemoAssignmentSeed[];
 	schedules: DemoScheduleSeed[];
+	/** The system Income group's emoji. */
+	incomeGroupIcon: string;
 	groupIcons: DemoIconSeed[];
 	categoryIcons: DemoIconSeed[];
 	/** The flags the demo renames; the others keep their color's name. */
