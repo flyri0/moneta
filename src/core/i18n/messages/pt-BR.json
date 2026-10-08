@@ -440,6 +440,7 @@
 	"reports_range_this_year": "Este ano",
 	"reports_range_custom": "Personalizado",
 	"reports_range_all": "Todo o período",
+	"reports_no_results": "Nada corresponde ao período ou às flags em uso.",
 	"reports_total": "Total",
 	"reports_spent": "Gasto",
 	"reports_share": "Parcela",

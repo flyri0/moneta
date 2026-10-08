@@ -22,3 +22,15 @@ export function periodRange(fallback: RangePreset, today: string): DateRange {
 	const preset = period.preset ?? fallback;
 	return preset === 'custom' ? period.custom : presetRange(preset, today);
 }
+
+/**
+ * Clears the reports' filters (all time, every flag), for an empty report to offer; undefined
+ * when nothing is filtered.
+ */
+export function clearFilters(fallback: RangePreset): (() => void) | undefined {
+	if ((period.preset ?? fallback) === 'all' && period.flags.length === 0) return undefined;
+	return () => {
+		period.preset = 'all';
+		period.flags = [];
+	};
+}

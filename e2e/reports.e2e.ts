@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseSelect, onboard, pickDate, spend } from './helpers';
+import { chooseSelect, onboard, pickDateRange, spend } from './helpers';
 
 /** Fails unless every cell and axis label stays inside the card around each of `ids`. */
 async function expectInsideCards(page: Page, ids: string[]) {
@@ -111,11 +111,13 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	await expect(table.locator('tbody tr')).toContainText('$115.00');
 	await page.getByRole('button', { name: 'Categories' }).click();
 
+	// An empty month says the filters are what hide the spending, and offers to clear them.
 	await chooseSelect(page, 'Period', 'Last month');
-	await expect(page.getByText('No spending in this period.')).toBeVisible();
+	await expect(page.getByText('Nothing matches the period or the flags in use.')).toBeVisible();
 
 	// All time reaches back over the empty month to the spending again.
-	await chooseSelect(page, 'Period', 'All time');
+	await page.getByRole('button', { name: 'Clear filters' }).click();
+	await expect(page.getByLabel('Period')).toHaveText('All time');
 	await expect(table.locator('tfoot')).toContainText('$115.00');
 
 	await page.getByRole('link', { name: 'Reports' }).first().click();
@@ -265,8 +267,12 @@ test('scopes the full reports with a period, a custom one too', async ({ page })
 	const today = new Date();
 	const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 	// Up to today, where the spending is: a fixed end day would miss it late in the month.
-	await pickDate(dialog, 'From', `${month}-01`);
-	await pickDate(dialog, 'To', `${month}-${String(today.getDate()).padStart(2, '0')}`);
+	await pickDateRange(
+		dialog,
+		'Period',
+		`${month}-01`,
+		`${month}-${String(today.getDate()).padStart(2, '0')}`
+	);
 	await dialog.getByRole('button', { name: 'Apply' }).click();
 	await expect(dialog).toBeHidden();
 
@@ -378,6 +384,28 @@ test.describe('on a phone', () => {
 			await expect(table.getByRole('columnheader')).toHaveCount(2);
 
 			await expectInsideCards(page, ['net-worth-chart', 'net-worth-table', 'net-worth-tiles']);
+
+			// A custom period's dates go on their own line, under the select, not over it.
+			await page.locator('#report-period').click();
+			await page
+				.locator('[data-slot="select-item"]')
+				.filter({ hasText: /Custom|Personalizado/ })
+				.click();
+			const dialog = page.getByRole('dialog');
+			await pickDateRange(dialog, /Period|Período/, '2026-09-02', '2026-09-25');
+			await dialog.getByRole('button', { name: /Apply|Aplicar/ }).click();
+			await expect(dialog).toBeHidden();
+			const select = await page.locator('#report-period').boundingBox();
+			const dates = await page.getByTestId('report-period-range').boundingBox();
+			expect(select && dates).toBeTruthy();
+			expect(dates!.y, 'the period dates are not under the select').toBeGreaterThanOrEqual(
+				select!.y + select!.height
+			);
+			expect(dates!.x + dates!.width).toBeLessThanOrEqual(width);
+			expect(
+				await page.locator('#report-period').evaluate((el) => el.scrollWidth <= el.clientWidth),
+				'the select is too narrow for its label'
+			).toBe(true);
 
 			await page.goto('/reports/cash-flow');
 			await expect(page.getByTestId('cash-flow-chart')).toBeVisible();

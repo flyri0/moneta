@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import { Button } from '$ui/button';
-	import { DatePicker } from '$ui/date-picker';
+	import { DateRangePicker } from '$ui/date-range-picker';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import { MAX_DATE, MIN_DATE } from '$domain/month';
@@ -87,7 +87,7 @@
 			}
 		}}
 	>
-		<Select.Trigger id="report-period" size="sm" class="min-w-0 flex-1 sm:flex-none">
+		<Select.Trigger id="report-period" size="sm" class="flex-1 sm:flex-none">
 			{choice === 'custom' ? m.reports_range_custom() : PRESETS[choice as RangePreset]()}
 		</Select.Trigger>
 		<Select.Content>
@@ -99,6 +99,8 @@
 			</Select.Item>
 		</Select.Content>
 	</Select.Root>
+	{@render children?.()}
+	<!-- On phones the dates take a line of their own, under the select. -->
 	<button
 		type="button"
 		aria-label={m.reports_custom_range()}
@@ -106,40 +108,28 @@
 			draft = { ...range };
 			editing = true;
 		}}
-		class="ml-auto max-w-full truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground {preset ===
+		data-testid="report-period-range"
+		class="max-w-full basis-full truncate rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground sm:ml-auto sm:basis-auto {preset ===
 		'custom'
 			? ''
 			: 'hidden sm:block'}"
 	>
 		{summary}
 	</button>
-	{@render children?.()}
 </div>
 
 <ResponsiveDialog bind:open={editing} title={m.reports_custom_range()}>
 	<div class="grid gap-3 py-2">
 		<div class="grid gap-2">
-			<Label for="report-from">{m.register_from()}</Label>
-			<DatePicker
-				id="report-from"
-				ariaLabel={m.register_from()}
+			<Label for="report-range">{m.reports_period()}</Label>
+			<DateRangePicker
+				id="report-range"
+				ariaLabel={m.reports_period()}
 				min={MIN_DATE}
 				max={MAX_DATE}
-				bind:value={draft.from}
-				required
+				bind:value={draft}
 			/>
 		</div>
-		<div class="grid gap-2">
-			<Label for="report-to">{m.register_to()}</Label>
-			<DatePicker
-				id="report-to"
-				ariaLabel={m.register_to()}
-				min={MIN_DATE}
-				max={MAX_DATE}
-				bind:value={draft.to}
-				required
-			/>
-		</div>
-		<Button onclick={apply} disabled={draft.from > draft.to}>{m.reports_apply()}</Button>
+		<Button onclick={apply} disabled={!draft.from || !draft.to}>{m.reports_apply()}</Button>
 	</div>
 </ResponsiveDialog>
