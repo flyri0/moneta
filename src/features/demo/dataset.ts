@@ -1,3 +1,4 @@
+import type { FlagColor } from '$domain/flag';
 import { addMonths, monthOf, type Month } from '$domain/month';
 import type { DemoSeed, DemoTransactionSeed } from './seed';
 
@@ -54,6 +55,22 @@ export interface DemoPayeeNames {
 	clinic: string;
 }
 
+/** The names the demo gives its flags, in the UI language. */
+export interface DemoFlagNames {
+	/** Spent for work, to be paid back. */
+	reimbursable: string;
+	/** The vacation trip. */
+	trip: string;
+	/** Health costs, kept for the tax return. */
+	deductible: string;
+}
+
+const FLAG_COLORS: Record<keyof DemoFlagNames, FlagColor> = {
+	reimbursable: 'red',
+	trip: 'blue',
+	deductible: 'green'
+};
+
 /** The categories the demo uses, by role rather than by position. */
 export interface DemoCategoryNames {
 	salary: string;
@@ -81,6 +98,7 @@ export interface DemoInput {
 	groups: DemoGroupNames;
 	payees: DemoPayeeNames;
 	categories: DemoCategoryNames;
+	flags: DemoFlagNames;
 }
 
 const CATEGORY_ICONS: Record<keyof DemoCategoryNames, string> = {
@@ -147,6 +165,7 @@ interface Spend {
 	splits?: { category: Budgeted; amount: number }[];
 	/** Changes a little every month, unlike a fixed bill. */
 	varies?: boolean;
+	flag?: keyof DemoFlagNames;
 }
 
 /** An ordinary month: bills from the account, everyday spending on the card. */
@@ -172,7 +191,15 @@ const EVERY_MONTH: Spend[] = [
 	// Something on the 1st, so a month that has just begun already shows spending.
 	{ day: 1, account: CARD, payee: 'coffee', category: 'dining', amount: 8.4, varies: true },
 	{ day: 7, account: CARD, payee: 'coffee', category: 'dining', amount: 34.6, varies: true },
-	{ day: 14, account: CARD, payee: 'restaurant', category: 'dining', amount: 68.25, varies: true },
+	{
+		day: 14,
+		account: CARD,
+		payee: 'restaurant',
+		category: 'dining',
+		amount: 68.25,
+		varies: true,
+		flag: 'reimbursable'
+	},
 	{ day: 22, account: CARD, payee: 'coffee', category: 'dining', amount: 41.9, varies: true },
 	{
 		day: 16,
@@ -291,8 +318,15 @@ const STORY: Chapter[] = [
 		card: 'full',
 		pace: { dining: 1.5, hobbies: 1.6, groceries: 1.05 },
 		extras: [
-			{ day: 8, account: CARD, payee: 'airline', category: 'vacation', amount: 1150 },
-			{ day: 24, account: CARD, payee: 'hotel', category: 'vacation', amount: 890 }
+			{
+				day: 8,
+				account: CARD,
+				payee: 'airline',
+				category: 'vacation',
+				amount: 1150,
+				flag: 'trip'
+			},
+			{ day: 24, account: CARD, payee: 'hotel', category: 'vacation', amount: 890, flag: 'trip' }
 		]
 	},
 	{
@@ -310,7 +344,16 @@ const STORY: Chapter[] = [
 		savings: 0,
 		card: { fixed: 250 },
 		pace: tightened,
-		extras: [{ day: 14, account: CARD, payee: 'clinic', category: 'emergencyFund', amount: 640 }]
+		extras: [
+			{
+				day: 14,
+				account: CARD,
+				payee: 'clinic',
+				category: 'emergencyFund',
+				amount: 640,
+				flag: 'deductible'
+			}
+		]
 	},
 	{
 		phase: 'crisis',
@@ -318,7 +361,16 @@ const STORY: Chapter[] = [
 		savings: 0,
 		card: { fixed: 300 },
 		pace: { ...tightened, transport: 0.75, dining: 0.2 },
-		extras: [{ day: 9, account: CARD, payee: 'pharmacy', category: 'emergencyFund', amount: 85 }]
+		extras: [
+			{
+				day: 9,
+				account: CARD,
+				payee: 'pharmacy',
+				category: 'emergencyFund',
+				amount: 85,
+				flag: 'deductible'
+			}
+		]
 	},
 	{
 		phase: 'recovery',
@@ -383,6 +435,7 @@ interface Charge {
 	category?: Budgeted;
 	amount: number;
 	splits?: { category: Budgeted; amount: number }[];
+	flag?: keyof DemoFlagNames;
 }
 
 /**
@@ -391,7 +444,7 @@ interface Charge {
  * get better, then much worse, then slowly better again.
  */
 export function buildDemo(input: DemoInput): DemoSeed {
-	const { today, scale, accounts, groups, payees, categories } = input;
+	const { today, scale, accounts, groups, payees, categories, flags } = input;
 	const money = (major: number) => Math.round(major * scale);
 	const current = monthOf(today);
 	const first = addMonths(current, -(STORY.length - 1));
@@ -436,7 +489,11 @@ export function buildDemo(input: DemoInput): DemoSeed {
 		assignments: [],
 		schedules: [],
 		groupIcons: icons(groups, GROUP_ICONS),
-		categoryIcons: icons(categories, CATEGORY_ICONS)
+		categoryIcons: icons(categories, CATEGORY_ICONS),
+		flagNames: (Object.keys(FLAG_COLORS) as (keyof DemoFlagNames)[]).map((key) => ({
+			color: FLAG_COLORS[key],
+			name: flags[key]
+		}))
 	};
 
 	const add = (t: DemoTransactionSeed) => {
@@ -550,7 +607,8 @@ export function buildDemo(input: DemoInput): DemoSeed {
 				splits: charge.splits?.map((s) => ({
 					categoryName: categories[s.category],
 					amount: -s.amount
-				}))
+				})),
+				flag: charge.flag && FLAG_COLORS[charge.flag]
 			});
 		}
 

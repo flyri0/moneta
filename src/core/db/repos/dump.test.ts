@@ -26,6 +26,7 @@ describe('dumpBudget', () => {
 			'budget_assignments',
 			'categories',
 			'category_groups',
+			'flags',
 			'payee_rules',
 			'payees',
 			'schedule_splits',

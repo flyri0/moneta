@@ -3,6 +3,9 @@
 	import { Button } from '$ui/button';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
 	import { collapseOverdue } from '$features/accounts/upcoming';
+	import FlagIcon from '$features/flags/FlagIcon.svelte';
+	import { flagLabel } from '$features/flags/flags';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import type { OccurrenceToEnter } from '$features/schedules/form';
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
@@ -24,6 +27,7 @@
 		$props();
 
 	const session = useSession();
+	const flags = useFlags();
 	const rows = $derived(collapseOverdue(occurrences));
 	let entering = $state<OccurrenceToEnter | null>(null);
 	let enterOpen = $state(false);
@@ -77,6 +81,9 @@
 				data-testid="upcoming-row"
 			>
 				<span class="flex min-w-0 items-center gap-2">
+					{#if o.flag}
+						<FlagIcon color={o.flag} label={flagLabel(o.flag, flags.data)} class="size-3.5" />
+					{/if}
 					<span class="truncate text-sm font-medium">{payeeText(payeeDisplay(o))}</span>
 					{#if o.due}<Badge variant="destructive">{m.upcoming_due()}</Badge>{/if}
 					{#if moreOverdue > 0}

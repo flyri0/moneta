@@ -26,8 +26,9 @@ describe('activeFilterCount', () => {
 				payeeId: 'p',
 				amountMin: null,
 				amountMax: 500,
-				status: 'cleared'
+				status: 'cleared',
+				flags: ['red', 'none']
 			})
-		).toBe(5);
+		).toBe(6);
 	});
 });

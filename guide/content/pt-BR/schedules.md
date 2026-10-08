@@ -5,8 +5,8 @@ lançadas sozinhas, ou com um toque. Elas ficam em **Agendamentos** na barra lat
 
 ## Criar um agendamento {#creating}
 
-**Novo agendamento** pede os mesmos campos de uma transação (conta, favorecido, valor, categoria e
-memorando), e mais:
+**Novo agendamento** pede os mesmos campos de uma transação (conta, favorecido, valor, categoria,
+memorando e [flag](transactions.md#flags)), e mais:
 
 - **Próxima data**: a primeira ocorrência.
 - **Repetição**: uma vez, diária, semanal, mensal ou anual, e **a cada** quantos dias, semanas,

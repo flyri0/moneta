@@ -9,6 +9,7 @@ import { listAccounts } from './accounts';
 import { getBudgetMonth } from './budget';
 import { listCategoryTree } from './categories';
 import { createDemo } from './demo';
+import { listFlags } from './flags';
 import { listSchedules } from './schedules';
 import { listTransactions } from './transactions';
 
@@ -67,7 +68,8 @@ async function demoDb(): Promise<Db> {
 				pharmacy: 'Pharmacy',
 				clinic: 'Dental Clinic'
 			},
-			categories: CATEGORIES
+			categories: CATEGORIES,
+			flags: { reimbursable: 'Reimbursable', trip: 'Trip', deductible: 'Tax deductible' }
 		})
 	});
 	return db;
@@ -127,6 +129,16 @@ describe('seedDemo', () => {
 				(r) => r.accountName === 'Credit Card' || r.transferAccountName === 'Credit Card'
 			)
 		);
+	});
+
+	it('flags some transactions and names those flags', () => {
+		expect(listFlags(db).filter((f) => f.name)).toEqual([
+			{ color: 'red', name: 'Reimbursable' },
+			{ color: 'green', name: 'Tax deductible' },
+			{ color: 'blue', name: 'Trip' }
+		]);
+		expect(listTransactions(db, { flags: ['red'] }).length).toBeGreaterThan(0);
+		expect(listTransactions(db, { flags: ['blue'] })).toHaveLength(2);
 	});
 
 	it('names its payees', () => {

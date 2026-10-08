@@ -79,7 +79,12 @@ export function demoBudget(browser?: string, today: string = todayIso()): DemoBu
 				pharmacy: m.demo_payee_pharmacy(),
 				clinic: m.demo_payee_clinic()
 			},
-			categories
+			categories,
+			flags: {
+				reimbursable: m.demo_flag_reimbursable(),
+				trip: m.demo_flag_trip(),
+				deductible: m.demo_flag_deductible()
+			}
 		})
 	};
 }

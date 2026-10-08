@@ -2,6 +2,7 @@
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import CircleIcon from '@lucide/svelte/icons/circle';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import FlagIcon from '@lucide/svelte/icons/flag';
 	import TagIcon from '@lucide/svelte/icons/tag';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -14,11 +15,15 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
+	import FlagList from '$features/flags/FlagList.svelte';
+	import FlagNames from '$features/flags/FlagNames.svelte';
+	import { useFlags } from '$features/flags/use-flags.svelte';
 	import type { RegisterSelection } from '$features/accounts/selection.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, runActionToast, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
+	import type { FlagColor } from '$domain/flag';
 	import type { BulkChange, BulkResult, TransactionRow } from '$db/repos/transactions';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -35,7 +40,11 @@
 		session.api.categories.tree()
 	);
 
-	let editing = $state<'category' | 'date' | null>(null);
+	const flags = useFlags();
+
+	let editing = $state<'category' | 'date' | 'flag' | null>(null);
+	/** In the flag dialog, the screen that renames the flags. */
+	let renaming = $state(false);
 	let dialogOpen = $state(false);
 	let deleting = $state(false);
 	let categoryId = $state('');
@@ -58,6 +67,7 @@
 	const actions = $derived([
 		{ key: 'category', icon: TagIcon, label: m.bulk_category_short(), run: () => edit('category') },
 		{ key: 'date', icon: CalendarIcon, label: m.bulk_date_short(), run: () => edit('date') },
+		{ key: 'flag', icon: FlagIcon, label: m.bulk_flag_short(), run: () => edit('flag') },
 		allCleared
 			? { key: 'cleared', icon: CircleIcon, label: m.bulk_unclear(), run: () => setCleared(false) }
 			: {
@@ -75,9 +85,10 @@
 		}
 	]);
 
-	function edit(what: 'category' | 'date') {
+	function edit(what: 'category' | 'date' | 'flag') {
 		count = ids.length;
 		editing = what;
+		renaming = false;
 		categoryId = '';
 		date = todayIso();
 		error = null;
@@ -116,6 +127,14 @@
 			const created = await pending.resolve(session.api, [categoryId]);
 			await change({ categoryId: created.get(categoryId) ?? categoryId });
 		});
+		busy = false;
+		if (!error) dialogOpen = false;
+	}
+
+	async function setFlag(flag: FlagColor | null) {
+		if (busy) return;
+		busy = true;
+		error = await runAction(() => change({ flag }));
 		busy = false;
 		if (!error) dialogOpen = false;
 	}
@@ -182,33 +201,56 @@
 
 <ResponsiveDialog
 	bind:open={dialogOpen}
-	title={editing === 'date' ? m.bulk_date() : m.bulk_category()}
+	title={editing === 'flag'
+		? renaming
+			? m.flag_names_title()
+			: m.bulk_flag()
+		: editing === 'date'
+			? m.bulk_date()
+			: m.bulk_category()}
 	description={m.bulk_selected({ count })}
 >
-	<form class="grid gap-4" onsubmit={apply}>
-		{#if editing === 'category'}
-			<div class="grid gap-2">
-				<Label for="bulk-category">{m.transaction_category()}</Label>
-				<CategoryCombobox
-					id="bulk-category"
-					tree={tree.data ?? []}
-					{pending}
-					bind:value={categoryId}
-					ariaLabel={m.transaction_category()}
-				/>
-			</div>
+	{#if editing === 'flag'}
+		{#if renaming}
+			<FlagNames flags={flags.data} ondone={() => (renaming = false)} />
 		{:else}
-			<div class="grid gap-2">
-				<Label for="bulk-date">{m.transaction_date()}</Label>
-				<DatePicker id="bulk-date" bind:value={date} />
+			<div class="grid gap-4">
+				<FlagList
+					flags={flags.data}
+					root="rounded-lg border"
+					onselect={setFlag}
+					onEditNames={() => (renaming = true)}
+				/>
+				<FormMessage {error} />
+				<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
 			</div>
 		{/if}
-		<FormMessage {error} />
-		<div class="grid grid-cols-2 gap-2">
-			<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
-			<Button type="submit" disabled={busy}>{m.bulk_apply()}</Button>
-		</div>
-	</form>
+	{:else}
+		<form class="grid gap-4" onsubmit={apply}>
+			{#if editing === 'category'}
+				<div class="grid gap-2">
+					<Label for="bulk-category">{m.transaction_category()}</Label>
+					<CategoryCombobox
+						id="bulk-category"
+						tree={tree.data ?? []}
+						{pending}
+						bind:value={categoryId}
+						ariaLabel={m.transaction_category()}
+					/>
+				</div>
+			{:else}
+				<div class="grid gap-2">
+					<Label for="bulk-date">{m.transaction_date()}</Label>
+					<DatePicker id="bulk-date" bind:value={date} />
+				</div>
+			{/if}
+			<FormMessage {error} />
+			<div class="grid grid-cols-2 gap-2">
+				<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
+				<Button type="submit" disabled={busy}>{m.bulk_apply()}</Button>
+			</div>
+		</form>
+	{/if}
 </ResponsiveDialog>
 
 <ConfirmDialog

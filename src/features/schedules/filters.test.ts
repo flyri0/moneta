@@ -21,6 +21,7 @@ const row = (id: string, over: Partial<ScheduleRow> = {}): ScheduleRow => ({
 	transferAccountId: null,
 	transferAccountName: null,
 	memo: '',
+	flag: null,
 	isSplit: false,
 	splits: [],
 	autoEnter: false,

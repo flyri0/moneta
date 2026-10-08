@@ -38,6 +38,7 @@
 		disabled = false,
 		class: className,
 		contentClass,
+		leading,
 		children
 	}: {
 		open?: boolean;
@@ -53,6 +54,8 @@
 		class?: string;
 		/** Classes for the popover on desktop, to size it otherwise than to the field. */
 		contentClass?: string;
+		/** Drawn before `label` in the field, e.g. an icon. */
+		leading?: Snippet;
 		children: Snippet<[PickerLayout]>;
 	} = $props();
 
@@ -81,7 +84,14 @@
 </script>
 
 {#snippet field()}
-	<span class="truncate">{label}</span>
+	{#if leading}
+		<span class="flex min-w-0 items-center gap-2">
+			{@render leading()}
+			<span class="truncate">{label}</span>
+		</span>
+	{:else}
+		<span class="truncate">{label}</span>
+	{/if}
 	<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 {/snippet}
 

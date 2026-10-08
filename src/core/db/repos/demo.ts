@@ -5,6 +5,7 @@ import { createAccount, setAccountIcon } from './accounts';
 import { setAssigned } from './budget';
 import { listCategoryTree, updateCategory, updateGroup } from './categories';
 import { initBudget } from './meta';
+import { renameFlags } from './flags';
 import { createSchedule } from './schedules';
 import { createTransaction } from './transactions';
 
@@ -59,9 +60,11 @@ export function createDemo(db: Db, budget: DemoBudgetSeed): void {
 				})),
 				transferAccountId: t.transferAccountKey
 					? lookup(accounts, t.transferAccountKey, 'account')
-					: null
+					: null,
+				flag: t.flag
 			});
 		}
+		renameFlags(db, Object.fromEntries(seed.flagNames.map((f) => [f.color, f.name])));
 
 		for (const s of seed.schedules) {
 			createSchedule(db, {

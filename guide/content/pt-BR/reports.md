@@ -11,6 +11,14 @@ Gastos, fluxo de caixa e tendências leem as contas do orçamento; transferênci
 próprias contas não são gasto nem renda. O patrimônio líquido e o relatório por conta também
 incluem as contas de acompanhamento.
 
+## Flags {#flags}
+
+Gastos por categoria, gastos por favorecido, fluxo de caixa e tendências de gastos têm um botão
+**Flags** ao lado do período. Escolha uma ou mais [flags](transactions.md#flags), ou **Sem flag**, e
+esses relatórios contam só as transações marcadas assim: quanto custou a viagem, quanto você tem a
+receber de volta. A escolha continua ao passar de um relatório a outro, como o período; **Limpar
+filtros** volta a contar tudo. Os cartões da visão geral sempre contam tudo.
+
 ## Os relatórios {#list}
 
 - **Gastos por categoria**: para onde foi o dinheiro, por categoria ou por grupo, com a fatia de

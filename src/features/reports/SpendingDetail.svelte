@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
@@ -29,7 +31,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range }: { range: DateRange } = $props();
+	let { range, flags = [] }: { range: DateRange; flags?: FlagFilter } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds. Enough to see the shape of a month's spending. */
@@ -44,7 +46,7 @@
 	let grouped = $state(false);
 
 	const spending = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.spending({ from: range.from, to: range.to })
+		session.api.reports.spending({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const source = $derived(grouped ? byGroup(spending.data ?? []) : (spending.data ?? []));
 	const report = $derived(withShares(source));
@@ -63,6 +65,7 @@
 					categoryId: selected,
 					from: range.from,
 					to: range.to,
+					flags: flagQuery(flags),
 					limit: pages * PAGE_SIZE
 				})
 			: Promise.resolve<TransactionRow[]>([])
@@ -72,6 +75,7 @@
 	$effect(() => {
 		void selected;
 		void range;
+		void flags;
 		untrack(() => (pages = 1));
 	});
 

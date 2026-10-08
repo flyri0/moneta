@@ -6,7 +6,17 @@ import { listTransactions, type TransactionRow } from './repos/transactions';
 
 /** Byte-order mark: tells spreadsheets the file is UTF-8. */
 const BOM = '\uFEFF';
-const HEADER = ['Date', 'Account', 'Payee', 'Transfer', 'Category', 'Memo', 'Amount', 'Cleared'];
+const HEADER = [
+	'Date',
+	'Account',
+	'Payee',
+	'Transfer',
+	'Category',
+	'Memo',
+	'Amount',
+	'Cleared',
+	'Flag'
+];
 
 /** Minor units as a plain decimal with a dot, e.g. -123456 → "-1234.56" (2 digits). */
 export function minorToDecimal(minor: number, digits: number): string {
@@ -30,7 +40,7 @@ function text(value: string | null): string {
 /**
  * Transactions (given oldest first) as CSV for spreadsheets: one row per transaction, and one per
  * line of a split transaction. Amounts are plain decimals (negative = outflow), dates ISO, and
- * names as stored. Starts with a byte-order mark so spreadsheets read it as UTF-8.
+ * names as stored; the flag is its color. Starts with a byte-order mark so spreadsheets read it as UTF-8.
  */
 export function transactionsCsv(rows: TransactionRow[], currency: string): string {
 	const digits = currencyDigits(currency);
@@ -53,7 +63,8 @@ export function transactionsCsv(rows: TransactionRow[], currency: string): strin
 					text(p.category),
 					text(p.memo),
 					minorToDecimal(p.amount, digits),
-					t.cleared ? 'cleared' : 'uncleared'
+					t.cleared ? 'cleared' : 'uncleared',
+					t.flag ?? ''
 				].join(',')
 			);
 		}

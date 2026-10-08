@@ -1,3 +1,4 @@
+import type { FlagFilter } from '$domain/flag';
 import {
 	activeFilterCount,
 	NO_FILTERS,
@@ -24,6 +25,8 @@ export class RegisterFilters implements FilterValues {
 	amountMin = $state<number | null>(null);
 	amountMax = $state<number | null>(null);
 	status = $state<StatusFilter>('');
+	/** The flags to keep, `'none'` for no flag; empty for any. Replaced whole, never changed in place. */
+	flags = $state.raw<FlagFilter>([]);
 
 	/** How many filters narrow the list (the period counts once); the search is apart. */
 	activeCount = $derived(activeFilterCount(this));

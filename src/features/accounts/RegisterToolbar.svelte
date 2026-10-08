@@ -6,7 +6,7 @@
 
 	/**
 	 * The register's search and its Filters button, for the page header's toolbar. The filters
-	 * (period, category, payee, amount, status) are set in a dialog; a dot on the button and a count
+	 * (period, category, payee, amount, status, flags) are set in a dialog; a dot on the button and a count
 	 * show that some are in force.
 	 */
 	let { filters }: { filters: RegisterFilters } = $props();

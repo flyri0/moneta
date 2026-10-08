@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { FlagFilter } from '$domain/flag';
+	import { flagQuery } from '$features/flags/flags';
 	import ReportBody from './ReportBody.svelte';
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
@@ -24,7 +26,7 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/** Spending by who it went to, with each payee's transactions a click away. */
-	let { range }: { range: DateRange } = $props();
+	let { range, flags = [] }: { range: DateRange; flags?: FlagFilter } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds, as in the spending report. */
@@ -38,7 +40,7 @@
 	let expanded = $state(false);
 
 	const payees = useLive(session.client, SPENDING_TABLES, () =>
-		session.api.reports.payees({ from: range.from, to: range.to })
+		session.api.reports.payees({ from: range.from, to: range.to, flags: flagQuery(flags) })
 	);
 	const slices = $derived(payeeSlices(payees.data ?? []));
 	const report = $derived(withShares(slices));
@@ -53,6 +55,7 @@
 					payeeId: selected,
 					from: range.from,
 					to: range.to,
+					flags: flagQuery(flags),
 					limit: pages * PAGE_SIZE
 				})
 			: Promise.resolve<TransactionRow[]>([])
@@ -62,6 +65,7 @@
 	$effect(() => {
 		void selected;
 		void range;
+		void flags;
 		untrack(() => (pages = 1));
 	});
 

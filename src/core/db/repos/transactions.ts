@@ -1,5 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { DomainError } from '$domain/errors';
+import { validateFlag, validateFlagFilter, type FlagColor, type FlagFilter } from '$domain/flag';
 import { groupBy } from '$domain/group-by';
 import { isDate } from '$domain/month';
 import { foldText, searchTerms, type SearchTerm } from '$domain/search';
@@ -24,6 +25,8 @@ export interface TransactionInput {
 	cleared?: boolean;
 	splits?: SplitInput[];
 	transferAccountId?: string | null;
+	/** Only on this side of a transfer: the other keeps its own. */
+	flag?: FlagColor | null;
 }
 
 export interface SplitRow {
@@ -54,6 +57,7 @@ export interface TransactionRow {
 	isOpening: boolean;
 	/** Cleared and checked against the bank's balance when the account was reconciled. */
 	reconciled: boolean;
+	flag: FlagColor | null;
 	splits: SplitRow[];
 }
 
@@ -68,6 +72,8 @@ export interface TransactionQuery {
 	amountMin?: number;
 	amountMax?: number;
 	cleared?: boolean;
+	/** The flags to keep, `'none'` for transactions without one. */
+	flags?: FlagFilter;
 	limit?: number;
 	offset?: number;
 }
@@ -107,6 +113,7 @@ function validate(db: Db, input: TransactionInput): Plan {
 	if (!Number.isSafeInteger(input.amount))
 		throw new DomainError('INVALID_INPUT', 'Amount must be an integer');
 	if (!isDate(input.date)) throw new DomainError('INVALID_INPUT', `Invalid date ${input.date}`);
+	validateFlag(input.flag);
 	const splits = input.splits ?? [];
 	const categoryId = input.categoryId ?? null;
 
@@ -164,8 +171,8 @@ export function validateTransaction(db: Db, input: TransactionInput): void {
 
 const INSERT_SQL = `INSERT INTO transactions
 	(id, account_id, date, amount, payee_id, category_id, memo, cleared, transfer_id, is_split,
-	 is_opening, import_id, reconciled)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+	 is_opening, import_id, reconciled, flag)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 /** What an edit keeps of a row it rewrites, as long as the row stays in the same account. */
 interface KeptState {
@@ -173,6 +180,7 @@ interface KeptState {
 	cleared: boolean;
 	importId: string | null;
 	reconciled: boolean;
+	flag: FlagColor | null;
 }
 
 /** The import id and reconciliation `kept` passes on to a row written in `accountId`. */
@@ -210,7 +218,8 @@ function write(
 		plan.splits.length > 0 ? 1 : 0,
 		opening ? 1 : 0,
 		own.importId,
-		own.reconciled ? 1 : 0
+		own.reconciled ? 1 : 0,
+		input.flag ?? null
 	]);
 	if (plan.pair && pairId) {
 		const pair = carried(reusePair ? pairState : undefined, plan.pair.accountId);
@@ -227,7 +236,8 @@ function write(
 			0,
 			0,
 			pair.importId,
-			pair.reconciled ? 1 : 0
+			pair.reconciled ? 1 : 0,
+			reusePair ? pairState.flag : null
 		]);
 	}
 	for (const s of plan.splits) {
@@ -247,13 +257,14 @@ interface RawRow {
 	isOpening: number;
 	importId: string | null;
 	reconciled: number;
+	flag: FlagColor | null;
 }
 
 function getRaw(db: Db, id: string): RawRow {
 	const row = one<RawRow>(
 		db,
 		`SELECT id, account_id AS accountId, transfer_id AS transferId, cleared, is_opening AS isOpening,
-			import_id AS importId, reconciled
+			import_id AS importId, reconciled, flag
 		 FROM transactions WHERE id = ?`,
 		[id]
 	);
@@ -294,7 +305,8 @@ function keptState(row: RawRow): KeptState & { id: string } {
 		accountId: row.accountId,
 		cleared: row.cleared === 1,
 		importId: row.importId,
-		reconciled: row.reconciled === 1
+		reconciled: row.reconciled === 1,
+		flag: row.flag
 	};
 }
 
@@ -330,11 +342,20 @@ export function setCleared(db: Db, id: string, cleared: boolean): void {
 	run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [cleared ? 1 : 0, id]);
 }
 
+/** Flags a transaction, or takes its flag off (`flag` left out). The other side of a transfer keeps its own. */
+export function setFlag(db: Db, id: string, flag?: FlagColor): void {
+	const value = validateFlag(flag);
+	getEditable(db, id);
+	run(db, 'UPDATE transactions SET flag = ? WHERE id = ?', [value, id]);
+}
+
 /** A change to apply to several transactions at once. Each field left out stays as it is. */
 export interface BulkChange {
 	categoryId?: string;
 	date?: string;
 	cleared?: boolean;
+	/** null takes the flag off. */
+	flag?: FlagColor | null;
 }
 
 /** How many transactions a bulk change touched, and how many it left because it didn't apply. */
@@ -380,6 +401,7 @@ function categoryRow(db: Db, existing: RawRow, pair: RawRow | null): string | nu
 export function updateTransactions(db: Db, ids: string[], change: BulkChange): BulkResult {
 	if (change.date !== undefined && !isDate(change.date))
 		throw new DomainError('INVALID_INPUT', `Invalid date ${change.date}`);
+	if (change.flag !== undefined) validateFlag(change.flag);
 	return tx(db, () => {
 		if (change.categoryId !== undefined) checkUsableCategory(db, change.categoryId);
 		const result = { changed: 0, skipped: 0 };
@@ -408,6 +430,8 @@ export function updateTransactions(db: Db, ids: string[], change: BulkChange): B
 				]);
 			if (change.cleared !== undefined)
 				run(db, 'UPDATE transactions SET cleared = ? WHERE id = ?', [change.cleared ? 1 : 0, id]);
+			if (change.flag !== undefined)
+				run(db, 'UPDATE transactions SET flag = ? WHERE id = ?', [change.flag, id]);
 			result.changed++;
 		}
 		return result;
@@ -445,7 +469,7 @@ const SELECT_SQL = `SELECT t.id, t.account_id AS accountId, a.name AS accountNam
 	t.payee_id AS payeeId, p.name AS payeeName, t.category_id AS categoryId, c.name AS categoryName,
 	t.memo, t.cleared, t.transfer_id AS transferId, pt.account_id AS transferAccountId,
 	pa.name AS transferAccountName, t.is_split AS isSplit, t.is_opening AS isOpening,
-	t.reconciled
+	t.reconciled, t.flag
 	FROM transactions t
 	JOIN accounts a ON a.id = t.account_id
 	LEFT JOIN payees p ON p.id = t.payee_id
@@ -614,6 +638,15 @@ export function listTransactions(db: Db, query: TransactionQuery = {}): Transact
 		':cleared',
 		query.cleared === undefined ? undefined : +query.cleared
 	);
+	if (query.flags !== undefined) {
+		const flags = validateFlagFilter(query.flags);
+		if (flags.length === 0) return [];
+		filter(
+			`COALESCE(t.flag, 'none') IN (SELECT value FROM json_each(:flags))`,
+			':flags',
+			JSON.stringify(flags)
+		);
+	}
 	for (const [i, match] of matchTerms(db, terms).entries()) {
 		const condition = termCondition(match, i);
 		if (condition === null) return [];

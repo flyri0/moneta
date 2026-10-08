@@ -1,3 +1,5 @@
+import type { FlagFilter } from '$domain/flag';
+
 /** Which transactions the status filter keeps. */
 export type StatusFilter = '' | 'cleared' | 'uncleared';
 
@@ -13,6 +15,8 @@ export interface FilterValues {
 	amountMin: number | null;
 	amountMax: number | null;
 	status: StatusFilter;
+	/** The flags to keep, `'none'` for no flag; empty for any. */
+	flags: FlagFilter;
 }
 
 export const NO_FILTERS: FilterValues = {
@@ -22,7 +26,8 @@ export const NO_FILTERS: FilterValues = {
 	payeeId: '',
 	amountMin: null,
 	amountMax: null,
-	status: ''
+	status: '',
+	flags: []
 };
 
 /** How many filters narrow the list: the period and the amount count once each. */
@@ -32,6 +37,7 @@ export function activeFilterCount(f: FilterValues): number {
 		f.categoryId,
 		f.payeeId,
 		f.amountMin !== null || f.amountMax !== null,
-		f.status
+		f.status,
+		f.flags.length > 0
 	].filter(Boolean).length;
 }
