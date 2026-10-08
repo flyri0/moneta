@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { flagFilterLabel, flagLabel, toggleFlag } from './flags';
+import { changedFlagNames, flagFilterLabel, flagLabel, toggleFlag } from './flags';
 
 const flags = [
 	{ color: 'red' as const, name: 'Reimbursable' },
@@ -28,5 +28,21 @@ describe('toggleFlag', () => {
 		expect(toggleFlag(['blue'], 'red')).toEqual(['red', 'blue']);
 		expect(toggleFlag(['blue', 'red'], 'none')).toEqual(['none', 'red', 'blue']);
 		expect(toggleFlag(['none', 'red'], 'none')).toEqual(['red']);
+	});
+});
+
+describe('changedFlagNames', () => {
+	it('keeps only the names that changed, so an untouched field never clears its flag', () => {
+		const before = {
+			red: 'Reimbursable',
+			orange: '',
+			yellow: '',
+			green: '',
+			blue: 'Trip',
+			purple: ''
+		};
+		const after = { ...before, red: 'Work', blue: '' };
+		expect(changedFlagNames(before, after)).toEqual({ red: 'Work', blue: '' });
+		expect(changedFlagNames(before, { ...before })).toEqual({});
 	});
 });

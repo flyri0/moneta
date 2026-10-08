@@ -9,7 +9,7 @@
 	import { FLAG_NAME_MAX, type FlagRow } from '$db/repos/flags';
 	import { m } from '$i18n/paraglide/messages';
 	import FlagIcon from './FlagIcon.svelte';
-	import { FLAG_COLOR_NAMES } from './flags';
+	import { changedFlagNames, FLAG_COLOR_NAMES } from './flags';
 
 	/**
 	 * Renames the six flags, each in a field of its own; an empty one goes back to its color's name.
@@ -18,12 +18,11 @@
 	let { flags, ondone }: { flags: readonly FlagRow[] | undefined; ondone: () => void } = $props();
 
 	const session = useSession();
-	// A draft, taken when the screen opens.
-	let names = $state(
-		Object.fromEntries(
-			FLAG_COLORS.map((c) => [c, flags?.find((f) => f.color === c)?.name ?? ''])
-		) as Record<FlagColor, string>
-	);
+	// The names when the screen opens, and a draft of them. Only the fields that changed are saved.
+	const initial = Object.fromEntries(
+		FLAG_COLORS.map((c) => [c, flags?.find((f) => f.color === c)?.name ?? ''])
+	) as Record<FlagColor, string>;
+	let names = $state({ ...initial });
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 
@@ -31,7 +30,7 @@
 		event.preventDefault();
 		if (busy) return;
 		busy = true;
-		error = await runAction(() => session.api.flags.rename(names));
+		error = await runAction(() => session.api.flags.rename(changedFlagNames(initial, names)));
 		busy = false;
 		if (!error) ondone();
 	}

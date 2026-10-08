@@ -3,7 +3,12 @@ import { chooseCombobox, onboard, spend } from './helpers';
 
 async function openChecking(page: Page) {
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
-	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Checking' })
+		.getByRole('link')
+		.click();
 	await expect(page.getByTestId('register-title')).toHaveText('Checking');
 }
 

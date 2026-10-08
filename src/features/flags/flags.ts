@@ -46,3 +46,16 @@ export function toggleFlag(filter: FlagFilter, value: FlagColor | 'none'): FlagF
 	else next.add(value);
 	return (['none', ...FLAG_COLORS] as const).filter((f) => next.has(f));
 }
+
+/**
+ * The names in `after` that differ from `before`: what a rename sends, so a field left as it
+ * was (even one drawn before the names loaded) never clears a flag's name.
+ */
+export function changedFlagNames(
+	before: Record<FlagColor, string>,
+	after: Record<FlagColor, string>
+): Partial<Record<FlagColor, string>> {
+	return Object.fromEntries(
+		FLAG_COLORS.filter((c) => after[c] !== before[c]).map((c) => [c, after[c]])
+	);
+}
