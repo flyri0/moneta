@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { flushSync, type Component } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import ClockIcon from '@lucide/svelte/icons/clock';
 	import DumbbellIcon from '@lucide/svelte/icons/dumbbell';
 	import FlagIcon from '@lucide/svelte/icons/flag';
@@ -94,12 +95,19 @@
 	const TONES: SkinTone[] = [0, 1, 2, 3, 4, 5];
 	/** The emoji the skin tone control shows. */
 	const TONE_SAMPLE = '✋';
-	/** How many emoji the first frame draws: more than fit on a phone screen, the rest come next. */
-	const FIRST_ITEMS = 160;
+	/** How far past the visible part of the list rows are drawn, in px, so scrolling finds them. */
+	const OVERSCAN = 160;
+	/** How long typing pauses before the results follow it, in ms. */
+	const SEARCH_DELAY = 250;
+	/** Below the bottom of every group, in px. */
+	const SECTION_GAP = 4;
 
 	const store = deviceStore();
 	let catalog = $state<EmojiCatalog | null>(null);
 	let failed = $state<unknown>(undefined);
+	/** What is typed in the search. */
+	let typed = $state('');
+	/** What the list shows results for: `typed`, once typing pauses. */
 	let query = $state('');
 	let tone = $state<SkinTone>(readTone(store));
 	let recent = $state(readRecent(store));
@@ -111,10 +119,10 @@
 	let current = $state<SectionId>('smileys');
 	let body = $state<HTMLElement | null>(null);
 	let toneButton = $state<HTMLElement | null>(null);
-	/** Whether every emoji is drawn, or only the first `FIRST_ITEMS`. */
-	let full = $state(false);
-	/** The grid's layout, measured on screen, so a group not drawn yet takes its real height. */
-	let grid = $state<{ columns: number; cell: number; header: number } | null>(null);
+	const desktop = new MediaQuery('min-width: 768px');
+	let scrollTop = $state(0);
+	/** The list's size on screen and a group header's height, which the grid is laid out from. */
+	let viewport = $state<{ width: number; height: number; header: number } | null>(null);
 
 	loadCatalog(getLocale()).then(
 		(loaded) => (catalog = loaded),
@@ -159,50 +167,80 @@
 	});
 
 	const count = $derived(sections.reduce((n, s) => n + s.items.length, 0));
-	/** The sections drawn now: the first `FIRST_ITEMS` emoji until `full`. */
-	const shown = $derived(
-		full
-			? sections
-			: sections
-					.filter((s) => s.start < FIRST_ITEMS)
-					.map((s) => ({ ...s, items: s.items.slice(0, FIRST_ITEMS - s.start) }))
-	);
 	const valueKey = $derived(value ? emojiKey(value) : '');
 	const footer = $derived(
 		previewed ?? (value ? { text: value, name: catalog?.find(value)?.name ?? '' } : null)
 	);
+
+	/**
+	 * The grid laid out in rows of one height, as CSS would. Only the rows near the visible part of
+	 * the list are drawn: with all 1,900 emoji in the page, every scroll lays out and paints them
+	 * again, which Chrome does slowly.
+	 */
+	const grid = $derived.by(() => {
+		if (!viewport) return null;
+		const minCell = (desktop.current ? 2.25 : 2.75) * remPx();
+		const width = Math.max(0, viewport.width - 16);
+		const columns = Math.max(1, Math.floor(width / minCell));
+		const cell = width / columns;
+		let top = 0;
+		const layout = sections.map((section) => {
+			const header = section.id === 'results' ? 0 : viewport!.header;
+			const rows = Math.ceil(section.items.length / columns);
+			const placed = { top, header, rows, height: header + rows * cell + SECTION_GAP };
+			top += placed.height;
+			return placed;
+		});
+		return { columns, cell, layout };
+	});
+
+	/** The rows each section draws: those near the visible part, and the one Tab lands on. */
+	const drawn = $derived.by((): number[][] => {
+		if (!grid || !viewport) return sections.map(() => []);
+		const from = scrollTop - OVERSCAN;
+		const to = scrollTop + viewport.height + OVERSCAN;
+		return sections.map((section, i) => {
+			const { top, header, rows } = grid.layout[i];
+			const first = Math.max(0, Math.floor((from - top - header) / grid.cell));
+			const last = Math.min(rows - 1, Math.floor((to - top - header) / grid.cell));
+			const list: number[] = [];
+			for (let r = first; r <= last; r++) list.push(r);
+			const activeRow = Math.floor((active - section.start) / grid.columns);
+			if (active >= section.start && activeRow < rows && !list.includes(activeRow))
+				list.push(activeRow);
+			return list;
+		});
+	});
+
+	/** The size of 1rem in px. */
+	function remPx(): number {
+		return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+	}
+
+	// Each new set of results costs Chrome a long paint for the emoji it hasn't drawn yet, so the
+	// results wait for a pause in typing instead of following every key. Clearing is at once.
+	$effect(() => {
+		const next = typed;
+		if (!next.trim()) {
+			query = next;
+			return;
+		}
+		const timer = setTimeout(() => (query = next), SEARCH_DELAY);
+		return () => clearTimeout(timer);
+	});
 
 	// A new search starts again from the top.
 	$effect(() => {
 		void query;
 		active = 0;
 		if (body) body.scrollTop = 0;
+		scrollTop = 0;
 	});
-
-	// Drawing about 1,900 emoji takes long on a phone: the first frame shows the top of the list, and
-	// the rest is drawn right after it is on screen.
-	$effect(() => {
-		void query;
-		if (!catalog) return;
-		full = false;
-		let timer: ReturnType<typeof setTimeout> | undefined;
-		const frame = requestAnimationFrame(() => (timer = setTimeout(() => (full = true))));
-		return () => {
-			cancelAnimationFrame(frame);
-			clearTimeout(timer);
-		};
-	});
-
-	/** Draws every emoji now, for what needs them all in the page. */
-	function showAll() {
-		if (full) return;
-		full = true;
-		flushSync();
-	}
 
 	function pick(item: Item) {
-		recent = addRecent(store, item.text);
-		query = '';
+		// Only stored: the picker closes on a pick, and updating `recent` or `query` here would redraw
+		// the ~1,900 emoji (every index after the new Recent group shifts) just before it goes away.
+		addRecent(store, item.text);
 		onselect(item.text);
 	}
 
@@ -213,29 +251,30 @@
 		toneButton?.focus();
 	}
 
-	function sectionElement(id: SectionId): HTMLElement | null {
-		return body?.querySelector<HTMLElement>(`[data-section="${id}"]`) ?? null;
-	}
-
 	/** Scrolls a group to the top, and makes its first emoji the one Tab lands on. */
 	function jumpTo(section: Section) {
-		showAll();
-		const el = sectionElement(section.id);
-		if (!body || !el) return;
-		body.scrollTop = el.offsetTop;
+		const i = sections.indexOf(section);
+		if (!grid || i < 0) return;
+		scrollTo(grid.layout[i].top);
 		current = section.id;
 		active = section.start;
 	}
 
-	/** Marks the group at the top of the list as the current tab. */
+	function scrollTo(top: number) {
+		if (!body) return;
+		body.scrollTop = top;
+		scrollTop = body.scrollTop;
+	}
+
+	/** Draws the rows now in view, and marks the group at the top of the list as the current tab. */
 	function onscroll() {
 		if (!body) return;
-		const top = body.scrollTop + 4;
+		scrollTop = body.scrollTop;
+		if (!grid) return;
 		let next = sections[0]?.id;
-		for (const section of sections) {
-			const el = sectionElement(section.id);
-			if (el && el.offsetTop <= top) next = section.id;
-		}
+		sections.forEach((section, i) => {
+			if (grid!.layout[i].top <= scrollTop + 4) next = section.id;
+		});
 		if (next) current = next;
 	}
 
@@ -243,18 +282,20 @@
 		return body?.querySelector<HTMLElement>(`[data-index="${index}"]`) ?? null;
 	}
 
+	/** Focuses an emoji, scrolled into view below its group's header and drawn first. */
 	function focusItem(index: number) {
 		const next = Math.max(0, Math.min(count - 1, index));
-		showAll();
 		active = next;
-		itemAt(next)?.focus();
-	}
-
-	/** How many emoji fit in a row of the grid `el` sits in. */
-	function columns(el: HTMLElement): number {
-		const grid = el.parentElement;
-		if (!grid) return 1;
-		return Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(' ').length);
+		const i = sections.findLastIndex((s) => s.start <= next);
+		if (grid && viewport && i >= 0) {
+			const { top, header } = grid.layout[i];
+			const y = top + header + Math.floor((next - sections[i].start) / grid.columns) * grid.cell;
+			if (y - header < scrollTop) scrollTo(y - header);
+			else if (y + grid.cell > scrollTop + viewport.height)
+				scrollTo(y + grid.cell - viewport.height);
+		}
+		flushSync();
+		itemAt(next)?.focus({ preventScroll: true });
 	}
 
 	/** Arrow keys move through the emoji as one grid, Home and End to the ends. */
@@ -265,8 +306,8 @@
 		const step: Record<string, number> = {
 			ArrowLeft: -1,
 			ArrowRight: 1,
-			ArrowUp: -columns(target),
-			ArrowDown: columns(target),
+			ArrowUp: -(grid?.columns ?? 1),
+			ArrowDown: grid?.columns ?? 1,
 			Home: -index,
 			End: count - 1 - index
 		};
@@ -277,6 +318,7 @@
 
 	/** Down goes from the search into the emoji; Enter picks the first result. */
 	function onSearchKeydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowDown' || event.key === 'Enter') query = typed;
 		if (event.key === 'ArrowDown' && count > 0) {
 			event.preventDefault();
 			focusItem(0);
@@ -327,42 +369,29 @@
 		if (item) pick(item);
 	}
 
-	/** Measures the grid from an emoji on screen; every group is laid out alike. */
-	function measureGrid() {
-		const button = itemAt(0);
-		const section = button?.closest('section');
-		const header = section?.querySelector('h3');
-		if (!button || !section || !header) return;
+	/** Measures the list and a group's header, which the grid is laid out from. */
+	function measure() {
+		if (!body) return;
+		const header = body.querySelector<HTMLElement>('h3:not(.sr-only)')?.offsetHeight;
 		const next = {
-			columns: columns(button),
-			cell: parseFloat(getComputedStyle(button).height),
-			header: parseFloat(getComputedStyle(header).height)
+			width: body.clientWidth,
+			height: body.clientHeight,
+			header: header ?? viewport?.header ?? 28
 		};
-		if (JSON.stringify(next) !== JSON.stringify(grid)) grid = next;
+		if (JSON.stringify(next) !== JSON.stringify(viewport)) viewport = next;
 	}
 
 	$effect(() => {
 		if (!body) return;
-		const observer = new ResizeObserver(measureGrid);
+		const observer = new ResizeObserver(measure);
 		observer.observe(body);
 		return () => observer.disconnect();
 	});
 
 	$effect(() => {
-		void shown;
-		measureGrid();
+		void sections;
+		measure();
 	});
-
-	/**
-	 * A group's height while it is not drawn: the real one, so that jumping to a group lands on it
-	 * even when the groups above it are drawn on the way.
-	 */
-	function sectionHeight(section: Section): string | undefined {
-		if (!grid) return undefined;
-		const header = section.id === 'results' ? 0 : grid.header;
-		const rows = Math.ceil(section.items.length / grid.columns);
-		return `${header + rows * grid.cell}px`;
-	}
 </script>
 
 <div class={cn('flex min-h-0 flex-col', className)} data-emoji-picker>
@@ -374,7 +403,7 @@
 			<InputGroup.Input
 				type="search"
 				class="[&::-webkit-search-cancel-button]:hidden"
-				bind:value={query}
+				bind:value={typed}
 				placeholder={m.emoji_search()}
 				aria-label={m.emoji_search()}
 				autocomplete="off"
@@ -441,7 +470,7 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={body}
-		class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2"
+		class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain [overflow-anchor:none]"
 		{onscroll}
 		onclick={onGridClick}
 		onkeydown={onGridKeydown}
@@ -463,40 +492,47 @@
 		{:else if count === 0}
 			<p class="py-8 text-center text-sm text-muted-foreground">{m.emoji_empty()}</p>
 		{:else}
-			{#each shown as section (section.id)}
-				<!-- Sections out of view are left undrawn; the padding keeps focus rings inside. -->
+			{#each sections as section, s (section.id)}
 				<section
 					data-section={section.id}
 					aria-labelledby="emoji-section-{section.id}"
-					class={cn('px-2 pb-1', grid && '[content-visibility:auto]')}
-					style:contain-intrinsic-block-size={sectionHeight(section)}
+					class="relative"
+					style:height={grid ? `${grid.layout[s].height}px` : undefined}
 				>
 					<h3
 						id="emoji-section-{section.id}"
 						class={cn(
-							'sticky top-0 z-10 bg-popover py-1.5 text-xs font-medium text-muted-foreground',
+							'sticky top-0 z-10 bg-popover px-2 py-1.5 text-xs font-medium text-muted-foreground',
 							section.id === 'results' && 'sr-only'
 						)}
 					>
 						{section.label}
 					</h3>
-					<div
-						class="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] md:grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))]"
-					>
-						{#each section.items as item, i (item.key)}
-							{@const index = section.start + i}
-							<button
-								type="button"
-								data-index={index}
-								tabindex={index === active ? 0 : -1}
-								aria-label={item.name}
-								aria-current={emojiKey(item.text) === valueKey ? 'true' : undefined}
-								class="flex aspect-square items-center justify-center rounded-md text-2xl leading-none transition-colors outline-none select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=true]:bg-accent md:text-xl"
+					{#if grid}
+						<!-- Only the rows near the visible part are drawn, each where it would sit. -->
+						{#each drawn[s] as row (row)}
+							<div
+								class="absolute inset-x-2 grid"
+								style:top="{grid.layout[s].header + row * grid.cell}px"
+								style:height="{grid.cell}px"
+								style:grid-template-columns="repeat({grid.columns}, minmax(0, 1fr))"
 							>
-								{item.text}
-							</button>
+								{#each section.items.slice(row * grid.columns, (row + 1) * grid.columns) as item, i (item.key)}
+									{@const index = section.start + row * grid.columns + i}
+									<button
+										type="button"
+										data-index={index}
+										tabindex={index === active ? 0 : -1}
+										aria-label={item.name}
+										aria-current={emojiKey(item.text) === valueKey ? 'true' : undefined}
+										class="flex items-center justify-center rounded-md text-2xl leading-none transition-colors outline-none select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=true]:bg-accent md:text-xl"
+									>
+										{item.text}
+									</button>
+								{/each}
+							</div>
 						{/each}
-					</div>
+					{/if}
 				</section>
 			{/each}
 		{/if}

@@ -28,6 +28,8 @@
 </script>
 
 <div class="flex items-center gap-2">
+	<!-- It fades and slides, without the popover's zoom: Chrome redraws every emoji at each scale of
+	the zoom, in each frame of the animation. -->
 	<PickerShell
 		bind:open
 		{id}
@@ -37,7 +39,7 @@
 		muted={!value}
 		title={ariaLabel}
 		class={value ? 'text-lg' : undefined}
-		contentClass="w-80"
+		contentClass="w-80 [--tw-enter-scale:1]! [--tw-exit-scale:1]!"
 	>
 		{#snippet children(layout)}
 			<EmojiPicker
