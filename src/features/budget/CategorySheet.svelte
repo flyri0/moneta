@@ -166,6 +166,10 @@
 			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
+		if (value === category.assigned) {
+			open = false;
+			return;
+		}
 		let call = null as ReturnType<typeof session.api.budget.setAssigned> | null;
 		error = await runAction(async () => {
 			call = session.api.budget.setAssigned(category.id, month, value);

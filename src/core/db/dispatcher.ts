@@ -145,6 +145,9 @@ export function createDispatcher(deps: DispatcherDeps) {
 				return { id: req.id, ok: true, data: data ?? null, changed: changes() };
 			}
 			const { result, inverse } = tx(db, () => record(sqlite3, db, write));
+			// Nothing to take back (e.g. the same amount saved again): no token, and the latest
+			// write that did change something stays undoable.
+			if (inverse.length === 0) return { id: req.id, ok: true, data: result ?? null, changed: [] };
 			const changed = changes();
 			const token = String(nextToken++);
 			lastUndo = { token, db, inverse, tables: handler.tables };

@@ -106,6 +106,19 @@ describe('createRpcClient', () => {
 		expect(db.selectValue('SELECT COUNT(*) FROM budget_assignments')).toBe(0);
 	});
 
+	it('tells a write that changed nothing apart from one that did', async () => {
+		const db = await createBudgetDb();
+		const client = connect(db, await loadSqlite());
+		const fun = categoryId(db, 'Fun');
+		const first = client.api.budget.setAssigned(fun, '2026-01', 500);
+		await first;
+		const again = client.api.budget.setAssigned(fun, '2026-01', 500);
+		await again;
+		expect(client.changedNothing(first)).toBe(false);
+		expect(client.changedNothing(again)).toBe(true);
+		expect(client.undoToken(again)).toBeNull();
+	});
+
 	it('is not mistaken for a thenable', async () => {
 		const client = connect(await createBudgetDb());
 		expect((client.api as unknown as { then?: unknown }).then).toBeUndefined();

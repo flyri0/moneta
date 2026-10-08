@@ -37,6 +37,8 @@ export interface RpcClient {
 	 * for a call that can't be undone.
 	 */
 	undoToken(call: Promise<unknown>): string | null;
+	/** Whether `call`, once resolved, changed no row (e.g. an amount saved again unchanged). */
+	changedNothing(call: Promise<unknown>): boolean;
 	/** Resolves once no call is waiting for its reply. */
 	idle(): Promise<void>;
 	/** Stops the client on purpose: pending and later calls reject, with no fatal report. */
@@ -48,9 +50,15 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 	let fatal: RpcError | null = null;
 	const pending = new Map<
 		number,
-		{ resolve: (v: unknown) => void; reject: (e: unknown) => void; undo: (token: string) => void }
+		{
+			resolve: (v: unknown) => void;
+			reject: (e: unknown) => void;
+			undo: (token: string) => void;
+			unchanged: () => void;
+		}
 	>();
 	const undoTokens = new WeakMap<Promise<unknown>, string>();
+	const unchanged = new WeakSet<Promise<unknown>>();
 	const listeners = new Set<ChangeListener>();
 	const fatalListeners = new Set<FatalListener>();
 	const idleWaiters: (() => void)[] = [];
@@ -75,6 +83,7 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		pending.delete(res.id);
 		if (res.ok) {
 			if (res.undo) entry.undo(res.undo);
+			if (res.changed.length === 0) entry.unchanged();
 			entry.resolve(res.data);
 			if (res.changed.length > 0) for (const l of listeners) l(res.changed);
 		} else {
@@ -101,7 +110,12 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 				reject(new RpcError('INTERNAL', err instanceof Error ? err.message : String(err)));
 				return;
 			}
-			pending.set(id, { resolve, reject, undo: (token) => undoTokens.set(promise, token) });
+			pending.set(id, {
+				resolve,
+				reject,
+				undo: (token) => undoTokens.set(promise, token),
+				unchanged: () => unchanged.add(promise)
+			});
 		});
 		return promise;
 	}
@@ -133,6 +147,9 @@ export function createRpcClient(endpoint: Endpoint): RpcClient {
 		},
 		undoToken(call) {
 			return undoTokens.get(call) ?? null;
+		},
+		changedNothing(call) {
+			return unchanged.has(call);
 		},
 		idle() {
 			return pending.size === 0
