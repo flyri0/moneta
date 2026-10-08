@@ -3,7 +3,7 @@
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import EmptyState from '$components/EmptyState.svelte';
+	import PeriodEmpty from './PeriodEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -24,7 +24,7 @@
 	import { getLocale } from '$i18n/paraglide/runtime';
 
 	/** Spending by who it went to, with each payee's transactions a click away. */
-	let { range }: { range: DateRange } = $props();
+	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds, as in the spending report. */
@@ -84,7 +84,7 @@
 		{#if payees.error}
 			<FormMessage error={actionError(payees.error)} />
 		{:else if payees.data && report.rows.length === 0}
-			<EmptyState icon={ChartColumnIcon} description={m.reports_spending_empty()} />
+			<PeriodEmpty icon={ChartColumnIcon} description={m.reports_spending_empty()} {onShowAll} />
 		{:else if report.rows.length > 0}
 			<StatTile
 				value={session.format(report.total)}

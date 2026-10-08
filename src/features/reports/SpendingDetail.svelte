@@ -3,7 +3,7 @@
 	import { Button } from '$ui/button';
 	import { untrack } from 'svelte';
 	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
-	import EmptyState from '$components/EmptyState.svelte';
+	import PeriodEmpty from './PeriodEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { resolve } from '$app/paths';
 	import StackedBar from './StackedBar.svelte';
@@ -29,7 +29,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range }: { range: DateRange } = $props();
+	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the list folds. Enough to see the shape of a month's spending. */
@@ -96,7 +96,7 @@
 		{#if spending.error}
 			<FormMessage error={actionError(spending.error)} />
 		{:else if spending.data && report.rows.length === 0}
-			<EmptyState icon={ChartPieIcon} description={m.reports_spending_empty()} />
+			<PeriodEmpty icon={ChartPieIcon} description={m.reports_spending_empty()} {onShowAll} />
 		{:else if report.rows.length > 0}
 			<div class="flex flex-wrap items-end justify-between gap-3">
 				<StatTile

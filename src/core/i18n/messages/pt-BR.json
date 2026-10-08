@@ -440,6 +440,8 @@
 	"reports_range_this_year": "Este ano",
 	"reports_range_custom": "Personalizado",
 	"reports_range_all": "Todo o período",
+	"reports_no_results": "Nada neste período. O período acima está filtrando o que aparece.",
+	"reports_show_all_time": "Ver todo o período",
 	"reports_total": "Total",
 	"reports_spent": "Gasto",
 	"reports_share": "Parcela",

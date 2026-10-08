@@ -3,7 +3,7 @@
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$ui/chart';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import EmptyState from '$components/EmptyState.svelte';
+	import PeriodEmpty from './PeriodEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
@@ -24,7 +24,7 @@
 	 * Spending month by month, stacked by the biggest categories, and every category's last month
 	 * against its average over the period.
 	 */
-	let { range }: { range: DateRange } = $props();
+	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
 
 	const session = useSession();
 	/** Categories with a colour of their own in the chart; the rest stack as one. */
@@ -99,7 +99,12 @@
 	{#if rows.error}
 		<FormMessage error={actionError(rows.error)} />
 	{:else if rows.data && trends.categories.length === 0}
-		<EmptyState framed icon={ChartColumnIcon} description={m.reports_spending_empty()} />
+		<PeriodEmpty
+			framed
+			icon={ChartColumnIcon}
+			description={m.reports_spending_empty()}
+			{onShowAll}
+		/>
 	{:else if rows.data && last}
 		<ReportSection title={m.reports_category_trends()}>
 			{#snippet actions()}

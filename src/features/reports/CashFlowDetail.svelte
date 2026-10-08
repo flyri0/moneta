@@ -2,7 +2,7 @@
 	import ReportBody from './ReportBody.svelte';
 	import CashFlowChart from './CashFlowChart.svelte';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
-	import EmptyState from '$components/EmptyState.svelte';
+	import PeriodEmpty from './PeriodEmpty.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CashFlowLegend from './CashFlowLegend.svelte';
 	import NetFlowChart from './NetFlowChart.svelte';
@@ -19,7 +19,7 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 
-	let { range }: { range: DateRange } = $props();
+	let { range, onShowAll }: { range: DateRange; onShowAll?: () => void } = $props();
 
 	const session = useSession();
 	/** Rows shown before the table folds, matching the other reports. */
@@ -71,7 +71,12 @@
 	{#if flow.error}
 		<FormMessage error={actionError(flow.error)} />
 	{:else if flow.data && (rows.length === 0 || (income === 0 && spending === 0))}
-		<EmptyState framed icon={ChartColumnIcon} description={m.reports_income_expense_empty()} />
+		<PeriodEmpty
+			framed
+			icon={ChartColumnIcon}
+			description={m.reports_income_expense_empty()}
+			{onShowAll}
+		/>
 	{:else if flow.data}
 		<dl
 			class="grid grid-cols-2 gap-2 rounded-xl border bg-card p-4 text-card-foreground sm:grid-cols-4"

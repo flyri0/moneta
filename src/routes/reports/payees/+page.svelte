@@ -3,7 +3,7 @@
 	import PeriodBar from '$features/reports/PeriodBar.svelte';
 	import ReportPage from '$features/reports/ReportPage.svelte';
 	import { todayIso } from '$domain/month';
-	import { period, periodRange } from '$features/reports/period.svelte';
+	import { period, periodRange, showAllTime } from '$features/reports/period.svelte';
 	import { m } from '$i18n/paraglide/messages';
 
 	// Opens on the slice its card showed, until a period is picked here or on another report.
@@ -18,5 +18,5 @@
 			{range}
 		/>
 	{/snippet}
-	<PayeesDetail {range} />
+	<PayeesDetail {range} onShowAll={showAllTime('this_month')} />
 </ReportPage>

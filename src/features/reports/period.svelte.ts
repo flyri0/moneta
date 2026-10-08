@@ -15,3 +15,12 @@ export function periodRange(fallback: RangePreset, today: string): DateRange {
 	const preset = period.preset ?? fallback;
 	return preset === 'custom' ? period.custom : presetRange(preset, today);
 }
+
+/**
+ * Widens the reports to all time, for an empty report to offer; undefined when they already
+ * show all of it, so nothing is filtered.
+ */
+export function showAllTime(fallback: RangePreset): (() => void) | undefined {
+	if ((period.preset ?? fallback) === 'all') return undefined;
+	return () => (period.preset = 'all');
+}
