@@ -10,6 +10,8 @@
 	"nav_settings": "Ajustes",
 	"sidebar_collapse": "Recolher barra lateral",
 	"sidebar_expand": "Expandir barra lateral",
+	"amounts_hide": "Ocultar valores",
+	"amounts_show": "Mostrar valores",
 	"sidebar_resize": "Redimensionar barra lateral",
 	"sidebar_account": "{name}, {balance}",
 	"add_transaction": "Transação",

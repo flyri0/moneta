@@ -91,4 +91,7 @@ flutuante adiciona uma transação. Favorecidos e agendamentos ficam dentro de T
 inclusive Favorecidos e Agendamentos, com suas contas e saldos logo abaixo. Arraste a borda dela
 para alargá-la ou estreitá-la, ou recolha-a para mostrar só os ícones.
 
+O olho no topo de cada página oculta todos os valores, em todas as telas, até você tocar nele de
+novo: útil em público ou ao compartilhar a tela. Este aparelho lembra a escolha.
+
 ![O Moneta no celular: o orçamento, uma nova transação e os relatórios.](img/phone.pt-BR.png)

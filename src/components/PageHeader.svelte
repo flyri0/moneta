@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import HideAmountsToggle from './HideAmountsToggle.svelte';
 
 	/**
 	 * The top of every app page, placed before the page's column and stuck below the demo banner
@@ -58,9 +59,10 @@
 				{/if}
 				{@render subtitle?.()}
 			</div>
-			{#if actions}
-				<div class="ml-auto flex shrink-0 items-center gap-2">{@render actions()}</div>
-			{/if}
+			<div class="ml-auto flex shrink-0 items-center gap-2">
+				<HideAmountsToggle />
+				{@render actions?.()}
+			</div>
 		</div>
 		{#if toolbar}{@render toolbar()}{/if}
 	</div>

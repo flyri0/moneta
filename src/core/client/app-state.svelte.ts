@@ -3,6 +3,8 @@ import type { ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
 import { formatMoney, formatMoneyCompact, parseAmount, type MoneyFormat } from '$domain/money';
 import { isDemoFile } from './demo';
+import { MASK } from './hide-amounts';
+import { amounts } from './hide-amounts.svelte';
 import type { RpcClient } from './rpc';
 import type { OpenResult, StartupErrorCode, UnreadableBudget } from './session';
 
@@ -40,10 +42,12 @@ export class BudgetSession {
 		return { currency: this.meta.currency, locale: this.meta.locale };
 	}
 
-	format = (minor: number): string => formatMoney(minor, this.money);
+	/** An amount for display, or a mask while amounts are hidden. */
+	format = (minor: number): string => (amounts.hidden ? MASK : formatMoney(minor, this.money));
 
-	/** A short form for chart axes, e.g. "$1.2M". */
-	formatCompact = (minor: number): string => formatMoneyCompact(minor, this.money);
+	/** A short form for chart axes, e.g. "$1.2M", or a mask while amounts are hidden. */
+	formatCompact = (minor: number): string =>
+		amounts.hidden ? MASK : formatMoneyCompact(minor, this.money);
 
 	parse = (text: string): number | null => parseAmount(text, this.money);
 
