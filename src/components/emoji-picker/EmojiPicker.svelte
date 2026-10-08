@@ -98,7 +98,7 @@
 	/** How far past the visible part of the list rows are drawn, in px, so scrolling finds them. */
 	const OVERSCAN = 160;
 	/** How long typing pauses before the results follow it, in ms. */
-	const SEARCH_DELAY = 120;
+	const SEARCH_DELAY = 250;
 	/** Below the bottom of every group, in px. */
 	const SECTION_GAP = 4;
 
