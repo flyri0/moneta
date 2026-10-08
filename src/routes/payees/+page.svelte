@@ -66,7 +66,11 @@
 	});
 </script>
 
-<PageHeader title={m.nav_payees()} back={{ route: '/transactions', label: m.nav_transactions() }}>
+<PageHeader
+	title={m.nav_payees()}
+	hideAmounts={false}
+	back={{ route: '/transactions', label: m.nav_transactions() }}
+>
 	{#snippet actions()}
 		<Button size="sm" onclick={() => (adding = true)}>
 			<PlusIcon />
