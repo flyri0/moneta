@@ -9,7 +9,7 @@
 	import { m } from '$i18n/paraglide/messages';
 </script>
 
-<PageHeader title={m.nav_settings()} class="max-w-2xl md:max-w-5xl" />
+<PageHeader title={m.nav_settings()} hideAmounts={false} class="max-w-2xl md:max-w-5xl" />
 
 <div class="mx-auto grid max-w-2xl gap-4 p-3 md:max-w-5xl md:p-6">
 	<!-- Two explicit columns so the groups balance on desktop and stack in a sensible order. -->

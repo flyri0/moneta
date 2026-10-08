@@ -89,7 +89,7 @@ Transactions: a **Payees** button, and the **Scheduled** tab. On a wider screen 
 left lists them all, Payees and Schedules included, with your accounts and their balances below.
 Drag its edge to make it wider or narrower, or collapse it to icons.
 
-The eye at the top of every page hides all amounts, on every screen, until you tap it again: handy
-in public or when sharing your screen. This device remembers the choice.
+The eye at the top right of the pages that show money hides all amounts, on every screen, until you
+tap it again: handy in public or when sharing your screen. This device remembers the choice.
 
 ![Moneta on a phone: the budget, a new transaction, and the reports.](img/phone.png)

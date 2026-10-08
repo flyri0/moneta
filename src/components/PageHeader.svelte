@@ -17,6 +17,7 @@
 		back,
 		actions,
 		toolbar,
+		hideAmounts = true,
 		class: width = 'max-w-2xl lg:max-w-5xl'
 	}: {
 		title: string | Snippet;
@@ -27,6 +28,8 @@
 			| { route: '/accounts/[id]'; id: string; label: string };
 		actions?: Snippet;
 		toolbar?: Snippet;
+		/** Shows the eye that hides amounts, in the same corner on every page; off on pages without any. */
+		hideAmounts?: boolean;
 		/** The max width of the page's column, so the header lines up with it. */
 		class?: string;
 	} = $props();
@@ -37,33 +40,37 @@
 	data-scroll-inset="top"
 	data-testid="page-header"
 >
-	<div class="mx-auto grid gap-3 px-3 py-3 md:px-6 {width}">
-		{#if back}
-			<a
-				href={back.route === '/accounts/[id]'
-					? resolve(back.route, { id: back.id })
-					: resolve(back.route)}
-				class="-mb-2 inline-flex items-center gap-1 justify-self-start rounded-md py-0.5 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-			>
-				<ChevronLeftIcon class="size-4" />
-				<span>{back.label}</span>
-			</a>
-		{/if}
-		<!-- The actions drop to their own line rather than squeeze a long title (e.g. the month). -->
-		<div class="flex min-h-9 flex-wrap items-center justify-between gap-2">
-			<div class="grid min-w-0 flex-[1_1_auto] gap-0.5">
-				{#if typeof title === 'string'}
-					<h1 class="truncate text-xl font-semibold tracking-tight">{title}</h1>
-				{:else}
-					{@render title()}
+	<div class="mx-auto flex items-start gap-2 px-3 py-3 md:px-6 {width}">
+		<div class="grid min-w-0 flex-1 gap-3">
+			{#if back}
+				<a
+					href={back.route === '/accounts/[id]'
+						? resolve(back.route, { id: back.id })
+						: resolve(back.route)}
+					class="-mb-2 inline-flex items-center gap-1 justify-self-start rounded-md py-0.5 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<ChevronLeftIcon class="size-4" />
+					<span>{back.label}</span>
+				</a>
+			{/if}
+			<!-- The actions drop to their own line rather than squeeze a long title (e.g. the month). -->
+			<div class="flex min-h-9 flex-wrap items-center justify-between gap-2">
+				<div class="grid min-w-0 flex-[1_1_auto] gap-0.5">
+					{#if typeof title === 'string'}
+						<h1 class="truncate text-xl font-semibold tracking-tight">{title}</h1>
+					{:else}
+						{@render title()}
+					{/if}
+					{@render subtitle?.()}
+				</div>
+				{#if actions}
+					<div class="ml-auto flex shrink-0 items-center gap-2">{@render actions()}</div>
 				{/if}
-				{@render subtitle?.()}
 			</div>
-			<div class="ml-auto flex shrink-0 items-center gap-2">
-				<HideAmountsToggle />
-				{@render actions?.()}
-			</div>
+			{#if toolbar}{@render toolbar()}{/if}
 		</div>
-		{#if toolbar}{@render toolbar()}{/if}
+		{#if hideAmounts}
+			<div class="flex min-h-9 shrink-0 items-center"><HideAmountsToggle /></div>
+		{/if}
 	</div>
 </header>
