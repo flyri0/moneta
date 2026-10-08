@@ -3,6 +3,7 @@
 	import { Combobox } from '$ui/combobox';
 	import { DateRangePicker } from '$ui/date-range-picker';
 	import { Input } from '$ui/input';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import FormMessage from '$components/FormMessage.svelte';
@@ -193,6 +194,7 @@
 					inputmode="decimal"
 					autocomplete="off"
 				/>
+				<AmountPreview text={amountMin} />
 			</div>
 			<div class="grid gap-2">
 				<Label for="schedule-filter-max">{m.register_filter_amount_max()}</Label>
@@ -202,6 +204,7 @@
 					inputmode="decimal"
 					autocomplete="off"
 				/>
+				<AmountPreview text={amountMax} />
 			</div>
 		</div>
 		<div class="grid grid-cols-2 gap-3">

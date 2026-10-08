@@ -12,6 +12,7 @@
 	"sidebar_expand": "Expand sidebar",
 	"amounts_hide": "Hide amounts",
 	"amounts_show": "Show amounts",
+	"amount_preview": "= {amount}",
 	"sidebar_resize": "Resize sidebar",
 	"sidebar_account": "{name}, {balance}",
 	"add_transaction": "Transaction",

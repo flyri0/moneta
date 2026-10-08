@@ -13,6 +13,7 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import SheetLink from '$components/SheetLink.svelte';
 	import Amount from '$components/Amount.svelte';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import { NewCategories } from '$features/categories/new-categories';
@@ -291,6 +292,7 @@
 						/>
 						<Button type="submit">{m.save()}</Button>
 					</div>
+					<AmountPreview text={assignedText} />
 					<FormMessage {error} />
 				</form>
 			{/if}
@@ -361,6 +363,7 @@
 					placeholder="0"
 				/>
 			</div>
+			<AmountPreview text={moveAmount} class="text-right" />
 			<FormMessage {error} />
 			<Button type="submit">{m.budget_move()}</Button>
 		</form>

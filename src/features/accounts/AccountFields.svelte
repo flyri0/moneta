@@ -2,6 +2,7 @@
 	import { Button } from '$ui/button';
 	import { DatePicker } from '$ui/date-picker';
 	import { Input } from '$ui/input';
+	import AmountPreview from '$components/AmountPreview.svelte';
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
@@ -119,6 +120,7 @@
 			autocomplete="off"
 			placeholder="0"
 		/>
+		<AmountPreview text={balance} />
 	</div>
 	<div class="grid gap-2">
 		<Label for="{idPrefix}-date">{m.account_balance_date()}</Label>

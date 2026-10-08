@@ -227,3 +227,15 @@ export function parseAmount(input: string, fmt: MoneyFormat): number | null {
 	if (!Number.isSafeInteger(rounded)) return null;
 	return rounded === 0 ? 0 : rounded;
 }
+
+/**
+ * What typed `input` will be saved as, while it isn't written that way yet ("120+35", "1234" for
+ * 1234,00); null when there is nothing to show: empty, malformed, or already in its final form.
+ */
+export function amountPreview(input: string, fmt: MoneyFormat): number | null {
+	const text = input.trim();
+	if (text === '') return null;
+	const value = parseAmount(text, fmt);
+	if (value === null || text === formatAmountInput(value, fmt)) return null;
+	return value;
+}
