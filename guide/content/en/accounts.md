@@ -74,6 +74,9 @@ installment: see [Installments already under way](schedules.md#installments-unde
 An account's register lists its transactions, newest first. At the top you see the **cleared** balance (what the bank has already seen), the **uncleared** amount and
 the total. Mark a transaction cleared with its checkbox when it shows up on your statement.
 
+Money coming in shows in green with a **+**, money going out with a **-**, the same everywhere
+in the app. Balances and totals carry no color.
+
 Each account also shows what is coming in the next 30 days from its schedules, and its balance
 projected 30 days ahead. See [Scheduled transactions](schedules.md).
 

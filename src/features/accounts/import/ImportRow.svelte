@@ -6,7 +6,7 @@
 	import { Label } from '$ui/label';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import type { NewCategories } from '$features/categories/new-categories';
-	import { useSession } from '$client/app-state.svelte';
+	import Amount from '$components/Amount.svelte';
 	import type { GroupNode } from '$db/repos/categories';
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -38,7 +38,6 @@
 		onMakeRule: () => void;
 	} = $props();
 
-	const session = useSession();
 	const status = $derived(row.preview.status);
 	const number = $derived(index + 1);
 	/** What the line is called: the payee a new line gets, or the bank's description. */
@@ -106,13 +105,7 @@
 			<ChevronDownIcon class="size-3.5 transition-transform {expanded ? 'rotate-180' : ''}" />
 		</span>
 	</button>
-	<span
-		class="text-sm font-semibold tabular-nums {row.line.amount < 0
-			? ''
-			: 'text-emerald-700 dark:text-emerald-400'}"
-	>
-		{session.format(row.line.amount)}
-	</span>
+	<Amount amount={row.line.amount} flow class="text-sm font-semibold" />
 
 	{#if expanded}
 		<div class="col-start-2 col-end-4 grid gap-3 rounded-lg bg-muted/40 p-3 text-sm">

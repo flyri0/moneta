@@ -10,6 +10,7 @@
 	import FlagIcon from '$features/flags/FlagIcon.svelte';
 	import { flagLabel } from '$features/flags/flags';
 	import { useFlags } from '$features/flags/use-flags.svelte';
+	import Amount from '$components/Amount.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runActionToast } from '$client/notify';
@@ -70,14 +71,12 @@
 {#if s}
 	<div class="grid gap-4" data-testid="schedule-overview">
 		<div class="grid gap-2">
-			<p
-				class="text-2xl font-semibold tabular-nums {s.amount < 0
-					? ''
-					: 'text-emerald-700 dark:text-emerald-400'}"
+			<Amount
+				amount={s.amount}
+				flow
+				class="text-2xl font-semibold"
 				data-testid="schedule-overview-amount"
-			>
-				{session.format(s.amount)}
-			</p>
+			/>
 			<div class="flex flex-wrap gap-1.5">
 				{#if s.status === 'due'}
 					<Badge variant="destructive">{m.schedules_due()}</Badge>

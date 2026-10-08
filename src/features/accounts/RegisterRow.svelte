@@ -9,6 +9,7 @@
 	import { flagLabel } from '$features/flags/flags';
 	import type { FlagRow } from '$db/repos/flags';
 	import { payeeDisplay, payeeText } from '$features/accounts/register';
+	import Amount from '$components/Amount.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
 	import type { TransactionRow } from '$db/repos/transactions';
@@ -183,14 +184,12 @@ the rest of the row is a shortcut. -->
 			{/if}
 		</div>
 
-		<span
-			class="text-right text-sm font-semibold tabular-nums {row.amount < 0
-				? ''
-				: 'text-emerald-700 dark:text-emerald-400'}"
+		<Amount
+			amount={row.amount}
+			flow
+			class="text-right text-sm font-semibold"
 			data-testid="register-amount"
-		>
-			{session.format(row.amount)}
-		</span>
+		/>
 
 		{#if row.reconciled}
 			<!-- Reconciled rows stay cleared: the lock replaces the toggle. -->

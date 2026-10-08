@@ -76,14 +76,6 @@ export function rtaHint(view: Pick<BudgetMonthView, 'readyToAssign' | 'available
 	return tone === 'overassigned' && view.availableFunds < 0 ? 'negativeFunds' : tone;
 }
 
-/** An amount's color, from its sign alone: income below zero must not look like money coming in. */
-export type AmountTone = 'inflow' | 'zero' | 'outflow';
-
-export function amountTone(amount: number): AmountTone {
-	if (amount > 0) return 'inflow';
-	return amount < 0 ? 'outflow' : 'zero';
-}
-
 export interface HiddenCategory {
 	group: BudgetGroupView;
 	category: BudgetCategoryView;

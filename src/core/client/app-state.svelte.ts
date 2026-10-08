@@ -1,7 +1,13 @@
 import { createContext } from 'svelte';
 import type { ClientApi } from '$db/api';
 import type { BudgetMeta } from '$db/repos/meta';
-import { formatMoney, formatMoneyCompact, parseAmount, type MoneyFormat } from '$domain/money';
+import {
+	formatMoney,
+	formatMoneyCompact,
+	formatMoneySigned,
+	parseAmount,
+	type MoneyFormat
+} from '$domain/money';
 import { isDemoFile } from './demo';
 import { MASK } from './hide-amounts';
 import { amounts } from './hide-amounts.svelte';
@@ -44,6 +50,10 @@ export class BudgetSession {
 
 	/** An amount for display, or a mask while amounts are hidden. */
 	format = (minor: number): string => (amounts.hidden ? MASK : formatMoney(minor, this.money));
+
+	/** A flow of money (a transaction, activity, a net change) with "+" when it comes in. */
+	formatSigned = (minor: number): string =>
+		amounts.hidden ? MASK : formatMoneySigned(minor, this.money);
 
 	/** A short form for chart axes, e.g. "$1.2M", or a mask while amounts are hidden. */
 	formatCompact = (minor: number): string =>

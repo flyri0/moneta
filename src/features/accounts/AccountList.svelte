@@ -48,15 +48,9 @@
 									href={resolve('/accounts/[id]', { id: account.id })}
 									aria-label={m.sidebar_account({ name: account.name, balance })}
 									data-testid="account-row"
-									class="relative flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+									class="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
 								>
 									<AccountIcon {account} class="size-4 text-base" />
-									{#if account.balance < 0}
-										<span
-											aria-hidden="true"
-											class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-destructive"
-										></span>
-									{/if}
 								</a>
 							{/snippet}
 						</Tooltip.Trigger>
@@ -95,9 +89,7 @@
 								>{account.name}</span
 							>
 							<span
-								class="ml-auto shrink-0 whitespace-nowrap tabular-nums {account.balance < 0
-									? 'text-destructive'
-									: ''}"
+								class="ml-auto shrink-0 whitespace-nowrap tabular-nums"
 								data-testid="account-balance">{session.format(account.balance)}</span
 							>
 						</a>
@@ -152,9 +144,7 @@
 									</div>
 								</div>
 								<span
-									class="shrink-0 text-sm font-semibold tabular-nums {account.balance < 0
-										? 'text-destructive'
-										: ''}"
+									class="shrink-0 text-sm font-semibold tabular-nums"
 									data-testid="account-balance"
 								>
 									{session.format(account.balance)}

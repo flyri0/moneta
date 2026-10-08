@@ -4,7 +4,7 @@
 	import FlagIcon from '$features/flags/FlagIcon.svelte';
 	import { flagLabel } from '$features/flags/flags';
 	import { useFlags } from '$features/flags/use-flags.svelte';
-	import { useSession } from '$client/app-state.svelte';
+	import Amount from '$components/Amount.svelte';
 	import type { ScheduleRow } from '$db/repos/schedules';
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
@@ -15,7 +15,6 @@
 	let { schedules, onOpen }: { schedules: ScheduleRow[]; onOpen: (schedule: ScheduleRow) => void } =
 		$props();
 
-	const session = useSession();
 	const flags = useFlags();
 	const sections = $derived(
 		[
@@ -67,13 +66,7 @@
 							<span class="truncate text-sm font-medium">{payeeText(payeeDisplay(s))}</span>
 							{#if s.autoEnter}<Badge variant="secondary">{m.schedules_auto()}</Badge>{/if}
 						</span>
-						<span
-							class="text-right text-sm font-semibold tabular-nums {s.amount < 0
-								? ''
-								: 'text-emerald-700 dark:text-emerald-400'}"
-						>
-							{session.format(s.amount)}
-						</span>
+						<Amount amount={s.amount} flow class="text-right text-sm font-semibold" />
 						<span class="col-span-2 truncate text-xs text-muted-foreground">{detail(s)}</span>
 					</button>
 				</li>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Tooltip } from 'layerchart';
 	import { useSession } from '$client/app-state.svelte';
+	import Amount from '$components/Amount.svelte';
 	import type { CashFlowRow } from '$db/repos/reports';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -23,8 +24,8 @@
 				<dd class="text-right tabular-nums">{session.format(data.spending)}</dd>
 				<span></span>
 				<dt class="text-muted-foreground">{m.reports_net()}</dt>
-				<dd class="text-right font-medium tabular-nums">
-					{session.format(data.income - data.spending)}
+				<dd class="text-right font-medium">
+					<Amount amount={data.income - data.spending} flow />
 				</dd>
 			</dl>
 		</div>

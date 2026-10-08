@@ -74,6 +74,9 @@ O extrato de uma conta lista as transações, das mais novas às mais antigas. N
 compensado** e o total. Marque uma transação como compensada pela caixa de seleção quando ela
 aparecer no extrato do banco.
 
+O dinheiro que entra aparece em verde com **+**, o que sai com **-**, do mesmo jeito em todo o
+app. Saldos e totais não têm cor.
+
 Cada conta também mostra o que vem nos próximos 30 dias pelos agendamentos, e o saldo **previsto
 em 30 dias**. Veja [Agendamentos](schedules.md).
 
