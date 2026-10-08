@@ -219,13 +219,13 @@ export async function pickDateRange(
 	await container.getByLabel(label, { exact: false }).click();
 	const popover = page.locator('[data-slot="popover-content"][data-state="open"]');
 	const [y, m] = from.split('-').map(Number);
-	await popover.getByLabel('Year').click();
+	await popover.getByLabel(/^(Year|Ano)$/).click();
 	await page
 		.locator('[data-slot="select-content"][data-state="open"] [data-slot="select-item"]')
 		.filter({ hasText: String(y) })
 		.first()
 		.click();
-	await popover.getByLabel('Month').click();
+	await popover.getByLabel(/^(Month|Mês)$/).click();
 	await page
 		.locator('[data-slot="select-content"][data-state="open"] [data-slot="select-item"]')
 		.nth(m - 1)

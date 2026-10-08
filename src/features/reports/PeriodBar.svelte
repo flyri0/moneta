@@ -81,7 +81,9 @@
 			}
 		}}
 	>
-		<Select.Trigger id="report-period" size="sm" class="min-w-0 flex-1 sm:flex-none">
+		<!-- Neither side shrinks: when the range doesn't fit beside the select, it wraps under it
+		rather than drawing over it. -->
+		<Select.Trigger id="report-period" size="sm" class="flex-1 shrink-0 sm:flex-none">
 			{choice === 'custom' ? m.reports_range_custom() : PRESETS[choice as RangePreset]()}
 		</Select.Trigger>
 		<Select.Content>
@@ -100,7 +102,8 @@
 			draft = { ...range };
 			editing = true;
 		}}
-		class="ml-auto max-w-full truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground {preset ===
+		data-testid="report-period-range"
+		class="ml-auto max-w-full shrink-0 truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground {preset ===
 		'custom'
 			? ''
 			: 'hidden sm:block'}"

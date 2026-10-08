@@ -385,6 +385,30 @@ test.describe('on a phone', () => {
 
 			await expectInsideCards(page, ['net-worth-chart', 'net-worth-table', 'net-worth-tiles']);
 
+			// A custom period's dates wrap under the select instead of drawing over it.
+			await page.locator('#report-period').click();
+			await page
+				.locator('[data-slot="select-item"]')
+				.filter({ hasText: /Custom|Personalizado/ })
+				.click();
+			const dialog = page.getByRole('dialog');
+			await pickDateRange(dialog, /Period|Período/, '2026-09-02', '2026-09-25');
+			await dialog.getByRole('button', { name: /Apply|Aplicar/ }).click();
+			await expect(dialog).toBeHidden();
+			const select = await page.locator('#report-period').boundingBox();
+			const dates = await page.getByTestId('report-period-range').boundingBox();
+			expect(select && dates).toBeTruthy();
+			expect(
+				dates!.x >= select!.x + select!.width || dates!.y >= select!.y + select!.height,
+				'the period dates overlap the select'
+			).toBe(true);
+			expect(dates!.x + dates!.width).toBeLessThanOrEqual(width);
+			// A squeezed select keeps its box clear of the dates but spills its label under them.
+			expect(
+				await page.locator('#report-period').evaluate((el) => el.scrollWidth <= el.clientWidth),
+				'the select is too narrow for its label'
+			).toBe(true);
+
 			await page.goto('/reports/cash-flow');
 			await expect(page.getByTestId('cash-flow-chart')).toBeVisible();
 			await expectInsideCards(page, [
