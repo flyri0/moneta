@@ -180,6 +180,26 @@ test('collapses a group and remembers it across reloads', async ({ page }) => {
 	await expect(categoryRow(page, 'Groceries')).toBeVisible();
 });
 
+test('shows a goal in the category row on desktop', async ({ page }) => {
+	await onboard(page);
+	const groceries = categoryRow(page, 'Groceries');
+	await expect(groceries.getByTestId('progress')).toHaveCount(0);
+
+	await groceries.getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: /^Goal/ }).click();
+	await sheet.getByLabel('Amount').fill('400');
+	await sheet.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: /^Goal/ })).toContainText('$400.00 a month');
+	await page.keyboard.press('Escape');
+	await expect(sheet).toBeHidden();
+
+	await expect(groceries.getByTestId('progress')).toHaveText(
+		'$0.00 of $0.00 spent · $400.00 to goal'
+	);
+	await expect(groceries.getByTestId('goal-tick')).toBeAttached();
+});
+
 test.describe('on a phone', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
@@ -524,7 +544,7 @@ test('adds a group and a category, and reorders categories', async ({ page }) =>
 	await page.getByRole('button', { name: 'Save' }).click();
 	// Everyday was Groceries, Transportation, Dining Out, Household; moving Household up swaps it with Dining Out.
 	const everyday = page.getByTestId('group-card').filter({ hasText: 'Everyday' });
-	const names = everyday.getByTestId('category-row').locator(':scope > button');
+	const names = everyday.getByTestId('category-name');
 	await expect(names.nth(2)).toHaveText('Household');
 	await expect(names.nth(3)).toHaveText('Dining Out');
 });

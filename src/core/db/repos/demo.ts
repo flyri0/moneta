@@ -34,7 +34,8 @@ export function createDemo(db: Db, budget: DemoBudgetSeed): void {
 		const groups = new Map<string, string>();
 		const categories = new Map<string, string>();
 		for (const group of listCategoryTree(db)) {
-			if (!group.system) groups.set(group.name, group.id);
+			if (group.system === 'income') updateGroup(db, group.id, { icon: seed.incomeGroupIcon });
+			else if (!group.system) groups.set(group.name, group.id);
 			for (const category of group.categories) {
 				categories.set(category.name, category.id);
 			}

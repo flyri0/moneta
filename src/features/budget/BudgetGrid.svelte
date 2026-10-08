@@ -14,6 +14,7 @@
 	import AssignedInput from './AssignedInput.svelte';
 	import AvailablePill from './AvailablePill.svelte';
 	import CategoryCard from './CategoryCard.svelte';
+	import CategoryProgressBar from './CategoryProgressBar.svelte';
 	import { TONE_PILL, TONE_ROW } from './tones';
 
 	let {
@@ -81,12 +82,16 @@
 		data-tone={tone}
 		data-tour="category"
 	>
-		<button
-			type="button"
-			class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
-			onclick={() => onSelectCategory(category.id)}
-			><IconLabel icon={category.icon} label={category.name} /></button
-		>
+		<div class="grid min-w-0 gap-1.5">
+			<button
+				type="button"
+				data-testid="category-name"
+				class="cursor-pointer truncate text-left text-sm font-medium hover:underline"
+				onclick={() => onSelectCategory(category.id)}
+				><IconLabel icon={category.icon} label={category.name} /></button
+			>
+			<CategoryProgressBar {category} />
+		</div>
 		<div>
 			<AssignedInput
 				categoryId={category.id}

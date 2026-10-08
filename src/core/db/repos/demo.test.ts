@@ -17,6 +17,7 @@ const [bills, everyday, goals, fun] = defaultCategoryGroups('en');
 const CATEGORIES: DemoCategoryNames = {
 	salary: 'Salary',
 	otherIncome: 'Other Income',
+	startingBalance: 'Starting Balance',
 	rent: bills.categories[0],
 	utilities: bills.categories[1],
 	phone: bills.categories[2],
@@ -101,7 +102,7 @@ describe('seedDemo', () => {
 		expect(listAccounts(db).map((a) => a.icon)).toEqual(['🏦', '🐷', '💳']);
 		const tree = listCategoryTree(db);
 		const income = tree.find((g) => g.system === 'income')!;
-		expect(income.icon).toBeNull();
+		expect(income.icon).toBe('💰');
 		expect(tree.filter((g) => !g.system).map((g) => g.icon)).toEqual(['🧾', '🛒', '🎯', '🎉']);
 		const named = tree
 			.flatMap((g) => g.categories)

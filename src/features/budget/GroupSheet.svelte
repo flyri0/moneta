@@ -112,30 +112,28 @@
 				<FormMessage {error} />
 			</form>
 
-			<!-- A system group takes new categories but can't be renamed, hidden or deleted. -->
+			<!-- A system group takes new categories and an icon, but can't be renamed, hidden or deleted. -->
 			{#if group.system}
 				<p class="text-xs text-muted-foreground">{m.group_system_note()}</p>
-			{:else}
-				<Separator />
+			{/if}
 
-				<nav class="-mx-2 grid gap-0.5">
-					<!-- A hidden group's categories are all hidden, and quick-assign leaves hidden ones alone. -->
-					{#if !group.hidden}
-						<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
-					{/if}
-					<SheetLink
-						icon={SettingsIcon}
-						label={m.group_settings()}
-						onclick={() => go('settings')}
-					/>
+			<Separator />
+
+			<nav class="-mx-2 grid gap-0.5">
+				<!-- A hidden group's categories are all hidden, and quick-assign leaves hidden ones alone. -->
+				{#if !group.system && !group.hidden}
+					<SheetLink icon={ZapIcon} label={m.quick_assign_title()} onclick={() => go('quick')} />
+				{/if}
+				<SheetLink icon={SettingsIcon} label={m.group_settings()} onclick={() => go('settings')} />
+				{#if !group.system}
 					<SheetLink
 						icon={Trash2Icon}
 						label={m.group_delete()}
 						destructive
 						onclick={() => go('delete')}
 					/>
-				</nav>
-			{/if}
+				{/if}
+			</nav>
 		</div>
 	{:else if view === 'quick'}
 		<QuickAssign
@@ -146,29 +144,33 @@
 	{:else if view === 'settings'}
 		<div class="grid gap-3">
 			<div class="grid divide-y rounded-lg border">
-				<!-- Enter fires `change` itself; the form only makes the phone keyboard offer to submit. -->
-				<form class="grid gap-2 p-3" onsubmit={(e) => e.preventDefault()}>
-					<Label for="group-name">{m.group_name()}</Label>
-					<Input
-						id="group-name"
-						bind:value={name}
-						onchange={saveName}
-						required
-						autocomplete="off"
-					/>
-				</form>
+				{#if !group.system}
+					<!-- Enter fires `change` itself; the form only makes the phone keyboard offer to submit. -->
+					<form class="grid gap-2 p-3" onsubmit={(e) => e.preventDefault()}>
+						<Label for="group-name">{m.group_name()}</Label>
+						<Input
+							id="group-name"
+							bind:value={name}
+							onchange={saveName}
+							required
+							autocomplete="off"
+						/>
+					</form>
+				{/if}
 				<div class="grid gap-2 p-3">
 					<Label for="group-icon">{m.icon_label()}</Label>
 					<IconField id="group-icon" value={group.icon} onchange={(icon) => save({ icon })} />
 				</div>
-				<div class="flex min-h-12 items-center justify-between gap-4 p-3">
-					<Label for="group-hidden">{m.group_hidden()}</Label>
-					<Switch
-						id="group-hidden"
-						bind:checked={hidden}
-						onCheckedChange={(checked) => save({ hidden: checked })}
-					/>
-				</div>
+				{#if !group.system}
+					<div class="flex min-h-12 items-center justify-between gap-4 p-3">
+						<Label for="group-hidden">{m.group_hidden()}</Label>
+						<Switch
+							id="group-hidden"
+							bind:checked={hidden}
+							onCheckedChange={(checked) => save({ hidden: checked })}
+						/>
+					</div>
+				{/if}
 			</div>
 			<FormMessage {error} />
 		</div>

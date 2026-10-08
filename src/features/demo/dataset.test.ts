@@ -7,6 +7,8 @@ import type { DemoSeed } from './seed';
 const CATEGORIES = {
 	salary: 'Salary',
 	otherIncome: 'Other Income',
+	/** Where the repos put opening balances: an income category of its own. */
+	startingBalance: 'Starting balance',
 	rent: 'Rent',
 	utilities: 'Utilities',
 	phone: 'Phone',
@@ -21,9 +23,7 @@ const CATEGORIES = {
 	hobbies: 'Hobbies'
 };
 
-/** Where the repos put opening balances: an income category of its own. */
-const STARTING = 'Starting balance';
-const INCOME = new Set([CATEGORIES.salary, CATEGORIES.otherIncome, STARTING]);
+const INCOME = new Set([CATEGORIES.salary, CATEGORIES.otherIncome, CATEGORIES.startingBalance]);
 
 function input(today: string, scale = 100): DemoInput {
 	return {
@@ -64,7 +64,7 @@ function budgetOf(seed: DemoSeed, through: Month) {
 	for (const a of seed.accounts) {
 		if (a.startingBalance !== 0) {
 			entries.push({
-				categoryId: STARTING,
+				categoryId: CATEGORIES.startingBalance,
 				month: monthOf(a.startingDate),
 				amount: a.startingBalance
 			});
@@ -82,7 +82,7 @@ function budgetOf(seed: DemoSeed, through: Month) {
 	}
 	return computeBudget(
 		{
-			categories: [...Object.values(CATEGORIES), STARTING].map((id) => ({
+			categories: Object.values(CATEGORIES).map((id) => ({
 				id,
 				kind: INCOME.has(id) ? 'income' : 'regular',
 				carryoverOverspending: false
