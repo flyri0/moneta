@@ -41,6 +41,13 @@ describe('choices', () => {
 		expect(values).toContain('pt-BR');
 		expect(localeChoices('en', 'pt-BR').filter((c) => c.value === 'pt-BR')).toHaveLength(1);
 	});
+
+	it('puts the browser locale first even when it is a common one', () => {
+		const values = localeChoices('en', 'en-US').map((c) => c.value);
+		expect(values[0]).toBe('en-US');
+		expect(values.filter((v) => v === 'en-US')).toHaveLength(1);
+		expect(localeChoices('en', 'en-us')[0].value).toBe('en-US');
+	});
 });
 
 describe('dates', () => {

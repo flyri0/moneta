@@ -68,13 +68,14 @@ const COMMON_LOCALES = [
 	'ja-JP'
 ];
 
-/** Number/date formats to offer for a budget, including the browser's own locale. */
+/** Number/date formats to offer for a budget, the browser's own locale first. */
 export function localeChoices(uiLocale: string, browserLocale?: string): Choice[] {
 	const names = new Intl.DisplayNames(uiLocale, { type: 'language' });
-	const values = [...COMMON_LOCALES];
-	if (browserLocale && !values.includes(browserLocale)) {
+	let values = [...COMMON_LOCALES];
+	if (browserLocale) {
 		try {
-			values.unshift(Intl.getCanonicalLocales(browserLocale)[0]);
+			const first = Intl.getCanonicalLocales(browserLocale)[0];
+			values = [first, ...values.filter((v) => v !== first)];
 		} catch {
 			// ignore an invalid browser locale
 		}
