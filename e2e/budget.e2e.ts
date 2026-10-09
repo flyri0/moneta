@@ -266,6 +266,32 @@ test.describe('on a phone', () => {
 		await expect(amount).toHaveValue('10');
 	});
 
+	test("shows each category's Available in the Move money picker", async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('300');
+		await sheet.getByRole('button', { name: 'Save' }).first().click();
+		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$300.00');
+		await spend(page, 'Cafe', '30', 'Dining Out');
+
+		await categoryRow(page, 'Household').getByRole('button', { name: 'Household' }).click();
+		await sheet.getByRole('button', { name: 'Move money' }).click();
+		await sheet.getByLabel('Other category').click();
+		const picker = page.locator('[data-picker][data-state="open"]');
+		const item = (name: string) =>
+			picker.locator('[data-slot="command-item"]').filter({ hasText: name });
+		await expect(item('Groceries').getByTestId('available')).toHaveText('$300.00');
+		await expect(item('Dining Out').getByTestId('available')).toHaveAttribute(
+			'data-tone',
+			'overspent'
+		);
+		// On a phone the name gives way: the pill stays inside its row.
+		const row = (await item('Phone & Internet').boundingBox())!;
+		const pill = (await item('Phone & Internet').getByTestId('available').boundingBox())!;
+		expect(pill.x + pill.width).toBeLessThanOrEqual(row.x + row.width);
+	});
+
 	test('shows how much of a category is spent', async ({ page }) => {
 		await onboard(page);
 		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();

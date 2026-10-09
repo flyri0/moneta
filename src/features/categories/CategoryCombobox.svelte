@@ -9,6 +9,8 @@
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
 	import GroupItems from './GroupItems.svelte';
+	import AvailablePill from '$features/budget/AvailablePill.svelte';
+	import type { CategoryAvailable } from './available';
 	import { NewCategories, type NewCategoryGroup } from './new-categories';
 	import type { PickerGroup, PickerTreeGroup } from './picker';
 
@@ -29,6 +31,7 @@
 		emptyLabel = m.transaction_choose_category(),
 		allowEmpty = true,
 		creatable = true,
+		available,
 		class: className
 	}: {
 		tree: PickerTreeGroup[];
@@ -47,6 +50,8 @@
 		allowEmpty?: boolean;
 		/** Whether a typed name can become a new category. */
 		creatable?: boolean;
+		/** Each category's Available, shown on its row; rows without an entry show none. */
+		available?: ReadonlyMap<string, CategoryAvailable>;
 		class?: string;
 	} = $props();
 
@@ -175,7 +180,12 @@
 									<CheckIcon
 										class={cn('mr-2 size-4', value === category.id ? 'opacity-100' : 'opacity-0')}
 									/>
-									<span>{categoryLabel(category)}</span>
+									<span class="min-w-0 truncate">{categoryLabel(category)}</span>
+									{#if available?.has(category.id)}
+										<span class="ml-auto shrink-0">
+											<AvailablePill category={available.get(category.id)!} />
+										</span>
+									{/if}
 								</Command.Item>
 							{/each}
 						</Command.Group>

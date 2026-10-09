@@ -16,6 +16,7 @@
 	import AmountPreview from '$components/AmountPreview.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { availableByCategory } from '$features/categories/available';
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
@@ -73,6 +74,7 @@
 		groups.find((g) => g.categories.some((c) => c.id === category.id))?.system === 'income'
 	);
 	const targets = $derived(isIncome ? [] : moveTargets(model, category.id));
+	const available = $derived(availableByCategory(model.groups));
 	/** The groups a category created to move money with can go in. */
 	const userGroups = $derived(groups.filter((g) => !g.system && !g.hidden));
 	const pending = new NewCategories();
@@ -358,6 +360,7 @@
 					options={targets}
 					newIn={userGroups}
 					{pending}
+					{available}
 					bind:value={otherId}
 					emptyLabel={m.budget_move_other()}
 					ariaLabel={m.budget_move_other()}
