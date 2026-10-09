@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseSelect, onboard, pickDateRange, spend } from './helpers';
+import { chooseCombobox, chooseSelect, onboard, pickDateRange, spend } from './helpers';
 
 /** Fails unless every cell and axis label stays inside the card around each of `ids`. */
 async function expectInsideCards(page: Page, ids: string[]) {
@@ -280,6 +280,68 @@ test('scopes the full reports with a period, a custom one too', async ({ page })
 	await page.getByRole('link', { name: 'Spending by category' }).click();
 	await expect(page.getByLabel('Period')).toHaveText('Custom');
 	await expect(page.getByTestId('spending-table').locator('tfoot')).toContainText('$60.00');
+});
+
+test('folds long tables and pages long drill-downs', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Checking' })
+		.getByRole('link')
+		.click();
+
+	// 101 payments to one payee and one to each of nine others, all Groceries: more rows than a
+	// table shows unfolded, and more transactions than a drill-down's first page.
+	const now = new Date();
+	const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+	const names = [...Array.from({ length: 101 }, () => 'MARKET'), ...'ABCDEFGHI'].map((n) =>
+		n === 'MARKET' ? n : `SHOP ${n}`
+	);
+	const lines = names.map(
+		(name, i) =>
+			`<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>${date}<TRNAMT>-1.00<FITID>${i}<NAME>${name}</STMTTRN>`
+	);
+	await page.getByTestId('import-file').setInputFiles({
+		name: 'statement.ofx',
+		mimeType: 'application/x-ofx',
+		buffer: Buffer.from(
+			`OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>\n${lines.join('\n')}\n</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`,
+			'latin1'
+		)
+	});
+	await chooseCombobox(page, 'Category for the rest', 'Groceries', 'Groceries');
+	await page.getByRole('button', { name: 'Apply' }).click();
+	await page.getByTestId('import-commit').click();
+	await expect(page.getByText('Imported: 110 new, 0 matched.')).toBeVisible();
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByRole('link', { name: 'Spending by category' }).click();
+	await page
+		.getByTestId('spending-table')
+		.getByRole('button', { name: /Groceries/ })
+		.click();
+	const groceries = page.getByRole('region', { name: 'Transactions in Groceries' });
+	await expect(groceries.getByRole('listitem')).toHaveCount(100);
+	await groceries.getByRole('button', { name: 'Load more' }).click();
+	await expect(groceries.getByRole('listitem')).toHaveCount(110);
+	await expect(groceries.getByRole('button', { name: 'Load more' })).toBeHidden();
+
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await page.getByTestId('payees-card').click();
+	const table = page.getByTestId('payees-table');
+	await expect(table.locator('tbody tr')).toHaveCount(9);
+	await table.getByRole('button', { name: 'Show all 10' }).click();
+	await expect(table.locator('tbody tr')).toHaveCount(11);
+	await table.getByRole('button', { name: 'Show fewer' }).click();
+	await expect(table.locator('tbody tr')).toHaveCount(9);
+
+	await table.getByRole('button', { name: /MARKET/i }).click();
+	const market = page.getByRole('region', { name: /Transactions with MARKET/i });
+	await expect(market.getByRole('listitem')).toHaveCount(100);
+	await market.getByRole('button', { name: 'Load more' }).click();
+	await expect(market.getByRole('listitem')).toHaveCount(101);
 });
 
 test('opens Age of Money from its card, which waits for ten payments', async ({ page }) => {

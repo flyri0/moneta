@@ -28,8 +28,8 @@ export function payeeDisplay(
 	return row.payeeName ? { kind: 'payee', name: row.payeeName } : { kind: 'none' };
 }
 
-/** A payee display as plain text, for rows that show it without a link. */
-export function payeeText(display: PayeeDisplay): string {
+/** A payee display as plain text, for rows that show it without a link. `none` names a blank. */
+export function payeeText(display: PayeeDisplay, none: string = m.register_no_payee()): string {
 	switch (display.kind) {
 		case 'transfer':
 			return display.direction === 'to'
@@ -40,7 +40,7 @@ export function payeeText(display: PayeeDisplay): string {
 		case 'payee':
 			return display.name;
 		case 'none':
-			return m.register_no_payee();
+			return none;
 	}
 }
 

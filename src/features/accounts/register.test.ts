@@ -58,6 +58,11 @@ describe('payeeText', () => {
 		expect(payeeText({ kind: 'payee', name: 'Landlord' })).toBe('Landlord');
 		expect(payeeText({ kind: 'none' })).toBe('No payee');
 	});
+
+	it('takes another text for a blank', () => {
+		expect(payeeText({ kind: 'none' }, 'Checking')).toBe('Checking');
+		expect(payeeText({ kind: 'payee', name: 'Landlord' }, 'Checking')).toBe('Landlord');
+	});
 });
 
 describe('projectBalances', () => {
