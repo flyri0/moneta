@@ -28,6 +28,9 @@
 		installmentPlan
 	} from '$features/transactions/installments';
 	import TransactionFields from './TransactionFields.svelte';
+	import { useLive } from '$client/live.svelte';
+	import { BUDGET_TABLES } from '$features/budget/view';
+	import { availableByCategory, budgetMonthFor } from '$features/categories/available';
 	import {
 		NewCategories,
 		categoryValues,
@@ -62,6 +65,14 @@
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 	const pending = new NewCategories();
+	// The month of the form's date, for the Available each category picker shows. `fetch` reads
+	// `draft.date` before it awaits, so picking a date in another month reads that month.
+	const month = useLive(session.client, BUDGET_TABLES, async () => {
+		const target = budgetMonthFor(draft.date);
+		return target ? session.api.budget.month(target) : null;
+	});
+	// A failed read shows no amounts: they are a hint, not the form's content.
+	const available = $derived(month.data ? availableByCategory(month.data.groups) : undefined);
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.date);
@@ -139,7 +150,7 @@
 </script>
 
 <form class="grid gap-4" onsubmit={save}>
-	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} />
+	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} {available} />
 
 	{#if installable}
 		<div class="grid gap-2">

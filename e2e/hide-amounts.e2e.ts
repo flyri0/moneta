@@ -57,3 +57,15 @@ for (const [device, viewport] of [
 		await expect(eye(page)).toHaveCount(0);
 	});
 }
+
+test('hides the Available shown in category pickers', async ({ page }) => {
+	await onboard(page);
+	await page.getByTestId('page-header').getByRole('button', { name: 'Hide amounts' }).click();
+	await expect(page.getByTestId('rta-amount')).toHaveText('••••');
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	await page.getByRole('dialog').getByLabel('Category', { exact: true }).click();
+	const groceries = page
+		.locator('[data-picker][data-state="open"] [data-slot="command-item"]')
+		.filter({ hasText: 'Groceries' });
+	await expect(groceries.getByTestId('available')).toHaveText('••••');
+});

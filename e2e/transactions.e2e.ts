@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseCombobox, onboard, pickDate, pickDateRange } from './helpers';
+import { categoryRow, chooseCombobox, onboard, pickDate, pickDateRange, spend } from './helpers';
 
 test('lists the transactions of every account', async ({ page }) => {
 	await onboard(page);
@@ -241,4 +241,67 @@ test("gives a transfer's name the empty category column", async ({ page }) => {
 		// Not cut off with an ellipsis.
 		expect(await payee.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
 	}
+});
+
+/** The 15th of next month, as 'YYYY-MM-DD' in local time. */
+function nextMonthDate(): string {
+	const now = new Date();
+	const d = new Date(now.getFullYear(), now.getMonth() + 1, 15);
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-15`;
+}
+
+test("shows each category's Available for the transaction's month", async ({ page }) => {
+	await onboard(page);
+	const groceries = categoryRow(page, 'Groceries');
+	await groceries.getByTestId('assigned').fill('300');
+	await groceries.getByTestId('assigned').press('Enter');
+	await expect(groceries.getByTestId('available')).toHaveText('$300.00');
+	await spend(page, 'Market', '50', 'Groceries');
+	await spend(page, 'Cafe', '30', 'Dining Out');
+
+	const dialog = page.getByRole('dialog');
+	const picker = page.locator('[data-picker][data-state="open"]');
+	const item = (name: string) =>
+		picker.locator('[data-slot="command-item"]').filter({ hasText: name });
+	const pill = (name: string) => item(name).getByTestId('available');
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	await dialog.getByLabel('Category', { exact: true }).click();
+	await expect(pill('Groceries')).toHaveText('$250.00');
+	await expect(pill('Dining Out')).toHaveAttribute('data-tone', 'overspent');
+	await expect(item('Salary')).toBeVisible();
+	await expect(pill('Salary')).toHaveCount(0);
+	await item('Groceries').click();
+
+	// Next month: Groceries carries over, Dining Out's overspending doesn't.
+	await pickDate(dialog, 'Date', nextMonthDate());
+	await dialog.getByLabel('Category', { exact: true }).click();
+	await expect(pill('Dining Out')).toHaveText('$0.00');
+	await expect(pill('Groceries')).toHaveText('$250.00');
+	await item('Groceries').click();
+
+	// Split lines show them too.
+	await dialog.getByLabel('Amount', { exact: true }).fill('20');
+	await dialog.getByRole('button', { name: 'Split' }).click();
+	await dialog.getByLabel('Category for line 1').click();
+	await expect(pill('Groceries')).toHaveText('$250.00');
+	await item('Groceries').click();
+	await dialog.getByRole('button', { name: 'Cancel' }).click();
+	await expect(dialog).toBeHidden();
+
+	// Editing a transaction: Available as it stands, which already counts it.
+	await page.getByRole('link', { name: 'Transactions' }).first().click();
+	await page.getByTestId('register-row').getByRole('button', { name: 'Market' }).click();
+	await dialog.getByRole('button', { name: 'Edit transaction' }).click();
+	await dialog.getByLabel('Category', { exact: true }).click();
+	await expect(pill('Groceries')).toHaveText('$250.00');
+	await item('Groceries').click();
+	await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+	// Schedules are about future dates: their picker shows none.
+	await page.goto('/transactions/scheduled');
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	await dialog.getByLabel('Category', { exact: true }).click();
+	await expect(item('Groceries')).toBeVisible();
+	await expect(picker.getByTestId('available')).toHaveCount(0);
 });
