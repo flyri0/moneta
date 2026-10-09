@@ -216,3 +216,29 @@ test('opens a transaction on its overview, with editing and its account a tap aw
 	await expect(overview).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Open Checking' })).toHaveCount(0);
 });
+
+test("gives a transfer's name the empty category column", async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Add account' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Savings' }).click();
+	await dialog.getByLabel('Account name').fill('Emergency savings');
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	await chooseCombobox(dialog, 'Account', 'Checking', 'Checking');
+	await chooseCombobox(dialog, 'Payee', 'Transfer: Emergency savings', 'Emergency');
+	await dialog.getByLabel('Amount', { exact: true }).fill('100');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+
+	await page.getByRole('link', { name: 'Transactions' }).first().click();
+	for (const name of ['Transfer to Emergency savings', 'Transfer from Checking']) {
+		const payee = page.getByTestId('register-row').getByRole('button', { name });
+		await expect(payee).toBeVisible();
+		// Not cut off with an ellipsis.
+		expect(await payee.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+	}
+});

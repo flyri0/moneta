@@ -48,6 +48,8 @@
 
 	const session = useSession();
 	const payee = $derived(payeeDisplay(row));
+	/** A transfer with no category takes the category column too, on desktop. */
+	const wide = $derived(payee.kind === 'transfer' && !row.isSplit && !row.categoryName);
 	const payeeLabel = $derived(payeeText(payee));
 	let expanded = $state(false);
 
@@ -129,28 +131,34 @@ the rest of the row is a shortcut. -->
 		{#if onOpen && !selecting}
 			<button
 				type="button"
-				class="min-w-0 truncate text-left text-sm font-medium hover:underline"
+				class="min-w-0 truncate text-left text-sm font-medium hover:underline {wide
+					? 'md:col-span-2'
+					: ''}"
 				onclick={() => onOpen(row)}>{@render payeeText()}</button
 			>
 		{:else}
-			<span class="min-w-0 truncate text-sm font-medium">{@render payeeText()}</span>
+			<span class="min-w-0 truncate text-sm font-medium {wide ? 'md:col-span-2' : ''}"
+				>{@render payeeText()}</span
+			>
 		{/if}
 
-		<span class="order-4 hidden min-w-0 truncate text-sm md:order-none md:block">
-			{#if row.isSplit}
-				<button
-					type="button"
-					class="inline-flex items-center gap-1 hover:underline"
-					aria-expanded={expanded}
-					onclick={() => (expanded = !expanded)}
-				>
-					<ChevronRightIcon class="size-3 transition-transform {expanded ? 'rotate-90' : ''}" />
-					{m.register_split({ count: row.splits.length })}
-				</button>
-			{:else if row.categoryName}
-				{storedCategoryLabel(row.categoryName)}
-			{/if}
-		</span>
+		{#if !wide}
+			<span class="order-4 hidden min-w-0 truncate text-sm md:order-none md:block">
+				{#if row.isSplit}
+					<button
+						type="button"
+						class="inline-flex items-center gap-1 hover:underline"
+						aria-expanded={expanded}
+						onclick={() => (expanded = !expanded)}
+					>
+						<ChevronRightIcon class="size-3 transition-transform {expanded ? 'rotate-90' : ''}" />
+						{m.register_split({ count: row.splits.length })}
+					</button>
+				{:else if row.categoryName}
+					{storedCategoryLabel(row.categoryName)}
+				{/if}
+			</span>
+		{/if}
 
 		<span class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">{row.memo}</span>
 
