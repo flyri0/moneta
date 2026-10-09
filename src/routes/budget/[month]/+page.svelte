@@ -2,11 +2,11 @@
 	import { resolve } from '$app/paths';
 	import { MediaQuery } from 'svelte/reactivity';
 	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
-	import ChevronsDownUpIcon from '@lucide/svelte/icons/chevrons-down-up';
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+	import FoldVerticalIcon from '@lucide/svelte/icons/fold-vertical';
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import UnfoldVerticalIcon from '@lucide/svelte/icons/unfold-vertical';
 	import * as Alert from '$ui/alert';
 	import { Button } from '$ui/button';
 	import { Skeleton } from '$ui/skeleton';
@@ -157,10 +157,10 @@ spans a row of its own, so the chip joins the actions instead. -->
 				onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
 			>
 				{#if everyCollapsed}
-					<ChevronsUpDownIcon />
+					<UnfoldVerticalIcon />
 					<span class="hidden md:inline">{m.budget_expand_all()}</span>
 				{:else}
-					<ChevronsDownUpIcon />
+					<FoldVerticalIcon />
 					<span class="hidden md:inline">{m.budget_collapse_all()}</span>
 				{/if}
 			</Button>
