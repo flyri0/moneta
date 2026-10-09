@@ -5,6 +5,7 @@
 	import PickerShell from '$components/PickerShell.svelte';
 	import { cn } from '$utils';
 	import { m } from '$i18n/paraglide/messages';
+	import { hasExactMatch } from './match';
 
 	export interface ComboboxItem {
 		value: string;
@@ -76,10 +77,9 @@
 	});
 
 	const trimmedSearch = $derived(search.trim());
-	const hasExactMatch = $derived(
-		allItems.some((i) => i.value.toLowerCase() === trimmedSearch.toLowerCase())
+	const showCreateOption = $derived(
+		allowCustom && trimmedSearch.length > 0 && !hasExactMatch(allItems, trimmedSearch)
 	);
-	const showCreateOption = $derived(allowCustom && trimmedSearch.length > 0 && !hasExactMatch);
 
 	function handleSelect(newVal: string) {
 		value = newVal;

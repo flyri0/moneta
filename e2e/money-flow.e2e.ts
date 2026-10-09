@@ -113,3 +113,26 @@ test('records a split and shows it in the register', async ({ page }) => {
 	await expect(row.getByText('Household')).toBeVisible();
 	await expect(page.getByTestId('register-balance')).toHaveText('$920.00');
 });
+
+test.describe('on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 } });
+
+	test("typing a transfer's name offers the transfer, not a new payee", async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts' }).first().click();
+		await page.getByRole('button', { name: 'Add account' }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByRole('button', { name: /^Savings/ }).click();
+		await dialog.getByLabel('Account name').fill('Savings');
+		await dialog.getByRole('button', { name: 'Add account' }).click();
+		await expect(dialog).toBeHidden();
+
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		await chooseCombobox(page.getByRole('dialog'), 'Account', 'Checking', 'Checking');
+		await page.getByRole('dialog').getByLabel('Payee').click();
+		const picker = page.locator('[data-picker][data-state="open"]');
+		await picker.locator('[data-slot="command-input"]').fill('transfer: savings');
+		const items = picker.locator('[data-slot="command-item"]');
+		await expect(items).toHaveText(['Transfer: Savings']);
+	});
+});
