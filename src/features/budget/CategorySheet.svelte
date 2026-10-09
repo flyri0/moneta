@@ -153,6 +153,12 @@
 		else assignedText = formatAmountInput(assigned, session.money);
 	}
 
+	/** Selects a prefilled amount when the field gets focus, so typing replaces it. */
+	function selectAll(event: FocusEvent) {
+		const input = event.currentTarget as HTMLInputElement;
+		queueMicrotask(() => input.select());
+	}
+
 	/** The move form, set to take exactly the overspent amount from a category still to choose. */
 	function coverFromCategory() {
 		go('move');
@@ -289,6 +295,7 @@
 							bind:value={assignedText}
 							inputmode="decimal"
 							autocomplete="off"
+							onfocus={selectAll}
 						/>
 						<Button type="submit">{m.save()}</Button>
 					</div>
@@ -359,6 +366,7 @@
 					bind:value={moveAmount}
 					inputmode="decimal"
 					autocomplete="off"
+					onfocus={selectAll}
 					aria-label={m.budget_move_amount()}
 					placeholder="0"
 				/>

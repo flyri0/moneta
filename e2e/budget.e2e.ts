@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { categoryRow, chooseCombobox, onboard } from './helpers';
+import { categoryRow, chooseCombobox, onboard, spend } from './helpers';
 
 test('shows the month with Ready to Assign and the starter categories', async ({ page }) => {
 	await onboard(page);
@@ -242,6 +242,28 @@ test.describe('on a phone', () => {
 		await sheet.getByRole('button', { name: 'Move', exact: true }).click();
 		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$100.00');
 		await expect(categoryRow(page, 'Household').getByTestId('available')).toHaveText('$55.00');
+	});
+
+	test('selects a prefilled amount when it is tapped, so typing replaces it', async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+		const sheet = page.getByRole('dialog');
+		const assigned = sheet.getByLabel('Assigned this month');
+		await expect(assigned).toHaveValue('0.00');
+		await assigned.click();
+		await page.keyboard.type('400');
+		await expect(assigned).toHaveValue('400');
+		await sheet.getByRole('button', { name: 'Save' }).first().click();
+		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$400.00');
+
+		await spend(page, 'Cafe', '30', 'Dining Out');
+		await categoryRow(page, 'Dining Out').getByRole('button', { name: 'Dining Out' }).click();
+		await sheet.getByRole('button', { name: 'Take from another category' }).click();
+		const amount = sheet.getByLabel('Amount to move');
+		await expect(amount).toHaveValue('30.00');
+		await amount.click();
+		await page.keyboard.type('10');
+		await expect(amount).toHaveValue('10');
 	});
 
 	test('shows how much of a category is spent', async ({ page }) => {
