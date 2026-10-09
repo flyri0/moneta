@@ -14,6 +14,8 @@ export default defineConfig({
 	// Only this folder: a worktree under .claude/ would bring a second copy of Playwright.
 	testDir: 'e2e',
 	testMatch: '**/*.e2e.{ts,js}',
+	// Every test has its own browser context (OPFS, tab lock), so tests in one file run in parallel.
+	fullyParallel: true,
 	// On CI a test that fails once is tried again, so a slow runner doesn't block a deploy; the
 	// report still lists it as flaky, with a trace of the failed attempt.
 	retries: process.env.CI ? 2 : 0,

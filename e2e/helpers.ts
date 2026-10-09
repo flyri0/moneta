@@ -132,14 +132,91 @@ export async function skipIntro(page: Page): Promise<void> {
 	await nextStep(page).click();
 }
 
-/** Creates a USD budget with a checking account holding $1,000 and lands on the budget screen. */
+/** What a finished onboarding leaves in the browser: the OPFS files and `localStorage`. */
+interface DeviceState {
+	/** Each file's contents as a `data:` URL: far quicker to pass to the page than an array. */
+	files: { path: string; data: string }[];
+	storage: Record<string, string>;
+}
+
+/**
+ * Onboarded devices by budget name and the page's date (a test may fix the clock), taken once per
+ * worker process. Each test still gets its own copy, in its own browser context.
+ */
+const onboarded = new Map<string, DeviceState>();
+
+/**
+ * Creates a USD budget with a checking account holding $1,000 and lands on the budget screen.
+ * The first call for a name and date in a worker goes through onboarding; later ones copy what it
+ * left, which takes a second instead of four.
+ */
 export async function onboard(page: Page, name = 'Home'): Promise<void> {
+	await useDownloads(page);
+	// A static file of the origin, served with its type by `pnpm preview` and pwa.e2e.ts's server:
+	// the app doesn't start there, so nothing holds the files yet.
+	await page.goto('/icon.svg');
+	const { today, storage } = await page.evaluate(() => {
+		let storage = true;
+		try {
+			void localStorage.length;
+		} catch {
+			storage = false;
+		}
+		return { today: new Date().toDateString(), storage };
+	});
+	// Without localStorage (storage.e2e.ts) there is less to copy: such a test onboards for real.
+	const key = storage ? `${name} ${today}` : null;
+	const saved = key && onboarded.get(key);
+	if (saved) {
+		await page.evaluate(writeDeviceState, saved);
+		await page.goto('/budget');
+		await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
+		return;
+	}
 	await startApp(page);
 	await skipIntro(page);
 	await fillNewBudget(page, name, '1000');
 	await page.getByRole('button', { name: 'Start budgeting' }).click();
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await skipTour(page);
+	if (key) onboarded.set(key, await page.evaluate(readDeviceState));
+}
+
+async function readDeviceState(): Promise<DeviceState> {
+	const files: DeviceState['files'] = [];
+	async function walk(dir: FileSystemDirectoryHandle, path: string): Promise<void> {
+		for await (const [name, handle] of dir as unknown as AsyncIterable<
+			[string, FileSystemHandle]
+		>) {
+			if (handle instanceof FileSystemDirectoryHandle) await walk(handle, `${path}${name}/`);
+			else {
+				const file = await (handle as FileSystemFileHandle).getFile();
+				const data = await new Promise<string>((resolve) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result as string);
+					reader.readAsDataURL(file);
+				});
+				files.push({ path: path + name, data });
+			}
+		}
+	}
+	await walk(await navigator.storage.getDirectory(), '');
+	return { files, storage: { ...localStorage } };
+}
+
+async function writeDeviceState({ files, storage }: DeviceState): Promise<void> {
+	const root = await navigator.storage.getDirectory();
+	for (const { path, data } of files) {
+		const parts = path.split('/');
+		let dir = root;
+		for (const part of parts.slice(0, -1))
+			dir = await dir.getDirectoryHandle(part, { create: true });
+		const file = await dir.getFileHandle(parts.at(-1)!, { create: true });
+		const writable = await file.createWritable();
+		await writable.write(await (await fetch(data)).blob());
+		await writable.close();
+	}
+	for (const [key, value] of Object.entries(storage)) localStorage.setItem(key, value);
 }
 
 /** Skips the tour that opens over the first budget made on a device. */

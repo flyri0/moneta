@@ -223,6 +223,11 @@ pnpm exec playwright install chromium   # só na primeira vez
 pnpm test:e2e
 ```
 
+O `pnpm test:e2e` faz o build antes, a não ser que um servidor já responda na porta 4173. Para
+rodar os testes várias vezes, sirva um build em outro terminal
+(`VITE_GOOGLE_CLIENT_ID=e2e-client-id pnpm build && pnpm preview`) e rode um arquivo por vez
+com `pnpm test:e2e e2e/budget.e2e.ts`. Faça o build de novo depois de mudar o app.
+
 Em uma máquina Linux ou WSL recém-instalada, o Chromium pode não abrir por falta de
 bibliotecas do sistema (por exemplo `libnspr4.so`). Instale-as uma vez, em um terminal
 normal:
