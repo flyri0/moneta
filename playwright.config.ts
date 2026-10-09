@@ -11,6 +11,8 @@ export const webServer = {
 
 export default defineConfig({
 	webServer,
+	// Only this folder: a worktree under .claude/ would bring a second copy of Playwright.
+	testDir: 'e2e',
 	testMatch: '**/*.e2e.{ts,js}',
 	// On CI a test that fails once is tried again, so a slow runner doesn't block a deploy; the
 	// report still lists it as flaky, with a trace of the failed attempt.
