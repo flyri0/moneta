@@ -40,8 +40,13 @@
 	data-scroll-inset="top"
 	data-testid="page-header"
 >
-	<div class="mx-auto flex items-start gap-2 px-3 py-3 md:px-6 {width}">
-		<div class="grid min-w-0 flex-1 gap-3">
+	<!-- The eye sits beside the top rows only, so the toolbar keeps the full width. -->
+	<div
+		class="mx-auto grid gap-x-2 gap-y-3 px-3 py-3 md:px-6 {width} {hideAmounts
+			? 'grid-cols-[minmax(0,1fr)_auto]'
+			: 'grid-cols-1'}"
+	>
+		<div class="grid min-w-0 gap-3">
 			{#if back}
 				<a
 					href={back.route === '/accounts/[id]'
@@ -67,10 +72,11 @@
 					<div class="ml-auto flex shrink-0 items-center gap-2">{@render actions()}</div>
 				{/if}
 			</div>
-			{#if toolbar}{@render toolbar()}{/if}
 		</div>
 		{#if hideAmounts}
-			<div class="flex min-h-9 shrink-0 items-center"><HideAmountsToggle /></div>
+			<div class="flex min-h-9 items-center self-start"><HideAmountsToggle /></div>
 		{/if}
+		<!-- Each part of the toolbar is a full-width row; an empty toolbar adds none. -->
+		{#if toolbar}<div class="contents *:col-span-full *:min-w-0">{@render toolbar()}</div>{/if}
 	</div>
 </header>

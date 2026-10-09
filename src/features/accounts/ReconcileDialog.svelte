@@ -146,7 +146,7 @@
 		</div>
 	{:else if step === 'enter'}
 		<form class="grid gap-4" onsubmit={check}>
-			<div class="grid grid-cols-2 gap-3">
+			<div class="grid grid-cols-2 items-start gap-3">
 				<div class="grid gap-2">
 					<Label for="reconcile-balance">
 						{debt ? m.reconcile_bank_owed() : m.reconcile_bank_balance()}

@@ -112,7 +112,7 @@
 		<Switch id="{idPrefix}-on-budget" bind:checked={onBudget} />
 	</div>
 {/if}
-<div class="grid grid-cols-2 gap-3">
+<div class="grid grid-cols-2 items-start gap-3">
 	<div class="grid gap-2">
 		<Label for="{idPrefix}-balance">
 			{isDebtType(type) ? m.account_amount_owed() : m.account_starting_balance()}

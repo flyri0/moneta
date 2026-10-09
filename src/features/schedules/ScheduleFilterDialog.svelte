@@ -185,7 +185,7 @@
 				emptyOption={{ value: '', label: m.register_filter_any_payee() }}
 			/>
 		</div>
-		<div class="grid grid-cols-2 gap-3">
+		<div class="grid grid-cols-2 items-start gap-3">
 			<div class="grid gap-2">
 				<Label for="schedule-filter-min">{m.register_filter_amount_min()}</Label>
 				<Input
