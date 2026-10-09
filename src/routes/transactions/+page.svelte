@@ -17,11 +17,11 @@
 
 <PageHeader title={m.nav_transactions()}>
 	{#snippet actions()}
-		<Button variant="outline" size="sm" href={resolve('/payees')}>
+		<Button variant="outline" size="sm" href={resolve('/payees')} aria-label={m.nav_payees()}>
 			<UsersIcon />
-			{m.nav_payees()}
+			<span class="hidden md:inline">{m.nav_payees()}</span>
 		</Button>
-		<SelectButton {selection} labelled />
+		<SelectButton {selection} />
 	{/snippet}
 	{#snippet toolbar()}
 		<TransactionsTabs />
