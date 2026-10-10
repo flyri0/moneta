@@ -44,19 +44,30 @@ export function linkPossible(row: ReviewRow, linked: boolean): void {
 }
 
 /**
- * The rows to review: every new or matched line included, possible matches and duplicates left
- * out, with the suggested categories.
+ * The rows to review: every new or matched line included, with the suggested categories. Left out:
+ * possible matches and duplicates, lines dated over two years ahead (likely a wrong date format),
+ * and new lines dated before the account's starting balance, which probably counts them already.
  */
-export function reviewRows(lines: StatementLine[], previews: ImportPreview[]): ReviewRow[] {
-	return lines.map((line, i) => ({
-		line,
-		preview: previews[i],
-		include: previews[i].status === 'new' || previews[i].status === 'match',
-		payeeName: previews[i].payeeName,
-		categoryId: previews[i].categoryId ?? '',
-		ruleId: previews[i].ruleId,
-		linked: false
-	}));
+export function reviewRows(
+	lines: StatementLine[],
+	previews: ImportPreview[],
+	options: { today?: string; openingDate?: string | null } = {}
+): ReviewRow[] {
+	const { today, openingDate } = options;
+	return lines.map((line, i) => {
+		const { status } = previews[i];
+		const tooFar = today !== undefined && isFarFuture(line.date, today);
+		const beforeOpening = !!openingDate && status === 'new' && line.date < openingDate;
+		return {
+			line,
+			preview: previews[i],
+			include: (status === 'new' || status === 'match') && !tooFar && !beforeOpening,
+			payeeName: previews[i].payeeName,
+			categoryId: previews[i].categoryId ?? '',
+			ruleId: previews[i].ruleId,
+			linked: false
+		};
+	});
 }
 
 /** Whether a row still needs a category before it can be imported. */
@@ -80,13 +91,17 @@ export function reviewCounts(rows: ReviewRow[], onBudget: boolean) {
 }
 
 /**
- * How many lines to import are dated more than two years ahead, likely a wrong year: the budget
- * is worked out month by month up to the latest date.
+ * How many lines that could be imported are dated more than two years ahead, likely a wrong year:
+ * the budget is worked out month by month up to the latest date. They start unchecked.
  */
 export function farFutureCount(rows: ReviewRow[], today: string): number {
-	return rows.filter(
-		(r) => r.include && rowStatus(r) !== 'duplicate' && isFarFuture(r.line.date, today)
-	).length;
+	return rows.filter((r) => rowStatus(r) !== 'duplicate' && isFarFuture(r.line.date, today)).length;
+}
+
+/** How many new lines are dated before the account's starting balance. They start unchecked. */
+export function beforeOpeningCount(rows: ReviewRow[], openingDate: string | null): number {
+	if (!openingDate) return 0;
+	return rows.filter((r) => rowStatus(r) === 'new' && r.line.date < openingDate).length;
 }
 
 /** Gives `categoryId` to every included new row that has no category yet. */

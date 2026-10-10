@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ImportPreview, StatementLine } from '$db/repos/imports';
 import {
 	applyRule,
+	beforeOpeningCount,
 	farFutureCount,
 	fillCategories,
 	importLines,
@@ -138,13 +139,13 @@ describe('applyRule', () => {
 		expect(r.every((x) => x.ruleId === null)).toBe(true);
 	});
 
-	it('counts the included lines dated over two years ahead', () => {
+	it('counts the lines dated over two years ahead, checked or not', () => {
 		const all = rows();
 		all[0].line = { ...all[0].line, date: '2029-01-05' };
 		all[1].line = { ...all[1].line, date: '2029-01-05' };
 		all[1].include = false;
 		all[3].line = { ...all[3].line, date: '2031-01-05' };
-		expect(farFutureCount(all, '2026-10-02')).toBe(1);
+		expect(farFutureCount(all, '2026-10-02')).toBe(2);
 	});
 });
 
@@ -204,5 +205,34 @@ describe('suggestCategory', () => {
 		third.payeeName = 'Mercado';
 		suggestCategory(third, suggestions);
 		expect(third.categoryId).toBe('');
+	});
+});
+
+describe('lines that start unchecked', () => {
+	const dated = (dates: string[], statuses: ImportPreview['status'][]) =>
+		reviewRows(
+			dates.map((date, i) => ({ ...line(i + 1), date })),
+			statuses.map((s, i) => ({ ...preview(s), importId: `ofx:${i + 1}` })),
+			{ today: '2026-01-10', openingDate: '2026-01-05' }
+		);
+
+	it('leaves out new lines dated before the starting balance, and counts them', () => {
+		const r = dated(['2026-01-04', '2026-01-05', '2026-01-04'], ['new', 'new', 'match']);
+		expect(r.map((x) => x.include)).toEqual([false, true, true]);
+		expect(beforeOpeningCount(r, '2026-01-05')).toBe(1);
+	});
+
+	it('leaves out lines dated over two years ahead', () => {
+		const r = dated(['2029-01-04', '2026-01-08'], ['new', 'match']);
+		expect(r.map((x) => x.include)).toEqual([false, true]);
+	});
+
+	it('leaves everything in for an account opened at zero', () => {
+		const r = reviewRows([line(1)], [{ ...preview('new'), importId: 'ofx:1' }], {
+			today: '2026-01-10',
+			openingDate: null
+		});
+		expect(r[0].include).toBe(true);
+		expect(beforeOpeningCount(r, null)).toBe(0);
 	});
 });

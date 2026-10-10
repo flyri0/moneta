@@ -18,11 +18,14 @@
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
 	import { todayIso } from '$domain/month';
+	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import ImportRow from './ImportRow.svelte';
 	import { importHandoff } from './pending.svelte';
 	import {
 		applyRule,
+		beforeOpeningCount,
 		farFutureCount,
 		fillCategories,
 		importLines,
@@ -59,6 +62,8 @@
 
 	let rows = $state<ReviewRow[] | null>(null);
 	let suggestions = $state<Suggestions>({});
+	/** The account's starting balance date: lines before it probably count already. */
+	let openingDate = $state<string | null>(null);
 	let loadError = $state<ActionError | null>(null);
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
@@ -111,7 +116,11 @@
 			([previews, context]) => {
 				if (!current) return;
 				suggestions = context.suggestions;
-				rows = reviewRows(statement, previews);
+				openingDate = context.openingDate;
+				rows = reviewRows(statement, previews, {
+					today: todayIso(),
+					openingDate: context.openingDate
+				});
 			},
 			(err) => {
 				if (current) loadError = actionError(err);
@@ -122,6 +131,7 @@
 
 	const counts = $derived(rows ? reviewCounts(rows, account.onBudget) : null);
 	const farFuture = $derived(rows ? farFutureCount(rows, todayIso()) : 0);
+	const beforeOpening = $derived(rows ? beforeOpeningCount(rows, openingDate) : 0);
 
 	async function commit() {
 		if (!rows) return;
@@ -172,6 +182,16 @@
 	{#if farFuture > 0}
 		<Alert.Root data-testid="import-far-future">
 			<Alert.Description>{m.import_far_future({ count: farFuture })}</Alert.Description>
+		</Alert.Root>
+	{/if}
+	{#if beforeOpening > 0 && openingDate}
+		<Alert.Root data-testid="import-before-opening">
+			<Alert.Description>
+				{m.import_before_opening({
+					count: beforeOpening,
+					date: formatDate(openingDate, getLocale())
+				})}
+			</Alert.Description>
 		</Alert.Root>
 	{/if}
 

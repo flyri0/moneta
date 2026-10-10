@@ -50,13 +50,8 @@
 		status === 'new' ? row.payeeName.trim() || row.line.description : row.line.description
 	);
 	const showDescription = $derived(title.trim() !== row.line.description.trim());
-	/** A payee changed from the description, which a rule could remember. */
-	const renamed = $derived(
-		status === 'new' &&
-			!row.ruleId &&
-			row.payeeName.trim() !== '' &&
-			row.payeeName.trim() !== row.line.description.trim()
-	);
+	/** A new line a rule doesn't catch yet: one can be made from it. */
+	const canMakeRule = $derived(status === 'new' && !row.ruleId);
 </script>
 
 <div
@@ -174,7 +169,7 @@
 						disabled={!row.include}
 						class="h-8 bg-background"
 					/>
-					{#if renamed && row.include}
+					{#if canMakeRule && row.include}
 						<button
 							type="button"
 							class="justify-self-start text-xs font-medium text-primary underline-offset-2 hover:underline"

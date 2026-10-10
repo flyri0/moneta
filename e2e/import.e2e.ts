@@ -270,5 +270,7 @@ test("a rule made while reviewing fills the payee's usual category", async ({ pa
 	await chooseCombobox(dialog, 'Use payee', 'Corner Market', 'Corner');
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog).toBeHidden();
-	await expect(row.getByRole('button', { name: 'Category of line 1' })).toContainText('Groceries');
+	await expect(row.getByRole('combobox', { name: 'Category of line 1' })).toContainText(
+		'Groceries'
+	);
 });
