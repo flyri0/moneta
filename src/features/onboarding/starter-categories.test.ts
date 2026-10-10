@@ -185,4 +185,12 @@ describe('hasCategory', () => {
 		expect(hasCategory(selection, 0, '  groceries ')).toBe(true);
 		expect(hasCategory(selection, 0, 'Coffee')).toBe(false);
 	});
+
+	it('agrees with addCategory, which re-picks that name instead of adding it', () => {
+		const unpicked = toggleCategory(selection(), 0, 0);
+		expect(hasCategory(unpicked, 0, '  rENT ')).toBe(true);
+		const next = addCategory(unpicked, 0, '  rENT ');
+		expect(next[0].categories).toHaveLength(2);
+		expect(next[0].categories[0]).toEqual({ name: 'Rent', selected: true });
+	});
 });

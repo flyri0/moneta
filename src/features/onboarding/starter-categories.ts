@@ -60,10 +60,15 @@ export function toggleGroup(
 	}));
 }
 
+/** The index of the group's category by that name (case and spaces aside), or -1. */
+function findCategory(group: StarterGroup, name: string): number {
+	const wanted = name.trim().toLocaleLowerCase();
+	return group.categories.findIndex((c) => c.name.toLocaleLowerCase() === wanted);
+}
+
 /** Whether the group already has a category by that name (case and spaces aside). */
 export function hasCategory(selection: StarterGroup[], groupIndex: number, name: string): boolean {
-	const wanted = name.trim().toLocaleLowerCase();
-	return selection[groupIndex].categories.some((c) => c.name.toLocaleLowerCase() === wanted);
+	return findCategory(selection[groupIndex], name) !== -1;
 }
 
 /** Adds a category the user typed. A blank name does nothing; a name already there is just picked. */
@@ -75,9 +80,7 @@ export function addCategory(
 	const trimmed = name.trim();
 	if (!trimmed) return selection;
 	return mapGroup(selection, groupIndex, (group) => {
-		const existing = group.categories.findIndex(
-			(category) => category.name.toLocaleLowerCase() === trimmed.toLocaleLowerCase()
-		);
+		const existing = findCategory(group, trimmed);
 		if (existing !== -1) {
 			return {
 				...group,
