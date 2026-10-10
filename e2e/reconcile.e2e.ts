@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCombobox, onboard } from './helpers';
+import { chooseCombobox, onboard, pickDate } from './helpers';
 
 async function openChecking(page: Page) {
 	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
@@ -51,4 +51,27 @@ test('enters the difference as an adjustment', async ({ page }) => {
 	await expect(rows).toHaveCount(2);
 	await expect(rows.first()).toContainText('Reconciliation adjustment');
 	await expect(page.getByTestId('register-reconciled')).toHaveCount(2);
+});
+
+test('checks the bank balance against what was cleared through the chosen date', async ({
+	page
+}) => {
+	await onboard(page);
+	await openChecking(page);
+
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'No' }).click();
+	// Two days ago the account was still empty: the bank's $0 matches, with no difference to enter.
+	const d = new Date();
+	d.setDate(d.getDate() - 2);
+	const date = [d.getFullYear(), d.getMonth() + 1, d.getDate()]
+		.map((n) => String(n).padStart(2, '0'))
+		.join('-');
+	await pickDate(dialog, 'Balance date', date);
+	await expect(dialog.getByText(/Your cleared balance is/)).toContainText('$0.00');
+	await dialog.getByLabel('Balance at the bank').fill('0');
+	await dialog.getByRole('button', { name: 'Continue' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('register-reconciled-on')).toContainText('Reconciled on');
 });

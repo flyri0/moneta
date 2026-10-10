@@ -14,10 +14,10 @@
 	import { checkBalance, shownBalance } from '$features/accounts/reconcile';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { runAction, type ActionError } from '$client/notify';
+	import { actionError, runAction, type ActionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
 	import { formatAmountInput } from '$domain/money';
-	import { todayIso } from '$domain/month';
+	import { isDate, todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -53,6 +53,13 @@
 
 	const debt = $derived(isDebtType(account.type));
 	const cleared = $derived(shownBalance(account.type, account.clearedBalance));
+	// What was cleared through the balance date, the one the worker checks the bank's balance against.
+	const through = useLive(session.client, ['accounts', 'transactions'], () =>
+		isDate(date) ? session.api.accounts.get(account.id, date) : Promise.resolve(null)
+	);
+	const clearedThrough = $derived(
+		shownBalance(account.type, through.data?.clearedBalance ?? account.clearedBalance)
+	);
 
 	$effect(() => {
 		if (!open) return;
@@ -83,10 +90,21 @@
 		if (!error) open = false;
 	}
 
-	function check(event: SubmitEvent) {
+	async function check(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
-		const result = checkBalance(account.type, session.parse(typed), account.clearedBalance);
+		busy = true;
+		let result;
+		try {
+			// Fresh, not the live copy, which may still be loading for a date just picked.
+			const asOf = await session.api.accounts.get(account.id, date);
+			result = checkBalance(account.type, session.parse(typed), asOf.clearedBalance);
+		} catch (err) {
+			busy = false;
+			error = actionError(err);
+			return;
+		}
+		busy = false;
 		if (result.kind === 'invalid') {
 			error = { message: m.form_error_amount_invalid() };
 		} else if (result.kind === 'match') {
@@ -167,7 +185,7 @@
 				</div>
 			</div>
 			<p class="text-xs text-muted-foreground">
-				{m.reconcile_cleared_now({ amount: session.format(cleared) })}
+				{m.reconcile_cleared_now({ amount: session.format(clearedThrough) })}
 			</p>
 			<FormMessage {error} />
 			<Button type="submit" disabled={busy}>{m.reconcile_continue()}</Button>
