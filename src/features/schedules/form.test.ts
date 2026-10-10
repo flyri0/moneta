@@ -467,8 +467,12 @@ describe('datesToConfirm', () => {
 		endCount: null
 	} as const;
 
-	it('asks for an automatic schedule due even once', () => {
+	it('asks for an automatic schedule due even once before today', () => {
 		expect(datesToConfirm({ ...rule, autoEnter: true }, '2026-03-10')).toEqual(['2026-03-01']);
+	});
+
+	it('does not ask when the only date due is today', () => {
+		expect(datesToConfirm({ ...rule, autoEnter: true }, '2026-03-01')).toEqual([]);
 	});
 
 	it('never asks for a schedule entered by hand, nor one not due yet', () => {

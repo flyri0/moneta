@@ -352,12 +352,17 @@ export function draftRuleSummary(rule: RuleDraft): string {
 		: ruleSummary({ frequency: rule.frequency, interval });
 }
 
-/** The dates saving would enter at once, which it asks about first: only an automatic schedule's. */
+/**
+ * The dates saving would enter at once, which it asks about first: only an automatic schedule's,
+ * and only when one is dated before today (today's own is what the user just chose). Lists all.
+ */
 export function datesToConfirm(
 	input: Pick<ScheduleInput, 'autoEnter'> & Rule,
 	today: string
 ): string[] {
-	return input.autoEnter ? dueDates(input, today) : [];
+	if (!input.autoEnter) return [];
+	const dates = dueDates(input, today);
+	return dates.some((d) => d < today) ? dates : [];
 }
 
 /** The first dates to list when asking, and how many more there are. */

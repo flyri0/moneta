@@ -176,7 +176,7 @@ async function addAutomaticPaycheck(page: import('@playwright/test').Page, date:
 	await dialog.getByLabel('Enter automatically').click();
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	// A date already past asks before entering it.
-	if (date <= daysFromToday(0))
+	if (date < daysFromToday(0))
 		await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
 	await expect(dialog).toBeHidden();
 }
