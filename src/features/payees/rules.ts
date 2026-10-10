@@ -19,12 +19,24 @@ export interface RuleDraft {
 	categoryId: string;
 }
 
+/** Card processors that put their own code before the merchant's name: `PAG*CORNERMKT`. */
+const PROCESSORS = ['PAG', 'SQ', 'PAYPAL', 'TST', 'MP', 'PICPAY', 'IZ'];
+
 /**
  * A rule to start from for a statement description: "starts with" its first words, up to the
  * first `*`, number or wide gap, where banks put what changes between charges ("UBER *TRIP 8H2K"
- * gives "UBER").
+ * gives "UBER"). After a card processor's prefix (`PAG*`), it is Contains with the merchant's name
+ * instead.
  */
 export function ruleDraft(description: string, payeeName: string, categoryId = ''): RuleDraft {
+	const processed = /^\s*([A-Za-z]+)\s*\*\s*(.+)$/s.exec(description);
+	if (processed && PROCESSORS.includes(processed[1].toUpperCase())) {
+		const merchant = processed[2]
+			.split(/\d|\s{2,}/)[0]
+			.replace(/\s+/g, ' ')
+			.trim();
+		if (merchant) return { kind: 'contains', text: merchant, payeeName, categoryId };
+	}
 	const clean = description.replace(/\s+/g, ' ').trim();
 	const head = description
 		.split(/\*|\d|\s{2,}/)[0]

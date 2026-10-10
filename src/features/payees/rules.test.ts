@@ -14,6 +14,23 @@ describe('ruleDraft', () => {
 		});
 	});
 
+	it("looks past a card processor's prefix for the merchant", () => {
+		expect(ruleDraft('PAG*CORNERMKT 0423 SAO PAULO', 'Corner Market')).toMatchObject({
+			kind: 'contains',
+			text: 'CORNERMKT'
+		});
+		expect(ruleDraft('SQ *BLUE BOTTLE 123', 'Blue Bottle')).toMatchObject({
+			kind: 'contains',
+			text: 'BLUE BOTTLE'
+		});
+		expect(ruleDraft('paypal *spotify', 'Spotify')).toMatchObject({
+			kind: 'contains',
+			text: 'spotify'
+		});
+		// A merchant's own name before the asterisk is kept.
+		expect(ruleDraft('UBER *TRIP 8H2K', 'Uber')).toMatchObject({ kind: 'starts', text: 'UBER' });
+	});
+
 	it('keeps the whole description when it starts with a number', () => {
 		expect(ruleDraft('99 FOOD', 'x').text).toBe('99 FOOD');
 	});
