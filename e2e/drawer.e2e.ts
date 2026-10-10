@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { onboard } from './helpers';
+import { categoryRow, onboard } from './helpers';
 
 /** Drags a drawer by its grab bar, `by` px down (up if negative), too slowly to be a flick. */
 async function drag(page: Page, drawer: Locator, by: number): Promise<void> {
@@ -29,6 +29,20 @@ async function openAdd(page: Page): Promise<Locator> {
 }
 
 test.describe('on a phone', () => {
+	test('toasts sit at the bottom, and at the top while a drawer is open', async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('100');
+		await sheet.getByRole('button', { name: 'Save' }).click();
+		await expect(sheet).toBeHidden();
+		const toaster = page.locator('[data-sonner-toaster]');
+		await expect(page.getByText('Assigned $100.00 to Groceries.')).toBeVisible();
+		await expect(toaster).toHaveAttribute('data-y-position', 'bottom');
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		await expect(toaster).toHaveAttribute('data-y-position', 'top');
+	});
+
 	test.use({ viewport: { width: 390, height: 844 } });
 
 	test('a dialog is a drawer: dragged down it closes, nudged it springs back', async ({ page }) => {

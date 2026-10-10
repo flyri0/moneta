@@ -65,6 +65,9 @@
 	 */
 	const APP_TOP = 'calc(4rem + 1px + env(safe-area-inset-top))';
 
+	/** How far the bottom bar and the add button reach on phones: toasts sit above them. */
+	const APP_BOTTOM = 'calc(7rem + env(safe-area-inset-bottom))';
+
 	const session = useSession();
 
 	$effect(() => {
@@ -72,6 +75,12 @@
 		const root = document.documentElement;
 		root.style.setProperty('--app-top', APP_TOP);
 		return () => root.style.removeProperty('--app-top');
+	});
+
+	$effect(() => {
+		const root = document.documentElement;
+		root.style.setProperty('--app-bottom', APP_BOTTOM);
+		return () => root.style.removeProperty('--app-bottom');
 	});
 
 	// A budget that opens before any tour was planned (a restore, an older budget) ends it here.
