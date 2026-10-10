@@ -286,10 +286,16 @@ test.describe('on a phone', () => {
 			'data-tone',
 			'overspent'
 		);
-		// On a phone the name gives way: the pill stays inside its row.
-		const row = (await item('Phone & Internet').boundingBox())!;
-		const pill = (await item('Phone & Internet').getByTestId('available').boundingBox())!;
-		expect(pill.x + pill.width).toBeLessThanOrEqual(row.x + row.width);
+		// The pills line up on the right of their rows, whatever the length of the name.
+		const rightGap = async (name: string) => {
+			const row = (await item(name).boundingBox())!;
+			const pill = (await item(name).getByTestId('available').boundingBox())!;
+			return row.x + row.width - (pill.x + pill.width);
+		};
+		const gaps = [await rightGap('Groceries'), await rightGap('Phone & Internet')];
+		expect(gaps[0]).toBeGreaterThanOrEqual(0);
+		expect(gaps[0]).toBeLessThan(40);
+		expect(Math.abs(gaps[0] - gaps[1])).toBeLessThan(1);
 	});
 
 	test('shows how much of a category is spent', async ({ page }) => {

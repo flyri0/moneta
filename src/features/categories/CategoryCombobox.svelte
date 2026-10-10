@@ -180,9 +180,9 @@
 									<CheckIcon
 										class={cn('mr-2 size-4', value === category.id ? 'opacity-100' : 'opacity-0')}
 									/>
-									<span class="min-w-0 truncate">{categoryLabel(category)}</span>
+									<span class="min-w-0 flex-1 truncate">{categoryLabel(category)}</span>
 									{#if available?.has(category.id)}
-										<span class="ml-auto shrink-0">
+										<span class="shrink-0">
 											<AvailablePill category={available.get(category.id)!} />
 										</span>
 									{/if}
