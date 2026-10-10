@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryProgress } from './progress';
+import { categoryProgress, showsSpending } from './progress';
 
 /** A category view is summarised by the two numbers the row already shows. */
 const view = (activity: number, available: number) => ({
@@ -120,5 +120,16 @@ describe('categoryProgress', () => {
 
 	it('shows no goal once a target needs nothing more', () => {
 		expect(categoryProgress(withGoal(0, 50_000, 0, 0)).goal).toBeNull();
+	});
+});
+
+describe('showsSpending', () => {
+	it('has nothing to say for a category with nothing funded, spent or received', () => {
+		const p = (activity: number, available: number) =>
+			categoryProgress({ activity, available, assigned: available - activity, goalNeed: null });
+		expect(showsSpending(p(0, 0))).toBe(false);
+		expect(showsSpending(p(0, 3000))).toBe(true);
+		expect(showsSpending(p(-500, -500))).toBe(true);
+		expect(showsSpending(p(700, 700))).toBe(true);
 	});
 });

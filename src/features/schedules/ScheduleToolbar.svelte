@@ -16,7 +16,8 @@
 
 <SearchFilterBar
 	bind:search={filters.searchInput}
-	placeholder={m.schedules_search()}
+	placeholder={m.search_placeholder()}
+	label={m.schedules_search()}
 	activeCount={filters.activeCount}
 	onFilters={() => (open = true)}
 />

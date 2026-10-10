@@ -9,9 +9,10 @@
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { today } from '$client/today.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
-	import { monthOf, todayIso } from '$domain/month';
+	import { monthOf } from '$domain/month';
 	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth } from '$i18n/formats';
 	import { accountTypeLabel } from '$i18n/labels';
@@ -37,14 +38,15 @@
 	const LINES = 5;
 
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 	// Read through this month whatever the period, and cut to it here, as net worth does.
-	const history = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.reports.accountBalances(monthOf(todayIso()))
-	);
+	const history = useLive(session.client, ['accounts', 'transactions'], () => {
+		const day = today();
+		return session.api.reports.accountBalances(monthOf(day), day);
+	});
 	const breakdown = $derived(accountBreakdown(accounts.data ?? []));
-	const points = $derived(pointsInRange(history.data ?? [], range, todayIso()));
+	const points = $derived(pointsInRange(history.data ?? [], range, today()));
 	const charted = $derived(breakdown.debts.slice(0, LINES).map((d, i) => ({ ...d, key: `d${i}` })));
 	const config = $derived(
 		Object.fromEntries(

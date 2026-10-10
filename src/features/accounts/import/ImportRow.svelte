@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Badge } from '$ui/badge';
+	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -11,7 +12,7 @@
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
-	import { needsCategory, type ReviewRow } from './review';
+	import { linkPossible, needsCategory, rowStatus, type ReviewRow } from './review';
 
 	/**
 	 * One statement line on the import review. Collapsed, it shows the payee, the bank's description
@@ -38,7 +39,9 @@
 		onMakeRule: () => void;
 	} = $props();
 
-	const status = $derived(row.preview.status);
+	const status = $derived(rowStatus(row));
+	/** A line that may be a transaction entered by hand, waiting to be linked or not. */
+	const possible = $derived(row.preview.status === 'possible' ? row.preview.match : null);
 	const number = $derived(index + 1);
 	/** What the line is called: the payee a new line gets, or the bank's description. */
 	const title = $derived(
@@ -82,7 +85,18 @@
 		{/if}
 		<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
 			<span class="tabular-nums">{formatDate(row.line.date, getLocale())}</span>
-			{#if status === 'new'}
+			{#if possible && !row.linked}
+				<Badge
+					variant="outline"
+					class="h-auto max-w-full shrink whitespace-normal"
+					data-testid="import-possible"
+				>
+					{m.import_status_possible({
+						payee: possible.payeeName ?? m.register_no_payee(),
+						date: formatDate(possible.date, getLocale())
+					})}
+				</Badge>
+			{:else if status === 'new'}
 				<Badge variant="secondary">{m.import_status_new()}</Badge>
 				{#if row.ruleId}
 					<Badge variant="outline" data-testid="import-rule">{m.import_rule_badge()}</Badge>
@@ -106,6 +120,25 @@
 		</span>
 	</button>
 	<Amount amount={row.line.amount} flow class="text-sm font-semibold" />
+	{#if possible}
+		<div class="col-start-2 col-end-4 flex items-center gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				aria-label={row.linked
+					? m.import_possible_unlink_label({ number })
+					: m.import_possible_link_label({
+							number,
+							payee: possible.payeeName ?? m.register_no_payee(),
+							date: formatDate(possible.date, getLocale())
+						})}
+				onclick={() => linkPossible(row, !row.linked)}
+			>
+				{row.linked ? m.import_possible_unlink() : m.import_possible_link()}
+			</Button>
+		</div>
+	{/if}
 
 	{#if expanded}
 		<div class="col-start-2 col-end-4 grid gap-3 rounded-lg bg-muted/40 p-3 text-sm">
@@ -119,6 +152,14 @@
 				{/if}
 			</div>
 			{#if status === 'new'}
+				{#if possible}
+					<p class="text-muted-foreground">
+						{m.import_possible_details({
+							payee: possible.payeeName ?? m.register_no_payee(),
+							date: formatDate(possible.date, getLocale())
+						})}
+					</p>
+				{/if}
 				<div class="grid gap-1.5">
 					<Label for="import-payee-{number}" class="text-xs text-muted-foreground">
 						{m.transaction_payee()}

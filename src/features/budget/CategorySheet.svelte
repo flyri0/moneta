@@ -21,7 +21,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
-	import { categoryProgress } from '$features/budget/progress';
+	import { categoryProgress, showsSpending } from '$features/budget/progress';
 	import {
 		coverableFromReady,
 		isOverspent,
@@ -239,14 +239,16 @@
 						<span class="text-muted-foreground">{m.budget_available()}</span>
 						<AvailablePill {category} />
 					</div>
-					{#if !overspent}
+					{#if !overspent && (showsSpending(progress) || progress.goal)}
 						<p class="text-xs text-muted-foreground tabular-nums">
-							{m.budget_progress_spent({
-								spent: session.format(progress.spent),
-								funded: session.format(progress.funded)
-							})}
+							{#if showsSpending(progress)}
+								{m.budget_progress_spent({
+									spent: session.format(progress.spent),
+									funded: session.format(progress.funded)
+								})}
+							{/if}
 							{#if progress.goal}
-								· {progress.goal.toGo > 0
+								{showsSpending(progress) ? '· ' : ''}{progress.goal.toGo > 0
 									? m.budget_goal_to_go({ amount: session.format(progress.goal.toGo) })
 									: m.budget_goal_met()}
 							{/if}

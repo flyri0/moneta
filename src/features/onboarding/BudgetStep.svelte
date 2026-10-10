@@ -2,6 +2,7 @@
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import { Combobox } from '$ui/combobox';
+	import type { ActionError } from '$client/notify';
 	import { currencyChoices, localeChoices, suggestCurrency } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -14,6 +15,7 @@
 		onNext,
 		onBack,
 		backLabel,
+		error = null,
 		name = $bindable(),
 		locale = $bindable(),
 		currency = $bindable()
@@ -24,6 +26,7 @@
 		onNext: () => void;
 		onBack?: () => void;
 		backLabel?: string;
+		error?: ActionError | null;
 		name: string;
 		locale: string;
 		currency: string;
@@ -34,11 +37,26 @@
 	const currencies = currencyChoices(uiLocale);
 </script>
 
-<StepLayout {title} {current} {total} nextLabel={m.onboarding_next()} {backLabel} {onBack} {onNext}>
+<StepLayout
+	{title}
+	{current}
+	{total}
+	nextLabel={m.onboarding_next()}
+	{backLabel}
+	{onBack}
+	{onNext}
+	{error}
+>
 	<div class="grid gap-4">
 		<div class="grid gap-2">
 			<Label for="budget-name">{m.onboarding_budget_name()}</Label>
-			<Input id="budget-name" bind:value={name} required autocomplete="off" />
+			<Input
+				id="budget-name"
+				bind:value={name}
+				required
+				autocomplete="off"
+				aria-invalid={error !== null}
+			/>
 		</div>
 		<div class="grid gap-2">
 			<Label for="budget-locale">{m.onboarding_locale()}</Label>

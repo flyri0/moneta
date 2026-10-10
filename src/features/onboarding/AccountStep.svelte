@@ -22,6 +22,7 @@
 		onBudget = $bindable(),
 		balance = $bindable(),
 		date = $bindable(),
+		view = $bindable('type'),
 		money
 	}: {
 		current: number;
@@ -37,32 +38,21 @@
 		onBudget: boolean;
 		balance: string;
 		date: string;
+		/** Whether the type picker or the account's fields show; kept by the parent across Back. */
+		view?: 'type' | 'form';
 		/** The new budget's currency, for the balance's preview. */
 		money: MoneyFormat;
 	} = $props();
 
-	let step = $state<1 | 2>(1);
-
 	function selectType(selectedType: AccountType) {
 		type = selectedType;
 		onBudget = defaultOnBudget(selectedType);
-		step = 2;
-	}
-
-	function handleBack() {
-		if (step === 2) {
-			step = 1;
-		} else {
-			onBack();
-		}
+		view = 'form';
 	}
 
 	function handleNext() {
-		if (step === 1) {
-			step = 2;
-		} else {
-			onNext();
-		}
+		if (view === 'type') view = 'form';
+		else onNext();
 	}
 </script>
 
@@ -71,16 +61,16 @@
 	description={m.onboarding_account_intro()}
 	{current}
 	{total}
-	nextLabel={step === 1 ? m.onboarding_next() : m.onboarding_create()}
+	nextLabel={view === 'type' ? m.onboarding_next() : m.onboarding_create()}
 	backLabel={m.onboarding_back()}
-	onBack={handleBack}
+	{onBack}
 	onNext={handleNext}
 	{busy}
 	{error}
-	cardClass={step === 1 ? 'max-w-lg md:max-w-2xl' : 'max-w-lg'}
+	cardClass={view === 'type' ? 'max-w-lg md:max-w-2xl' : 'max-w-lg'}
 >
 	<div class="grid gap-4">
-		{#if step === 1}
+		{#if view === 'type'}
 			<AccountTypePicker selected={type} onSelect={selectType} />
 		{:else}
 			<AccountFields
@@ -90,7 +80,7 @@
 				bind:balance
 				bind:date
 				{money}
-				onChangeType={() => (step = 1)}
+				onChangeType={() => (view = 'type')}
 			/>
 		{/if}
 	</div>

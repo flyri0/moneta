@@ -157,10 +157,19 @@ export function categoryMonth(
 	return comp.months.get(month)?.categories.get(categoryId) ?? EMPTY_CATEGORY;
 }
 
+/**
+ * The first month after `month` that assigning ahead pushed below zero: its Ready to Assign is
+ * negative, lower than `month`'s, and money was assigned in a month after `month` up to it. A
+ * shortfall carried on from `month`, or one caused only by later overspending, doesn't count.
+ */
 export function firstNegativeMonthAfter(comp: BudgetComputation, month: Month): Month | null {
+	const current = comp.months.get(month)?.readyToAssign ?? 0;
+	let assignedAhead = false;
 	for (let m = addMonths(month, 1); m <= comp.last; m = addMonths(m, 1)) {
 		const r = comp.months.get(m);
-		if (r && r.readyToAssign < 0) return m;
+		if (!r) continue;
+		if (r.assignedThisMonth > 0) assignedAhead = true;
+		if (assignedAhead && r.readyToAssign < 0 && r.readyToAssign < current) return m;
 	}
 	return null;
 }

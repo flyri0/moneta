@@ -11,11 +11,12 @@ import {
 } from './account-form';
 
 describe('account defaults', () => {
-	it('puts loans and investments off-budget by default', () => {
+	it('puts loans, investments and other accounts off-budget by default', () => {
 		expect(defaultOnBudget('checking')).toBe(true);
 		expect(defaultOnBudget('credit_card')).toBe(true);
 		expect(defaultOnBudget('investment')).toBe(false);
 		expect(defaultOnBudget('loan')).toBe(false);
+		expect(defaultOnBudget('other')).toBe(false);
 	});
 
 	it('locks credit cards on-budget', () => {
@@ -66,6 +67,7 @@ describe('accountSections', () => {
 		sortOrder: 0,
 		balance: 0,
 		clearedBalance: 0,
+		upcoming: 0,
 		reconciledOn: null,
 		closingDay: null,
 		dueDay: null,

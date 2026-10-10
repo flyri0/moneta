@@ -62,6 +62,14 @@ describe('offerUndo', () => {
 		expect(lastOptions().cancel?.label).toBeTruthy();
 	});
 
+	it('offers Undo for six seconds, or as long as the toast asks for when longer', () => {
+		const { client } = fakeClient('7');
+		offerUndo(client, Promise.resolve(), 'Deleted');
+		expect(lastOptions().duration).toBe(6000);
+		offerUndo(client, Promise.resolve(), 'Imported', { duration: 8000 });
+		expect(lastOptions().duration).toBe(8000);
+	});
+
 	it('shows the message alone when the write left nothing to undo', () => {
 		successMock.mockClear();
 		const { client } = fakeClient(null);

@@ -46,8 +46,8 @@ made in the column aren't offered for undo.
 - **Activity** is what was spent (or received) in the category this month, from your transactions.
 - **Available** is what is left: what carried over from last month, plus Assigned, plus Activity.
 
-You can assign ahead into future months, for a bill that comes later. If assigning ahead would
-leave a future month's Ready to Assign below zero, Moneta warns you with the month it happens in.
+You can assign ahead into future months, for a bill that comes later. If assigning ahead pushes
+a future month's Ready to Assign below zero, Moneta warns you with the month it happens in.
 
 ### Moving money between categories {#move-money}
 

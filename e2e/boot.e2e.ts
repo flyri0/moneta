@@ -20,6 +20,48 @@ test('onboarding creates a budget that survives a reload', async ({ page }) => {
 	await expect(page.getByTestId('category-row').filter({ hasText: 'Groceries' })).toBeVisible();
 });
 
+test('onboarding refuses a blank budget name on its step', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('   ');
+	await nextStep(page).click();
+	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(page.getByLabel('Budget name')).toBeFocused();
+});
+
+test('onboarding marks a blank budget name without raising the keyboard on phones', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('   ');
+	await nextStep(page).click();
+	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(page.getByLabel('Budget name')).toHaveAttribute('aria-invalid', 'true');
+	await expect(page.getByLabel('Budget name')).not.toBeFocused();
+});
+
+test('onboarding keeps the account typed when going back, and flags a repeated category', async ({
+	page
+}) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Home');
+	await nextStep(page).click();
+	const add = page.getByLabel('Add a category — Everyday');
+	await add.fill('groceries');
+	await add.press('Enter');
+	await expect(page.getByRole('alert')).toHaveText('Already in this group.');
+	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Checking' }).click();
+	await page.getByLabel('Current balance').fill('250');
+	await page.getByRole('button', { name: 'Back' }).click();
+	await expect(page.getByText('Your categories')).toBeVisible();
+	await nextStep(page).click();
+	await expect(page.getByLabel('Current balance')).toHaveValue('250');
+});
+
 test('onboarding seeds only the categories that were picked', async ({ page }) => {
 	await startApp(page);
 	await skipIntro(page);
@@ -101,6 +143,16 @@ test('a second tab waits until it takes over', async ({ context }) => {
 	await second.getByRole('button', { name: 'Use Moneta here' }).click();
 	await expect(second.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await expect(first.getByText('Moneta is open in another tab')).toBeVisible();
+});
+
+test('a waiting tab opens by itself once the other tab closes', async ({ context }) => {
+	const first = await context.newPage();
+	await onboard(first);
+	const second = await context.newPage();
+	await second.goto('/budget');
+	await expect(second.getByText('Moneta is open in another tab')).toBeVisible();
+	await first.close();
+	await expect(second.getByTestId('rta-amount')).toHaveText('$1,000.00');
 });
 
 test('a worker waits for one still holding the storage, and never tries to delete it', async ({

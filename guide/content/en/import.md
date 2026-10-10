@@ -35,6 +35,8 @@ Before anything is written, every line is marked:
 - **Matches**: you already entered this transaction by hand, with the same amount, dated up to four
   days apart. Importing marks yours as cleared and keeps everything else about it; nothing is
   doubled.
+- **Possible match**: you entered a transaction with the same amount, dated up to ten days
+  apart. The line starts unchecked; **Link** makes it a match, or check it to import it as new.
 - **Already imported**: this line came in before, or the file repeats it. Importing the same
   statement twice, or two statements that overlap, adds nothing.
 

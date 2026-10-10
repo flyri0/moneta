@@ -61,7 +61,7 @@ test('adds, closes and protects accounts', async ({ page }) => {
 	await main.getByRole('button', { name: 'Settings for Checking' }).click();
 	await dialog.getByRole('button', { name: 'Close account' }).click();
 	await expect(dialog.getByRole('alert')).toHaveText(
-		'Only accounts with a zero balance can be closed.'
+		'Only accounts with a zero balance, upcoming transactions included, can be closed.'
 	);
 });
 

@@ -366,9 +366,74 @@ describe('listAccountOptions', () => {
 		expect(listAccountOptions(db)).toEqual(
 			listAccounts(db).map((account) =>
 				Object.fromEntries(
-					Object.entries(account).filter(([key]) => key !== 'balance' && key !== 'clearedBalance')
+					Object.entries(account).filter(
+						([key]) => key !== 'balance' && key !== 'clearedBalance' && key !== 'upcoming'
+					)
 				)
 			)
 		);
+	});
+});
+
+describe('balances as of a day', () => {
+	it('counts transactions through the day and keeps later ones apart', async () => {
+		const db = await createBudgetDb();
+		const food = categoryId(db, 'Food');
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 100000 })
+		);
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-02-10',
+			amount: -2000,
+			categoryId: food,
+			cleared: true
+		});
+		createTransaction(db, { accountId: bank, date: '2026-02-11', amount: -3000, categoryId: food });
+		expect(getAccount(db, bank, '2026-02-10')).toMatchObject({
+			balance: 98000,
+			clearedBalance: 98000,
+			upcoming: -3000
+		});
+		expect(listAccounts(db, '2026-02-10')[0]).toMatchObject({ balance: 98000, upcoming: -3000 });
+		expect(getAccount(db, bank)).toMatchObject({ balance: 95000, upcoming: 0 });
+	});
+
+	it('refuses a day that is not a date', async () => {
+		const db = await createBudgetDb();
+		expect(() => listAccounts(db, 'tomorrow')).toThrow(code('INVALID_INPUT'));
+	});
+
+	it('keeps an account whose only balance is upcoming from closing', async () => {
+		const db = await createBudgetDb();
+		const card = createAccount(db, acct({ name: 'Visa', type: 'credit_card' }));
+		createTransaction(db, {
+			accountId: card,
+			date: '2027-01-15',
+			amount: -3000,
+			categoryId: categoryId(db, 'Food')
+		});
+		expect(getAccount(db, card, '2026-01-01').balance).toBe(0);
+		expect(() => closeAccount(db, card)).toThrow(code('ACCOUNT_BALANCE_NOT_ZERO'));
+	});
+
+	it('reconciles what was cleared through its date', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 100000 })
+		);
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-03-01',
+			amount: -5000,
+			categoryId: categoryId(db, 'Food'),
+			cleared: true
+		});
+		reconcileAccount(db, bank, { date: '2026-02-01', balance: 100000 });
+		const rows = listTransactions(db, { accountId: bank });
+		expect(rows.find((r) => r.date === '2026-01-01')?.reconciled).toBe(true);
+		expect(rows.find((r) => r.date === '2026-03-01')?.reconciled).toBe(false);
 	});
 });

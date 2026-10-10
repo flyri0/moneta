@@ -200,3 +200,53 @@ test('shows a line the bank repeats in a file as already imported', async ({ pag
 	await expect(rows.nth(0)).not.toContainText('Already imported');
 	await expect(rows.nth(1)).toContainText('Already imported');
 });
+
+/** The local date `days` from today, as OFX writes it (`YYYYMMDD`). */
+function ofxDate(days: number): string {
+	const d = new Date();
+	d.setDate(d.getDate() + days);
+	return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
+test('offers a paycheck entered days apart as a possible match, and links it', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'ACME', 'ACME');
+	await dialog.getByRole('button', { name: 'Inflow' }).click();
+	await dialog.getByLabel('Amount', { exact: true }).fill('3500');
+	await chooseCombobox(dialog, 'Category', 'Salary', 'Salary');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await openChecking(page);
+
+	const ofx = ofxDate(-6);
+	await importFile(page, {
+		name: 'statement.ofx',
+		mimeType: 'application/x-ofx',
+		buffer: Buffer.from(
+			`OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+CHARSET:1252
+
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>${ofx}<TRNAMT>3500.00<FITID>9<NAME>ACME PAYROLL</STMTTRN>
+</BANKTRANLIST>
+<LEDGERBAL><BALAMT>4500.00<DTASOF>${ofx}</LEDGERBAL>
+</STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`,
+			'latin1'
+		)
+	});
+	const row = page.getByTestId('import-row');
+	await expect(row.getByTestId('import-possible')).toContainText('Possible match: ACME');
+	await expect(row.getByRole('checkbox')).not.toBeChecked();
+	await row.getByRole('button', { name: /^Link line 1/ }).click();
+	await expect(row.getByTestId('import-match')).toContainText('ACME');
+	const commit = page.getByTestId('import-commit');
+	await expect(commit).toHaveText('Import (1)');
+	await commit.click();
+	await expect(page.getByText('Imported: 0 new, 1 matched.')).toBeVisible();
+	await expect(page.getByTestId('register-row')).toHaveCount(2);
+});

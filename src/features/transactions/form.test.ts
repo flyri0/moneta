@@ -8,6 +8,7 @@ import {
 	categoryOptions,
 	draftFromTransaction,
 	newDraft,
+	splitBalance,
 	splitRemaining,
 	suggestCategory,
 	transferTarget,
@@ -200,11 +201,20 @@ describe('categoryOptions', () => {
 	});
 
 	it('never offers hidden categories unless chosen', () => {
-		expect(ids(draft({}))).toEqual(['rta', 'food']);
+		expect(ids(draft({}))).toEqual(['food', 'rta']);
+	});
+
+	it('lists the income group last for an outflow and first for an inflow', () => {
+		const income = (groups: { system: string | null }[]) =>
+			groups.findIndex((g) => g.system === 'income');
+		const out = categoryOptions(draft({ direction: 'outflow' }), ctx);
+		const inn = categoryOptions(draft({ direction: 'inflow' }), ctx);
+		expect(income(out)).toBe(out.length - 1);
+		expect(income(inn)).toBe(0);
 	});
 
 	it('keeps a hidden category that is already chosen', () => {
-		expect(ids(draft({ categoryId: 'old' }))).toEqual(['rta', 'food', 'old']);
+		expect(ids(draft({ categoryId: 'old' }))).toEqual(['food', 'old', 'rta']);
 	});
 });
 
@@ -451,5 +461,15 @@ describe('draftFromTransaction', () => {
 			ok: true,
 			input: { accountId: 'broker', amount: 500, transferAccountId: 'checking', categoryId: 'food' }
 		});
+	});
+});
+
+describe('splitBalance', () => {
+	it('tells money left to place from lines past the total, either way', () => {
+		expect(splitBalance(-2000, 'outflow')).toEqual({ over: false, amount: 2000 });
+		expect(splitBalance(3000, 'outflow')).toEqual({ over: true, amount: 3000 });
+		expect(splitBalance(2000, 'inflow')).toEqual({ over: false, amount: 2000 });
+		expect(splitBalance(-3000, 'inflow')).toEqual({ over: true, amount: 3000 });
+		expect(splitBalance(0, 'outflow')).toEqual({ over: false, amount: 0 });
 	});
 });

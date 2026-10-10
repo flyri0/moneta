@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCombobox, onboard } from './helpers';
+import { chooseCombobox, onboard, pickDate } from './helpers';
 
 async function openChecking(page: Page) {
 	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
@@ -51,4 +51,57 @@ test('enters the difference as an adjustment', async ({ page }) => {
 	await expect(rows).toHaveCount(2);
 	await expect(rows.first()).toContainText('Reconciliation adjustment');
 	await expect(page.getByTestId('register-reconciled')).toHaveCount(2);
+});
+
+test('checks the bank balance against what was cleared through the chosen date', async ({
+	page
+}) => {
+	await onboard(page);
+	await openChecking(page);
+
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'No' }).click();
+	// Two days ago the account was still empty: the bank's $0 matches, with no difference to enter.
+	const d = new Date();
+	d.setDate(d.getDate() - 2);
+	const date = [d.getFullYear(), d.getMonth() + 1, d.getDate()]
+		.map((n) => String(n).padStart(2, '0'))
+		.join('-');
+	await pickDate(dialog, 'Balance date', date);
+	await expect(dialog.getByText(/Your cleared balance is/)).toContainText('$0.00');
+	await dialog.getByLabel('Balance at the bank').fill('0');
+	await dialog.getByRole('button', { name: 'Continue' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('register-reconciled-on')).toContainText('Reconciled on');
+});
+
+test('reconciles through the day the dialog was opened on, after midnight passes', async ({
+	page
+}) => {
+	await page.clock.install({ time: new Date('2026-09-29T23:40:00') });
+	await onboard(page);
+	await openChecking(page);
+
+	// Cleared, but dated tomorrow: it isn't in today's cleared balance.
+	await page.getByRole('main').getByRole('button', { name: 'Transaction', exact: true }).click();
+	const form = page.getByRole('dialog');
+	await chooseCombobox(form, 'Payee', 'Market', 'Market');
+	await form.getByLabel('Amount', { exact: true }).fill('50');
+	await chooseCombobox(form, 'Category', 'Groceries', 'Groceries');
+	await pickDate(form, 'Date', '2026-09-30');
+	await form.getByLabel('Cleared').check();
+	await form.getByRole('button', { name: 'Save' }).click();
+	await expect(form).toBeHidden();
+
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.getByTestId('reconcile-cleared')).toHaveText('$1,000.00');
+	// The day changes while the dialog is open: the page's balances move on, the dialog's date doesn't.
+	await page.clock.runFor(30 * 60_000);
+	await expect(page.getByTestId('register-balance')).toHaveText('$950.00');
+	await expect(dialog.getByTestId('reconcile-cleared')).toHaveText('$1,000.00');
+	await dialog.getByRole('button', { name: 'Yes, reconcile' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('register-reconciled-on')).toContainText('Sep 29, 2026');
 });

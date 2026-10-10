@@ -16,5 +16,5 @@
 </script>
 
 <ResponsiveDialog bind:open title={m.welcome_help_title()} description={STEPS[how]()}>
-	<p class="text-sm text-muted-foreground">{m.welcome_point_offline()}</p>
+	<p class="text-sm text-muted-foreground">{m.welcome_install_help_offline()}</p>
 </ResponsiveDialog>

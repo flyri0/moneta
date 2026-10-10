@@ -10,6 +10,7 @@
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
 	import AddAccountDialog from '$features/accounts/AddAccountDialog.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { today } from '$client/today.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
@@ -17,7 +18,7 @@
 
 	const session = useSession();
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 	let adding = $state(false);
 	let settingsOpen = $state(false);

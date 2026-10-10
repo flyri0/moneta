@@ -24,6 +24,7 @@
 	import { runWhenIdle } from '$client/idle';
 	import { pendingLoads } from '$client/pending';
 	import { useLive } from '$client/live.svelte';
+	import { ACTION_TOAST_DURATION } from '$client/notify';
 	import { persistQuietly } from '$client/persistence';
 	import {
 		MAX_SHARE,
@@ -38,6 +39,7 @@
 		type SidebarState
 	} from '$client/sidebar';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
+	import { today, watchToday } from '$client/today.svelte';
 	import { currentMonth } from '$domain/month';
 	import { errorMessage } from '$i18n/errors';
 	import { m } from '$i18n/paraglide/messages';
@@ -64,6 +66,9 @@
 	 */
 	const APP_TOP = 'calc(4rem + 1px + env(safe-area-inset-top))';
 
+	/** How far the bottom bar and the add button reach on phones: toasts sit above them. */
+	const APP_BOTTOM = 'calc(7rem + env(safe-area-inset-bottom))';
+
 	const session = useSession();
 
 	$effect(() => {
@@ -71,6 +76,12 @@
 		const root = document.documentElement;
 		root.style.setProperty('--app-top', APP_TOP);
 		return () => root.style.removeProperty('--app-top');
+	});
+
+	$effect(() => {
+		const root = document.documentElement;
+		root.style.setProperty('--app-bottom', APP_BOTTOM);
+		return () => root.style.removeProperty('--app-bottom');
 	});
 
 	// A budget that opens before any tour was planned (a restore, an older budget) ends it here.
@@ -83,7 +94,7 @@
 		if (!session.isDemo) await enterAndReport(runSchedules);
 	}
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 
 	/** Waiting on a page's code or on a query's first result. */
@@ -230,6 +241,8 @@
 	// A shorter page can reset the scroll without a scroll event.
 	afterNavigate(trackScroll);
 
+	$effect(() => watchToday());
+
 	// Each screen's code is loaded and compiled while the app sits idle, so a tap on the nav only
 	// has to render. On a phone that compile is most of the wait. The add dialog's code comes last;
 	// it still mounts only when first opened.
@@ -246,7 +259,7 @@
 		void persistQuietly(navigator.storage, navigator.userAgent);
 		if (session.isDemo || !backupDue(session.meta)) return;
 		toast(m.backup_reminder(), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: { label: m.backup_now(), onClick: () => void backUpNow(session.api) }
 		});
 	});
@@ -259,7 +272,7 @@
 		if (cloudBackup.warned || cloudBackup.remote.kind === 'current') return;
 		cloudBackup.warned = true;
 		toast.warning(m.cloud_other_version(), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: {
 				label: m.nav_settings(),
 				onClick: () => void goto(resolve('/settings'))
@@ -274,7 +287,7 @@
 		if (cloudWarned || status.kind !== 'failed' || status.retrying || !provider) return;
 		cloudWarned = true;
 		toast.error(m.cloud_stopped({ provider: provider.name, reason: errorMessage(status.error) }), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: {
 				label: m.nav_settings(),
 				onClick: () => void goto(resolve('/settings'))

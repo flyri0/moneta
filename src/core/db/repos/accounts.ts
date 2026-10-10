@@ -21,6 +21,8 @@ export interface Account {
 	sortOrder: number;
 	balance: number;
 	clearedBalance: number;
+	/** Transactions dated after the day the balances are as of; 0 when read without a day. */
+	upcoming: number;
 	/** The date of the last reconciliation, if any. */
 	reconciledOn: string | null;
 	/** A credit card's billing days (both or neither), which date its installments. */
@@ -42,29 +44,39 @@ export interface CreateAccountInput {
 
 type AccountRow = Omit<Account, 'onBudget' | 'closed'> & { onBudget: number; closed: number };
 
+/** Balances count transactions through `:today`, or all of them when it is null. */
 const SELECT_SQL = `SELECT a.id, a.name, a.icon, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
 	a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay,
-	COALESCE(SUM(t.amount), 0) AS balance,
-	COALESCE(SUM(CASE WHEN t.cleared = 1 THEN t.amount END), 0) AS clearedBalance
+	COALESCE(SUM(CASE WHEN :today IS NULL OR t.date <= :today THEN t.amount END), 0) AS balance,
+	COALESCE(SUM(CASE WHEN t.cleared = 1 AND (:today IS NULL OR t.date <= :today) THEN t.amount END), 0) AS clearedBalance,
+	COALESCE(SUM(CASE WHEN t.date > :today THEN t.amount END), 0) AS upcoming
 	FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id`;
+
+function dayParam(today: string | undefined): string | null {
+	if (today === undefined) return null;
+	if (!isDate(today)) throw new DomainError('INVALID_INPUT', `Invalid date ${today}`);
+	return today;
+}
 
 function toAccount(r: AccountRow): Account {
 	return { ...r, onBudget: r.onBudget === 1, closed: r.closed === 1 };
 }
 
-export function listAccounts(db: Db): Account[] {
+/** Every account, with balances as of `today` (all transactions when left out). */
+export function listAccounts(db: Db, today?: string): Account[] {
 	return all<AccountRow>(
 		db,
-		`${SELECT_SQL} GROUP BY a.id ORDER BY a.closed, a.on_budget DESC, a.sort_order, a.name`
+		`${SELECT_SQL} GROUP BY a.id ORDER BY a.closed, a.on_budget DESC, a.sort_order, a.name`,
+		{ ':today': dayParam(today) }
 	).map(toAccount);
 }
 
 /** An account as the pickers offer it: everything but its balances. */
-export type AccountOption = Omit<Account, 'balance' | 'clearedBalance'>;
+export type AccountOption = Omit<Account, 'balance' | 'clearedBalance' | 'upcoming'>;
 
 /** The accounts in the order `listAccounts` gives, without adding up their transactions. */
 export function listAccountOptions(db: Db): AccountOption[] {
-	return all<Omit<AccountRow, 'balance' | 'clearedBalance'>>(
+	return all<Omit<AccountRow, 'balance' | 'clearedBalance' | 'upcoming'>>(
 		db,
 		`SELECT a.id, a.name, a.icon, a.type, a.on_budget AS onBudget, a.closed, a.sort_order AS sortOrder,
 			a.reconciled_on AS reconciledOn, a.closing_day AS closingDay, a.due_day AS dueDay
@@ -72,8 +84,12 @@ export function listAccountOptions(db: Db): AccountOption[] {
 	).map((r) => ({ ...r, onBudget: r.onBudget === 1, closed: r.closed === 1 }));
 }
 
-export function getAccount(db: Db, id: string): Account {
-	const row = one<AccountRow>(db, `${SELECT_SQL} WHERE a.id = ? GROUP BY a.id`, [id]);
+/** One account, with balances as of `today` (all transactions when left out). */
+export function getAccount(db: Db, id: string, today?: string): Account {
+	const row = one<AccountRow>(db, `${SELECT_SQL} WHERE a.id = :id GROUP BY a.id`, {
+		':id': id,
+		':today': dayParam(today)
+	});
 	if (!row) throw new DomainError('NOT_FOUND', `Account ${id} not found`);
 	return toAccount(row);
 }
@@ -188,14 +204,15 @@ export interface ReconcileInput {
 }
 
 /**
- * Checks the cleared balance against the bank's and marks every cleared transaction reconciled.
+ * Checks the cleared balance through `input.date` against the bank's and marks those cleared
+ * transactions reconciled.
  * A difference needs an adjustment, or it throws RECONCILE_MISMATCH with `{ difference }`.
  */
 export function reconcileAccount(db: Db, id: string, input: ReconcileInput): void {
 	tx(db, () => {
-		const account = getAccount(db, id);
-		if (account.closed) throw new DomainError('ACCOUNT_CLOSED');
 		if (!isDate(input.date)) throw new DomainError('INVALID_INPUT', `Invalid date ${input.date}`);
+		const account = getAccount(db, id, input.date);
+		if (account.closed) throw new DomainError('ACCOUNT_CLOSED');
 		if (!Number.isSafeInteger(input.balance))
 			throw new DomainError('INVALID_INPUT', 'Balance must be an integer');
 		const difference = input.balance - account.clearedBalance;
@@ -210,7 +227,11 @@ export function reconcileAccount(db: Db, id: string, input: ReconcileInput): voi
 				cleared: true
 			});
 		}
-		run(db, 'UPDATE transactions SET reconciled = 1 WHERE account_id = ? AND cleared = 1', [id]);
+		run(
+			db,
+			'UPDATE transactions SET reconciled = 1 WHERE account_id = ? AND cleared = 1 AND date <= ?',
+			[id, input.date]
+		);
 		run(db, 'UPDATE accounts SET reconciled_on = ? WHERE id = ?', [input.date, id]);
 	});
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { onboard } from './helpers';
+import { categoryRow, onboard } from './helpers';
 
 /** Drags a drawer by its grab bar, `by` px down (up if negative), too slowly to be a flick. */
 async function drag(page: Page, drawer: Locator, by: number): Promise<void> {
@@ -21,6 +21,19 @@ async function onScreen(element: Locator): Promise<boolean> {
 	});
 }
 
+/** Assigns to Groceries from its sheet, which leaves a toast (with Undo); returns the toast. */
+async function showAssignedToast(page: Page): Promise<Locator> {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByLabel('Assigned this month').fill('100');
+	await sheet.getByRole('button', { name: 'Save' }).click();
+	await expect(sheet).toBeHidden();
+	const toast = page.locator('[data-sonner-toast]', { hasText: 'Assigned $100.00 to Groceries.' });
+	await expect(toast).toBeVisible();
+	return toast;
+}
+
 async function openAdd(page: Page): Promise<Locator> {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const drawer = page.getByRole('dialog', { name: 'New transaction' });
@@ -29,7 +42,44 @@ async function openAdd(page: Page): Promise<Locator> {
 }
 
 test.describe('on a phone', () => {
+	test('toasts sit at the bottom, and at the top while a drawer is open', async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('100');
+		await sheet.getByRole('button', { name: 'Save' }).click();
+		await expect(sheet).toBeHidden();
+		const toaster = page.locator('[data-sonner-toaster]');
+		await expect(page.getByText('Assigned $100.00 to Groceries.')).toBeVisible();
+		await expect(toaster).toHaveAttribute('data-y-position', 'bottom');
+		await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+		await expect(toaster).toHaveAttribute('data-y-position', 'top');
+	});
+
 	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('a toast swipes away to the side', async ({ page }) => {
+		const toast = await showAssignedToast(page);
+		const box = (await toast.boundingBox())!;
+		const y = box.y + box.height / 2;
+		await page.mouse.move(box.x + 40, y);
+		await page.mouse.down();
+		await page.mouse.move(box.x + 240, y, { steps: 20 });
+		await page.mouse.up();
+		// Well before the toast would have timed out.
+		await expect(toast).toBeHidden({ timeout: 2000 });
+	});
+
+	test.describe('by touch', () => {
+		test.use({ hasTouch: true });
+
+		test('a tapped toast still goes away by itself', async ({ page }) => {
+			const toast = await showAssignedToast(page);
+			await toast.locator('[data-title]').tap();
+			// Its time runs on: a tap is not a hover that holds it until the next tap elsewhere.
+			await expect(toast).toBeHidden({ timeout: 10_000 });
+		});
+	});
 
 	test('a dialog is a drawer: dragged down it closes, nudged it springs back', async ({ page }) => {
 		await onboard(page);

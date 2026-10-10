@@ -34,6 +34,9 @@ Antes de gravar qualquer coisa, cada linha é marcada:
 - **Nova**: vira uma transação nova, compensada.
 - **Corresponde**: você já lançou essa transação à mão, com o mesmo valor e data até quatro dias
   de diferença. Importar marca a sua como compensada e mantém todo o resto dela; nada é duplicado.
+- **Talvez seja**: você lançou uma transação com o mesmo valor, até dez dias de diferença.
+  A linha começa desmarcada; **Vincular** a torna correspondente, ou marque-a para importá-la como
+  nova.
 - **Já importada**: essa linha já entrou antes, ou o arquivo a repete. Importar o mesmo extrato
   duas vezes, ou dois extratos que se sobrepõem, não adiciona nada.
 

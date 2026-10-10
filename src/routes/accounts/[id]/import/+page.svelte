@@ -20,6 +20,7 @@
 	import { importHandoff } from '$features/accounts/import/pending.svelte';
 	import type { Statement } from '$features/accounts/import/statement';
 	import { useSession } from '$client/app-state.svelte';
+	import { today } from '$client/today.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, type ActionError } from '$client/notify';
 	import type { StatementLine } from '$db/repos/imports';
@@ -28,7 +29,9 @@
 
 	const session = useSession();
 	const accountId = page.params.id ?? '';
-	const account = useLive(session.client, ['accounts'], () => session.api.accounts.get(accountId));
+	const account = useLive(session.client, ['accounts'], () =>
+		session.api.accounts.get(accountId, today())
+	);
 
 	/** The statement read on the account's page; opening this page any other way goes back. */
 	const pending = untrack(() => importHandoff.takeStatement(accountId));

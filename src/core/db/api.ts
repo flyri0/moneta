@@ -54,10 +54,10 @@ export const api = {
 		init: write(ALL_TABLES, meta.initBudget, ['object'])
 	},
 	accounts: {
-		list: read(accounts.listAccounts, []),
+		list: read(accounts.listAccounts, ['string?']),
 		/** For pickers: no balances. */
 		options: read(accounts.listAccountOptions, []),
-		get: read(accounts.getAccount, ['string']),
+		get: read(accounts.getAccount, ['string', 'string?']),
 		// A starting balance is one plain transaction, and its category may be created again.
 		create: write(['accounts', 'transactions', 'categories', 'meta'], accounts.createAccount, [
 			'object'
@@ -191,11 +191,11 @@ export const api = {
 	},
 	reports: {
 		spending: read(reports.spendingByCategory, ['object']),
-		netWorth: read(reports.netWorth, ['string']),
+		netWorth: read(reports.netWorth, ['string', 'string?']),
 		cashFlow: read(reports.cashFlow, ['object']),
 		categoryMonths: read(reports.categoryMonths, ['object']),
 		payees: read(reports.spendingByPayee, ['object']),
-		accountBalances: read(reports.accountBalances, ['string']),
+		accountBalances: read(reports.accountBalances, ['string', 'string?']),
 		ageOfMoney: read(reports.ageOfMoney, ['string'])
 	},
 	backup: {

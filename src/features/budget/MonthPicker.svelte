@@ -6,7 +6,7 @@
 	import { Button } from '$ui/button';
 	import * as Popover from '$ui/popover';
 	import { addMonths, type Month } from '$domain/month';
-	import { formatMonthLong } from '$i18n/formats';
+	import { capitalizeFirst, formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import MonthYearPicker from './MonthYearPicker.svelte';
@@ -34,17 +34,17 @@
 	</Button>
 	<svelte:element
 		this={heading}
-		class="min-w-0 flex-1 truncate text-center text-lg font-semibold capitalize md:w-56 md:flex-none"
+		class="min-w-0 flex-1 truncate text-center text-lg font-semibold md:w-56 md:flex-none"
 		data-testid="month-label"
 	>
 		<Popover.Root bind:open>
 			<Popover.Trigger
-				class="group inline-flex max-w-full items-center justify-center gap-1.5 rounded-md px-2 py-1 text-lg font-semibold capitalize transition-colors hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+				class="group inline-flex max-w-full items-center justify-center gap-1.5 rounded-md px-2 py-1 text-lg font-semibold transition-colors hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
 				aria-label={m.budget_select_month()}
 			>
 				{#key month}
 					<span class="truncate">
-						{formatMonthLong(month, getLocale())}
+						{capitalizeFirst(formatMonthLong(month, getLocale()), getLocale())}
 					</span>
 				{/key}
 				<CalendarIcon

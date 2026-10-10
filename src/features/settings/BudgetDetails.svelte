@@ -9,6 +9,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
 	import { updateBudget } from '$client/session';
+	import { budgetName } from './budget-name';
 	import { currencyChoices, localeChoices } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -25,20 +26,40 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
+		const trimmed = budgetName(name);
+		if (trimmed === null) {
+			error = { message: m.budget_name_required() };
+			// On phones focusing it would raise the keyboard: the message and the marked field do.
+			if (matchMedia('(min-width: 768px)').matches)
+				document.getElementById('details-name')?.focus();
+			return;
+		}
 		busy = true;
 		error = await runAction(() =>
-			updateBudget(session.api, localStorage, session.file, { name, locale, currency })
+			updateBudget(session.api, localStorage, session.file, { name: trimmed, locale, currency })
 		);
 		busy = false;
 		if (!error) toast.success(m.settings_saved());
 	}
+
+	// A shown error is about what was typed then: changing anything clears it.
+	$effect(() => {
+		void [name, locale, currency];
+		error = null;
+	});
 </script>
 
 <form onsubmit={save}>
 	<SettingsGroup title={m.settings_budget_details()}>
 		<SettingsRow stacked label={m.onboarding_budget_name()} labelFor="details-name">
 			{#snippet control()}
-				<Input id="details-name" bind:value={name} required autocomplete="off" />
+				<Input
+					id="details-name"
+					bind:value={name}
+					required
+					autocomplete="off"
+					aria-invalid={error !== null}
+				/>
 			{/snippet}
 		</SettingsRow>
 

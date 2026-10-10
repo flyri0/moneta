@@ -4,6 +4,7 @@
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
 	import { drawerRelease } from '$client/drawer';
+	import { trackOverlay } from '$client/overlays.svelte';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -47,6 +48,10 @@
 	// It opens at its own height every time.
 	$effect(() => {
 		if (!open) expanded = false;
+	});
+
+	$effect(() => {
+		if (open) return trackOverlay('drawers');
 	});
 
 	/**

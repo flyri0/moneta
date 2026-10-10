@@ -2,6 +2,9 @@ import { toast } from 'svelte-sonner';
 import { errorDetails, errorMessage, isUnexpected } from '$i18n/errors';
 import { m } from '$i18n/paraglide/messages';
 
+/** How long a toast with a button to act on stays, in ms: time to read it and reach the button. */
+export const ACTION_TOAST_DURATION = 8000;
+
 /** Shows an unexpected error as a toast with a "copy details" action. */
 export function notifyError(err: unknown): void {
 	toast.error(errorMessage(err), {

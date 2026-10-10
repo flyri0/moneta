@@ -18,6 +18,7 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import { Button } from '$ui/button';
 	import * as PopoverUi from '$ui/popover';
+	import { trackOverlay } from '$client/overlays.svelte';
 	import { VisibleArea } from '$client/visible-area.svelte';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
@@ -62,6 +63,10 @@
 	const desktop = new MediaQuery('min-width: 768px');
 	const area = new VisibleArea();
 	let screen = $state<HTMLElement | null>(null);
+
+	$effect(() => {
+		if (open && !desktop.current) return trackOverlay('pickers');
+	});
 
 	/** Moves focus off the search on phones, which puts the keyboard away. */
 	export function dismissKeyboard() {

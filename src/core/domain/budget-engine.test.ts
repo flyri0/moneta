@@ -209,4 +209,59 @@ describe('computeBudget (Actual Budget model)', () => {
 			available: 0
 		});
 	});
+
+	describe('firstNegativeMonthAfter', () => {
+		const categories: EngineInput['categories'] = [
+			{ id: 'salary', kind: 'income', carryoverOverspending: false },
+			{ id: 'food', kind: 'regular', carryoverOverspending: false },
+			{ id: 'fun', kind: 'regular', carryoverOverspending: false }
+		];
+
+		it('ignores a shortfall carried on from this month', () => {
+			const comp = computeBudget(
+				{
+					categories,
+					entries: [
+						{ categoryId: 'salary', month: '2026-01', amount: 100000 },
+						{ categoryId: 'food', month: '2026-02', amount: -5000 }
+					],
+					assignments: [{ categoryId: 'food', month: '2026-01', assigned: 150000 }]
+				},
+				'2026-01'
+			);
+			expect(comp.months.get('2026-02')?.readyToAssign).toBe(-50000);
+			expect(firstNegativeMonthAfter(comp, '2026-01')).toBeNull();
+		});
+
+		it('warns when assigning ahead makes a negative month worse', () => {
+			const comp = computeBudget(
+				{
+					categories,
+					entries: [{ categoryId: 'salary', month: '2026-01', amount: 100000 }],
+					assignments: [
+						{ categoryId: 'food', month: '2026-01', assigned: 150000 },
+						{ categoryId: 'fun', month: '2026-02', assigned: 20000 }
+					]
+				},
+				'2026-01'
+			);
+			expect(firstNegativeMonthAfter(comp, '2026-01')).toBe('2026-02');
+		});
+
+		it('ignores a later month made negative only by overspending', () => {
+			const comp = computeBudget(
+				{
+					categories,
+					entries: [
+						{ categoryId: 'salary', month: '2026-01', amount: 100000 },
+						{ categoryId: 'food', month: '2026-02', amount: -150000 }
+					],
+					assignments: [{ categoryId: 'food', month: '2026-01', assigned: 100000 }]
+				},
+				'2026-03'
+			);
+			expect(comp.months.get('2026-03')?.readyToAssign).toBe(-50000);
+			expect(firstNegativeMonthAfter(comp, '2026-01')).toBeNull();
+		});
+	});
 });

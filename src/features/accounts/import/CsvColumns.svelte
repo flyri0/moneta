@@ -3,7 +3,7 @@
 	import { Label } from '$ui/label';
 	import * as Select from '$ui/select';
 	import { Switch } from '$ui/switch';
-	import { useSession } from '$client/app-state.svelte';
+	import Amount from '$components/Amount.svelte';
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -24,7 +24,6 @@
 		onCancel: () => void;
 	} = $props();
 
-	const session = useSession();
 	const NONE = 'none';
 	const columns = $derived(widest(table));
 	const result = $derived(applyFormat(table, format, digits));
@@ -215,7 +214,7 @@
 						>{formatDate(line.date, getLocale())}</span
 					>
 					<span class="min-w-0 truncate">{line.description}</span>
-					<span class="font-medium tabular-nums">{session.format(line.amount)}</span>
+					<Amount amount={line.amount} flow class="font-medium" />
 				</li>
 			{:else}
 				<li class="px-3 py-4 text-center text-muted-foreground">{m.import_preview_empty()}</li>

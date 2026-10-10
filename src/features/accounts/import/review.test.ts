@@ -5,8 +5,10 @@ import {
 	farFutureCount,
 	fillCategories,
 	importLines,
+	linkPossible,
 	reviewCounts,
-	reviewRows
+	reviewRows,
+	rowStatus
 } from './review';
 
 const line = (n: number): StatementLine => ({
@@ -130,5 +132,42 @@ describe('applyRule', () => {
 		all[1].include = false;
 		all[3].line = { ...all[3].line, date: '2031-01-05' };
 		expect(farFutureCount(all, '2026-10-02')).toBe(1);
+	});
+});
+
+describe('possible matches', () => {
+	const possibleRows = () =>
+		reviewRows(
+			[line(1)],
+			[
+				preview('possible', {
+					importId: 'ofx:1',
+					categoryId: 'food',
+					match: { id: 't7', date: '2026-01-01', payeeName: 'Shop', memo: '' }
+				})
+			]
+		);
+
+	it('starts unchecked, as a new line', () => {
+		const [r] = possibleRows();
+		expect(r.include).toBe(false);
+		expect(rowStatus(r)).toBe('new');
+	});
+
+	it('imports as new when checked without linking', () => {
+		const r = possibleRows();
+		r[0].include = true;
+		expect(importLines(r, true)[0]).toMatchObject({ matchId: null, categoryId: 'food' });
+		expect(reviewCounts(r, true)).toEqual({ create: 1, match: 0, missing: 0 });
+	});
+
+	it('matches once linked, and goes back to new when unlinked', () => {
+		const r = possibleRows();
+		linkPossible(r[0], true);
+		expect(r[0].include).toBe(true);
+		expect(importLines(r, true)[0]).toMatchObject({ matchId: 't7', categoryId: null });
+		expect(reviewCounts(r, true)).toEqual({ create: 0, match: 1, missing: 0 });
+		linkPossible(r[0], false);
+		expect(rowStatus(r[0])).toBe('new');
 	});
 });

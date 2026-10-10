@@ -5,7 +5,7 @@ contas. **Transações** lista todas, de todas as contas; o extrato de cada cont
 
 ## Lançar uma transação {#entering}
 
-Use o botão **Transação** (o **+** redondo no celular). Preencha:
+Use o botão **Transação** (**+ Transação**, flutuando acima da barra de baixo no celular). Preencha:
 
 - **Conta**: onde o dinheiro se moveu.
 - **Data**.

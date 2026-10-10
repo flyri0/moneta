@@ -102,6 +102,8 @@ test('records a split and shows it in the register', async ({ page }) => {
 	await dialog.getByLabel('Amount for line 1').fill('50');
 	await expect(dialog.getByTestId('split-remaining')).toHaveText('Remaining: $30.00');
 	await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled();
+	await dialog.getByLabel('Amount for line 2').fill('60');
+	await expect(dialog.getByTestId('split-remaining')).toHaveText('Over by $30.00');
 	await chooseCombobox(dialog, 'Category for line 2', 'Household', 'Household');
 	await dialog.getByLabel('Amount for line 2').fill('30');
 	await dialog.getByRole('button', { name: 'Save' }).click();

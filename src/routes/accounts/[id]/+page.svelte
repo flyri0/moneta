@@ -24,7 +24,8 @@
 	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
 	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
 	import { FORECAST_DAYS, projectBalances, registerBalances } from '$features/accounts/register';
-	import { addDays, todayIso } from '$domain/month';
+	import { today } from '$client/today.svelte';
+	import { addDays } from '$domain/month';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, notifyError } from '$client/notify';
@@ -38,18 +39,26 @@
 	const session = useSession();
 
 	const account = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.get(accountId)
+		session.api.accounts.get(accountId, today())
 	);
 	const balances = $derived(account.data ? registerBalances(account.data) : null);
 
-	const today = todayIso();
 	const upcoming = useLive(
 		session.client,
 		['schedules', 'schedule_splits', 'accounts', 'payees', 'categories'],
-		() => session.api.schedules.upcoming({ accountId, today, to: addDays(today, FORECAST_DAYS) })
+		() => {
+			const day = today();
+			return session.api.schedules.upcoming({
+				accountId,
+				today: day,
+				to: addDays(day, FORECAST_DAYS)
+			});
+		}
 	);
 	const projected = $derived(
-		account.data && upcoming.data ? projectBalances(account.data.balance, upcoming.data) : []
+		account.data && upcoming.data
+			? projectBalances(account.data.balance + account.data.upcoming, upcoming.data)
+			: []
 	);
 
 	const filters = new RegisterFilters();
@@ -208,6 +217,14 @@
 					<span class="font-medium tabular-nums">{session.format(balances.uncleared)}</span>
 				</div>
 			</div>
+			{#if account.data.upcoming !== 0}
+				<div class="flex items-center justify-between gap-3 border-t pt-3">
+					<span class="text-xs text-muted-foreground">{m.register_including_upcoming()}</span>
+					<span class="font-medium tabular-nums" data-testid="register-including-upcoming">
+						{session.format(account.data.balance + account.data.upcoming)}
+					</span>
+				</div>
+			{/if}
 			{#if account.data.reconciledOn}
 				<p class="text-xs text-muted-foreground" data-testid="register-reconciled-on">
 					{m.reconcile_last({ date: formatDate(account.data.reconciledOn, getLocale()) })}

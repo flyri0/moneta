@@ -2,6 +2,7 @@
 	import ReportCard from './ReportCard.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { today } from '$client/today.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { numberFormat } from '$domain/intl-cache';
@@ -19,7 +20,7 @@
 	const SHOWN = 5;
 
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 	const breakdown = $derived(accountBreakdown(accounts.data ?? []));
 	const all = $derived(

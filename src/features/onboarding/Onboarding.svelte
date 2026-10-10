@@ -30,6 +30,7 @@
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import { readBackupFile } from '$features/backup/actions';
 	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
+	import { budgetName } from '$features/settings/budget-name';
 	import BudgetStep from './BudgetStep.svelte';
 	import CategoriesStep from './CategoriesStep.svelte';
 	import DoneStep from './DoneStep.svelte';
@@ -72,6 +73,7 @@
 	let onBudget = $state(true);
 	let balance = $state('');
 	let date = $state(todayIso());
+	let accountView = $state<'type' | 'form'>('type');
 
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
@@ -89,6 +91,12 @@
 
 	function next() {
 		error = null;
+		if (step === 'budget' && budgetName(name) === null) {
+			error = { message: m.budget_name_required() };
+			// On phones focusing it would raise the keyboard: the message and the marked field do.
+			if (matchMedia('(min-width: 768px)').matches) document.getElementById('budget-name')?.focus();
+			return;
+		}
 		const following = stepAfter(steps, step);
 		if (following) moved = following;
 	}
@@ -110,7 +118,7 @@
 		const first = !onCancel && loadRegistry(localStorage).budgets.length === 0;
 		error = await runAction(async () => {
 			created = await createBudget(api, localStorage, {
-				name,
+				name: budgetName(name) ?? name,
 				currency,
 				locale,
 				income: toIncomeInput(selection),
@@ -188,6 +196,7 @@
 		onNext={next}
 		onBack={back}
 		backLabel={stepBefore(steps, step) ? m.onboarding_back() : onCancel ? m.cancel() : undefined}
+		{error}
 		bind:name
 		bind:locale
 		bind:currency
@@ -214,6 +223,7 @@
 		bind:onBudget
 		bind:balance
 		bind:date
+		bind:view={accountView}
 		money={{ currency, locale }}
 	/>
 {:else if step === 'done'}

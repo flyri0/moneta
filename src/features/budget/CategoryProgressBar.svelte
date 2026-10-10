@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { useSession } from '$client/app-state.svelte';
-	import { categoryProgress, type CategoryProgress } from '$features/budget/progress';
+	import {
+		categoryProgress,
+		showsSpending,
+		type CategoryProgress
+	} from '$features/budget/progress';
 	import { availableTone } from '$features/budget/view';
 	import type { BudgetCategoryView } from '$db/repos/budget';
 	import { m } from '$i18n/paraglide/messages';
@@ -13,9 +17,7 @@
 	const progress = $derived(categoryProgress(category));
 	const tone = $derived(availableTone(category));
 	// An untouched category has nothing to plot, so it shows nothing. A goal still shows.
-	const untouched = $derived(
-		progress.funded === 0 && progress.spent === 0 && progress.inflow === 0 && !progress.goal
-	);
+	const untouched = $derived(!showsSpending(progress) && !progress.goal);
 
 	// The caption is the bar's text alternative, so the bar itself is hidden from assistive tech.
 	const caption = $derived.by(() => {

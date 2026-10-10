@@ -5,6 +5,8 @@
 	import { ModeWatcher, theme } from 'mode-watcher';
 	import { page } from '$app/state';
 	import { DEFAULT_ACCENT, readAccent, themeColor } from '$client/accent';
+	import { overlays } from '$client/overlays.svelte';
+	import { toastPlacement } from '$client/toast-placement';
 	import '$client/install.svelte';
 	import { Toaster } from '$ui/sonner';
 	import Boot from '$components/app/Boot.svelte';
@@ -24,9 +26,15 @@
 		page.route.id === '/' || page.route.id === '/oauth/callback' || page.error !== null
 	);
 
-	// Toasts sit at the top on phones, clear of the bottom nav and the floating add button (and
-	// below the demo banner, through --app-top).
+	// Toasts on phones sit above the bottom bar, away from open drawers and pickers (`toastPlacement`).
 	const desktop = new MediaQuery('min-width: 768px');
+	const placement = $derived(
+		toastPlacement({
+			desktop: desktop.current,
+			drawers: overlays.drawers,
+			pickers: overlays.pickers
+		})
+	);
 
 	// The system bar around the installed app takes the accent, as soon as it is picked.
 	$effect(() => {
@@ -42,8 +50,10 @@
 <ModeWatcher defaultTheme={DEFAULT_ACCENT} />
 <Toaster
 	closeButton
-	position={desktop.current ? 'bottom-right' : 'top-center'}
-	mobileOffset={{ top: 'calc(var(--app-top, env(safe-area-inset-top)) + 0.75rem)' }}
+	position={placement.position}
+	offset={placement.offset}
+	mobileOffset={placement.offset}
+	swipeDirections={placement.swipeDirections}
 />
 {#if standalone}
 	{@render children()}

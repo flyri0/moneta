@@ -5,7 +5,7 @@ Every movement of money is a transaction: a purchase, a paycheck, a transfer bet
 
 ## Entering a transaction {#entering}
 
-Use the **Transaction** button (the round **+** on a phone). Fill in:
+Use the **Transaction** button (**+ Transaction**, floating above the bottom bar on a phone). Fill in:
 
 - **Account**: where the money moved.
 - **Date**.
