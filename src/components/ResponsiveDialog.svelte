@@ -34,10 +34,36 @@
 	const desktop = new MediaQuery('min-width: 768px');
 	let content = $state<HTMLElement | null>(null);
 
+	/** What counts as a field to focus first: a text box, a select or a picker. */
+	const FIELD =
+		'input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [role="combobox"]:not([disabled])';
+
 	function openAutoFocus(event: Event) {
-		if (focusFirst) return;
-		event.preventDefault();
-		content?.focus({ preventScroll: true });
+		if (!focusFirst) {
+			event.preventDefault();
+			content?.focus({ preventScroll: true });
+			return;
+		}
+		const root = content;
+		if (!root) return;
+		const field = root.querySelector<HTMLElement>(FIELD);
+		if (field) {
+			event.preventDefault();
+			field.focus({ preventScroll: true });
+			return;
+		}
+		// The form is still loading: the dialog focuses what it can, then the field once it appears,
+		// unless the user has moved on to something else.
+		const observer = new MutationObserver(() => {
+			const later = root.querySelector<HTMLElement>(FIELD);
+			if (!later) return;
+			observer.disconnect();
+			const active = document.activeElement;
+			if (active === root || active?.matches('[data-slot="dialog-close"]'))
+				later.focus({ preventScroll: true });
+		});
+		observer.observe(root, { childList: true, subtree: true });
+		setTimeout(() => observer.disconnect(), 3000);
 	}
 </script>
 
