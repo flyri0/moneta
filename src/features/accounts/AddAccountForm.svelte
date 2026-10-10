@@ -120,7 +120,7 @@
 					onSelect={(id) => (categoryId = id)}
 					emptyLabel={m.register_starting_balance()}
 					allowEmpty={false}
-					emptyText={(tree.data ?? []).every((g) => g.categories.length === 0)
+					emptyText={!!tree.data && tree.data.every((g) => g.categories.length === 0)
 						? m.account_starting_category_created()
 						: undefined}
 				/>
