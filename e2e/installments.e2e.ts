@@ -89,6 +89,9 @@ test('puts the installments of a card with billing days on its bills’ due date
 	const row = page.getByTestId('register-row').filter({ hasText: 'TV Store' });
 	await expect(row).toContainText('TV 1/3');
 	await expect(row).toContainText('Oct 15, 2026');
+	// Dated on the bill, it waits apart from today's balance.
+	await expect(page.getByTestId('register-balance')).toHaveText('$0.00');
+	await expect(page.getByTestId('register-including-upcoming')).toHaveText('-$300.00');
 
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();

@@ -9,6 +9,7 @@
 	import ReportSection from './ReportSection.svelte';
 	import SeriesTooltip from './SeriesTooltip.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { today } from '$client/today.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { monthOf, todayIso } from '$domain/month';
@@ -37,7 +38,7 @@
 	const LINES = 5;
 
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 	// Read through this month whatever the period, and cut to it here, as net worth does.
 	const history = useLive(session.client, ['accounts', 'transactions'], () =>

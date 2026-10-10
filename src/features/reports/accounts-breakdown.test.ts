@@ -12,6 +12,7 @@ const account = (id: string, balance: number, fields: Partial<Account> = {}): Ac
 	sortOrder: 0,
 	balance,
 	clearedBalance: balance,
+	upcoming: 0,
 	reconciledOn: null,
 	closingDay: null,
 	dueDay: null,

@@ -54,10 +54,10 @@ export const api = {
 		init: write(ALL_TABLES, meta.initBudget, ['object'])
 	},
 	accounts: {
-		list: read(accounts.listAccounts, []),
+		list: read(accounts.listAccounts, ['string?']),
 		/** For pickers: no balances. */
 		options: read(accounts.listAccountOptions, []),
-		get: read(accounts.getAccount, ['string']),
+		get: read(accounts.getAccount, ['string', 'string?']),
 		// A starting balance is one plain transaction, and its category may be created again.
 		create: write(['accounts', 'transactions', 'categories', 'meta'], accounts.createAccount, [
 			'object'

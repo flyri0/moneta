@@ -66,6 +66,7 @@ describe('accountSections', () => {
 		sortOrder: 0,
 		balance: 0,
 		clearedBalance: 0,
+		upcoming: 0,
 		reconciledOn: null,
 		closingDay: null,
 		dueDay: null,

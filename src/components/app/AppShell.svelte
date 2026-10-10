@@ -38,7 +38,7 @@
 		type SidebarState
 	} from '$client/sidebar';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
-	import { watchToday } from '$client/today.svelte';
+	import { today, watchToday } from '$client/today.svelte';
 	import { currentMonth } from '$domain/month';
 	import { errorMessage } from '$i18n/errors';
 	import { m } from '$i18n/paraglide/messages';
@@ -84,7 +84,7 @@
 		if (!session.isDemo) await enterAndReport(runSchedules);
 	}
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 
 	/** Waiting on a page's code or on a query's first result. */

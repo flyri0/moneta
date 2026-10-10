@@ -53,7 +53,9 @@ test('schedules a monthly bill, forecasts it and enters it', async ({ page }) =>
 	);
 	// The next one is a month away, past the 30-day forecast.
 	await expect(upcoming).toHaveCount(0);
-	await expect(page.getByTestId('register-balance')).toHaveText('$600.00');
+	// Entered ahead of today, it waits apart from today's balance.
+	await expect(page.getByTestId('register-balance')).toHaveText('$1,000.00');
+	await expect(page.getByTestId('register-including-upcoming')).toHaveText('$600.00');
 });
 
 test('edits the repeat rule on its own screen and deletes a schedule', async ({ page }) => {
