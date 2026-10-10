@@ -20,6 +20,7 @@
 		canSplit,
 		categoryMode,
 		categoryOptions,
+		splitBalance,
 		splitRemaining,
 		suggestCategory,
 		transferTarget,
@@ -253,13 +254,13 @@
 			{m.transaction_split_lines()}
 		</legend>
 		{#each draft.splits as line, i (i)}
-			<div class="grid grid-cols-[1fr_7rem_auto] items-center gap-2">
+			<div class="grid grid-cols-[1fr_auto] items-center gap-2 md:grid-cols-[1fr_7rem_auto]">
 				{@render categorySelect(
 					line.categoryId,
 					(id) => (line.categoryId = id),
 					`txn-split-${i}`,
 					m.transaction_split_category({ line: i + 1 }),
-					'w-full min-w-0'
+					'col-span-2 w-full min-w-0 md:col-span-1'
 				)}
 				<Input
 					bind:value={line.amount}
@@ -273,9 +274,9 @@
 					aria-label={m.transaction_split_remove({ line: i + 1 })}
 					onclick={() => removeLine(i)}><XIcon /></Button
 				>
-				<AmountPreview text={line.amount} class="col-span-3 text-right" />
+				<AmountPreview text={line.amount} class="col-span-2 text-right md:col-span-3" />
 				<Input
-					class="col-span-3"
+					class="col-span-2 md:col-span-3"
 					bind:value={line.memo}
 					placeholder={m.transaction_memo()}
 					aria-label={m.transaction_split_memo({ line: i + 1 })}
@@ -296,9 +297,14 @@
 					: 'text-destructive'}"
 				data-testid="split-remaining"
 			>
-				{remaining === null
-					? m.form_error_amount_invalid()
-					: m.transaction_split_remaining({ amount: session.format(Math.abs(remaining)) })}
+				{#if remaining === null}
+					{m.form_error_amount_invalid()}
+				{:else}
+					{@const split = splitBalance(remaining, draft.direction)}
+					{split.over
+						? m.transaction_split_over({ amount: session.format(split.amount) })
+						: m.transaction_split_remaining({ amount: session.format(split.amount) })}
+				{/if}
 			</span>
 		</div>
 	</fieldset>

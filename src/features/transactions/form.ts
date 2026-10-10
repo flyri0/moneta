@@ -181,6 +181,15 @@ export function splitRemaining(draft: TransactionDraft, money: MoneyFormat): num
 	return rest;
 }
 
+/** What `splitRemaining` means: money still to place, or how far the lines go past the total. */
+export function splitBalance(
+	remaining: number,
+	direction: Direction
+): { over: boolean; amount: number } {
+	const left = direction === 'outflow' ? -remaining : remaining;
+	return { over: left < 0, amount: Math.abs(left) };
+}
+
 export type FormError =
 	| 'ACCOUNT_REQUIRED'
 	| 'DATE_INVALID'

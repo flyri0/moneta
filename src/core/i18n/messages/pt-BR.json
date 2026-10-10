@@ -428,6 +428,7 @@
 	"transaction_split_remove": "Remover a linha {line}",
 	"transaction_split_add": "Adicionar linha",
 	"transaction_split_remaining": "Falta: {amount}",
+	"transaction_split_over": "Passou {amount}",
 	"transaction_memo": "Memorando",
 	"transaction_cleared": "Compensada",
 	"transaction_installments": "Parcelas",

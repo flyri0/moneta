@@ -428,6 +428,7 @@
 	"transaction_split_remove": "Remove line {line}",
 	"transaction_split_add": "Add line",
 	"transaction_split_remaining": "Remaining: {amount}",
+	"transaction_split_over": "Over by {amount}",
 	"transaction_memo": "Memo",
 	"transaction_cleared": "Cleared",
 	"transaction_installments": "Installments",

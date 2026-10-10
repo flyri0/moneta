@@ -8,6 +8,7 @@ import {
 	categoryOptions,
 	draftFromTransaction,
 	newDraft,
+	splitBalance,
 	splitRemaining,
 	suggestCategory,
 	transferTarget,
@@ -451,5 +452,15 @@ describe('draftFromTransaction', () => {
 			ok: true,
 			input: { accountId: 'broker', amount: 500, transferAccountId: 'checking', categoryId: 'food' }
 		});
+	});
+});
+
+describe('splitBalance', () => {
+	it('tells money left to place from lines past the total, either way', () => {
+		expect(splitBalance(-2000, 'outflow')).toEqual({ over: false, amount: 2000 });
+		expect(splitBalance(3000, 'outflow')).toEqual({ over: true, amount: 3000 });
+		expect(splitBalance(2000, 'inflow')).toEqual({ over: false, amount: 2000 });
+		expect(splitBalance(-3000, 'inflow')).toEqual({ over: true, amount: 3000 });
+		expect(splitBalance(0, 'outflow')).toEqual({ over: false, amount: 0 });
 	});
 });
