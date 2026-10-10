@@ -12,7 +12,9 @@ import {
 	nextOccurrences,
 	ruleSummary,
 	scheduleInstallments,
-	type ScheduleDraft
+	type ScheduleDraft,
+	datesToConfirm,
+	dueSummary
 } from './form';
 
 const tree: GroupNode[] = [
@@ -452,5 +454,37 @@ describe('scheduleInstallments', () => {
 				schedule({ installmentStart: 1, endCount: 3, nextIndex: 3, nextDate: null })
 			)
 		).toBeNull();
+	});
+});
+
+describe('datesToConfirm', () => {
+	const rule = {
+		startDate: '2026-03-01',
+		frequency: 'monthly',
+		interval: 1,
+		weekend: 'keep',
+		endDate: null,
+		endCount: null
+	} as const;
+
+	it('asks for an automatic schedule due even once before today', () => {
+		expect(datesToConfirm({ ...rule, autoEnter: true }, '2026-03-10')).toEqual(['2026-03-01']);
+	});
+
+	it('does not ask when the only date due is today', () => {
+		expect(datesToConfirm({ ...rule, autoEnter: true }, '2026-03-01')).toEqual([]);
+	});
+
+	it('never asks for a schedule entered by hand, nor one not due yet', () => {
+		expect(datesToConfirm({ ...rule, autoEnter: false }, '2026-09-10')).toEqual([]);
+		expect(datesToConfirm({ ...rule, autoEnter: true }, '2026-02-10')).toEqual([]);
+	});
+});
+
+describe('dueSummary', () => {
+	it('shows three dates and counts the rest', () => {
+		const dates = ['a', 'b', 'c', 'd', 'e'];
+		expect(dueSummary(dates)).toEqual({ shown: ['a', 'b', 'c'], more: 2 });
+		expect(dueSummary(['a'])).toEqual({ shown: ['a'], more: 0 });
 	});
 });

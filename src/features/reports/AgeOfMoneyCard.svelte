@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import HourglassIcon from '@lucide/svelte/icons/hourglass';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportCard from './ReportCard.svelte';
 	import Sparkline from './Sparkline.svelte';
@@ -7,6 +9,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
+	import { AGE_OF_MONEY_OUTFLOWS } from '$domain/age-of-money';
 	import { formatMonth } from '$i18n/formats';
 	import {
 		AGE_OF_MONEY_TABLES,
@@ -27,6 +30,17 @@
 
 	const series = useLive(session.client, AGE_OF_MONEY_TABLES, () =>
 		session.api.reports.ageOfMoney(today)
+	);
+	const payments = useLive(session.client, AGE_OF_MONEY_TABLES, () =>
+		session.api.reports.ageOfMoneyPayments(today)
+	);
+	const waiting = $derived(
+		payments.data
+			? `${m.reports_age_of_money_not_enough()} ${m.reports_age_of_money_progress({
+					count: payments.data,
+					total: AGE_OF_MONEY_OUTFLOWS
+				})}`
+			: m.reports_age_of_money_not_enough()
 	);
 	const current = $derived(series.data?.at(-1)?.days ?? null);
 	const recent = $derived(
@@ -63,7 +77,7 @@
 	{#if series.error}
 		<FormMessage error={actionError(series.error)} />
 	{:else if series.data && current === null}
-		<p class="text-sm text-muted-foreground">{m.reports_age_of_money_not_enough()}</p>
+		<CardEmpty icon={HourglassIcon} description={waiting} />
 	{:else if current !== null}
 		<StatTile
 			value={daysLabel(current)}

@@ -4,6 +4,7 @@ import {
 	availableTone,
 	coverableFromReady,
 	gridModel,
+	moveShortfall,
 	moveTargets,
 	overspentCategories,
 	overspentCount,
@@ -221,5 +222,35 @@ describe('coverableFromReady', () => {
 
 	it('covers nothing that is not overspent', () => {
 		expect(coverableFromReady(cat('Rent', { available: 100 }), 90000)).toBe(0);
+	});
+});
+
+describe('moveShortfall', () => {
+	it('is how far below zero the move leaves the source', () => {
+		expect(moveShortfall(31_460, 50_000)).toBe(18_540);
+		expect(moveShortfall(-1_000, 500)).toBe(1_500);
+	});
+
+	it('is zero when the source has enough, or the amount is missing or not positive', () => {
+		expect(moveShortfall(31_460, 31_460)).toBe(0);
+		expect(moveShortfall(0, null)).toBe(0);
+		expect(moveShortfall(0, 0)).toBe(0);
+		expect(moveShortfall(0, -5)).toBe(0);
+	});
+});
+
+describe('rtaHint for the months ahead and an empty budget', () => {
+	it('warns that assigning more leaves a later month short', () => {
+		expect(
+			rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: '2026-11' })
+		).toBe('futureShort');
+		expect(rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: null })).toBe(
+			'unassigned'
+		);
+	});
+
+	it('asks for an account when there is none', () => {
+		expect(rtaHint({ readyToAssign: 0, availableFunds: 0 }, false)).toBe('noAccounts');
+		expect(rtaHint({ readyToAssign: 0, availableFunds: 0 }, true)).toBe('assigned');
 	});
 });

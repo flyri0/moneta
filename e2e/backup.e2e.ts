@@ -79,7 +79,9 @@ test('backs up every budget in one file, then restores some or all of them', asy
 	await dialog.getByRole('button', { name: 'Restore (1)' }).click();
 	await expect(dialog.getByRole('status')).toContainText('replaces everything in Changed');
 	await expect(dialog.getByRole('button', { name: /^Restore in \ds$/ })).toBeDisabled();
-	await dialog.getByRole('button', { name: 'Tap again to restore' }).click({ timeout: 10_000 });
+	await dialog
+		.getByRole('button', { name: /(Tap|Click) again to restore/ })
+		.click({ timeout: 10_000 });
 	await expect(page.getByTestId('rta-amount')).toHaveText('$250.00');
 	await openSettings(page);
 	await expect(files.getByRole('listitem')).toHaveText([/Work/, /Home/]);
@@ -280,7 +282,9 @@ test('follows a budget restored over the open one, and its renames after', async
 	await page.getByLabel('Restore from a backup').setInputFiles(backup);
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Restore (1)' }).click();
-	await dialog.getByRole('button', { name: 'Tap again to restore' }).click({ timeout: 10_000 });
+	await dialog
+		.getByRole('button', { name: /(Tap|Click) again to restore/ })
+		.click({ timeout: 10_000 });
 	await expect(page.getByTestId('rta-amount')).toHaveText('$1,000.00');
 	await expect(sidebar).toContainText('Home');
 

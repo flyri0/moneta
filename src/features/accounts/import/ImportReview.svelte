@@ -18,16 +18,22 @@
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
 	import { todayIso } from '$domain/month';
+	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import ImportRow from './ImportRow.svelte';
 	import { importHandoff } from './pending.svelte';
 	import {
 		applyRule,
+		beforeOpeningCount,
 		farFutureCount,
 		fillCategories,
 		importLines,
+		newCategoryGroupsFor,
 		reviewCounts,
 		reviewRows,
+		suggestCategory,
+		type Suggestions,
 		type ReviewRow
 	} from './review';
 	import type { Statement } from './statement';
@@ -56,6 +62,9 @@
 	);
 
 	let rows = $state<ReviewRow[] | null>(null);
+	let suggestions = $state<Suggestions>({});
+	/** The account's starting balance date: lines before it probably count already. */
+	let openingDate = $state<string | null>(null);
 	let loadError = $state<ActionError | null>(null);
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
@@ -82,7 +91,7 @@
 
 	/** A rule made here applies at once to the other lines it catches. */
 	function ruleSaved(saved: SavedRule) {
-		if (rows) applyRule(rows, saved);
+		if (rows) applyRule(rows, saved, suggestions);
 	}
 
 	/**
@@ -101,9 +110,18 @@
 		let current = true;
 		rows = null;
 		loadError = null;
-		session.api.imports.preview(account.id, statement).then(
-			(previews) => {
-				if (current) rows = reviewRows(statement, previews);
+		Promise.all([
+			session.api.imports.preview(account.id, statement),
+			session.api.imports.context(account.id)
+		]).then(
+			([previews, context]) => {
+				if (!current) return;
+				suggestions = context.suggestions;
+				openingDate = context.openingDate;
+				rows = reviewRows(statement, previews, {
+					today: todayIso(),
+					openingDate: context.openingDate
+				});
 			},
 			(err) => {
 				if (current) loadError = actionError(err);
@@ -114,6 +132,7 @@
 
 	const counts = $derived(rows ? reviewCounts(rows, account.onBudget) : null);
 	const farFuture = $derived(rows ? farFutureCount(rows, todayIso()) : 0);
+	const beforeOpening = $derived(rows ? beforeOpeningCount(rows, openingDate) : 0);
 
 	async function commit() {
 		if (!rows) return;
@@ -166,6 +185,16 @@
 			<Alert.Description>{m.import_far_future({ count: farFuture })}</Alert.Description>
 		</Alert.Root>
 	{/if}
+	{#if beforeOpening > 0 && openingDate}
+		<Alert.Root data-testid="import-before-opening">
+			<Alert.Description>
+				{m.import_before_opening({
+					count: beforeOpening,
+					date: formatDate(openingDate, getLocale())
+				})}
+			</Alert.Description>
+		</Alert.Root>
+	{/if}
 
 	{#if account.onBudget && counts.missing > 0}
 		<section class="grid gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-xs">
@@ -175,6 +204,7 @@
 			<div class="flex gap-2">
 				<CategoryCombobox
 					tree={tree.data ?? []}
+					newIn={newCategoryGroupsFor(tree.data ?? [], rows ?? [])}
 					{pending}
 					bind:value={bulkCategory}
 					ariaLabel={m.import_category_for_rest()}
@@ -205,6 +235,7 @@
 				expanded={open.has(i)}
 				onToggle={() => toggle(i)}
 				onMakeRule={() => makeRule(row)}
+				onPayeeChange={() => suggestCategory(rows![i], suggestions)}
 			/>
 		{/each}
 	</section>

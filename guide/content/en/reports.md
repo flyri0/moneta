@@ -21,7 +21,9 @@ again. The overview's cards always count everything.
 
 - **Spending by category**: where the money went, by category or by group, with each one's share.
   Tap a row to see its transactions.
-- **Spending by payee**: the same, by who you paid. Here too, tap a row for its transactions.
+- **Spending by payee**: the same, by who you paid. Here too, tap a row for its transactions. A
+  refund lowers a payee's spending only when it is entered under that payee; under another one, it
+  still lowers its category, so this total can differ from spending by category.
 - **Net worth**: everything you own minus everything you owe, at the end of each month, across all
   your accounts, tracking ones included. Each account counts as an asset or a debt by the sign of
   its balance.
@@ -31,6 +33,9 @@ again. The overview's cards always count everything.
 - **Assets and debts by account**: what each open account holds or owes, and for debts, how much has
   been paid off since their peak.
 - **Age of Money**: see below.
+
+A card shows what it needs before its chart appears: a second month for net worth, cash flow and
+trends, and ten payments for Age of Money.
 
 ## Age of Money {#age-of-money}
 

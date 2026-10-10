@@ -52,9 +52,10 @@ acontece.
 
 ### Mover dinheiro entre categorias {#move-money}
 
-Planos mudam. Abra uma categoria e use **Mover dinheiro**: escolha outra categoria e um valor, e
-ele passa de uma para a outra neste mês. A lista mostra quanto cada categoria tem disponível. Cada
-movimentação pode ser desfeita logo em seguida (veja [Desfazer](transactions.md#undo)).
+Planos mudam. Abra uma categoria e use **Mover dinheiro**: escolha outra categoria e um valor, e ele
+passa de uma para a outra neste mês. A lista mostra quanto cada categoria tem disponível. Se a
+movimentação deixar a categoria de origem no negativo, o Moneta diz quanto antes de você confirmar.
+Cada movimentação pode ser desfeita logo em seguida (veja [Desfazer](transactions.md#undo)).
 
 ![A tela de uma categoria: o disponível, o atribuído neste mês, e Atribuição rápida, Mover dinheiro, Meta e Levar gasto a mais adiante.](img/category-light.pt-BR.png)
 
@@ -125,6 +126,8 @@ aumenta valores, e deixa como estão as categorias sem meta.
   **Oculto**). Ocultar um grupo oculta todas as categorias dele.
 - **Excluir** uma categoria que já foi usada pergunta para onde vão as transações e o dinheiro
   atribuído. Excluir um grupo move as categorias dele para o grupo que você escolher.
+- **Nomes** não se repetem: dois grupos não podem ter o mesmo (nem o do grupo Receitas), e duas
+  categorias do mesmo grupo também não.
 
 O grupo **Receitas** é cuidado pelo Moneta: as categorias de receita mandam o dinheiro direto para
 o Pronto para atribuir, em vez de guardá-lo.

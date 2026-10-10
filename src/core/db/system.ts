@@ -96,7 +96,7 @@ export function createSystem(deps: SystemDeps): {
 	let db: Db | null = null;
 	let openName: string | null = null;
 	/** The budgets the last inspectBackup checked, for restoreInspected to write without redoing it. */
-	let inspected: { token: string; images: Uint8Array[] } | null = null;
+	let inspected: { token: string; images: Uint8Array[]; createdAt: string | null } | null = null;
 
 	function closeDb(): void {
 		if (db) {
@@ -156,6 +156,22 @@ export function createSystem(deps: SystemDeps): {
 		if (!id || !store.list().includes(name))
 			throw new DomainError('INVALID_INPUT', `No budget file named ${name}`);
 		return id;
+	}
+
+	/**
+	 * `image` marked as backed up at `at`: a budget restored from a backup was, by definition,
+	 * backed up when that backup was made. A backup without a date (a legacy file or a saved
+	 * copy) leaves the mark it has.
+	 */
+	function stampBackedUp(image: Uint8Array, at: string | null): Uint8Array {
+		if (!at) return image;
+		const copy = openImage(sqlite3, image);
+		try {
+			updateMeta(copy, { lastBackupAt: at });
+			return toImage(sqlite3, copy);
+		} finally {
+			copy.close();
+		}
 	}
 
 	/**
@@ -320,16 +336,16 @@ export function createSystem(deps: SystemDeps): {
 					db.close();
 				}
 			}
-			inspected = { token: uuidv7(), images };
+			inspected = { token: uuidv7(), images, createdAt };
 			return { token: inspected.token, createdAt, budgets: infos };
 		},
 		async restoreBackup(bytes, picks) {
 			if (!Array.isArray(picks)) throw new DomainError('INVALID_INPUT', 'Bad restore picks');
-			const { budgets } = readBackup(bytes);
+			const { createdAt, budgets } = readBackup(bytes);
 			checkPicks(picks, budgets.length);
 			// Everything is checked before anything is written, so a bad backup changes nothing.
 			const images = picks.map(({ index }) =>
-				checkBackup(sqlite3, budgets[index].image, migrations)
+				stampBackedUp(checkBackup(sqlite3, budgets[index].image, migrations), createdAt)
 			);
 			await writeRestored(picks, images);
 		},
@@ -340,11 +356,11 @@ export function createSystem(deps: SystemDeps): {
 			if (!inspected || token !== inspected.token)
 				throw new DomainError('INVALID_INPUT', 'Unknown or stale backup token');
 			if (!Array.isArray(picks)) throw new DomainError('INVALID_INPUT', 'Bad restore picks');
-			const { images } = inspected;
+			const { images, createdAt } = inspected;
 			checkPicks(picks, images.length);
 			await writeRestored(
 				picks,
-				picks.map(({ index }) => images[index])
+				picks.map(({ index }) => stampBackedUp(images[index], createdAt))
 			);
 			inspected = null;
 		}

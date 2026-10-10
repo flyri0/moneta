@@ -12,7 +12,13 @@
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
-	import { linkPossible, needsCategory, rowStatus, type ReviewRow } from './review';
+	import {
+		linkPossible,
+		needsCategory,
+		newCategoryGroupsFor,
+		rowStatus,
+		type ReviewRow
+	} from './review';
 
 	/**
 	 * One statement line on the import review. Collapsed, it shows the payee, the bank's description
@@ -27,7 +33,8 @@
 		pending,
 		expanded,
 		onToggle,
-		onMakeRule
+		onMakeRule,
+		onPayeeChange
 	}: {
 		row: ReviewRow;
 		index: number;
@@ -37,9 +44,12 @@
 		expanded: boolean;
 		onToggle: () => void;
 		onMakeRule: () => void;
+		onPayeeChange: () => void;
 	} = $props();
 
 	const status = $derived(rowStatus(row));
+	/** Income only takes money in, so a new category for an outflow doesn't go there. */
+	const newIn = $derived(newCategoryGroupsFor(tree, [row]));
 	/** A line that may be a transaction entered by hand, waiting to be linked or not. */
 	const possible = $derived(row.preview.status === 'possible' ? row.preview.match : null);
 	const number = $derived(index + 1);
@@ -48,13 +58,8 @@
 		status === 'new' ? row.payeeName.trim() || row.line.description : row.line.description
 	);
 	const showDescription = $derived(title.trim() !== row.line.description.trim());
-	/** A payee changed from the description, which a rule could remember. */
-	const renamed = $derived(
-		status === 'new' &&
-			!row.ruleId &&
-			row.payeeName.trim() !== '' &&
-			row.payeeName.trim() !== row.line.description.trim()
-	);
+	/** A new line a rule doesn't catch yet: one can be made from it. */
+	const canMakeRule = $derived(status === 'new' && !row.ruleId);
 </script>
 
 <div
@@ -167,11 +172,12 @@
 					<Input
 						id="import-payee-{number}"
 						bind:value={row.payeeName}
+						onchange={onPayeeChange}
 						aria-label={m.import_payee({ number })}
 						disabled={!row.include}
 						class="h-8 bg-background"
 					/>
-					{#if renamed && row.include}
+					{#if canMakeRule && row.include}
 						<button
 							type="button"
 							class="justify-self-start text-xs font-medium text-primary underline-offset-2 hover:underline"
@@ -197,6 +203,7 @@
 		<div class="col-start-2 col-end-4">
 			<CategoryCombobox
 				{tree}
+				{newIn}
 				{pending}
 				bind:value={row.categoryId}
 				ariaLabel={m.import_category({ number })}

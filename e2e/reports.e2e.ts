@@ -39,6 +39,7 @@ async function expectEvenCards(page: Page) {
 		.locator('> div > section')
 		.evaluateAll((cards) =>
 			cards.map((card) => ({
+				id: card.getAttribute('data-testid'),
 				height: Math.round(card.getBoundingClientRect().height),
 				spills: card.scrollHeight > card.clientHeight + 1
 			}))
@@ -76,9 +77,11 @@ test('shows each report as a card that opens the full report', async ({ page }) 
 	// Six months of income against expenses; the starting balance is not income.
 	const cashFlowCard = page.getByTestId('cash-flow-card');
 	await expect(cashFlowCard.getByTestId('cash-flow-card-net')).toHaveText('-$115.00');
-	const months = cashFlowCard.getByTestId('cash-flow-mini').getByRole('listitem');
-	await expect(months).toHaveCount(6);
-	await expect(months.last()).toContainText('income $0.00, expenses $115.00');
+	// One month of flow is not a chart yet.
+	await expect(cashFlowCard.getByTestId('cash-flow-card-note')).toHaveText(
+		'The chart starts next month.'
+	);
+	await expect(cashFlowCard.getByTestId('cash-flow-mini')).toHaveCount(0);
 
 	// The whole card opens the full report, not just its title. The pointer stays on the link over
 	// the arrow, even once hovering the card moves it.
@@ -514,4 +517,17 @@ test.describe('in negative timezone on day 1 of month', () => {
 		await expect(table.locator('tbody tr').first()).toContainText('$1,000.00');
 		await expect(page.getByText('No transactions yet.')).toBeHidden();
 	});
+});
+
+test('a new budget shows each card empty, or what it waits for', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Reports' }).first().click();
+	await expect(page.getByTestId('spending-card').getByTestId('empty-state')).toContainText(
+		'No spending this month yet.'
+	);
+	await expect(page.getByTestId('net-worth-card-note')).toHaveText('The chart starts next month.');
+	await expect(page.getByTestId('net-worth-card-chart')).toHaveCount(0);
+	await expect(page.getByTestId('age-of-money-card').getByTestId('empty-state')).toContainText(
+		'It shows up after 10 payments'
+	);
 });

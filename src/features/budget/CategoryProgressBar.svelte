@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useSession } from '$client/app-state.svelte';
 	import {
+		captionKind,
 		categoryProgress,
 		showsSpending,
 		type CategoryProgress
@@ -30,16 +31,22 @@
 	});
 
 	function spendingCaption(p: CategoryProgress): string {
-		if (p.inflow > 0) return m.budget_progress_inflow({ amount: session.format(p.inflow) });
-		if (p.overspent > 0)
-			return m.budget_progress_over({
-				spent: session.format(p.spent),
-				over: session.format(p.overspent)
-			});
-		return m.budget_progress_spent({
-			spent: session.format(p.spent),
-			funded: session.format(p.funded)
-		});
+		switch (captionKind(p)) {
+			case 'inflow':
+				return m.budget_progress_inflow({ amount: session.format(p.inflow) });
+			case 'short':
+				return m.budget_progress_short({ amount: session.format(p.overspent) });
+			case 'over':
+				return m.budget_progress_over({
+					spent: session.format(p.spent),
+					over: session.format(p.overspent)
+				});
+			default:
+				return m.budget_progress_spent({
+					spent: session.format(p.spent),
+					funded: session.format(p.funded)
+				});
+		}
 	}
 </script>
 

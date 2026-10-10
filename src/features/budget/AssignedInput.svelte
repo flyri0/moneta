@@ -87,7 +87,8 @@
 </script>
 
 <!-- The preview floats under the cell, so typing never changes the row's height. -->
-<div class="relative">
+<!-- Pulled right by the input's padding and border, so its amount lines up with the group's total. -->
+<div class="relative -mr-[calc(--spacing(2)+1px)]">
 	<input
 		class="w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-right tabular-nums hover:border-input focus:border-ring focus:outline-none aria-invalid:border-destructive"
 		inputmode="decimal"

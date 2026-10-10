@@ -62,7 +62,7 @@
 			{/if}
 		</Card.Header>
 		<Card.Content>
-			<form class="grid gap-6" onsubmit={submit}>
+			<form class="grid gap-6" onsubmit={submit} novalidate>
 				{#if children}
 					{@render children()}
 				{/if}

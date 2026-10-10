@@ -25,6 +25,7 @@
 	import {
 		coverableFromReady,
 		isOverspent,
+		moveShortfall,
 		moveTargets,
 		type GridModel
 	} from '$features/budget/view';
@@ -78,6 +79,28 @@
 	/** The groups a category created to move money with can go in. */
 	const userGroups = $derived(groups.filter((g) => !g.system && !g.hidden));
 	const pending = new NewCategories();
+	/** The other category's name, picked or about to be created. */
+	function otherName(): string {
+		return (
+			targets.flatMap((g) => g.categories).find((c) => c.id === otherId)?.name ??
+			pending.label(otherId, (name) => name) ??
+			''
+		);
+	}
+	/** What the other category has, or null while none is picked or it is new. */
+	const otherAvailable = $derived(otherId ? (available.get(otherId)?.available ?? null) : null);
+	/** The category the money leaves, and how far below zero the move would leave it. */
+	const shortfall = $derived.by(() => {
+		const source =
+			moveDirection === 'to'
+				? { name: category.name, available: category.available }
+				: otherId
+					? { name: otherName(), available: otherAvailable ?? 0 }
+					: null;
+		if (!source) return null;
+		const amount = moveShortfall(source.available, session.parse(moveAmount));
+		return amount > 0 ? { name: source.name, amount } : null;
+	});
 	const progress = $derived(categoryProgress(category));
 	const overspent = $derived(!isIncome && isOverspent(category));
 	// Ready to Assign leads only when it covers all of it; otherwise moving money does.
@@ -204,10 +227,7 @@
 			error = { message: m.budget_move_choose_category() };
 			return;
 		}
-		const other =
-			targets.flatMap((g) => g.categories).find((c) => c.id === otherId)?.name ??
-			pending.label(otherId, (name) => name) ??
-			'';
+		const other = otherName();
 		const [from, to] = moveDirection === 'to' ? [category.name, other] : [other, category.name];
 		let call = null as ReturnType<typeof session.api.budget.moveMoney> | null;
 		error = await runAction(async () => {
@@ -376,7 +396,22 @@
 					placeholder="0"
 				/>
 			</div>
+			{#if otherAvailable !== null}
+				<p class="text-xs text-muted-foreground" data-testid="move-other-available">
+					{m.budget_move_available({ amount: session.format(otherAvailable) })}
+				</p>
+			{/if}
 			<AmountPreview text={moveAmount} class="text-right" />
+			{#if shortfall}
+				<p
+					class="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400"
+					role="status"
+					data-testid="move-shortfall"
+				>
+					<TriangleAlertIcon class="size-4 shrink-0" aria-hidden="true" />
+					{m.budget_move_short({ name: shortfall.name, amount: session.format(shortfall.amount) })}
+				</p>
+			{/if}
 			<FormMessage {error} />
 			<Button type="submit">{m.budget_move()}</Button>
 		</form>

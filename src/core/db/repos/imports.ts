@@ -86,6 +86,27 @@ function suggestedCategories(db: Db): Map<string, string> {
 	return map;
 }
 
+/** What the review needs besides the lines: each payee's usual category, and the starting balance's date. */
+export interface ImportContext {
+	/** The category a payee usually gets, by lowercased payee name; empty for a tracking account. */
+	suggestions: Record<string, string>;
+	/** The date of the account's starting balance, or null when it opened at zero. */
+	openingDate: string | null;
+}
+
+export function importContext(db: Db, accountId: string): ImportContext {
+	const { onBudget } = requireOpenAccount(db, accountId);
+	const opening = one<{ date: string | null }>(
+		db,
+		'SELECT MIN(date) AS date FROM transactions WHERE account_id = ? AND is_opening = 1',
+		[accountId]
+	);
+	return {
+		suggestions: onBudget ? Object.fromEntries(suggestedCategories(db)) : {},
+		openingDate: opening?.date ?? null
+	};
+}
+
 /**
  * What importing `lines` into an account would do, line by line (see `ImportStatus`). A line
  * matches the closest-dated transaction with its amount, within `MATCH_DAYS`, that has no import

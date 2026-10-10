@@ -44,7 +44,9 @@ async function restoreOver(page: Page, path: string): Promise<void> {
 	await page.getByLabel('Restore from a backup').setInputFiles(path);
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Restore (1)' }).click();
-	await dialog.getByRole('button', { name: 'Tap again to restore' }).click({ timeout: 10_000 });
+	await dialog
+		.getByRole('button', { name: /(Tap|Click) again to restore/ })
+		.click({ timeout: 10_000 });
 	await expect(dialog).toBeHidden();
 }
 

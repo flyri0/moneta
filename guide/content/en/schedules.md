@@ -73,8 +73,8 @@ Daily schedules always keep their dates.
 - Otherwise the occurrence waits in the account as **due** until you **Enter** it (you can adjust
   it first, for a bill that changed) or **Skip** it.
 
-If you save an automatic schedule whose first date is in the past, Moneta tells you how many
-transactions it is about to enter right away, so a wrong year doesn't fill your register.
+If you save an automatic schedule whose first date is in the past, Moneta lists the dates it is
+about to enter right away and asks first, so a wrong year doesn't fill your register.
 
 ## What's coming {#upcoming}
 

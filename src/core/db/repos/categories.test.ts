@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import { all, run } from '../connection';
+import { all, run, type Db } from '../connection';
 import { createRule, listRules } from './payee-rules';
 import {
 	categoryUsage,
@@ -451,6 +451,16 @@ describe('createCategoryIn', () => {
 		expect(getCategory(db, id).groupId).toBe(income.id);
 	});
 
+	it('shows a hidden category again when it is reused by name', async () => {
+		const db = await createBudgetDb();
+		const bills = listCategoryTree(db).find((g) => g.name === 'Bills')!;
+		const old = createCategory(db, { groupId: bills.id, name: 'Old' });
+		updateCategory(db, old, { hidden: true });
+		const { categoryId } = createCategoryIn(db, { name: 'old', group: { id: bills.id } });
+		expect(categoryId).toBe(old);
+		expect(getCategory(db, old).hidden).toBe(false);
+	});
+
 	it('creates nothing when the category has no name', async () => {
 		const db = await createBudgetDb();
 		const before = listCategoryTree(db).length;
@@ -487,5 +497,73 @@ describe('deleting a category used by payee rules', () => {
 		createRule(db, { payeeName: 'Uber', kind: 'starts', text: 'UBER', categoryId: food });
 		deleteCategory(db, food);
 		expect(listRules(db)[0].categoryId).toBeNull();
+	});
+});
+
+describe('names', () => {
+	const groupId = (db: Db, name: string) => listCategoryTree(db).find((g) => g.name === name)!.id;
+
+	it('refuses a group named like another, or like the Income group in any language', async () => {
+		const db = await createBudgetDb();
+		expect(() => createGroup(db, { name: ' bills ' })).toThrow(code('NAME_EXISTS'));
+		expect(() => createGroup(db, { name: 'income' })).toThrow(code('NAME_EXISTS'));
+		expect(() => createGroup(db, { name: 'Receitas' })).toThrow(code('NAME_EXISTS'));
+		const id = createGroup(db, { name: 'Savings' });
+		expect(() => updateGroup(db, id, { name: 'Everyday' })).toThrow(code('NAME_EXISTS'));
+		updateGroup(db, id, { name: 'SAVINGS' });
+		expect(listCategoryTree(db).find((g) => g.id === id)?.name).toBe('SAVINGS');
+	});
+
+	it('refuses a category named like another in its group, not in another one', async () => {
+		const db = await createBudgetDb();
+		const bills = groupId(db, 'Bills');
+		const everyday = groupId(db, 'Everyday');
+		expect(() => createCategory(db, { groupId: bills, name: 'rent' })).toThrow(code('NAME_EXISTS'));
+		const otherRent = createCategory(db, { groupId: everyday, name: 'Rent' });
+		expect(() => updateCategory(db, categoryId(db, 'Utilities'), { name: 'RENT' })).toThrow(
+			code('NAME_EXISTS')
+		);
+		expect(() => updateCategory(db, otherRent, { groupId: bills })).toThrow(code('NAME_EXISTS'));
+		updateCategory(db, categoryId(db, 'Utilities'), { name: 'utilities' });
+	});
+
+	it('refuses a reorder that moves a category next to one of the same name', async () => {
+		const db = await createBudgetDb();
+		const bills = groupId(db, 'Bills');
+		const everyday = groupId(db, 'Everyday');
+		const otherRent = createCategory(db, { groupId: everyday, name: 'Rent' });
+		const layout = listCategoryTree(db).map((g) => ({
+			groupId: g.id,
+			categoryIds: g.categories.map((c) => c.id)
+		}));
+		const moved = layout.map((e) =>
+			e.groupId === bills
+				? { ...e, categoryIds: [...e.categoryIds, otherRent] }
+				: { ...e, categoryIds: e.categoryIds.filter((id) => id !== otherRent) }
+		);
+		expect(() => saveCategoryOrder(db, moved)).toThrow(code('NAME_EXISTS'));
+	});
+
+	it('keeps working in a budget that already has duplicates', async () => {
+		const db = await createBudgetDb();
+		const bills = groupId(db, 'Bills');
+		run(
+			db,
+			"INSERT INTO categories (id, group_id, name, sort_order) VALUES ('dup', ?, 'Rent', 9)",
+			[bills]
+		);
+		const layout = listCategoryTree(db).map((g) => ({
+			groupId: g.id,
+			categoryIds: [...g.categories.map((c) => c.id)].reverse()
+		}));
+		saveCategoryOrder(db, layout);
+		updateCategory(db, 'dup', { hidden: true });
+		expect(getCategory(db, 'dup').hidden).toBe(true);
+	});
+
+	it('reuses a group and a category of the same name when creating one by name', async () => {
+		const db = await createBudgetDb();
+		const made = createCategoryIn(db, { name: ' food ', group: { name: 'everyday' } });
+		expect(made).toEqual({ categoryId: categoryId(db, 'Food'), groupId: groupId(db, 'Everyday') });
 	});
 });

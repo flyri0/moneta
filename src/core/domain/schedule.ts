@@ -121,6 +121,11 @@ export function dueCount(rule: Rule, today: string): number {
 	return occurrencesBetween(rule, 0, today).length;
 }
 
+/** The dates a new rule is already due on, on `today`: what an automatic one enters at once. */
+export function dueDates(rule: Rule, today: string): string[] {
+	return occurrencesBetween(rule, 0, today).map((o) => o.date);
+}
+
 /** Throws INVALID_INPUT unless the engine can follow `rule`. */
 export function validateRule(rule: Rule): void {
 	const fail = (message: string): never => {

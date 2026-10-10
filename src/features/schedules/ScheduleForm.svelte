@@ -16,13 +16,7 @@
 	import { runAction, type ActionError } from '$client/notify';
 	import { enterAndReport } from '$client/schedules';
 	import { isFarFuture, todayIso } from '$domain/month';
-	import {
-		dueCount,
-		FREQUENCIES,
-		WEEKEND_RULES,
-		type Frequency,
-		type WeekendRule
-	} from '$domain/schedule';
+	import { FREQUENCIES, WEEKEND_RULES, type Frequency, type WeekendRule } from '$domain/schedule';
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
@@ -42,7 +36,8 @@
 		installmentDate,
 		installmentsLeft,
 		paysInstallments,
-		MANY_DUE,
+		datesToConfirm,
+		dueSummary,
 		type Ends,
 		type ScheduleDraft,
 		type ScheduleFormError,
@@ -136,8 +131,13 @@
 		left ? m.schedules_installment({ n: left.next, total: left.total }) : m.schedule_installments()
 	);
 
-	/** How many transactions saving enters at once, when that many that it asks first. */
-	let manyDue = $state(0);
+	/** The dates saving would enter at once, while it asks about them. */
+	let dueList = $state<string[]>([]);
+	const dueText = $derived.by(() => {
+		const { shown, more } = dueSummary(dueList);
+		const dates = shown.map((d) => formatDate(d, getLocale())).join(', ');
+		return more > 0 ? m.schedule_enter_many_more({ dates, count: more }) : dates;
+	});
 	/** A date years ahead the user was asked about: saving it again goes ahead. */
 	let farDate = $state<string | null>(null);
 	const askingFar = $derived(farDate !== null && farDate === draft.txn.date);
@@ -167,10 +167,10 @@
 			farDate = input.startDate;
 			return;
 		}
-		// A start date typed years back would enter years of transactions at once.
-		const due = input.autoEnter ? dueCount(input, todayIso()) : 0;
-		if (due > MANY_DUE && !confirmed) {
-			manyDue = due;
+		// A start date in the past enters transactions at once: say which, before saving.
+		const dates = datesToConfirm(input, todayIso());
+		if (dates.length > 0 && !confirmed) {
+			dueList = dates;
 			go('enter-many');
 			return;
 		}
@@ -401,8 +401,10 @@
 		<FormMessage {error} />
 	{:else if view === 'enter-many'}
 		<ConfirmPanel
-			body={m.schedule_enter_many_body({ count: manyDue })}
-			confirmLabel={m.schedule_enter_many_confirm({ count: manyDue })}
+			body={dueList.length === 1
+				? m.schedule_enter_one_body({ dates: dueText })
+				: m.schedule_enter_many_body({ count: dueList.length, dates: dueText })}
+			confirmLabel={m.schedule_enter_many_confirm({ count: dueList.length })}
 			destructive={false}
 			{error}
 			{busy}

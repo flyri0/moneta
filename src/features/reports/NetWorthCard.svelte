@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import ChartLineIcon from '@lucide/svelte/icons/chart-line';
 	import ReportCard from './ReportCard.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import Sparkline from './Sparkline.svelte';
@@ -49,7 +51,7 @@
 	{#if series.error}
 		<FormMessage error={actionError(series.error)} />
 	{:else if series.data && !current}
-		<p class="text-sm text-muted-foreground">{m.reports_net_worth_empty()}</p>
+		<CardEmpty icon={ChartLineIcon} description={m.reports_net_worth_empty()} />
 	{:else if current}
 		<StatTile
 			value={session.format(current.netWorth)}
@@ -62,6 +64,10 @@
 				points={recent.map((p) => ({ month: p.month, value: p.netWorth }))}
 				testId="net-worth-card-chart"
 			/>
+		{:else}
+			<p class="mt-auto text-sm text-muted-foreground" data-testid="net-worth-card-note">
+				{m.reports_chart_next_month()}
+			</p>
 		{/if}
 	{/if}
 </ReportCard>

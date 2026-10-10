@@ -760,3 +760,20 @@ test.describe('with a credit card owing more than the budget has', () => {
 		);
 	});
 });
+
+test('warns when moving money leaves the category it comes from overspent', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Rent or Mortgage')
+		.getByRole('button', { name: 'Rent or Mortgage' })
+		.click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Move money' }).click();
+	await chooseCombobox(dialog, 'Other category', 'Groceries', 'Groceries');
+	await expect(dialog.getByTestId('move-other-available')).toHaveText('$0.00 available');
+	await dialog.getByLabel('Amount to move').fill('50');
+	await expect(dialog.getByTestId('move-shortfall')).toHaveText(
+		'Rent or Mortgage will be $50.00 overspent.'
+	);
+	await dialog.getByLabel('Amount to move').fill('abc');
+	await expect(dialog.getByTestId('move-shortfall')).toHaveCount(0);
+});

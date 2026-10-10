@@ -4,6 +4,7 @@ import { all, run, type Db } from '../connection';
 import { createAccount, getAccount } from './accounts';
 import {
 	getCsvFormat,
+	importContext,
 	importTransactions,
 	previewImport,
 	type ImportLine,
@@ -327,5 +328,33 @@ describe('importTransactions', () => {
 		expect(getCsvFormat(db, bank)).toBe('{"date":0}');
 		importTransactions(db, bank, { lines: [] });
 		expect(getCsvFormat(db, bank)).toBe('{"date":0}');
+	});
+});
+
+describe('importContext', () => {
+	it("gives each payee's usual category and the starting balance's date", () => {
+		const opened = createAccount(db, {
+			onBudget: true,
+			name: 'Opened',
+			type: 'checking',
+			startingBalance: 5000,
+			startingDate: '2026-01-03'
+		});
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -1000,
+			payeeName: 'Mercado Bom',
+			categoryId: food
+		});
+		expect(importContext(db, opened)).toEqual({
+			suggestions: { 'mercado bom': food },
+			openingDate: '2026-01-03'
+		});
+	});
+
+	it('has no starting date for an account opened at zero, and no suggestions off budget', () => {
+		expect(importContext(db, bank).openingDate).toBeNull();
+		expect(importContext(db, broker).suggestions).toEqual({});
 	});
 });

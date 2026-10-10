@@ -25,6 +25,7 @@ const MESSAGES: Record<ErrorCode, () => string> = {
 	SPLIT_SUM_MISMATCH: m.error_split_sum_mismatch,
 	TRANSFER_INVALID: m.error_transfer_invalid,
 	PAYEE_EXISTS: m.error_payee_exists,
+	NAME_EXISTS: m.error_name_exists,
 	PAYEE_IN_USE: m.error_payee_in_use,
 	SCHEDULE_STALE: m.error_schedule_stale,
 	SCHEDULE_ENDED: m.error_schedule_ended,

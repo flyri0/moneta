@@ -14,7 +14,7 @@ test('schedules a monthly bill, forecasts it and enters it', async ({ page }) =>
 	await onboard(page);
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();
-	await expect(page.getByRole('heading', { name: 'Transactions' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Schedules' })).toBeVisible();
 	await expect(page.getByText('No schedules yet')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Add schedule' }).first().click();
@@ -175,6 +175,9 @@ async function addAutomaticPaycheck(page: import('@playwright/test').Page, date:
 	await pickDate(dialog, 'Next date', date);
 	await dialog.getByLabel('Enter automatically').click();
 	await dialog.getByRole('button', { name: 'Save' }).click();
+	// A date already past asks before entering it.
+	if (date < daysFromToday(0))
+		await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
 	await expect(dialog).toBeHidden();
 }
 
@@ -228,7 +231,7 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	await pickDate(dialog, 'Next date', daysFromToday(-900));
 	await dialog.getByLabel('Enter automatically').click();
 	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(dialog.getByRole('heading', { name: 'Enter these now?' })).toBeVisible();
+	await expect(dialog.getByRole('heading', { name: 'Enter now?' })).toBeVisible();
 	await dialog.getByRole('button', { name: 'Cancel' }).click();
 
 	await dialog.getByLabel('Enter automatically').click();
@@ -245,6 +248,25 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	const overdue = page.getByTestId('upcoming-row').filter({ hasText: 'Due' });
 	await expect(overdue).toHaveCount(1);
 	await expect(overdue.getByTestId('upcoming-more-overdue')).toHaveText(/^\+\d\d overdue$/);
+});
+
+test('asks before an automatic schedule enters even one past date', async ({ page }) => {
+	await onboard(page);
+	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
+	await sidebar.getByRole('link', { name: 'Schedules' }).click();
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Gym', 'Gym');
+	await dialog.getByLabel('Amount', { exact: true }).fill('10');
+	await chooseCombobox(dialog, 'Category', 'Fun', 'Fun');
+	await pickDate(dialog, 'Next date', daysFromToday(-3));
+	await dialog.getByLabel('Enter automatically').click();
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog.getByRole('heading', { name: 'Enter now?' })).toBeVisible();
+	await expect(dialog.getByText('enters a transaction now, dated')).toBeVisible();
+	await expect(dialog.getByText('1 transactions')).toHaveCount(0);
+	await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
+	await expect(dialog).toBeHidden();
 });
 
 test('searches and filters the schedules', async ({ page }) => {

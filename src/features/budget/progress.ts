@@ -29,6 +29,19 @@ export interface CategoryProgress {
 const share = (part: number, whole: number) =>
 	Math.min(100, Math.max(0, Math.round((part / whole) * 100)));
 
+/** Which caption a category's bar gets. */
+export type CaptionKind = 'inflow' | 'short' | 'over' | 'spent';
+
+/**
+ * `short` for an envelope below zero with nothing spent this month (a negative assignment, or
+ * overspending carried over), where "$0.00 spent, $50.00 over" would read oddly.
+ */
+export function captionKind(p: CategoryProgress): CaptionKind {
+	if (p.inflow > 0) return 'inflow';
+	if (p.overspent > 0) return p.spent === 0 ? 'short' : 'over';
+	return 'spent';
+}
+
 /** Whether the month has anything to show: money funded, spent or received. */
 export function showsSpending(p: CategoryProgress): boolean {
 	return p.funded !== 0 || p.spent !== 0 || p.inflow !== 0;

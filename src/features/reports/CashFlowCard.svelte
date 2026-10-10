@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import CashFlowMini from './CashFlowMini.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import ReportCard from './ReportCard.svelte';
@@ -8,6 +10,7 @@
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
 	import { numberFormat } from '$domain/intl-cache';
+	import { chartWaitsForNextMonth, flowMonths, monthsWithFlow } from '$features/reports/card-state';
 	import { fillMonths, lastMonths, savingsRate } from '$features/reports/cash-flow';
 	import { SPENDING_TABLES } from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
@@ -21,6 +24,7 @@
 		session.api.reports.cashFlow(recent.range)
 	);
 	const rows = $derived(fillMonths(flow.data ?? [], recent.months));
+	const withFlow = $derived(monthsWithFlow(rows));
 	const current = $derived(rows.at(-1)!);
 	const net = $derived(current.income - current.spending);
 	const rate = $derived(savingsRate(rows));
@@ -37,6 +41,8 @@
 >
 	{#if flow.error}
 		<FormMessage error={actionError(flow.error)} />
+	{:else if flow.data && withFlow === 0}
+		<CardEmpty icon={ChartColumnIcon} description={m.reports_income_expense_empty()} />
 	{:else if flow.data}
 		<div class="flex items-end justify-between gap-3">
 			<StatTile
@@ -55,7 +61,13 @@
 			<h3 class="text-xs text-muted-foreground">
 				{m.reports_income_vs_expenses()} · {m.reports_range_last_6_months()}
 			</h3>
-			<CashFlowMini {rows} />
+			{#if !chartWaitsForNextMonth(flowMonths(rows))}
+				<CashFlowMini {rows} />
+			{:else}
+				<p class="mt-auto text-sm text-muted-foreground" data-testid="cash-flow-card-note">
+					{m.reports_chart_next_month()}
+				</p>
+			{/if}
 		</div>
 	{/if}
 </ReportCard>

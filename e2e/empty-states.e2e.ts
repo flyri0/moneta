@@ -162,3 +162,28 @@ test('a payee search with no match can be cleared', async ({ page }) => {
 	await expect(page.getByRole('searchbox')).toHaveValue('');
 	await expect(page.getByText('Bakery')).toBeVisible();
 });
+
+test('an empty budget offers no fold or reorder, and the starting balance picker says what happens', async ({
+	page
+}) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Bare');
+	await chooseCombobox(page, 'Number and date format', 'en-US', 'en-US');
+	await chooseCombobox(page, 'Currency', 'USD', 'USD');
+	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Start with no categories' }).click();
+	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Start with no account' }).click();
+	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await skipTour(page);
+	await expect(page.getByTestId('rta-hint')).toHaveText('Add an account to start budgeting.');
+	await expect(page.getByRole('button', { name: 'Edit order' })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Collapse all' })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Add account' }).click();
+	await dialog.getByRole('button', { name: /^Checking/ }).click();
+	await dialog.getByLabel('Starting balance category').click();
+	await expect(page.getByText('Starting Balance will be created in Income.')).toBeVisible();
+});

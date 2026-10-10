@@ -147,6 +147,7 @@ export const api = {
 	},
 	imports: {
 		preview: read(imports.previewImport, ['string', 'array']),
+		context: read(imports.importContext, ['string']),
 		csvFormat: read(imports.getCsvFormat, ['string']),
 		// New lines create payees; matched ones only change their own row.
 		commit: write(
@@ -196,7 +197,8 @@ export const api = {
 		categoryMonths: read(reports.categoryMonths, ['object']),
 		payees: read(reports.spendingByPayee, ['object']),
 		accountBalances: read(reports.accountBalances, ['string', 'string?']),
-		ageOfMoney: read(reports.ageOfMoney, ['string'])
+		ageOfMoney: read(reports.ageOfMoney, ['string']),
+		ageOfMoneyPayments: read(reports.ageOfMoneyPaymentCount, ['string'])
 	},
 	backup: {
 		csv: read((db: Db) => exportCsv(db), []),

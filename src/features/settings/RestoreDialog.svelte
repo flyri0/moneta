@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Loader2Icon from '@lucide/svelte/icons/loader-circle';
@@ -152,6 +153,9 @@
 		toast.success(m.backup_restored());
 		void goto(resolve('/budget/[month]', { month: currentMonth() }));
 	}
+
+	// A mouse clicks; a finger taps.
+	const finePointer = new MediaQuery('(hover: hover) and (pointer: fine)');
 </script>
 
 <ResponsiveDialog
@@ -201,7 +205,9 @@
 					{:else if countdown > 0}
 						{m.backup_restore_replace_wait({ seconds: countdown })}
 					{:else}
-						{m.backup_restore_replace_confirm()}
+						{finePointer.current
+							? m.backup_restore_replace_confirm_click()
+							: m.backup_restore_replace_confirm()}
 					{/if}
 				</Button>
 				{#if confirmReplace}

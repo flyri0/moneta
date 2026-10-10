@@ -47,8 +47,11 @@
 	// On phones the month goes below the title and actions, which then line up with other pages'.
 	const desktop = new MediaQuery('min-width: 768px');
 	const view = useLive(session.client, BUDGET_TABLES, () => session.api.budget.month(data.month));
+	const accounts = useLive(session.client, ['accounts'], () => session.api.accounts.options());
 	const model = $derived(view.data ? gridModel(view.data) : null);
 	const overspent = $derived(model ? overspentCategories(model) : []);
+	/** No group with a category yet: nothing to fold or reorder. */
+	const emptyBudget = $derived(!!model && model.groups.length === 0 && model.hiddenCount === 0);
 
 	let rtaCard = $state<HTMLElement>();
 	/** Whether any of the Ready to Assign card shows below the sticky bars at the top. */
@@ -150,20 +153,22 @@ spans a row of its own, so the chip joins the actions instead. -->
 		{/if}
 		{#if model && !editingOrder}
 			<!-- Labels only from 768px up: three labelled buttons do not fit a phone. -->
-			<Button
-				variant="outline"
-				size="sm"
-				aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
-				onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
-			>
-				{#if everyCollapsed}
-					<UnfoldVerticalIcon />
-					<span class="hidden md:inline">{m.budget_expand_all()}</span>
-				{:else}
-					<FoldVerticalIcon />
-					<span class="hidden md:inline">{m.budget_collapse_all()}</span>
-				{/if}
-			</Button>
+			{#if !emptyBudget}
+				<Button
+					variant="outline"
+					size="sm"
+					aria-label={everyCollapsed ? m.budget_expand_all() : m.budget_collapse_all()}
+					onclick={() => setCollapsed(toggleAll(model.groups, collapsed))}
+				>
+					{#if everyCollapsed}
+						<UnfoldVerticalIcon />
+						<span class="hidden md:inline">{m.budget_expand_all()}</span>
+					{:else}
+						<FoldVerticalIcon />
+						<span class="hidden md:inline">{m.budget_collapse_all()}</span>
+					{/if}
+				</Button>
+			{/if}
 			<Button
 				variant="outline"
 				size="sm"
@@ -174,15 +179,17 @@ spans a row of its own, so the chip joins the actions instead. -->
 				<PlusIcon />
 				<span class="hidden md:inline">{m.budget_add_group()}</span>
 			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				aria-label={m.budget_edit_order()}
-				onclick={() => (editingOrder = true)}
-			>
-				<ArrowUpDownIcon />
-				<span class="hidden md:inline">{m.budget_edit_order()}</span>
-			</Button>
+			{#if !emptyBudget}
+				<Button
+					variant="outline"
+					size="sm"
+					aria-label={m.budget_edit_order()}
+					onclick={() => (editingOrder = true)}
+				>
+					<ArrowUpDownIcon />
+					<span class="hidden md:inline">{m.budget_edit_order()}</span>
+				</Button>
+			{/if}
 		{/if}
 	{/snippet}
 </PageHeader>
@@ -192,7 +199,11 @@ spans a row of its own, so the chip joins the actions instead. -->
 	class="mx-auto grid max-w-2xl gap-4 p-3 transition-opacity aria-busy:opacity-60 aria-busy:delay-150 md:p-6 lg:max-w-5xl"
 	aria-busy={view.stale}
 >
-	{#if view.data}<RtaCard view={view.data} bind:ref={rtaCard} />{/if}
+	{#if view.data}<RtaCard
+			view={view.data}
+			hasAccounts={(accounts.data?.length ?? 1) > 0}
+			bind:ref={rtaCard}
+		/>{/if}
 
 	{#if overspent.length > 0 && !editingOrder}
 		<OverspentAlert categories={overspent} onReview={openCategory} />
@@ -228,7 +239,7 @@ spans a row of its own, so the chip joins the actions instead. -->
 	{#if view.data && model}
 		{#if editingOrder}
 			<OrderEditor groups={view.data.groups} onDone={() => (editingOrder = false)} />
-		{:else if model.groups.length === 0 && model.hiddenCount === 0}
+		{:else if emptyBudget}
 			<EmptyState
 				framed
 				icon={LayoutGridIcon}

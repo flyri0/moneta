@@ -40,8 +40,15 @@
 	let categoryId = $state('');
 	let closingDay = $state('');
 	let dueDay = $state('');
+	let billingInvalid = $state(false);
 	let error = $state<ActionError | null>(null);
 	const pending = new NewCategories();
+
+	// Editing a day clears the mark: it was about what was typed before.
+	$effect(() => {
+		void [closingDay, dueDay];
+		billingInvalid = false;
+	});
 
 	function selectType(selectedType: AccountType) {
 		type = selectedType;
@@ -57,6 +64,7 @@
 			return;
 		}
 		const billing = type === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
+		billingInvalid = billing === 'invalid';
 		if (billing === 'invalid') {
 			error = { message: m.form_error_billing_days_invalid() };
 			return;
@@ -93,7 +101,12 @@
 			onChangeType={() => (step = 1)}
 		/>
 		{#if type === 'credit_card'}
-			<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="new-account" />
+			<BillingDaysFields
+				bind:closing={closingDay}
+				bind:due={dueDay}
+				idPrefix="new-account"
+				invalid={billingInvalid}
+			/>
 		{/if}
 		{#if onBudget}
 			<div class="grid gap-2">
@@ -107,6 +120,9 @@
 					onSelect={(id) => (categoryId = id)}
 					emptyLabel={m.register_starting_balance()}
 					allowEmpty={false}
+					emptyText={!!tree.data && tree.data.every((g) => g.categories.length === 0)
+						? m.account_starting_category_created()
+						: undefined}
 				/>
 				{#if isDebtType(type)}
 					<p class="text-xs text-muted-foreground">{m.account_starting_debt_hint()}</p>

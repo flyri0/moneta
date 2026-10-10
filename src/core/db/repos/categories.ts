@@ -119,12 +119,62 @@ function requireName(name: string): string {
 	return trimmed;
 }
 
+/** The Income group's label in each language the app speaks: no other group may take it. */
+export const INCOME_GROUP_NAMES: readonly string[] = ['Income', 'Receitas'];
+
+const sameName = (a: string, b: string) =>
+	a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+
+/** `name`, trimmed, unless another group (or the Income group's label) already has it. */
+function requireFreeGroupName(db: Db, name: string, exceptId?: string): string {
+	const trimmed = requireName(name);
+	const groups = all<{ id: string; name: string }>(db, 'SELECT id, name FROM category_groups');
+	if (
+		INCOME_GROUP_NAMES.some((n) => sameName(n, trimmed)) ||
+		groups.some((g) => g.id !== exceptId && sameName(g.name, trimmed))
+	)
+		throw new DomainError('NAME_EXISTS');
+	return trimmed;
+}
+
+/** `name`, trimmed, unless another category in `groupId` already has it. */
+function requireFreeCategoryName(db: Db, groupId: string, name: string, exceptId?: string): string {
+	const trimmed = requireName(name);
+	const siblings = all<{ id: string; name: string }>(
+		db,
+		'SELECT id, name FROM categories WHERE group_id = ?',
+		[groupId]
+	);
+	if (siblings.some((c) => c.id !== exceptId && sameName(c.name, trimmed)))
+		throw new DomainError('NAME_EXISTS');
+	return trimmed;
+}
+
+/** The id of the user group named `name`, if any. */
+function groupNamed(db: Db, name: string): string | null {
+	const groups = all<{ id: string; name: string }>(
+		db,
+		'SELECT id, name FROM category_groups WHERE system IS NULL'
+	);
+	return groups.find((g) => sameName(g.name, name))?.id ?? null;
+}
+
+/** The id of the category named `name` in `groupId`, if any. */
+function categoryNamed(db: Db, groupId: string, name: string): string | null {
+	const categories = all<{ id: string; name: string }>(
+		db,
+		'SELECT id, name FROM categories WHERE group_id = ?',
+		[groupId]
+	);
+	return categories.find((c) => sameName(c.name, name))?.id ?? null;
+}
+
 export function createGroup(db: Db, input: { name: string }): string {
 	const id = uuidv7();
 	run(
 		db,
 		'INSERT INTO category_groups (id, name, sort_order) VALUES (?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM category_groups))',
-		[id, requireName(input.name)]
+		[id, requireFreeGroupName(db, input.name)]
 	);
 	return id;
 }
@@ -143,7 +193,10 @@ export function updateGroup(db: Db, id: string, patch: GroupPatch): void {
 		if (group.system && (patch.name !== undefined || patch.hidden !== undefined))
 			throw new DomainError('SYSTEM_ENTITY_READONLY');
 		if (patch.name !== undefined)
-			run(db, 'UPDATE category_groups SET name = ? WHERE id = ?', [requireName(patch.name), id]);
+			run(db, 'UPDATE category_groups SET name = ? WHERE id = ?', [
+				requireFreeGroupName(db, patch.name, id),
+				id
+			]);
 		if (patch.hidden !== undefined)
 			run(db, 'UPDATE category_groups SET hidden = ? WHERE id = ?', [patch.hidden ? 1 : 0, id]);
 		if (patch.icon !== undefined)
@@ -185,7 +238,7 @@ export function createCategory(db: Db, input: { groupId: string; name: string })
 		run(
 			db,
 			'INSERT INTO categories (id, group_id, name, sort_order) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?))',
-			[id, input.groupId, requireName(input.name), input.groupId]
+			[id, input.groupId, requireFreeCategoryName(db, input.groupId, input.name), input.groupId]
 		);
 		return id;
 	});
@@ -193,6 +246,7 @@ export function createCategory(db: Db, input: { groupId: string; name: string })
 
 /**
  * Creates a category in an existing group (`{ id }`) or in a new one (`{ name }`), all or nothing.
+ * A group or a category with that name already there is used instead (a hidden category is shown again).
  */
 export function createCategoryIn(
 	db: Db,
@@ -200,8 +254,16 @@ export function createCategoryIn(
 ): { categoryId: string; groupId: string } {
 	return tx(db, () => {
 		const group = input.group;
-		const groupId = 'id' in group ? group.id : createGroup(db, { name: group.name });
-		return { categoryId: createCategory(db, { groupId, name: input.name }), groupId };
+		const groupId =
+			'id' in group
+				? group.id
+				: (groupNamed(db, group.name) ?? createGroup(db, { name: group.name }));
+		const existing = categoryNamed(db, groupId, input.name);
+		// The forms never list hidden categories, so one reused by name is in use again.
+		if (existing && getCategory(db, existing).hidden)
+			updateCategory(db, existing, { hidden: false });
+		const categoryId = existing ?? createCategory(db, { groupId, name: input.name });
+		return { categoryId, groupId };
 	});
 }
 
@@ -229,6 +291,14 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 	tx(db, () => {
 		const category = getCategory(db, id);
 		const currentGroup = getGroup(db, category.groupId);
+		const moving = patch.groupId !== undefined && patch.groupId !== category.groupId;
+		if (patch.name !== undefined || moving)
+			requireFreeCategoryName(
+				db,
+				moving ? patch.groupId! : category.groupId,
+				patch.name ?? category.name,
+				id
+			);
 
 		if (patch.name !== undefined)
 			run(db, 'UPDATE categories SET name = ? WHERE id = ?', [requireName(patch.name), id]);
@@ -373,6 +443,7 @@ export function saveCategoryOrder(
 	layout: { groupId: string; categoryIds: string[] }[]
 ): void {
 	tx(db, () => {
+		const moved: string[] = [];
 		layout.forEach((entry, order) => {
 			const group = getGroup(db, entry.groupId);
 			run(db, 'UPDATE category_groups SET sort_order = ? WHERE id = ?', [order, entry.groupId]);
@@ -380,6 +451,7 @@ export function saveCategoryOrder(
 				const category = getCategory(db, categoryId);
 				const moving = category.groupId !== entry.groupId;
 				if (moving) {
+					moved.push(categoryId);
 					const sourceGroup = getGroup(db, category.groupId);
 					if ((sourceGroup.system === 'income') !== (group.system === 'income')) {
 						throw new DomainError('CATEGORY_NOT_ALLOWED');
@@ -395,5 +467,10 @@ export function saveCategoryOrder(
 				]);
 			});
 		});
+		// Checked once everything is in place, so a swap between groups isn't refused half-way.
+		for (const id of moved) {
+			const c = getCategory(db, id);
+			requireFreeCategoryName(db, c.groupId, c.name, id);
+		}
 	});
 }

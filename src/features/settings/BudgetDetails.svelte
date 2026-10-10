@@ -49,7 +49,7 @@
 	});
 </script>
 
-<form onsubmit={save}>
+<form onsubmit={save} novalidate>
 	<SettingsGroup title={m.settings_budget_details()}>
 		<SettingsRow stacked label={m.onboarding_budget_name()} labelFor="details-name">
 			{#snippet control()}

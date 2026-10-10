@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import UsersIcon from '@lucide/svelte/icons/users';
 	import ReportCard from './ReportCard.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import SegmentLegend from './SegmentLegend.svelte';
@@ -31,7 +33,7 @@
 	{#if payees.error}
 		<FormMessage error={actionError(payees.error)} />
 	{:else if payees.data && top.total === 0}
-		<p class="text-sm text-muted-foreground">{m.reports_spending_empty_month()}</p>
+		<CardEmpty icon={UsersIcon} description={m.reports_spending_empty_month()} />
 	{:else if top.total > 0}
 		<StatTile
 			value={session.format(top.total)}
@@ -39,10 +41,13 @@
 			testId="payees-card-total"
 		/>
 		<StackedBar segments={top.segments} other={top.other} label={breakdown} class="h-3" />
-		<SegmentLegend
-			{top}
-			more={(count) => m.reports_more_payees({ count })}
-			testId="payees-card-legend"
-		/>
+		<div class="grid gap-1.5">
+			<SegmentLegend
+				{top}
+				more={(count) => m.reports_more_payees({ count })}
+				testId="payees-card-legend"
+			/>
+			<p class="text-xs text-muted-foreground">{m.reports_payees_refunds_note()}</p>
+		</div>
 	{/if}
 </ReportCard>

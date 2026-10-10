@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryProgress, showsSpending } from './progress';
+import { captionKind, categoryProgress, showsSpending } from './progress';
 
 /** A category view is summarised by the two numbers the row already shows. */
 const view = (activity: number, available: number) => ({
@@ -131,5 +131,17 @@ describe('showsSpending', () => {
 		expect(showsSpending(p(0, 3000))).toBe(true);
 		expect(showsSpending(p(-500, -500))).toBe(true);
 		expect(showsSpending(p(700, 700))).toBe(true);
+	});
+});
+
+describe('captionKind', () => {
+	it('says short when the envelope is negative with nothing spent this month', () => {
+		expect(captionKind(categoryProgress(view(0, -5_000)))).toBe('short');
+	});
+
+	it('keeps spent-and-over, received and spent for the other cases', () => {
+		expect(captionKind(categoryProgress(view(-2_000, -5_000)))).toBe('over');
+		expect(captionKind(categoryProgress(view(1_000, 1_000)))).toBe('inflow');
+		expect(captionKind(categoryProgress(view(-1_000, 4_000)))).toBe('spent');
 	});
 });

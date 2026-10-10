@@ -24,7 +24,9 @@ filtros** volta a contar tudo. Os cartões da visão geral sempre contam tudo.
 - **Gastos por categoria**: para onde foi o dinheiro, por categoria ou por grupo, com a fatia de
   cada um. Toque numa linha para ver as transações dela.
 - **Gastos por favorecido**: o mesmo, por quem você pagou. Aqui também, toque numa linha para ver
-  as transações dela.
+  as transações dela. Um reembolso só desconta do favorecido quando é lançado nele; lançado em
+  outro, ainda desconta da categoria, então este total pode ser diferente do de gastos por
+  categoria.
 - **Patrimônio líquido**: tudo o que você tem menos tudo o que deve, no fim de cada mês, somando
   todas as contas, inclusive as de acompanhamento. Cada conta conta como bem ou dívida pelo sinal
   do saldo.
@@ -34,6 +36,9 @@ filtros** volta a contar tudo. Os cartões da visão geral sempre contam tudo.
 - **Ativos e dívidas por conta**: o que cada conta aberta tem ou deve e, nas dívidas, quanto já
   foi pago desde o pico.
 - **Idade do dinheiro**: veja abaixo.
+
+Um cartão diz do que precisa antes de mostrar o gráfico: um segundo mês para patrimônio, fluxo de
+caixa e tendências, e dez pagamentos para a idade do dinheiro.
 
 ## Idade do dinheiro {#age-of-money}
 

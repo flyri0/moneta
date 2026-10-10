@@ -24,3 +24,10 @@ test('a dialog focuses its first field on desktop', async ({ page }) => {
 	await page.getByRole('button', { name: 'Add group' }).click();
 	await expect(page.getByRole('dialog').getByLabel('Group name')).toBeFocused();
 });
+
+test('a dialog that loads its form focuses the first field once it is there', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.getByRole('combobox', { name: 'Account' })).toBeFocused();
+});

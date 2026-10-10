@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ageOfMoneySeries, type CashFlowEntry } from './age-of-money';
+import { ageOfMoneyPayments, ageOfMoneySeries, type CashFlowEntry } from './age-of-money';
 
 let seq = 0;
 function flow(date: string, amount: number, opening = false): CashFlowEntry {
@@ -138,5 +138,18 @@ describe('ageOfMoneySeries', () => {
 
 	it('is empty without entries', () => {
 		expect(ageOfMoneySeries([], '2026-01-31')).toEqual([]);
+	});
+});
+
+describe('ageOfMoneyPayments', () => {
+	it('counts the payments out through today, not starting balances or inflows', () => {
+		const entries = [
+			{ date: '2026-01-01', id: 'a', amount: -500, opening: true },
+			{ date: '2026-01-02', id: 'b', amount: 1000, opening: false },
+			{ date: '2026-01-03', id: 'c', amount: -100, opening: false },
+			{ date: '2026-01-04', id: 'd', amount: -100, opening: false },
+			{ date: '2026-02-01', id: 'e', amount: -100, opening: false }
+		];
+		expect(ageOfMoneyPayments(entries, '2026-01-31')).toBe(2);
 	});
 });

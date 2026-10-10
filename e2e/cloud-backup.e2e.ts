@@ -223,7 +223,7 @@ test('tells a device when another one has a newer version', async ({ browser }) 
 		/Trip\s*Replaces Trip/
 	]);
 	await restore.getByRole('button', { name: 'Restore (1)' }).click();
-	await restore.getByRole('button', { name: 'Tap again to restore' }).click();
+	await restore.getByRole('button', { name: /(Tap|Click) again to restore/ }).click();
 	await expect(phone.getByText('Backup restored.')).toBeVisible();
 	await openSettings(phone);
 	await expect(row).not.toContainText('has a newer version');

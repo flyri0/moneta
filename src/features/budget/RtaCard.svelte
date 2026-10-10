@@ -4,26 +4,40 @@
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
 	import { rtaHint, rtaTone, type RtaHint } from '$features/budget/view';
+	import { formatMonthLong } from '$i18n/formats';
+	import { getLocale } from '$i18n/paraglide/runtime';
 	import { m } from '$i18n/paraglide/messages';
 	import { RTA_CARD, RTA_ICON, RTA_TEXT } from './tones';
 
 	let {
 		view,
+		hasAccounts = true,
 		ref = $bindable()
 	}: {
 		view: BudgetMonthView;
+		/** False with no account yet: the card asks for one. */
+		hasAccounts?: boolean;
 		/** The card, for the page to watch it scroll away and bring it back. */
 		ref?: HTMLElement;
 	} = $props();
 	const session = useSession();
 	let expanded = $state(false);
 
-	const HINTS: Record<RtaHint, () => string> = {
+	const HINTS: Record<Exclude<RtaHint, 'futureShort'>, () => string> = {
 		assigned: m.budget_rta_assigned_hint,
 		unassigned: m.budget_rta_unassigned_hint,
 		overassigned: m.budget_rta_overassigned_hint,
-		negativeFunds: m.budget_rta_negative_funds_hint
+		negativeFunds: m.budget_rta_negative_funds_hint,
+		noAccounts: m.budget_rta_no_accounts_hint
 	};
+	const hint = $derived.by(() => {
+		const kind = rtaHint(view, hasAccounts);
+		return kind === 'futureShort'
+			? m.budget_rta_future_short_hint({
+					month: formatMonthLong(view.futureNegativeMonth!, getLocale())
+				})
+			: HINTS[kind]();
+	});
 
 	// Zero is the goal: it shows as done, and anything else asks to be dealt with.
 	const tone = $derived(rtaTone(view.readyToAssign));
@@ -59,7 +73,7 @@
 			>
 				{session.format(view.readyToAssign)}
 			</span>
-			<span class="text-sm {RTA_TEXT[tone]}" data-testid="rta-hint">{HINTS[rtaHint(view)]()}</span>
+			<span class="text-sm {RTA_TEXT[tone]}" data-testid="rta-hint">{hint}</span>
 		</div>
 		<div
 			class="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground"

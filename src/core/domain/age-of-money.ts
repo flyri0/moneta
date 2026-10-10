@@ -16,6 +16,11 @@ export interface AgeOfMoneyPoint {
 /** How many of the latest outflows the figure averages, as YNAB does. */
 export const AGE_OF_MONEY_OUTFLOWS = 10;
 
+/** How many payments out there are through `today`: Age of Money shows from the tenth. */
+export function ageOfMoneyPayments(entries: CashFlowEntry[], today: string): number {
+	return entries.filter((e) => e.amount < 0 && !e.opening && e.date <= today).length;
+}
+
 interface Bucket {
 	date: string;
 	left: number;

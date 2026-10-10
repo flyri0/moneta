@@ -1,4 +1,9 @@
-import { ageOfMoneySeries, type AgeOfMoneyPoint, type CashFlowEntry } from '$domain/age-of-money';
+import {
+	ageOfMoneyPayments,
+	ageOfMoneySeries,
+	type AgeOfMoneyPoint,
+	type CashFlowEntry
+} from '$domain/age-of-money';
 import { DomainError } from '$domain/errors';
 import { validateFlagFilter, type FlagFilter } from '$domain/flag';
 import { isDate, isMonth, monthOf, type Month } from '$domain/month';
@@ -271,4 +276,9 @@ function readFlows(db: Db, today: string): CashFlowEntry[] {
 /** Age of Money at the end of each month through `today` (YYYY-MM-DD). */
 export function ageOfMoney(db: Db, today: string): AgeOfMoneyPoint[] {
 	return ageOfMoneySeries(ageOfMoneyFlows(db, today), today);
+}
+
+/** How many payments out of the cash accounts there are through `today` (see `ageOfMoneyPayments`). */
+export function ageOfMoneyPaymentCount(db: Db, today: string): number {
+	return ageOfMoneyPayments(ageOfMoneyFlows(db, today), today);
 }

@@ -1,3 +1,4 @@
+import type { Month } from '$domain/month';
 import type { Table } from '$db/connection';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
 
@@ -57,6 +58,15 @@ export function coverableFromReady(
 	return Math.max(0, Math.min(-category.available, readyToAssign));
 }
 
+/**
+ * How far below zero moving `amount` leaves the category it comes from, as a positive amount: zero
+ * when it has enough, or while the amount isn't a positive number yet. Moving it anyway is allowed.
+ */
+export function moveShortfall(sourceAvailable: number, amount: number | null): number {
+	if (amount === null || amount <= 0) return 0;
+	return Math.max(0, amount - sourceAvailable);
+}
+
 /** Ready to Assign's state. Zero is the goal of a zero-based budget; anything else needs a look. */
 export type RtaTone = 'assigned' | 'unassigned' | 'overassigned';
 
@@ -67,12 +77,20 @@ export function rtaTone(readyToAssign: number): RtaTone {
 
 /**
  * What the Ready to Assign card says. Below zero with funds already negative (say, a credit card's
- * starting debt in an income category), assigning too much isn't what put it there.
+ * starting debt in an income category), assigning too much isn't what put it there. With money
+ * left while a later month is over-assigned, assigning it here would leave that month short.
  */
-export type RtaHint = RtaTone | 'negativeFunds';
+export type RtaHint = RtaTone | 'negativeFunds' | 'futureShort' | 'noAccounts';
 
-export function rtaHint(view: Pick<BudgetMonthView, 'readyToAssign' | 'availableFunds'>): RtaHint {
+export function rtaHint(
+	view: Pick<BudgetMonthView, 'readyToAssign' | 'availableFunds'> & {
+		futureNegativeMonth?: Month | null;
+	},
+	hasAccounts = true
+): RtaHint {
 	const tone = rtaTone(view.readyToAssign);
+	if (!hasAccounts && tone === 'assigned') return 'noAccounts';
+	if (tone === 'unassigned' && view.futureNegativeMonth) return 'futureShort';
 	return tone === 'overassigned' && view.availableFunds < 0 ? 'negativeFunds' : tone;
 }
 
