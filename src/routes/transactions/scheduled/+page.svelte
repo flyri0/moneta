@@ -70,7 +70,7 @@
 	});
 </script>
 
-<PageHeader title={m.nav_transactions()}>
+<PageHeader title={m.nav_schedules()}>
 	{#snippet actions()}
 		<Button size="sm" onclick={() => open(null)}>
 			<PlusIcon />

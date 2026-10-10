@@ -40,6 +40,7 @@
 	let categoryId = $state('');
 	let closingDay = $state('');
 	let dueDay = $state('');
+	let billingInvalid = $state(false);
 	let error = $state<ActionError | null>(null);
 	const pending = new NewCategories();
 
@@ -57,6 +58,7 @@
 			return;
 		}
 		const billing = type === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
+		billingInvalid = billing === 'invalid';
 		if (billing === 'invalid') {
 			error = { message: m.form_error_billing_days_invalid() };
 			return;
@@ -93,7 +95,12 @@
 			onChangeType={() => (step = 1)}
 		/>
 		{#if type === 'credit_card'}
-			<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="new-account" />
+			<BillingDaysFields
+				bind:closing={closingDay}
+				bind:due={dueDay}
+				idPrefix="new-account"
+				invalid={billingInvalid}
+			/>
 		{/if}
 		{#if onBudget}
 			<div class="grid gap-2">

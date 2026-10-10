@@ -8,8 +8,15 @@
 	let {
 		closing = $bindable(),
 		due = $bindable(),
-		idPrefix
-	}: { closing: string; due: string; idPrefix: string } = $props();
+		idPrefix,
+		invalid = false
+	}: {
+		closing: string;
+		due: string;
+		idPrefix: string;
+		/** Marks both days, after they were refused. */
+		invalid?: boolean;
+	} = $props();
 </script>
 
 <div class="grid gap-2">
@@ -22,6 +29,7 @@
 				inputmode="numeric"
 				autocomplete="off"
 				maxlength={2}
+				aria-invalid={invalid}
 			/>
 		</div>
 		<div class="grid gap-2">
@@ -32,6 +40,7 @@
 				inputmode="numeric"
 				autocomplete="off"
 				maxlength={2}
+				aria-invalid={invalid}
 			/>
 		</div>
 	</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
@@ -65,6 +66,9 @@
 		busy = false;
 		if (!error) open = false;
 	}
+
+	// A mouse clicks; a finger taps.
+	const finePointer = new MediaQuery('(hover: hover) and (pointer: fine)');
 </script>
 
 <ResponsiveDialog bind:open title={m.budget_delete_title({ name })}>
@@ -95,7 +99,7 @@
 			{:else if countdown > 0}
 				{m.budget_delete_wait({ seconds: countdown })}
 			{:else}
-				{m.confirm_delete()}
+				{finePointer.current ? m.confirm_delete_click() : m.confirm_delete()}
 			{/if}
 		</Button>
 	</div>

@@ -316,3 +316,11 @@ test('a backup file that cannot be read shows an error and leaves onboarding usa
 	await expect(page.getByTestId('form-message')).toBeVisible();
 	await expect(nextStep(page)).toBeEnabled();
 });
+
+test('an empty budget name gets the app’s own message', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('');
+	await page.getByRole('button', { name: 'Next' }).click();
+	await expect(page.getByText('Enter a name for the budget.')).toBeVisible();
+});

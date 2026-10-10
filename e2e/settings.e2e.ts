@@ -255,7 +255,9 @@ test('deletes everything on this device, back to a fresh start', async ({ page }
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Delete everything' }).click();
 	await expect(dialog.getByRole('button', { name: /^Delete in \ds$/ })).toBeDisabled();
-	await dialog.getByRole('button', { name: 'Tap again to delete' }).click({ timeout: 10_000 });
+	await dialog
+		.getByRole('button', { name: /(Tap|Click) again to delete/ })
+		.click({ timeout: 10_000 });
 	await expect(page.getByText('Welcome to Moneta')).toBeVisible();
 	// Only what the fresh start wrote is left: an empty list of budgets.
 	const registry = await page.evaluate(() => localStorage.getItem('moneta.registry'));

@@ -252,7 +252,9 @@ export async function deleteBudget(page: Page, name: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel(`Type ${name} to confirm`).fill(name);
 	await dialog.getByRole('button', { name: 'Delete budget' }).click();
-	await dialog.getByRole('button', { name: 'Tap again to delete' }).click({ timeout: 10_000 });
+	await dialog
+		.getByRole('button', { name: /(Tap|Click) again to delete/ })
+		.click({ timeout: 10_000 });
 }
 
 /** Enters an outflow of `amount` to `payee` in `category` from the transaction dialog. */

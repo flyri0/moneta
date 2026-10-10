@@ -26,6 +26,7 @@
 	let confirming = $state(false);
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
+	let billingInvalid = $state(false);
 
 	$effect(() => {
 		if (!open) return;
@@ -61,6 +62,7 @@
 		event.preventDefault();
 		const isCard = account.type === 'credit_card';
 		const days = isCard ? parseBillingDays(closingDay, dueDay) : null;
+		billingInvalid = days === 'invalid';
 		if (days === 'invalid') {
 			error = { message: m.form_error_billing_days_invalid() };
 			return;
@@ -99,7 +101,12 @@
 					<IconField id="account-icon" value={icon} onchange={(next) => (icon = next)} />
 				</div>
 				{#if account.type === 'credit_card'}
-					<BillingDaysFields bind:closing={closingDay} bind:due={dueDay} idPrefix="account" />
+					<BillingDaysFields
+						bind:closing={closingDay}
+						bind:due={dueDay}
+						idPrefix="account"
+						invalid={billingInvalid}
+					/>
 				{/if}
 				<FormMessage {error} />
 				<div class="grid grid-cols-2 gap-2">
