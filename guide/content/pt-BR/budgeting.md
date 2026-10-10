@@ -46,8 +46,9 @@ descarta o que você digitou. As mudanças feitas na coluna não oferecem desfaz
 - **Movimento** é o que foi gasto (ou recebido) na categoria neste mês, pelas suas transações.
 - **Disponível** é o que sobra: o que veio do mês passado, mais o Atribuído, mais o Movimento.
 
-Você pode atribuir adiantado em meses futuros, para uma conta que vence depois. Se isso deixar o
-Pronto para atribuir de um mês futuro abaixo de zero, o Moneta avisa em qual mês acontece.
+Você pode atribuir adiantado em meses futuros, para uma conta que vence depois. Se atribuir
+adiantado deixar o Pronto para atribuir de um mês futuro abaixo de zero, o Moneta avisa em qual mês
+acontece.
 
 ### Mover dinheiro entre categorias {#move-money}
 

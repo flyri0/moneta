@@ -15,7 +15,9 @@ When you add an account, you first pick its type. Types come in two kinds:
 
 ![Adding an account: on-budget types (checking, savings, cash, credit card) above, tracking types (investment, loan, other) below.](img/account-types-light.png)
 
-Credit cards are always on budget. The type can't be changed once the account exists: its
+Each type starts on budget or tracking as listed, and **On budget** in the form switches it when
+you add the account; credit cards are always on budget. Neither the type nor that choice can be
+changed once the account exists: its
 settings rename it, give it an emoji **Icon** in place of its type's, set a card's billing days,
 and close or delete it. If you chose the wrong kind, add the account again with the right one and
 change the account of its transactions.
@@ -26,7 +28,7 @@ A new account asks for its **current balance** (for a card or a loan, the **amou
 date it is **as of**. Moneta records it as the account's first transaction, a starting balance.
 
 On an on-budget account, the starting balance goes to the **Starting balance category** you pick
-on the same form, normally **Starting Balance** in the Income group, so the money you already have
+on the same form (the first account, added while setting up the budget, always uses **Starting Balance**), normally **Starting Balance** in the Income group, so the money you already have
 lands in Ready to Assign. A card's starting debt, in that same category, comes out of Ready to
 Assign instead: the money to pay it has to come from somewhere. To pay an old debt off over time
 instead, see [A credit card that already has debt](situations.md#existing-card-debt).
@@ -72,7 +74,9 @@ installment: see [Installments already under way](schedules.md#installments-unde
 ## The register {#register}
 
 An account's register lists its transactions, newest first. At the top you see the **cleared** balance (what the bank has already seen), the **uncleared** amount and
-the total. Mark a transaction cleared with its checkbox when it shows up on your statement.
+the total. Balances are as of today: a transaction dated later, like a card installment on its bill's
+due date, shows as **Upcoming** and counts from its day on. Until then the register shows the
+balance **Including upcoming** too. Mark a transaction cleared with its checkbox when it shows up on your statement.
 
 Money coming in shows in green with a **+**, money going out with a **-**, the same everywhere
 in the app. Balances and totals carry no color.

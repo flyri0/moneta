@@ -15,7 +15,9 @@ Ao adicionar uma conta, você primeiro escolhe o tipo. Os tipos se dividem em do
 
 ![Adicionando uma conta: os tipos no orçamento (corrente, poupança, dinheiro, cartão de crédito) em cima, os de acompanhamento (investimento, empréstimo, outro) embaixo.](img/account-types-light.pt-BR.png)
 
-Cartões de crédito estão sempre no orçamento. O tipo não muda depois que a conta existe: os ajustes
+Cada tipo começa no orçamento ou de acompanhamento, como listado, e **No orçamento** no formulário
+muda isso ao adicionar a conta; cartões de crédito estão sempre no orçamento. Nem o tipo nem essa
+escolha mudam depois que a conta existe: os ajustes
 dela servem para renomeá-la, dar a ela um emoji como **Ícone** no lugar do ícone do tipo, informar
 o fechamento e o vencimento de um cartão, e encerrá-la ou excluí-la. Se escolheu o tipo errado,
 adicione a conta de novo com o tipo certo e mude a conta das transações dela.
@@ -26,7 +28,7 @@ Uma conta nova pede o **saldo atual** (num cartão ou empréstimo, o **valor dev
 que ele se refere. O Moneta o registra como a primeira transação da conta, um saldo inicial.
 
 Numa conta do orçamento, o saldo inicial vai para a **Categoria do saldo inicial** que você escolhe
-no mesmo formulário, normalmente **Saldo inicial** no grupo Receitas, então o dinheiro que você já
+no mesmo formulário (a primeira conta, adicionada ao criar o orçamento, sempre usa **Saldo inicial**), normalmente **Saldo inicial** no grupo Receitas, então o dinheiro que você já
 tem cai no Pronto para atribuir. A dívida inicial de um cartão, nessa mesma categoria, sai do
 Pronto para atribuir: o dinheiro para pagá-la tem que vir de algum lugar. Para quitar uma dívida
 antiga aos poucos, veja [Um cartão de crédito que já tem dívida](situations.md#existing-card-debt).
@@ -71,7 +73,9 @@ próxima parcela: veja [Parcelamentos em andamento](schedules.md#installments-un
 ## O extrato {#register}
 
 O extrato de uma conta lista as transações, das mais novas às mais antigas. No topo você vê o saldo **compensado** (o que o banco já viu), o valor **não
-compensado** e o total. Marque uma transação como compensada pela caixa de seleção quando ela
+compensado** e o total. Os saldos são os de hoje: uma transação com data futura, como uma parcela no
+vencimento da fatura, aparece como **Futura** e conta a partir do dia dela. Até lá o extrato mostra
+também o saldo **Com as futuras**. Marque uma transação como compensada pela caixa de seleção quando ela
 aparecer no extrato do banco.
 
 O dinheiro que entra aparece em verde com **+**, o que sai com **-**, do mesmo jeito em todo o
