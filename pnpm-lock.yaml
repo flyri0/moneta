@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@sqlite.org/sqlite-wasm':
-        specifier: 3.53.4-build1
-        version: 3.53.4-build1
+        specifier: 3.53.4-build2
+        version: 3.53.4-build2
       '@zxcvbn-ts/core':
         specifier: 4.2.0
         version: 4.2.0
@@ -2470,8 +2470,8 @@ packages:
   '@so-ric/colorspace@1.1.6':
     resolution: {integrity: sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw==}
 
-  '@sqlite.org/sqlite-wasm@3.53.4-build1':
-    resolution: {integrity: sha512-U8pvL0patYHMgieD8JxxYJTlh9m1LUX8+BDYb7MiKQzBI89f2qbdmdcG/PvnPaLm9wsBbv4VlVG453ixnxBOnA==}
+  '@sqlite.org/sqlite-wasm@3.53.4-build2':
+    resolution: {integrity: sha512-kQVArGJA4z7s56Dm8t+eTBXad4LiohuVj9pfgDNOcxa+Ic5xMrWlLPTq6cT0hw5S4MIvtpsraW+B0wD+IPvC7A==}
     engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
@@ -9762,7 +9762,7 @@ snapshots:
       color: 5.0.3
       text-hex: 1.0.0
 
-  '@sqlite.org/sqlite-wasm@3.53.4-build1': {}
+  '@sqlite.org/sqlite-wasm@3.53.4-build2': {}
 
   '@standard-schema/spec@1.1.0': {}
 
