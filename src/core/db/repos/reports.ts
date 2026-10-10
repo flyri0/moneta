@@ -1,7 +1,7 @@
 import { ageOfMoneySeries, type AgeOfMoneyPoint, type CashFlowEntry } from '$domain/age-of-money';
 import { DomainError } from '$domain/errors';
 import { validateFlagFilter, type FlagFilter } from '$domain/flag';
-import { isDate, isMonth, type Month } from '$domain/month';
+import { isDate, isMonth, monthOf, type Month } from '$domain/month';
 import {
 	accountBalanceSeries,
 	netWorthSeries,
@@ -203,16 +203,44 @@ function accountMonthChanges(db: Db): AccountMonthChange[] {
 	);
 }
 
-/** Month-end assets, debts and net worth across every account, through `through`. */
-export function netWorth(db: Db, through: Month): NetWorthPoint[] {
-	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
-	return netWorthSeries(accountMonthChanges(db), through);
+/**
+ * The changes with `today`'s month counted only through `today`, or through month-end when it is
+ * left out. Later months keep theirs: a series stops at today's month anyway.
+ */
+function changesAsOf(db: Db, today: string | undefined): AccountMonthChange[] {
+	if (today === undefined) return accountMonthChanges(db);
+	if (!isDate(today)) throw new DomainError('INVALID_INPUT', `Invalid date ${today}`);
+	return memo(db, `account-month-changes:${today}`, () => {
+		const month = monthOf(today);
+		const ahead = new Map(
+			all<{ accountId: string; amount: number }>(
+				db,
+				`SELECT account_id AS accountId, SUM(amount) AS amount FROM transactions
+				 WHERE date > ? AND substr(date, 1, 7) = ? GROUP BY account_id`,
+				[today, month]
+			).map((r) => [r.accountId, r.amount])
+		);
+		return accountMonthChanges(db).map((c) =>
+			c.month === month && ahead.has(c.accountId)
+				? { ...c, amount: c.amount - ahead.get(c.accountId)! }
+				: c
+		);
+	});
 }
 
-/** Each account's month-end balance, through `through`. */
-export function accountBalances(db: Db, through: Month): AccountBalancesPoint[] {
+/**
+ * Month-end assets, debts and net worth across every account, through `through`; `today`'s month
+ * as of `today` when given.
+ */
+export function netWorth(db: Db, through: Month, today?: string): NetWorthPoint[] {
 	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
-	return accountBalanceSeries(accountMonthChanges(db), through);
+	return netWorthSeries(changesAsOf(db, today), through);
+}
+
+/** Each account's month-end balance, through `through`; `today`'s month as of `today` when given. */
+export function accountBalances(db: Db, through: Month, today?: string): AccountBalancesPoint[] {
+	if (!isMonth(through)) throw new DomainError('INVALID_INPUT', `Invalid month ${through}`);
+	return accountBalanceSeries(changesAsOf(db, today), through);
 }
 
 /**

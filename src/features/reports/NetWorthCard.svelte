@@ -6,7 +6,8 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
-	import { monthOf, todayIso } from '$domain/month';
+	import { today } from '$client/today.svelte';
+	import { monthOf } from '$domain/month';
 	import { formatMonth } from '$i18n/formats';
 	import { netWorthChange, pointsInRange } from '$features/reports/net-worth';
 	import { presetRange } from '$features/reports/range';
@@ -15,15 +16,14 @@
 
 	/** Net worth today, and where it has been over the last six months. */
 	const session = useSession();
-	const today = todayIso();
-	const now = monthOf(today);
 
-	const series = useLive(session.client, ['transactions', 'accounts'], () =>
-		session.api.reports.netWorth(now)
-	);
-	// The series runs on past today when something is dated ahead; today's figure is the one wanted.
+	// This month's point is as of today, like the account balances.
+	const series = useLive(session.client, ['transactions', 'accounts'], () => {
+		const day = today();
+		return session.api.reports.netWorth(monthOf(day), day);
+	});
 	const recent = $derived(
-		pointsInRange(series.data ?? [], presetRange('last_6_months', today), today)
+		pointsInRange(series.data ?? [], presetRange('last_6_months', today()), today())
 	);
 	const current = $derived(recent.at(-1) ?? null);
 	const stat = $derived(netWorthChange(recent));

@@ -12,7 +12,8 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError } from '$client/notify';
-	import { monthOf, todayIso } from '$domain/month';
+	import { today } from '$client/today.svelte';
+	import { monthOf } from '$domain/month';
 	import { numberFormat } from '$domain/intl-cache';
 	import { formatMonth, formatMonthLong } from '$i18n/formats';
 	import { fillMonths, savingsRate } from '$features/reports/cash-flow';
@@ -37,13 +38,14 @@
 
 	// Read through this month whatever the period, and cut to it here: a new period then needs no
 	// new query for the series.
-	const series = useLive(session.client, ['transactions', 'accounts'], () =>
-		session.api.reports.netWorth(monthOf(todayIso()))
-	);
+	const series = useLive(session.client, ['transactions', 'accounts'], () => {
+		const day = today();
+		return session.api.reports.netWorth(monthOf(day), day);
+	});
 	const flow = useLive(session.client, SPENDING_TABLES, () =>
 		session.api.reports.cashFlow({ from: range.from, to: range.to })
 	);
-	const points = $derived(pointsInRange(series.data ?? [], range, todayIso()));
+	const points = $derived(pointsInRange(series.data ?? [], range, today()));
 	// Cash flow on the same months as net worth, so the chart and the table line up.
 	const flows = $derived(
 		fillMonths(
@@ -171,7 +173,7 @@
 					month of history -- and telling someone to widen a period that is already wide is
 					advice they cannot act on. -->
 				<p class="text-sm text-muted-foreground">
-					{isSingleMonth(range, todayIso())
+					{isSingleMonth(range, today())
 						? m.reports_net_worth_single_month()
 						: m.reports_net_worth_one_month()}
 				</p>

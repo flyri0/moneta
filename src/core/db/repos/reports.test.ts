@@ -128,6 +128,31 @@ describe('netWorth', () => {
 			expect.objectContaining({ code: 'INVALID_INPUT' })
 		);
 	});
+
+	it("counts today's month only through today, when given a day", () => {
+		const food = categoryId(db, 'Food');
+		createTransaction(db, { accountId: bank, date: '2026-09-20', amount: -1000, categoryId: food });
+		createTransaction(db, { accountId: bank, date: '2026-10-10', amount: -2000, categoryId: food });
+		createTransaction(db, { accountId: bank, date: '2026-10-11', amount: -4000, categoryId: food });
+		const points = netWorth(db, '2026-10', '2026-10-10');
+		// September stays month-end; October counts the 10th but not the 11th.
+		expect(points.at(-2)).toEqual({
+			month: '2026-09',
+			assets: 299000,
+			debts: -50000,
+			netWorth: 249000
+		});
+		expect(points.at(-1)).toEqual({
+			month: '2026-10',
+			assets: 297000,
+			debts: -50000,
+			netWorth: 247000
+		});
+		expect(netWorth(db, '2026-10').at(-1)!.netWorth).toBe(243000);
+		expect(() => netWorth(db, '2026-10', '2026-10-32')).toThrow(
+			expect.objectContaining({ code: 'INVALID_INPUT' })
+		);
+	});
 });
 
 describe('cashFlow', () => {
@@ -440,6 +465,20 @@ describe('accountBalances', () => {
 		expect(() => accountBalances(db, '2026-13')).toThrow(
 			expect.objectContaining({ code: 'INVALID_INPUT' })
 		);
+	});
+
+	it("counts today's month only through today, when given a day", () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-10-11',
+			amount: -20000,
+			transferAccountId: visa
+		});
+		expect(accountBalances(db, '2026-10', '2026-10-10').at(-1)).toEqual({
+			month: '2026-10',
+			balances: { [bank]: 200000, [visa]: -50000, [broker]: 100000 }
+		});
+		expect(accountBalances(db, '2026-10').at(-1)!.balances[bank]).toBe(180000);
 	});
 });
 

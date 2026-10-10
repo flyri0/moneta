@@ -191,11 +191,11 @@ export const api = {
 	},
 	reports: {
 		spending: read(reports.spendingByCategory, ['object']),
-		netWorth: read(reports.netWorth, ['string']),
+		netWorth: read(reports.netWorth, ['string', 'string?']),
 		cashFlow: read(reports.cashFlow, ['object']),
 		categoryMonths: read(reports.categoryMonths, ['object']),
 		payees: read(reports.spendingByPayee, ['object']),
-		accountBalances: read(reports.accountBalances, ['string']),
+		accountBalances: read(reports.accountBalances, ['string', 'string?']),
 		ageOfMoney: read(reports.ageOfMoney, ['string'])
 	},
 	backup: {
