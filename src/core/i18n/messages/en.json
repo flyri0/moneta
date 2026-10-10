@@ -275,6 +275,8 @@
 	"budget_rta_assigned_hint": "All your money has a job.",
 	"budget_rta_unassigned_hint": "Assign this money to your categories.",
 	"budget_rta_overassigned_hint": "You assigned more than you have. Take some back from a category.",
+	"budget_rta_future_short_hint": "Assigning more here leaves {month} short.",
+	"budget_rta_no_accounts_hint": "Add an account to start budgeting.",
 	"budget_rta_negative_funds_hint": "Funds available are below zero, as with a credit card's starting debt. Record some income or take some back from a category.",
 	"budget_rta_chip": "Ready to Assign: {amount}",
 	"budget_funds_available": "Funds available",

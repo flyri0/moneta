@@ -238,3 +238,19 @@ describe('moveShortfall', () => {
 		expect(moveShortfall(0, -5)).toBe(0);
 	});
 });
+
+describe('rtaHint for the months ahead and an empty budget', () => {
+	it('warns that assigning more leaves a later month short', () => {
+		expect(
+			rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: '2026-11' })
+		).toBe('futureShort');
+		expect(rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: null })).toBe(
+			'unassigned'
+		);
+	});
+
+	it('asks for an account when there is none', () => {
+		expect(rtaHint({ readyToAssign: 0, availableFunds: 0 }, false)).toBe('noAccounts');
+		expect(rtaHint({ readyToAssign: 0, availableFunds: 0 }, true)).toBe('assigned');
+	});
+});

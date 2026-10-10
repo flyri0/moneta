@@ -275,6 +275,8 @@
 	"budget_rta_assigned_hint": "Todo o dinheiro tem um destino.",
 	"budget_rta_unassigned_hint": "Atribua este valor às categorias.",
 	"budget_rta_overassigned_hint": "Você atribuiu mais do que tem. Retire de alguma categoria.",
+	"budget_rta_future_short_hint": "Atribuir mais aqui deixa {month} no negativo.",
+	"budget_rta_no_accounts_hint": "Adicione uma conta para começar a orçar.",
 	"budget_rta_negative_funds_hint": "O dinheiro disponível está negativo, como pela dívida inicial de um cartão. Registre uma receita ou retire de alguma categoria.",
 	"budget_rta_chip": "Pronto para atribuir: {amount}",
 	"budget_funds_available": "Dinheiro disponível",

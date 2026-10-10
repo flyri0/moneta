@@ -47,6 +47,7 @@
 	// On phones the month goes below the title and actions, which then line up with other pages'.
 	const desktop = new MediaQuery('min-width: 768px');
 	const view = useLive(session.client, BUDGET_TABLES, () => session.api.budget.month(data.month));
+	const accounts = useLive(session.client, ['accounts'], () => session.api.accounts.options());
 	const model = $derived(view.data ? gridModel(view.data) : null);
 	const overspent = $derived(model ? overspentCategories(model) : []);
 
@@ -192,7 +193,11 @@ spans a row of its own, so the chip joins the actions instead. -->
 	class="mx-auto grid max-w-2xl gap-4 p-3 transition-opacity aria-busy:opacity-60 aria-busy:delay-150 md:p-6 lg:max-w-5xl"
 	aria-busy={view.stale}
 >
-	{#if view.data}<RtaCard view={view.data} bind:ref={rtaCard} />{/if}
+	{#if view.data}<RtaCard
+			view={view.data}
+			hasAccounts={(accounts.data?.length ?? 1) > 0}
+			bind:ref={rtaCard}
+		/>{/if}
 
 	{#if overspent.length > 0 && !editingOrder}
 		<OverspentAlert categories={overspent} onReview={openCategory} />

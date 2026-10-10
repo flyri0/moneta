@@ -1,3 +1,4 @@
+import type { Month } from '$domain/month';
 import type { Table } from '$db/connection';
 import type { BudgetCategoryView, BudgetGroupView, BudgetMonthView } from '$db/repos/budget';
 
@@ -76,12 +77,20 @@ export function rtaTone(readyToAssign: number): RtaTone {
 
 /**
  * What the Ready to Assign card says. Below zero with funds already negative (say, a credit card's
- * starting debt in an income category), assigning too much isn't what put it there.
+ * starting debt in an income category), assigning too much isn't what put it there. With money
+ * left while a later month is over-assigned, assigning it here would leave that month short.
  */
-export type RtaHint = RtaTone | 'negativeFunds';
+export type RtaHint = RtaTone | 'negativeFunds' | 'futureShort' | 'noAccounts';
 
-export function rtaHint(view: Pick<BudgetMonthView, 'readyToAssign' | 'availableFunds'>): RtaHint {
+export function rtaHint(
+	view: Pick<BudgetMonthView, 'readyToAssign' | 'availableFunds'> & {
+		futureNegativeMonth?: Month | null;
+	},
+	hasAccounts = true
+): RtaHint {
 	const tone = rtaTone(view.readyToAssign);
+	if (!hasAccounts && tone === 'assigned') return 'noAccounts';
+	if (tone === 'unassigned' && view.futureNegativeMonth) return 'futureShort';
 	return tone === 'overassigned' && view.availableFunds < 0 ? 'negativeFunds' : tone;
 }
 
