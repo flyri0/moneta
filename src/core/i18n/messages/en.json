@@ -178,6 +178,7 @@
 	"onboarding_restore_hint": "If you used Moneta before, restore your .moneta file (or an older .sqlite one) now to keep your data and skip the rest of the setup.",
 	"onboarding_budget_section": "Your budget",
 	"onboarding_budget_name": "Budget name",
+	"budget_name_required": "Enter a name for the budget.",
 	"onboarding_default_budget_name": "My Budget",
 	"onboarding_locale": "Number and date format",
 	"onboarding_currency": "Currency",

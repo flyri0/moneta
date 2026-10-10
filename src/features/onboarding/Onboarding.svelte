@@ -30,6 +30,7 @@
 	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import { readBackupFile } from '$features/backup/actions';
 	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
+	import { budgetName } from '$features/settings/budget-name';
 	import BudgetStep from './BudgetStep.svelte';
 	import CategoriesStep from './CategoriesStep.svelte';
 	import DoneStep from './DoneStep.svelte';
@@ -89,6 +90,11 @@
 
 	function next() {
 		error = null;
+		if (step === 'budget' && budgetName(name) === null) {
+			error = { message: m.budget_name_required() };
+			document.getElementById('budget-name')?.focus();
+			return;
+		}
 		const following = stepAfter(steps, step);
 		if (following) moved = following;
 	}
@@ -110,7 +116,7 @@
 		const first = !onCancel && loadRegistry(localStorage).budgets.length === 0;
 		error = await runAction(async () => {
 			created = await createBudget(api, localStorage, {
-				name,
+				name: budgetName(name) ?? name,
 				currency,
 				locale,
 				income: toIncomeInput(selection),
@@ -188,6 +194,7 @@
 		onNext={next}
 		onBack={back}
 		backLabel={stepBefore(steps, step) ? m.onboarding_back() : onCancel ? m.cancel() : undefined}
+		{error}
 		bind:name
 		bind:locale
 		bind:currency

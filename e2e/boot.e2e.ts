@@ -20,6 +20,15 @@ test('onboarding creates a budget that survives a reload', async ({ page }) => {
 	await expect(page.getByTestId('category-row').filter({ hasText: 'Groceries' })).toBeVisible();
 });
 
+test('onboarding refuses a blank budget name on its step', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('   ');
+	await nextStep(page).click();
+	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(page.getByLabel('Budget name')).toBeFocused();
+});
+
 test('onboarding seeds only the categories that were picked', async ({ page }) => {
 	await startApp(page);
 	await skipIntro(page);
