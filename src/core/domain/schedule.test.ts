@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	dueCount,
+	dueDates,
 	resumeDate,
 	occurrenceDate,
 	occurrencesBetween,
@@ -151,6 +152,17 @@ describe('validateRule', () => {
 		expect(() => validateRule(rule({ endCount: 0 }))).toThrow(invalid);
 		expect(() => validateRule(rule({ frequency: 'hourly' as Rule['frequency'] }))).toThrow(invalid);
 		expect(() => validateRule(rule({ weekend: 'never' as Rule['weekend'] }))).toThrow(invalid);
+	});
+});
+
+describe('dueDates', () => {
+	it('lists the dates a new rule is already due on', () => {
+		expect(dueDates(rule({ startDate: '2026-01-15' }), '2026-03-20')).toEqual([
+			'2026-01-15',
+			'2026-02-15',
+			'2026-03-15'
+		]);
+		expect(dueDates(rule({ startDate: '2026-04-15' }), '2026-03-20')).toEqual([]);
 	});
 });
 

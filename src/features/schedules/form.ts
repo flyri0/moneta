@@ -4,6 +4,7 @@ import { MAX_INSTALLMENTS } from '$domain/installments';
 import { isDate, todayIso } from '$domain/month';
 import { parseAmount } from '$domain/money';
 import {
+	dueDates,
 	occurrenceDate,
 	resumeDate,
 	type Frequency,
@@ -25,9 +26,6 @@ export type Ends = 'never' | 'on' | 'after';
 
 /** The schedule sheet's screens. */
 export type ScheduleView = 'overview' | 'enter' | 'main' | 'repeat' | 'delete' | 'enter-many';
-
-/** How many due occurrences an automatic schedule may enter at once before saving asks first. */
-export const MANY_DUE = 20;
 
 /** The rule fields as the form edits them. Numbers are text, as typed. */
 export interface RuleDraft {
@@ -352,4 +350,17 @@ export function draftRuleSummary(rule: RuleDraft): string {
 	return interval === null
 		? FREQUENCY_LABELS[rule.frequency]()
 		: ruleSummary({ frequency: rule.frequency, interval });
+}
+
+/** The dates saving would enter at once, which it asks about first: only an automatic schedule's. */
+export function datesToConfirm(
+	input: Pick<ScheduleInput, 'autoEnter'> & Rule,
+	today: string
+): string[] {
+	return input.autoEnter ? dueDates(input, today) : [];
+}
+
+/** The first dates to list when asking, and how many more there are. */
+export function dueSummary(dates: string[], shown = 3): { shown: string[]; more: number } {
+	return { shown: dates.slice(0, shown), more: Math.max(0, dates.length - shown) };
 }
