@@ -75,3 +75,33 @@ test('checks the bank balance against what was cleared through the chosen date',
 	await expect(dialog).toBeHidden();
 	await expect(page.getByTestId('register-reconciled-on')).toContainText('Reconciled on');
 });
+
+test('reconciles through the day the dialog was opened on, after midnight passes', async ({
+	page
+}) => {
+	await page.clock.install({ time: new Date('2026-09-29T23:40:00') });
+	await onboard(page);
+	await openChecking(page);
+
+	// Cleared, but dated tomorrow: it isn't in today's cleared balance.
+	await page.getByRole('main').getByRole('button', { name: 'Transaction', exact: true }).click();
+	const form = page.getByRole('dialog');
+	await chooseCombobox(form, 'Payee', 'Market', 'Market');
+	await form.getByLabel('Amount', { exact: true }).fill('50');
+	await chooseCombobox(form, 'Category', 'Groceries', 'Groceries');
+	await pickDate(form, 'Date', '2026-09-30');
+	await form.getByLabel('Cleared').check();
+	await form.getByRole('button', { name: 'Save' }).click();
+	await expect(form).toBeHidden();
+
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog.getByTestId('reconcile-cleared')).toHaveText('$1,000.00');
+	// The day changes while the dialog is open: the page's balances move on, the dialog's date doesn't.
+	await page.clock.runFor(30 * 60_000);
+	await expect(page.getByTestId('register-balance')).toHaveText('$950.00');
+	await expect(dialog.getByTestId('reconcile-cleared')).toHaveText('$1,000.00');
+	await dialog.getByRole('button', { name: 'Yes, reconcile' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(page.getByTestId('register-reconciled-on')).toContainText('Sep 29, 2026');
+});

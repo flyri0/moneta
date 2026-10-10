@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Button } from '$ui/button';
 	import HelpLink from '$components/HelpLink.svelte';
 	import { DatePicker } from '$ui/date-picker';
@@ -14,10 +15,11 @@
 	import { checkBalance, shownBalance } from '$features/accounts/reconcile';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { today } from '$client/today.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';
 	import type { Account } from '$db/repos/accounts';
 	import { formatAmountInput } from '$domain/money';
-	import { isDate, todayIso } from '$domain/month';
+	import { isDate } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
 
 	/**
@@ -52,20 +54,26 @@
 	let error = $state<ActionError | null>(null);
 
 	const debt = $derived(isDebtType(account.type));
-	const cleared = $derived(shownBalance(account.type, account.clearedBalance));
-	// What was cleared through the balance date, the one the worker checks the bank's balance against.
+	// What was cleared through the balance date, the one the worker checks the bank's balance
+	// against. Read only while open: the dialog stays mounted on the register.
 	const through = useLive(session.client, ['accounts', 'transactions'], () =>
-		isDate(date) ? session.api.accounts.get(account.id, date) : Promise.resolve(null)
+		open && isDate(date) ? session.api.accounts.get(account.id, date) : Promise.resolve(null)
 	);
 	const clearedThrough = $derived(
 		shownBalance(account.type, through.data?.clearedBalance ?? account.clearedBalance)
 	);
 
+	/** The cleared balance through `date`, read fresh: the live copy may still be loading. */
+	async function clearedOn(day: string): Promise<number> {
+		return (await session.api.accounts.get(account.id, day)).clearedBalance;
+	}
+
 	$effect(() => {
 		if (!open) return;
 		error = null;
 		categoryId = '';
-		date = statement?.date ?? todayIso();
+		// The day it opened on, kept if midnight passes meanwhile.
+		date = statement?.date ?? untrack(today);
 		typed = statement
 			? formatAmountInput(shownBalance(account.type, statement.balance), session.money)
 			: '';
@@ -90,15 +98,28 @@
 		if (!error) open = false;
 	}
 
+	/** "Yes": the bank agrees with what was cleared through the balance date. */
+	async function confirm() {
+		error = null;
+		busy = true;
+		let cleared;
+		try {
+			cleared = await clearedOn(date);
+		} catch (err) {
+			busy = false;
+			error = actionError(err);
+			return;
+		}
+		void reconcile({ date, balance: cleared });
+	}
+
 	async function check(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
 		busy = true;
 		let result;
 		try {
-			// Fresh, not the live copy, which may still be loading for a date just picked.
-			const asOf = await session.api.accounts.get(account.id, date);
-			result = checkBalance(account.type, session.parse(typed), asOf.clearedBalance);
+			result = checkBalance(account.type, session.parse(typed), await clearedOn(date));
 		} catch (err) {
 			busy = false;
 			error = actionError(err);
@@ -146,7 +167,7 @@
 				</p>
 				<HelpLink topic="reconcile" text class="justify-self-center" />
 				<p class="text-3xl font-bold tracking-tight tabular-nums" data-testid="reconcile-cleared">
-					{session.format(cleared)}
+					{session.format(clearedThrough)}
 				</p>
 			</div>
 			<FormMessage {error} />
@@ -154,10 +175,7 @@
 				<Button variant="outline" disabled={busy} onclick={() => (step = 'enter')}>
 					{m.reconcile_no()}
 				</Button>
-				<Button
-					disabled={busy}
-					onclick={() => void reconcile({ date, balance: account.clearedBalance })}
-				>
+				<Button disabled={busy} onclick={() => void confirm()}>
 					{m.reconcile_yes()}
 				</Button>
 			</div>
