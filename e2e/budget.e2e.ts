@@ -105,8 +105,14 @@ test('moves between assigned cells with the keyboard, but not past one it cannot
 	await expect(next).toBeFocused();
 	await expect(next).toHaveAttribute('aria-invalid', 'true');
 	await expect(next).toHaveValue('12abc');
+	const warning = page.locator('[data-sonner-toast]', { hasText: 'Enter a valid amount' });
+	await expect(warning).toHaveCount(1);
+	// Typing again clears the mark, so another unreadable value is warned about on leaving.
+	await next.fill('abc');
+	await expect(next).toHaveAttribute('aria-invalid', 'false');
 	// Leaving it otherwise gives the text up: the saved amount shows again.
 	await page.getByTestId('rta-card').click();
+	await expect(warning).toHaveCount(2);
 	await expect(next).toHaveValue('$0.00');
 	await expect(next).toHaveAttribute('aria-invalid', 'false');
 });

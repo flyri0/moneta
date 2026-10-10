@@ -97,7 +97,11 @@
 		data-assigned-input
 		aria-invalid={invalid}
 		value={editing ? text : session.format(assigned)}
-		oninput={(e) => (text = e.currentTarget.value)}
+		oninput={(e) => {
+			text = e.currentTarget.value;
+			// The warning was about the text before: new text gets its own on leaving.
+			invalid = false;
+		}}
 		onfocus={focus}
 		onblur={commit}
 		onkeydown={keydown}
