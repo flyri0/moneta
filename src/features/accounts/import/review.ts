@@ -13,23 +13,45 @@ export interface ReviewRow {
 	categoryId: string;
 	/** The payee rule that set its payee, if any. */
 	ruleId: string | null;
+	/** For a `possible` line: whether the user linked it to the transaction it may be. */
+	linked: boolean;
 }
 
-/** The rows to review: every line but duplicates included, with the suggested categories. */
+/** What importing the row does as the user left it: a possible match is new until linked. */
+export function rowStatus(
+	row: Pick<ReviewRow, 'preview' | 'linked'>
+): 'new' | 'match' | 'duplicate' {
+	const { status } = row.preview;
+	if (status === 'possible') return row.linked ? 'match' : 'new';
+	return status;
+}
+
+/** Links a possible match to its transaction (and includes it), or unlinks it. */
+export function linkPossible(row: ReviewRow, linked: boolean): void {
+	if (row.preview.status !== 'possible') return;
+	row.linked = linked;
+	if (linked) row.include = true;
+}
+
+/**
+ * The rows to review: every new or matched line included, possible matches and duplicates left
+ * out, with the suggested categories.
+ */
 export function reviewRows(lines: StatementLine[], previews: ImportPreview[]): ReviewRow[] {
 	return lines.map((line, i) => ({
 		line,
 		preview: previews[i],
-		include: previews[i].status !== 'duplicate',
+		include: previews[i].status === 'new' || previews[i].status === 'match',
 		payeeName: previews[i].payeeName,
 		categoryId: previews[i].categoryId ?? '',
-		ruleId: previews[i].ruleId
+		ruleId: previews[i].ruleId,
+		linked: false
 	}));
 }
 
 /** Whether a row still needs a category before it can be imported. */
 export function needsCategory(row: ReviewRow, onBudget: boolean): boolean {
-	return onBudget && row.include && row.preview.status === 'new' && !row.categoryId;
+	return onBudget && row.include && rowStatus(row) === 'new' && !row.categoryId;
 }
 
 /** How many included rows create transactions, match ones, and still need a category. */
@@ -39,8 +61,9 @@ export function reviewCounts(rows: ReviewRow[], onBudget: boolean) {
 	let missing = 0;
 	for (const row of rows) {
 		if (!row.include) continue;
-		if (row.preview.status === 'match') match++;
-		else if (row.preview.status === 'new') create++;
+		const status = rowStatus(row);
+		if (status === 'match') match++;
+		else if (status === 'new') create++;
 		if (needsCategory(row, onBudget)) missing++;
 	}
 	return { create, match, missing };
@@ -52,7 +75,7 @@ export function reviewCounts(rows: ReviewRow[], onBudget: boolean) {
  */
 export function farFutureCount(rows: ReviewRow[], today: string): number {
 	return rows.filter(
-		(r) => r.include && r.preview.status !== 'duplicate' && isFarFuture(r.line.date, today)
+		(r) => r.include && rowStatus(r) !== 'duplicate' && isFarFuture(r.line.date, today)
 	).length;
 }
 
@@ -64,16 +87,19 @@ export function fillCategories(rows: ReviewRow[], categoryId: string, onBudget: 
 /** The lines to send for import: the included ones, new or matched. */
 export function importLines(rows: ReviewRow[], onBudget: boolean): ImportLine[] {
 	return rows
-		.filter((r) => r.include && r.preview.status !== 'duplicate')
-		.map((r) => ({
-			importId: r.preview.importId,
-			date: r.line.date,
-			amount: r.line.amount,
-			payeeName: r.payeeName.trim(),
-			memo: r.line.memo,
-			categoryId: onBudget && r.preview.status === 'new' ? r.categoryId || null : null,
-			matchId: r.preview.match?.id ?? null
-		}));
+		.filter((r) => r.include && rowStatus(r) !== 'duplicate')
+		.map((r) => {
+			const status = rowStatus(r);
+			return {
+				importId: r.preview.importId,
+				date: r.line.date,
+				amount: r.line.amount,
+				payeeName: r.payeeName.trim(),
+				memo: r.line.memo,
+				categoryId: onBudget && status === 'new' ? r.categoryId || null : null,
+				matchId: status === 'match' ? (r.preview.match?.id ?? null) : null
+			};
+		});
 }
 
 /** A rule as `applyRule` needs it. */
@@ -92,7 +118,7 @@ export interface ReviewRule {
  */
 export function applyRule(rows: ReviewRow[], rule: ReviewRule): void {
 	for (const row of rows) {
-		if (row.preview.status !== 'new' || !matchRule([rule], row.line.description)) continue;
+		if (rowStatus(row) !== 'new' || !matchRule([rule], row.line.description)) continue;
 		const untouched = row.payeeName === row.preview.payeeName;
 		const renamedToIt =
 			row.payeeName.trim().toLocaleLowerCase() === rule.payeeName.toLocaleLowerCase();
