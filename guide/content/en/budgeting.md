@@ -53,8 +53,8 @@ a future month's Ready to Assign below zero, Moneta warns you with the month it 
 
 Plans change. Open a category and use **Move money**: pick another category and an amount, and it
 moves from one to the other in this month. The list shows how much each category has available.
-If the move would leave the category it comes from below zero, Moneta says by how much before you confirm.
-Each move can be undone right after (see [Undo](transactions.md#undo)).
+If the move would leave the category it comes from below zero, Moneta says by how much before
+you confirm. Each move can be undone right after (see [Undo](transactions.md#undo)).
 
 ![A category's sheet: what is available, what was assigned this month, and Quick assign, Move money, Goal and Roll overspending over.](img/category-light.png)
 

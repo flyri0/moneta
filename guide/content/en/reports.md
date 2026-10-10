@@ -22,8 +22,8 @@ again. The overview's cards always count everything.
 - **Spending by category**: where the money went, by category or by group, with each one's share.
   Tap a row to see its transactions.
 - **Spending by payee**: the same, by who you paid. Here too, tap a row for its transactions. A
-  refund counts against its category, not its payee, so this total can differ from spending by
-  category.
+  refund lowers a payee's spending only when it is entered under that payee; under another one, it
+  still lowers its category, so this total can differ from spending by category.
 - **Net worth**: everything you own minus everything you owe, at the end of each month, across all
   your accounts, tracking ones included. Each account counts as an asset or a debt by the sign of
   its balance.

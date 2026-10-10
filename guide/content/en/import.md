@@ -55,8 +55,8 @@ can give them all one category at once.
 
 ## Making a rule {#rules}
 
-Bank descriptions are messy: `PAG*CORNERMKT 0423 SAO PAULO`. On a new line, **Make a rule** sets
-the payee (and optionally a category) for every description like it, in this import and the next
+Bank descriptions are messy: `PAG*CORNERMKT 0423 SAO PAULO`. On a new line that no rule catches yet, **Make a rule**
+sets the payee (and optionally a category) for every description like it, in this import and the next
 ones. After a card processor's prefix like `PAG*` or `SQ *`, the rule starts as **Contains** the
 merchant's name. Lines caught by a rule show a **Rule** badge, and without a category of its own
 they get the payee's usual one. See [Payee rules](payees.md#payee-rules).

@@ -496,7 +496,7 @@
 	"reports_chart_next_month": "The chart starts next month.",
 	"reports_trends_two_months": "Trends show up after two months.",
 	"reports_age_of_money_progress": "{count} of {total} payments so far.",
-	"reports_payees_refunds_note": "Refunds count against their category, not their payee.",
+	"reports_payees_refunds_note": "A refund lowers a payee's spending only when it is entered under that payee.",
 	"reports_age_of_money_about": "How long your money sat in your accounts before you spent it, on average over your last 10 payments out of checking, savings or cash. Card purchases count when you pay the card.",
 	"settings_saved": "Saved.",
 	"settings_budget_details": "Budget details",

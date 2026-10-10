@@ -496,7 +496,7 @@
 	"reports_chart_next_month": "O gráfico começa no mês que vem.",
 	"reports_trends_two_months": "As tendências aparecem depois de dois meses.",
 	"reports_age_of_money_progress": "{count} de {total} pagamentos até agora.",
-	"reports_payees_refunds_note": "Reembolsos descontam da categoria, não do favorecido.",
+	"reports_payees_refunds_note": "Um reembolso só desconta do favorecido quando é lançado nele.",
 	"reports_age_of_money_about": "Quanto tempo seu dinheiro ficou nas contas antes de ser gasto, na média dos seus últimos 10 pagamentos saídos da conta corrente, poupança ou dinheiro. Compras no cartão contam quando você paga a fatura.",
 	"settings_saved": "Salvo.",
 	"settings_budget_details": "Detalhes do orçamento",
