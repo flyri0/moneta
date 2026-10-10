@@ -72,6 +72,9 @@
 				label={(summary) => `${m.reports_payees()}: ${summary}`}
 				class="h-4"
 			/>
+			<p class="text-sm text-muted-foreground" data-testid="payees-refunds-note">
+				{m.reports_payees_refunds_note()}
+			</p>
 
 			<div class="grid gap-4 {payee ? 'lg:grid-cols-2 lg:items-start' : ''}">
 				<SliceTable

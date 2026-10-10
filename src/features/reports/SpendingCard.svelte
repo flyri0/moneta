@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
 	import ReportCard from './ReportCard.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import SegmentLegend from './SegmentLegend.svelte';
@@ -31,7 +33,7 @@
 	{#if spending.error}
 		<FormMessage error={actionError(spending.error)} />
 	{:else if spending.data && top.total === 0}
-		<p class="text-sm text-muted-foreground">{m.reports_spending_empty_month()}</p>
+		<CardEmpty icon={ChartPieIcon} description={m.reports_spending_empty_month()} />
 	{:else if top.total > 0}
 		<StatTile
 			value={session.format(top.total)}

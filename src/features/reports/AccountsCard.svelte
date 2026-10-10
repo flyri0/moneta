@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardEmpty from './CardEmpty.svelte';
+	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import ReportCard from './ReportCard.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
@@ -48,7 +50,7 @@
 	{#if accounts.error}
 		<FormMessage error={actionError(accounts.error)} />
 	{:else if accounts.data && all.length === 0}
-		<p class="text-sm text-muted-foreground">{m.reports_accounts_empty()}</p>
+		<CardEmpty icon={LandmarkIcon} description={m.reports_accounts_empty()} />
 	{:else if accounts.data}
 		<div class="grid gap-2">
 			<div class="flex items-end justify-between gap-3">
