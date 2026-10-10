@@ -38,6 +38,7 @@
 		type SidebarState
 	} from '$client/sidebar';
 	import { enterAndReport, scheduleRunner } from '$client/schedules';
+	import { watchToday } from '$client/today.svelte';
 	import { currentMonth } from '$domain/month';
 	import { errorMessage } from '$i18n/errors';
 	import { m } from '$i18n/paraglide/messages';
@@ -229,6 +230,8 @@
 
 	// A shorter page can reset the scroll without a scroll event.
 	afterNavigate(trackScroll);
+
+	$effect(() => watchToday());
 
 	// Each screen's code is loaded and compiled while the app sits idle, so a tap on the nav only
 	// has to render. On a phone that compile is most of the wait. The add dialog's code comes last;
