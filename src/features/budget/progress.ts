@@ -29,6 +29,11 @@ export interface CategoryProgress {
 const share = (part: number, whole: number) =>
 	Math.min(100, Math.max(0, Math.round((part / whole) * 100)));
 
+/** Whether the month has anything to show: money funded, spent or received. */
+export function showsSpending(p: CategoryProgress): boolean {
+	return p.funded !== 0 || p.spent !== 0 || p.inflow !== 0;
+}
+
 /**
  * Splits a category's month into the envelope and what left it.
  * `funded` is derived from the two numbers the row already shows, so the bar and the Available
