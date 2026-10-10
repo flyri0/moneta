@@ -20,11 +20,12 @@ export const ACCOUNT_CATEGORIES: readonly AccountTypeCategory[] = [
 ];
 
 /**
- * Loans and investments default to off-budget: their balances aren't spendable cash, and an
- * on-budget starting balance would count as Ready to Assign income.
+ * Loans, investments and other accounts default to off-budget, as the type picker groups them
+ * (`ACCOUNT_CATEGORIES`): their balances aren't spendable cash, and an on-budget starting balance
+ * would count as Ready to Assign income.
  */
 export function defaultOnBudget(type: AccountType): boolean {
-	return type !== 'investment' && type !== 'loan';
+	return type !== 'investment' && type !== 'loan' && type !== 'other';
 }
 
 /** Credit cards are always on-budget. */
