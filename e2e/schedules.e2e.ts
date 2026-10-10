@@ -231,7 +231,7 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	await pickDate(dialog, 'Next date', daysFromToday(-900));
 	await dialog.getByLabel('Enter automatically').click();
 	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(dialog.getByRole('heading', { name: 'Enter these now?' })).toBeVisible();
+	await expect(dialog.getByRole('heading', { name: 'Enter now?' })).toBeVisible();
 	await dialog.getByRole('button', { name: 'Cancel' }).click();
 
 	await dialog.getByLabel('Enter automatically').click();
@@ -262,7 +262,9 @@ test('asks before an automatic schedule enters even one past date', async ({ pag
 	await pickDate(dialog, 'Next date', daysFromToday(-3));
 	await dialog.getByLabel('Enter automatically').click();
 	await dialog.getByRole('button', { name: 'Save' }).click();
-	await expect(dialog.getByRole('heading', { name: 'Enter these now?' })).toBeVisible();
+	await expect(dialog.getByRole('heading', { name: 'Enter now?' })).toBeVisible();
+	await expect(dialog.getByText('enters a transaction now, dated')).toBeVisible();
+	await expect(dialog.getByText('1 transactions')).toHaveCount(0);
 	await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
 	await expect(dialog).toBeHidden();
 });

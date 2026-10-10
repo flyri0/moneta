@@ -401,7 +401,9 @@
 		<FormMessage {error} />
 	{:else if view === 'enter-many'}
 		<ConfirmPanel
-			body={m.schedule_enter_many_body({ count: dueList.length, dates: dueText })}
+			body={dueList.length === 1
+				? m.schedule_enter_one_body({ dates: dueText })
+				: m.schedule_enter_many_body({ count: dueList.length, dates: dueText })}
 			confirmLabel={m.schedule_enter_many_confirm({ count: dueList.length })}
 			destructive={false}
 			{error}
