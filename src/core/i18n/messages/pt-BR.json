@@ -678,6 +678,7 @@
 	"payee_delete_hint": "Nenhuma transação o usa.",
 	"payee_in_use_hint": "Ele tem transações, agendamentos ou regras de importação, então não pode ser excluído. Mescle-o com outro favorecido.",
 	"error_payee_exists": "Já existe um favorecido com este nome.",
+	"error_name_exists": "Já existe um grupo ou categoria com este nome aqui. Escolha outro nome.",
 	"error_payee_in_use": "Este favorecido tem transações. Mescle-o com outro favorecido.",
 	"error_schedule_stale": "Esta ocorrência já foi lançada ou pulada.",
 	"error_schedule_ended": "Este agendamento terminou.",

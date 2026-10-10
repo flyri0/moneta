@@ -678,6 +678,7 @@
 	"payee_delete_hint": "No transaction uses it.",
 	"payee_in_use_hint": "It has transactions, schedules or import rules, so it can't be deleted. Merge it into another payee instead.",
 	"error_payee_exists": "A payee with this name already exists.",
+	"error_name_exists": "A group or category with this name is already here. Pick another name.",
 	"error_payee_in_use": "This payee has transactions. Merge it into another payee instead.",
 	"error_schedule_stale": "This occurrence was already entered or skipped.",
 	"error_schedule_ended": "This schedule has ended.",

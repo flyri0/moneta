@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { INCOME_GROUP_NAMES } from '$db/repos/categories';
+import en from './messages/en.json';
+import ptBR from './messages/pt-BR.json';
 import { m } from '$i18n/paraglide/messages';
 import { defaultCategoryGroups, defaultIncomeCategories } from './defaults';
 import {
@@ -78,4 +81,8 @@ describe('defaultIncomeCategories', () => {
 			'Saldo inicial'
 		]);
 	});
+});
+
+it("reserves the Income group's label in every language", () => {
+	expect([...INCOME_GROUP_NAMES].sort()).toEqual([en.group_income, ptBR.group_income].sort());
 });
