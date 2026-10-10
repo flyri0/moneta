@@ -27,7 +27,8 @@
 		pending,
 		expanded,
 		onToggle,
-		onMakeRule
+		onMakeRule,
+		onPayeeChange
 	}: {
 		row: ReviewRow;
 		index: number;
@@ -37,6 +38,7 @@
 		expanded: boolean;
 		onToggle: () => void;
 		onMakeRule: () => void;
+		onPayeeChange: () => void;
 	} = $props();
 
 	const status = $derived(rowStatus(row));
@@ -167,6 +169,7 @@
 					<Input
 						id="import-payee-{number}"
 						bind:value={row.payeeName}
+						onchange={onPayeeChange}
 						aria-label={m.import_payee({ number })}
 						disabled={!row.include}
 						class="h-8 bg-background"

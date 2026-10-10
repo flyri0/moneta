@@ -147,6 +147,7 @@ export const api = {
 	},
 	imports: {
 		preview: read(imports.previewImport, ['string', 'array']),
+		context: read(imports.importContext, ['string']),
 		csvFormat: read(imports.getCsvFormat, ['string']),
 		// New lines create payees; matched ones only change their own row.
 		commit: write(

@@ -28,6 +28,8 @@
 		importLines,
 		reviewCounts,
 		reviewRows,
+		suggestCategory,
+		type Suggestions,
 		type ReviewRow
 	} from './review';
 	import type { Statement } from './statement';
@@ -56,6 +58,7 @@
 	);
 
 	let rows = $state<ReviewRow[] | null>(null);
+	let suggestions = $state<Suggestions>({});
 	let loadError = $state<ActionError | null>(null);
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
@@ -82,7 +85,7 @@
 
 	/** A rule made here applies at once to the other lines it catches. */
 	function ruleSaved(saved: SavedRule) {
-		if (rows) applyRule(rows, saved);
+		if (rows) applyRule(rows, saved, suggestions);
 	}
 
 	/**
@@ -101,9 +104,14 @@
 		let current = true;
 		rows = null;
 		loadError = null;
-		session.api.imports.preview(account.id, statement).then(
-			(previews) => {
-				if (current) rows = reviewRows(statement, previews);
+		Promise.all([
+			session.api.imports.preview(account.id, statement),
+			session.api.imports.context(account.id)
+		]).then(
+			([previews, context]) => {
+				if (!current) return;
+				suggestions = context.suggestions;
+				rows = reviewRows(statement, previews);
 			},
 			(err) => {
 				if (current) loadError = actionError(err);
@@ -205,6 +213,7 @@
 				expanded={open.has(i)}
 				onToggle={() => toggle(i)}
 				onMakeRule={() => makeRule(row)}
+				onPayeeChange={() => suggestCategory(rows![i], suggestions)}
 			/>
 		{/each}
 	</section>

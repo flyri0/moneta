@@ -8,7 +8,8 @@ import {
 	linkPossible,
 	reviewCounts,
 	reviewRows,
-	rowStatus
+	rowStatus,
+	suggestCategory
 } from './review';
 
 const line = (n: number): StatementLine => ({
@@ -119,6 +120,18 @@ describe('applyRule', () => {
 		expect(r[0]).toMatchObject({ payeeName: 'The Shop', categoryId: 'food', ruleId: 'r1' });
 	});
 
+	it("fills the payee's usual category when the rule has none", () => {
+		const r = rows();
+		applyRule(r, { ...rule, categoryId: null }, { 'the shop': 'fun' });
+		// Lines 1 and 2 are new and caught; line 1 already had 'food', which stays.
+		expect(r.map((x) => [x.ruleId, x.categoryId])).toEqual([
+			['r1', 'food'],
+			['r1', 'fun'],
+			[null, ''],
+			[null, '']
+		]);
+	});
+
 	it('leaves lines it does not catch', () => {
 		const r = rows();
 		applyRule(r, { ...rule, kind: 'is', text: 'Shop' });
@@ -169,5 +182,27 @@ describe('possible matches', () => {
 		expect(reviewCounts(r, true)).toEqual({ create: 0, match: 1, missing: 0 });
 		linkPossible(r[0], false);
 		expect(rowStatus(r[0])).toBe('new');
+	});
+});
+
+describe('suggestCategory', () => {
+	const suggestions = { mercado: 'food' };
+
+	it('fills an empty category from a payee typed by hand', () => {
+		const [, second] = rows();
+		second.payeeName = ' Mercado ';
+		suggestCategory(second, suggestions);
+		expect(second.categoryId).toBe('food');
+	});
+
+	it('never replaces a category the user picked, nor touches a match', () => {
+		const [first, , third] = rows();
+		first.payeeName = 'Mercado';
+		first.categoryId = 'fun';
+		suggestCategory(first, suggestions);
+		expect(first.categoryId).toBe('fun');
+		third.payeeName = 'Mercado';
+		suggestCategory(third, suggestions);
+		expect(third.categoryId).toBe('');
 	});
 });

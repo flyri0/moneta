@@ -250,3 +250,25 @@ CHARSET:1252
 	await expect(page.getByText('Imported: 0 new, 1 matched.')).toBeVisible();
 	await expect(page.getByTestId('register-row')).toHaveCount(2);
 });
+
+test("a rule made while reviewing fills the payee's usual category", async ({ page }) => {
+	await onboard(page);
+	await spend(page, 'Corner Market', '10', 'Groceries');
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await openChecking(page);
+	const { y, m, d } = today();
+	await importFile(page, {
+		name: 'extrato.csv',
+		mimeType: 'text/csv',
+		buffer: Buffer.from(`Date,Description,Amount\n${m}/${d}/${y},PAG*CORNERMKT 0423,-42.10\n`)
+	});
+	await page.getByRole('button', { name: 'Review lines (1)' }).click();
+	const row = page.getByTestId('import-row');
+	await row.getByRole('button', { name: 'Details for line 1' }).click();
+	await row.getByRole('button', { name: 'Make a rule' }).click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Use payee', 'Corner Market', 'Corner');
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog).toBeHidden();
+	await expect(row.getByRole('button', { name: 'Category of line 1' })).toContainText('Groceries');
+});

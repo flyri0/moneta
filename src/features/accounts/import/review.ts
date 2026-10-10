@@ -17,6 +17,16 @@ export interface ReviewRow {
 	linked: boolean;
 }
 
+/** Each payee's usual category, by lowercased name (see `imports.context`). */
+export type Suggestions = Readonly<Record<string, string>>;
+
+/** Gives a new row without a category its payee's usual one, when the payee has one. */
+export function suggestCategory(row: ReviewRow, suggestions: Suggestions): void {
+	if (rowStatus(row) !== 'new' || row.categoryId) return;
+	const found = suggestions[row.payeeName.trim().toLocaleLowerCase()];
+	if (found) row.categoryId = found;
+}
+
 /** What importing the row does as the user left it: a possible match is new until linked. */
 export function rowStatus(
 	row: Pick<ReviewRow, 'preview' | 'linked'>
@@ -114,9 +124,13 @@ export interface ReviewRule {
 /**
  * Gives a rule made during the review to the new lines it catches whose payee is still the one the
  * preview gave them. A line the user already renamed keeps its payee; the rule's category, when it
- * has one, replaces the line's.
+ * has one, replaces the line's; without one, an empty category gets the payee's usual one.
  */
-export function applyRule(rows: ReviewRow[], rule: ReviewRule): void {
+export function applyRule(
+	rows: ReviewRow[],
+	rule: ReviewRule,
+	suggestions: Suggestions = {}
+): void {
 	for (const row of rows) {
 		if (rowStatus(row) !== 'new' || !matchRule([rule], row.line.description)) continue;
 		const untouched = row.payeeName === row.preview.payeeName;
@@ -125,6 +139,7 @@ export function applyRule(rows: ReviewRow[], rule: ReviewRule): void {
 		if (!untouched && !renamedToIt) continue;
 		row.payeeName = rule.payeeName;
 		if (rule.categoryId) row.categoryId = rule.categoryId;
+		else suggestCategory(row, suggestions);
 		row.ruleId = rule.id;
 	}
 }
