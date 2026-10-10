@@ -9,6 +9,7 @@
 	import { scrollLimits } from '$features/budget/sortable.svelte';
 	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
 	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
 	import { guidePath } from '$client/guide';
 	import { settleTour, tourPendingFor } from '$client/tour';
 	import { VisibleArea } from '$client/visible-area.svelte';
@@ -69,6 +70,10 @@
 			title: () => m.tour_settings_way_title(),
 			body: () => m.tour_settings_way_body()
 		},
+		'accounts-none': {
+			title: () => m.tour_accounts_title(),
+			body: () => m.tour_accounts_none_body()
+		},
 		backup: { title: () => m.tour_backup_title(), body: () => m.tour_backup_body() },
 		'backup-cloud': { title: () => m.tour_backup_title(), body: () => m.tour_backup_cloud_body() },
 		done: { title: () => m.tour_done_title(), body: () => m.tour_done_body() }
@@ -79,6 +84,7 @@
 	const LAST = TOUR_STEPS.length - 1;
 
 	const session = useSession();
+	const accounts = useLive(session.client, ['accounts'], () => session.api.accounts.options());
 	// The budget grid's own breakpoint for its inline Assigned column.
 	const wideGrid = new MediaQuery('min-width: 1024px');
 	const phone = new MediaQuery('max-width: 767.98px');
@@ -171,7 +177,7 @@
 	}
 
 	function layout(): TourLayout {
-		return { wide: wideGrid.current, cloud };
+		return { wide: wideGrid.current, cloud, noAccounts: accounts.data?.length === 0 };
 	}
 
 	function refind(step: number) {

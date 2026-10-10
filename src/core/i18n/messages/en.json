@@ -997,6 +997,8 @@
 	"tour_add_transaction_title": "Record transactions",
 	"tour_add_transaction_body": "Add what you spend and receive as it happens. Spending comes out of its category's Available, and income goes to Ready to Assign.",
 	"tour_accounts_title": "Accounts",
+	"tour_accounts_none_body": "Add your accounts here, such as checking, savings, cash or a credit card, and import your bank statements.",
+	"account_starting_category_created": "Starting Balance will be created in Income.",
 	"tour_accounts_body": "Add your other accounts here, such as savings, cash or a credit card, and import your bank statements.",
 	"tour_schedules_title": "Schedules",
 	"tour_schedules_body": "Bills and income that repeat go here, entered by themselves or with a tap. So do installment purchases, even ones you're already paying. Search and filters find them.",

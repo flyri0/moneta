@@ -997,6 +997,8 @@
 	"tour_add_transaction_title": "Registre transações",
 	"tour_add_transaction_body": "Lance o que você gasta e recebe conforme acontece. Gastos saem do Disponível da categoria, e receitas vão para Pronto para atribuir.",
 	"tour_accounts_title": "Contas",
+	"tour_accounts_none_body": "Adicione suas contas aqui, como conta corrente, poupança, dinheiro ou cartão de crédito, e importe os extratos do banco.",
+	"account_starting_category_created": "Saldo inicial será criada em Receitas.",
 	"tour_accounts_body": "Adicione aqui suas outras contas, como poupança, dinheiro ou cartão de crédito, e importe seus extratos bancários.",
 	"tour_schedules_title": "Agendamentos",
 	"tour_schedules_body": "Contas e receitas que se repetem ficam aqui, lançadas sozinhas ou com um toque. As compras parceladas também, mesmo as que você já está pagando. A busca e os filtros as encontram.",

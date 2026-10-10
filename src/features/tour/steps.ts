@@ -45,7 +45,7 @@ type StepId =
 
 /** Which text a step shows: its own, or one that fits the layout or the fallback it fell to. */
 export type TourCopy =
-	StepId | 'category-wide' | 'add-group' | 'schedules-way-phone' | 'backup-cloud';
+	StepId | 'accounts-none' | 'category-wide' | 'add-group' | 'schedules-way-phone' | 'backup-cloud';
 
 export interface TourStep {
 	id: StepId;
@@ -112,6 +112,8 @@ export interface TourLayout {
 	wide: boolean;
 	/** Whether this build offers automatic backups to the cloud. */
 	cloud: boolean;
+	/** Whether the budget has no account yet, so the accounts step doesn't speak of "other" ones. */
+	noAccounts?: boolean;
 }
 
 /** What a step shows on this page. `find` returns the visible element for a target, if any. */
@@ -124,6 +126,7 @@ export function resolveStep<E>(
 	let topic = step.topic;
 	if (step.id === 'category' && layout.wide) copy = 'category-wide';
 	if (step.id === 'backup' && layout.cloud) [copy, topic] = ['backup-cloud', 'googleDrive'];
+	if (step.id === 'accounts' && layout.noAccounts) copy = 'accounts-none';
 	if (!step.target) return { element: null, copy, topic };
 	const element = find(step.target);
 	if (element || !step.fallback) return { element, copy, topic };

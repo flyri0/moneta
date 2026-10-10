@@ -93,6 +93,19 @@ describe('resolveStep', () => {
 	});
 });
 
+describe('resolveStep accounts', () => {
+	const all = (target: string) => `#${target}`;
+	const plain = { wide: false, cloud: false };
+	const step = (id: string) => TOUR_STEPS.find((s) => s.id === id)!;
+
+	it('asks for accounts without saying "other" when there are none', () => {
+		expect(resolveStep(step('accounts'), all, { ...plain, noAccounts: true }).copy).toBe(
+			'accounts-none'
+		);
+		expect(resolveStep(step('accounts'), all, plain).copy).toBe('accounts');
+	});
+});
+
 describe('placeCard', () => {
 	const viewport = { width: 1280, height: 800 };
 	const card = { width: 384, height: 200 };

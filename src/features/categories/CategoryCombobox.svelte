@@ -30,6 +30,7 @@
 		ariaLabel,
 		emptyLabel = m.transaction_choose_category(),
 		allowEmpty = true,
+		emptyText,
 		creatable = true,
 		available,
 		class: className
@@ -48,6 +49,8 @@
 		emptyLabel?: string;
 		/** Whether choosing no category is offered. */
 		allowEmpty?: boolean;
+		/** What the list says when nothing matches; the generic text when left out. */
+		emptyText?: string;
 		/** Whether a typed name can become a new category. */
 		creatable?: boolean;
 		/** Each category's Available, shown on its row; rows without an entry show none. */
@@ -155,7 +158,7 @@
 				bind:value={search}
 			/>
 			<Command.List class={layout.list}>
-				<Command.Empty>{m.combobox_empty()}</Command.Empty>
+				<Command.Empty>{emptyText ?? m.combobox_empty()}</Command.Empty>
 				{#if naming === null}
 					{#if creating && layout.phone}
 						{@render createRow()}
