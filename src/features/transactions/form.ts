@@ -125,11 +125,12 @@ export interface CategoryOptionGroup {
 }
 
 /**
- * The categories the form offers: no hidden ones unless already chosen.
+ * The categories the form offers: no hidden ones unless already chosen, and the income group
+ * last for an outflow.
  */
 export function categoryOptions(draft: TransactionDraft, ctx: FormContext): CategoryOptionGroup[] {
 	const chosen = new Set([draft.categoryId, ...(draft.splits ?? []).map((s) => s.categoryId)]);
-	return ctx.tree
+	const groups = ctx.tree
 		.map((g) => ({
 			id: g.id,
 			name: g.name,
@@ -139,6 +140,12 @@ export function categoryOptions(draft: TransactionDraft, ctx: FormContext): Cate
 				.map((c) => ({ id: c.id, name: c.name, system: null }))
 		}))
 		.filter((g) => g.categories.length > 0);
+	// Spending rarely goes to income: for an outflow it comes last.
+	if (draft.direction === 'inflow') return groups;
+	return [
+		...groups.filter((g) => g.system !== 'income'),
+		...groups.filter((g) => g.system === 'income')
+	];
 }
 
 /**
