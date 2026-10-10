@@ -93,7 +93,8 @@
 		error = null;
 		if (step === 'budget' && budgetName(name) === null) {
 			error = { message: m.budget_name_required() };
-			document.getElementById('budget-name')?.focus();
+			// On phones focusing it would raise the keyboard: the message and the marked field do.
+			if (matchMedia('(min-width: 768px)').matches) document.getElementById('budget-name')?.focus();
 			return;
 		}
 		const following = stepAfter(steps, step);

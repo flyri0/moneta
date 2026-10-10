@@ -269,6 +269,18 @@ test('refuses a blank budget name, and clears the error once it changes', async 
 	await name.fill('  ');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(name).toBeFocused();
 	await name.fill('Home');
 	await expect(page.getByRole('alert')).toBeHidden();
+});
+
+test('marks a blank budget name without raising the keyboard on phones', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await onboard(page);
+	await openSettings(page);
+	const name = page.getByLabel('Budget name');
+	await name.fill('  ');
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(name).not.toBeFocused();
 });

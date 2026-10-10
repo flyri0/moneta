@@ -29,7 +29,9 @@
 		const trimmed = budgetName(name);
 		if (trimmed === null) {
 			error = { message: m.budget_name_required() };
-			document.getElementById('details-name')?.focus();
+			// On phones focusing it would raise the keyboard: the message and the marked field do.
+			if (matchMedia('(min-width: 768px)').matches)
+				document.getElementById('details-name')?.focus();
 			return;
 		}
 		busy = true;

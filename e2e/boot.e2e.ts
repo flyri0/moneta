@@ -29,6 +29,19 @@ test('onboarding refuses a blank budget name on its step', async ({ page }) => {
 	await expect(page.getByLabel('Budget name')).toBeFocused();
 });
 
+test('onboarding marks a blank budget name without raising the keyboard on phones', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('   ');
+	await nextStep(page).click();
+	await expect(page.getByRole('alert')).toHaveText('Enter a name for the budget.');
+	await expect(page.getByLabel('Budget name')).toHaveAttribute('aria-invalid', 'true');
+	await expect(page.getByLabel('Budget name')).not.toBeFocused();
+});
+
 test('onboarding keeps the account typed when going back, and flags a repeated category', async ({
 	page
 }) => {
