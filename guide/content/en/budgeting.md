@@ -53,6 +53,7 @@ a future month's Ready to Assign below zero, Moneta warns you with the month it 
 
 Plans change. Open a category and use **Move money**: pick another category and an amount, and it
 moves from one to the other in this month. The list shows how much each category has available.
+If the move would leave the category it comes from below zero, Moneta says by how much before you confirm.
 Each move can be undone right after (see [Undo](transactions.md#undo)).
 
 ![A category's sheet: what is available, what was assigned this month, and Quick assign, Move money, Goal and Roll overspending over.](img/category-light.png)
@@ -120,6 +121,8 @@ amount, and leaves categories without a goal as they are.
   (or **Group settings**) and turn off **Hidden**. Hiding a group hides all its categories.
 - **Deleting** a category that was used asks where its transactions and assigned money should go.
   Deleting a group moves its categories to the group you choose.
+- **Names** are unique: two groups can't share one (nor take the Income group's), and neither can
+  two categories in the same group.
 
 The **Income** group is managed by Moneta: income categories send their money straight to Ready to
 Assign instead of holding it themselves.

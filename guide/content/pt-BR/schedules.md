@@ -75,8 +75,8 @@ Agendamentos diários sempre mantêm as datas.
 - Senão a ocorrência espera na conta como **pendente** até você **Lançar** (dá para ajustar antes,
   para uma conta que mudou de valor) ou **Pular**.
 
-Se você salvar um agendamento automático com a primeira data no passado, o Moneta diz quantas
-transações vai lançar na hora, para um ano errado não encher o seu extrato.
+Se você salvar um agendamento automático com a primeira data no passado, o Moneta lista as datas
+que vai lançar na hora e pergunta antes, para um ano errado não encher o seu extrato.
 
 ## O que vem por aí {#upcoming}
 

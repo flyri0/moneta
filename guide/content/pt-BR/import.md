@@ -37,8 +37,9 @@ Antes de gravar qualquer coisa, cada linha é marcada:
 - **Talvez seja**: você lançou uma transação com o mesmo valor, até dez dias de diferença.
   A linha começa desmarcada; **Vincular** a torna correspondente, ou marque-a para importá-la como
   nova.
-- **Já importada**: essa linha já entrou antes, ou o arquivo a repete. Importar o mesmo extrato
-  duas vezes, ou dois extratos que se sobrepõem, não adiciona nada.
+- **Já importada**: essa linha já entrou antes. Importar o mesmo extrato duas vezes, ou dois
+  extratos que se sobrepõem, não adiciona nada. Duas linhas iguais no mesmo arquivo são duas
+  compras, e as duas entram.
 
 ![A revisão de um extrato importado: uma linha que corresponde a uma transação lançada à mão, duas linhas novas esperando uma categoria, e uma linha repetida já importada.](img/import-light.pt-BR.png)
 
@@ -48,12 +49,15 @@ listadas, e você pode dar uma categoria a todas de uma vez.
 
 **Importar** grava tudo de uma vez, e dá para desfazer logo em seguida.
 
-> Linhas com data a mais de dois anos de hoje costumam indicar um formato de data errado. O Moneta
-> avisa sobre elas antes de você importar.
+> Algumas linhas começam desmarcadas, com um aviso no topo: linhas com data a mais de dois anos de
+> hoje, que costumam indicar um formato de data errado, e linhas anteriores ao saldo inicial da
+> conta, que provavelmente já as inclui. Marque uma para importá-la mesmo assim.
 
 ## Criar uma regra {#rules}
 
-As descrições dos bancos são bagunçadas: `PAG*MERCADINHO 0423 SAO PAULO`. Numa linha, **Criar
+As descrições dos bancos são bagunçadas: `PAG*MERCADINHO 0423 SAO PAULO`. Numa linha nova, **Criar
 regra** define o favorecido (e, se quiser, uma categoria) para toda descrição parecida, nesta
-importação e nas próximas. As linhas pegas por uma regra mostram a marca **Regra**. Veja [Regras de
+importação e nas próximas. Depois do prefixo de uma maquininha, como `PAG*` ou `SQ *`, a regra
+começa como **Contém** o nome da loja. As linhas pegas por uma regra mostram a marca **Regra** e,
+sem categoria própria, recebem a categoria de costume do favorecido. Veja [Regras de
 importação](payees.md#payee-rules).
