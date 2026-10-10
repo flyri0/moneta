@@ -302,6 +302,7 @@
 	"budget_progress_spent": "{spent} of {funded} spent",
 	"budget_progress_over": "{spent} spent, {over} over",
 	"budget_progress_inflow": "{amount} received",
+	"budget_progress_short": "{amount} short",
 	"budget_goal_to_go": "{amount} to goal",
 	"budget_goal_met": "Goal met",
 	"budget_overspent_title": "Overspent categories ({count})",

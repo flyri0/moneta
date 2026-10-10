@@ -302,6 +302,7 @@
 	"budget_progress_spent": "{spent} de {funded} gastos",
 	"budget_progress_over": "{spent} gastos, {over} a mais",
 	"budget_progress_inflow": "{amount} recebidos",
+	"budget_progress_short": "faltam {amount}",
 	"budget_goal_to_go": "faltam {amount} para a meta",
 	"budget_goal_met": "Meta cumprida",
 	"budget_overspent_title": "Categorias com gasto a mais ({count})",
