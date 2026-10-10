@@ -278,6 +278,17 @@ describe('markBackedUp', () => {
 });
 
 describe('inspectBackup', () => {
+	it('marks budgets restored from an inspected backup too', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system, getDb } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE]);
+		const { token, createdAt } = await system.inspectBackup(bytes);
+		await system.restoreInspected(token, [{ index: 0, file: FILE }]);
+		await system.open(FILE);
+		expect(getMeta(getDb()!).lastBackupAt).toBe(createdAt);
+	});
+
 	it('lists the budgets in a backup without writing anything', async () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
@@ -420,6 +431,31 @@ describe('failures keep the open budget', () => {
 });
 
 describe('restoreBackup', () => {
+	it('marks a restored budget as backed up when the backup was made', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system, getDb } = createSystem(deps);
+		const { bytes } = await system.exportBackup([FILE]);
+		const { createdAt } = readBackup(bytes);
+		await system.restoreBackup(bytes, [{ index: 0, file: FILE }]);
+		await system.open(FILE);
+		expect(createdAt).not.toBeNull();
+		expect(getMeta(getDb()!).lastBackupAt).toBe(createdAt);
+	});
+
+	it('leaves the mark alone for a backup without a date, like a saved copy', async () => {
+		const deps = await setup();
+		await seedNamed(deps, FILE, 'Home');
+		const { system, getDb } = createSystem(deps);
+		system.markBackedUp([FILE], '2026-09-01T00:00:00.000Z');
+		// Raw SQLite bytes read as a legacy `.sqlite` backup, with no date: what restoring a saved
+		// copy (`readCopy`) sends too.
+		const bytes = toImage(deps.sqlite3, deps.store.files.get(FILE)!);
+		await system.restoreBackup(bytes, [{ index: 0, file: OTHER }]);
+		await system.open(OTHER);
+		expect(getMeta(getDb()!).lastBackupAt).toBe('2026-09-01T00:00:00.000Z');
+	});
+
 	it('adds budgets under the files it is given', async () => {
 		const deps = await setup();
 		await seedNamed(deps, FILE, 'Home');
