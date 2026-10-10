@@ -107,12 +107,11 @@ test('onboarding can start with no categories, keeping an empty Income group', a
 
 	await expect(page.getByTestId('rta-amount')).toHaveText('$0.00');
 	await expect(page.getByTestId('category-row')).toHaveCount(0);
-	// The grid leaves an empty Income group out; the order editor shows it's there.
-	await page.getByRole('button', { name: 'Edit order' }).click();
-	const sections = page.locator('[data-order-group]');
-	await expect(sections).toHaveCount(1);
-	await expect(sections).toHaveAttribute('aria-label', 'Income');
-	await expect(sections.getByTestId('order-category')).toHaveCount(0);
+	// An empty budget has nothing to fold or reorder; the Income group itself is covered by the
+	// initBudget unit tests.
+	await expect(page.getByText('No categories yet')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Edit order' })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Collapse all' })).toHaveCount(0);
 });
 
 test('onboarding can start with no account', async ({ page }) => {
