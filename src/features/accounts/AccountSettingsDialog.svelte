@@ -36,6 +36,13 @@
 		dueDay = account.dueDay?.toString() ?? '';
 		confirming = false;
 		error = null;
+		billingInvalid = false;
+	});
+
+	// Editing a day clears the mark: it was about what was typed before.
+	$effect(() => {
+		void [closingDay, dueDay];
+		billingInvalid = false;
 	});
 
 	async function act(fn: () => Promise<unknown>) {

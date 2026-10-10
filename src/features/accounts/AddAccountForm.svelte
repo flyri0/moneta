@@ -44,6 +44,12 @@
 	let error = $state<ActionError | null>(null);
 	const pending = new NewCategories();
 
+	// Editing a day clears the mark: it was about what was typed before.
+	$effect(() => {
+		void [closingDay, dueDay];
+		billingInvalid = false;
+	});
+
 	function selectType(selectedType: AccountType) {
 		type = selectedType;
 		onBudget = defaultOnBudget(selectedType);
