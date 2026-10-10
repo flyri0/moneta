@@ -451,6 +451,16 @@ describe('createCategoryIn', () => {
 		expect(getCategory(db, id).groupId).toBe(income.id);
 	});
 
+	it('shows a hidden category again when it is reused by name', async () => {
+		const db = await createBudgetDb();
+		const bills = listCategoryTree(db).find((g) => g.name === 'Bills')!;
+		const old = createCategory(db, { groupId: bills.id, name: 'Old' });
+		updateCategory(db, old, { hidden: true });
+		const { categoryId } = createCategoryIn(db, { name: 'old', group: { id: bills.id } });
+		expect(categoryId).toBe(old);
+		expect(getCategory(db, old).hidden).toBe(false);
+	});
+
 	it('creates nothing when the category has no name', async () => {
 		const db = await createBudgetDb();
 		const before = listCategoryTree(db).length;

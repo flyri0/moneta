@@ -246,7 +246,7 @@ export function createCategory(db: Db, input: { groupId: string; name: string })
 
 /**
  * Creates a category in an existing group (`{ id }`) or in a new one (`{ name }`), all or nothing.
- * A group or a category with that name already there is used instead.
+ * A group or a category with that name already there is used instead (a hidden category is shown again).
  */
 export function createCategoryIn(
 	db: Db,
@@ -258,8 +258,11 @@ export function createCategoryIn(
 			'id' in group
 				? group.id
 				: (groupNamed(db, group.name) ?? createGroup(db, { name: group.name }));
-		const categoryId =
-			categoryNamed(db, groupId, input.name) ?? createCategory(db, { groupId, name: input.name });
+		const existing = categoryNamed(db, groupId, input.name);
+		// The forms never list hidden categories, so one reused by name is in use again.
+		if (existing && getCategory(db, existing).hidden)
+			updateCategory(db, existing, { hidden: false });
+		const categoryId = existing ?? createCategory(db, { groupId, name: input.name });
 		return { categoryId, groupId };
 	});
 }
