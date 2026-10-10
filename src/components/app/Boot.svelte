@@ -59,6 +59,7 @@
 
 	onDestroy(() => {
 		mounted = false;
+		stopWaiting();
 		const prevTeardown = teardown;
 		teardown = (async () => {
 			await prevTeardown?.catch(() => {});
@@ -71,8 +72,30 @@
 		// As for an update: a restore cut short can leave a budget half written.
 		if (worker) await settleWithin(worker.idle(), IDLE_TIMEOUT);
 		await stopWorker();
-		if (mounted) app.boot = { kind: 'blocked' };
+		if (mounted) {
+			app.boot = { kind: 'blocked' };
+			waitForOtherTab();
+		}
 	});
+
+	/** While another tab has the database, waits for it to close; aborted to take over instead. */
+	let waiting: AbortController | null = null;
+
+	function waitForOtherTab() {
+		if (!lock) return;
+		waiting?.abort();
+		const stop = new AbortController();
+		waiting = stop;
+		void lock.waitForFree(stop.signal).then((got) => {
+			if (waiting === stop) waiting = null;
+			if (got && mounted) void start();
+		});
+	}
+
+	function stopWaiting() {
+		waiting?.abort();
+		waiting = null;
+	}
 
 	async function stopWorker() {
 		const current = worker;
@@ -132,6 +155,7 @@
 	}
 
 	async function takeOver() {
+		stopWaiting();
 		app.boot = { kind: 'loading' };
 		if (lock && !(await lock.takeOver())) {
 			if (mounted) app.boot = { kind: 'blocked', stuck: true };
@@ -149,6 +173,7 @@
 
 	/** Opens the database here even though the other tab didn't hand it over. */
 	async function forceTakeOver() {
+		stopWaiting();
 		app.boot = { kind: 'loading' };
 		await lock?.forceTakeOver();
 		await start();
@@ -213,6 +238,7 @@
 			} else {
 				if (!mounted) return;
 				app.boot = { kind: 'blocked' };
+				waitForOtherTab();
 			}
 		})();
 		return () => {

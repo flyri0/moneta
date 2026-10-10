@@ -132,6 +132,16 @@ test('a second tab waits until it takes over', async ({ context }) => {
 	await expect(first.getByText('Moneta is open in another tab')).toBeVisible();
 });
 
+test('a waiting tab opens by itself once the other tab closes', async ({ context }) => {
+	const first = await context.newPage();
+	await onboard(first);
+	const second = await context.newPage();
+	await second.goto('/budget');
+	await expect(second.getByText('Moneta is open in another tab')).toBeVisible();
+	await first.close();
+	await expect(second.getByTestId('rta-amount')).toHaveText('$1,000.00');
+});
+
 test('a worker waits for one still holding the storage, and never tries to delete it', async ({
 	context
 }) => {

@@ -33,6 +33,11 @@ export interface TabLock {
 	 */
 	takeOver(): Promise<boolean>;
 	/**
+	 * Waits for the lock without asking the owner to hand over, e.g. until the other tab closes.
+	 * Resolves true once this tab holds it, or false when `signal` aborts first.
+	 */
+	waitForFree(signal: AbortSignal): Promise<boolean>;
+	/**
 	 * Takes the lock whether or not the owner hands over (Web Locks `steal`). The owner is told it
 	 * lost the lock, but a stuck tab can't close its database first.
 	 */
@@ -115,6 +120,16 @@ export function createTabLock(deps: {
 				lockPromise.catch(() => resolve(false));
 				watch(lockPromise);
 				deps.channel.postMessage({ type: TAKEOVER });
+			});
+		},
+		waitForFree(signal) {
+			return new Promise<boolean>((resolve) => {
+				lockPromise = deps.locks.request(name, { signal }, () => {
+					resolve(true);
+					return hold();
+				});
+				lockPromise.catch(() => resolve(false));
+				watch(lockPromise);
 			});
 		},
 		forceTakeOver() {
