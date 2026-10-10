@@ -313,6 +313,8 @@
 	"budget_move_money": "Move money",
 	"budget_move_to": "Move to…",
 	"budget_move_from": "Take from…",
+	"budget_move_available": "{amount} available",
+	"budget_move_short": "{name} will be {amount} overspent.",
 	"budget_move_other": "Other category",
 	"budget_move_amount": "Amount to move",
 	"budget_move": "Move",

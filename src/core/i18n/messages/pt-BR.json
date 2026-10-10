@@ -313,6 +313,8 @@
 	"budget_move_money": "Mover dinheiro",
 	"budget_move_to": "Mover para…",
 	"budget_move_from": "Tirar de…",
+	"budget_move_available": "{amount} disponível",
+	"budget_move_short": "{name} vai ficar {amount} no negativo.",
 	"budget_move_other": "Outra categoria",
 	"budget_move_amount": "Valor a mover",
 	"budget_move": "Mover",

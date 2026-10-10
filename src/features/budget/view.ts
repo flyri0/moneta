@@ -57,6 +57,15 @@ export function coverableFromReady(
 	return Math.max(0, Math.min(-category.available, readyToAssign));
 }
 
+/**
+ * How far below zero moving `amount` leaves the category it comes from, as a positive amount: zero
+ * when it has enough, or while the amount isn't a positive number yet. Moving it anyway is allowed.
+ */
+export function moveShortfall(sourceAvailable: number, amount: number | null): number {
+	if (amount === null || amount <= 0) return 0;
+	return Math.max(0, amount - sourceAvailable);
+}
+
 /** Ready to Assign's state. Zero is the goal of a zero-based budget; anything else needs a look. */
 export type RtaTone = 'assigned' | 'unassigned' | 'overassigned';
 
