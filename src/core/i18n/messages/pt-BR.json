@@ -767,6 +767,7 @@
 	"upcoming_projected": "Saldo previsto",
 	"register_projected_balance": "Previsto em 30 dias",
 	"register_including_upcoming": "Com as futuras",
+	"register_upcoming": "Futura",
 	"reports_customize": "Personalizar",
 	"reports_customize_hint": "Arraste pelas alças ou use as setas. Desligue um relatório para ocultá-lo.",
 	"reports_restore_default": "Restaurar padrão",

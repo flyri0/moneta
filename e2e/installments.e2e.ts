@@ -92,6 +92,7 @@ test('puts the installments of a card with billing days on its bills’ due date
 	// Dated on the bill, it waits apart from today's balance.
 	await expect(page.getByTestId('register-balance')).toHaveText('$0.00');
 	await expect(page.getByTestId('register-including-upcoming')).toHaveText('-$300.00');
+	await expect(row.getByTestId('register-upcoming')).toHaveText('Upcoming');
 
 	const sidebar = page.getByRole('complementary').getByRole('navigation', { name: 'Main' });
 	await sidebar.getByRole('link', { name: 'Schedules' }).click();

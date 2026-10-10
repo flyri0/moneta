@@ -3,6 +3,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import { Badge } from '$ui/badge';
 	import { Checkbox } from '$ui/checkbox';
 	import { longPress } from '$features/accounts/long-press';
 	import FlagIcon from '$features/flags/FlagIcon.svelte';
@@ -12,6 +13,7 @@
 	import Amount from '$components/Amount.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runActionToast } from '$client/notify';
+	import { today } from '$client/today.svelte';
 	import type { TransactionRow } from '$db/repos/transactions';
 	import { formatDate } from '$i18n/formats';
 	import { storedCategoryLabel } from '$i18n/labels';
@@ -51,6 +53,8 @@
 	/** A transfer with no category takes the category column too, on desktop. */
 	const wide = $derived(payee.kind === 'transfer' && !row.isSplit && !row.categoryName);
 	const payeeLabel = $derived(payeeText(payee));
+	/** Dated after today: it counts in the balance only once its day comes. */
+	const upcoming = $derived(row.date > today());
 	let expanded = $state(false);
 
 	async function toggleCleared() {
@@ -78,6 +82,7 @@ the rest of the row is a shortcut. -->
 		selected && 'bg-primary/5',
 		(selecting || onOpen) && 'cursor-pointer',
 		highlighted && 'motion-safe:animate-row-flash',
+		upcoming && 'opacity-70',
 		onLongPress && '[-webkit-touch-callout:none] pointer-coarse:select-none'
 	]}
 	data-testid="register-row"
@@ -108,6 +113,11 @@ the rest of the row is a shortcut. -->
 		{/if}
 
 		{#snippet payeeText()}
+			{#if upcoming}
+				<Badge variant="outline" class="mr-1.5 align-[0.0625em]" data-testid="register-upcoming">
+					{m.register_upcoming()}
+				</Badge>
+			{/if}
 			{#if row.flag}
 				<FlagIcon
 					color={row.flag}

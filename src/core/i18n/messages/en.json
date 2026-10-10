@@ -767,6 +767,7 @@
 	"upcoming_projected": "Projected balance",
 	"register_projected_balance": "Projected in 30 days",
 	"register_including_upcoming": "Including upcoming",
+	"register_upcoming": "Upcoming",
 	"reports_customize": "Customize",
 	"reports_customize_hint": "Drag by the handles or use the arrows. Switch a report off to hide it.",
 	"reports_restore_default": "Restore default",
