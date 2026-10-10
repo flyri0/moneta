@@ -88,7 +88,8 @@
 		waiting = stop;
 		void lock.waitForFree(stop.signal).then((got) => {
 			if (waiting === stop) waiting = null;
-			if (got && mounted) void start();
+			// A wait cancelled for a takeover that found the lock already won starts the app there.
+			if (got && mounted && !stop.signal.aborted) void start();
 		});
 	}
 

@@ -125,6 +125,19 @@ describe('createTabLock', () => {
 		expect(await third.tryAcquire()).toBe(true);
 	});
 
+	it('takes over at once when a wait has already won the lock', async () => {
+		const locks = fakeLocks();
+		const channel = fakeBus();
+		const first = createTabLock({ locks, channel: channel() });
+		const second = createTabLock({ locks, channel: channel() });
+		await first.tryAcquire();
+		const waiting = second.waitForFree(new AbortController().signal);
+		await first.release();
+		await waiting;
+		// The abort of a request already granted does nothing: asking again must not queue behind it.
+		expect(await second.takeOver()).toBe(true);
+	});
+
 	it('can take the lock back', async () => {
 		const locks = fakeLocks();
 		const channel = fakeBus();

@@ -108,6 +108,8 @@ export function createTabLock(deps: {
 			});
 		},
 		takeOver() {
+			// Already holding it (a wait won it as the click came in): nobody to ask.
+			if (releaseHold) return Promise.resolve(true);
 			return new Promise<boolean>((resolve) => {
 				const giveUp = new AbortController();
 				const timer = setTimeout(() => giveUp.abort(), takeOverTimeout);
@@ -133,6 +135,7 @@ export function createTabLock(deps: {
 			});
 		},
 		forceTakeOver() {
+			if (releaseHold) return Promise.resolve();
 			return new Promise<void>((resolve) => {
 				lockPromise = deps.locks.request(name, { steal: true }, () => {
 					resolve();
