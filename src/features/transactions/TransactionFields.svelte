@@ -20,6 +20,7 @@
 		canSplit,
 		categoryMode,
 		categoryOptions,
+		newCategoryGroups,
 		splitBalance,
 		splitRemaining,
 		suggestCategory,
@@ -97,6 +98,7 @@
 	});
 	const mode = $derived(categoryMode(draft, ctx));
 	const options = $derived(categoryOptions(draft, ctx));
+	const newIn = $derived(newCategoryGroups(draft, ctx));
 	const splittable = $derived(canSplit(draft, ctx));
 	const remaining = $derived(draft.splits ? splitRemaining(draft, ctx.money) : 0);
 	const isTransfer = $derived(transferTarget(draft, ctx) !== null);
@@ -152,6 +154,7 @@
 		ariaLabel={label}
 		tree={ctx.tree}
 		{options}
+		{newIn}
 		{pending}
 		{available}
 		{value}

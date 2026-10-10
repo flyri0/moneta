@@ -148,6 +148,13 @@ export function categoryOptions(draft: TransactionDraft, ctx: FormContext): Cate
 	];
 }
 
+/** The groups a category made from this form can go in: the visible ones, Income only for money in. */
+export function newCategoryGroups(draft: TransactionDraft, ctx: FormContext): FormContext['tree'] {
+	return ctx.tree.filter(
+		(g) => !g.hidden && (draft.direction === 'inflow' || g.system !== 'income')
+	);
+}
+
 /**
  * The category to preselect for an existing payee: its default one, else its most recent one,
  * whichever the form offers first.

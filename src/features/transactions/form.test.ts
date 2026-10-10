@@ -7,6 +7,7 @@ import {
 	categoryMode,
 	categoryOptions,
 	draftFromTransaction,
+	newCategoryGroups,
 	newDraft,
 	splitBalance,
 	splitRemaining,
@@ -215,6 +216,12 @@ describe('categoryOptions', () => {
 
 	it('keeps a hidden category that is already chosen', () => {
 		expect(ids(draft({ categoryId: 'old' }))).toEqual(['food', 'old', 'rta']);
+	});
+
+	it('offers the income group for a new category only on an inflow', () => {
+		const ids = (d: TransactionDraft) => newCategoryGroups(d, ctx).map((g) => g.id);
+		expect(ids(draft({ direction: 'outflow' }))).toEqual(['everyday']);
+		expect(ids(draft({ direction: 'inflow' }))).toEqual(['income', 'everyday']);
 	});
 });
 
