@@ -85,7 +85,7 @@ test('assigns inline with arithmetic on desktop', async ({ page }) => {
 	await expect(groceries.getByTestId('available')).toHaveText('$300.00');
 });
 
-test('moves between assigned cells with the keyboard and keeps what could not be read', async ({
+test('moves between assigned cells with the keyboard, but not past one it cannot read', async ({
 	page
 }) => {
 	await onboard(page);
@@ -101,9 +101,14 @@ test('moves between assigned cells with the keyboard and keeps what could not be
 	const next = page.getByLabel(label ?? '', { exact: true });
 	await next.fill('12abc');
 	await next.press('ArrowUp');
-	await expect(groceries).toBeFocused();
+	// It stays, marked, to be corrected.
+	await expect(next).toBeFocused();
 	await expect(next).toHaveAttribute('aria-invalid', 'true');
 	await expect(next).toHaveValue('12abc');
+	// Leaving it otherwise gives the text up: the saved amount shows again.
+	await page.getByTestId('rta-card').click();
+	await expect(next).toHaveValue('$0.00');
+	await expect(next).toHaveAttribute('aria-invalid', 'false');
 });
 
 test('quick-assign in a group leaves hidden categories untouched', async ({ page }) => {

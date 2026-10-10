@@ -11,7 +11,8 @@
 	/**
 	 * Inline "Assigned" cell: shows the amount, edits as plain text, accepts arithmetic like 120+35.
 	 * Enter and the down arrow move to the next category's cell, up and Shift+Enter to the previous;
-	 * a value that can't be read stays in the cell, marked invalid, to be corrected.
+	 * a value that can't be read keeps the keyboard in the cell, marked invalid; leaving it any other
+	 * way brings the saved amount back.
 	 */
 	let {
 		categoryId,
@@ -31,14 +32,19 @@
 		queueMicrotask(() => (event.target as HTMLInputElement).select());
 	}
 
+	/** The typed amount, or null when it can't be read. A blank cell is zero. */
+	function typed(): number | null {
+		return text.trim() === '' ? 0 : session.parse(text);
+	}
+
 	async function commit() {
 		if (!editing) return;
 		editing = false;
-		const value = text.trim() === '' ? 0 : session.parse(text);
+		const value = typed();
 		if (value === null) {
-			invalid = true;
-			editing = true;
-			toast.error(m.form_error_amount_invalid());
+			// Leaving gives up the unreadable text; the keyboard already warned if it was marked.
+			if (!invalid) toast.error(m.form_error_amount_invalid());
+			invalid = false;
 			return;
 		}
 		invalid = false;
@@ -55,11 +61,16 @@
 			return;
 		}
 		const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : null;
-		if (event.key === 'Enter') return move(input, event.shiftKey ? -1 : 1, true);
-		if (step) {
-			event.preventDefault();
-			move(input, step, false);
+		if (event.key !== 'Enter' && !step) return;
+		event.preventDefault();
+		if (typed() === null) {
+			invalid = true;
+			toast.error(m.form_error_amount_invalid());
+			return;
 		}
+		invalid = false;
+		if (event.key === 'Enter') move(input, event.shiftKey ? -1 : 1, true);
+		else if (step) move(input, step, false);
 	}
 
 	/** Focuses the neighbouring cell, which commits this one; at either end, Enter just commits. */
