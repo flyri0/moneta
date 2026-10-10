@@ -11,7 +11,7 @@
 	import { todayIso } from '$domain/month';
 	import { lastMonths } from '$features/reports/cash-flow';
 	import { segmentClass, SPENDING_TABLES } from '$features/reports/spending';
-	import { monthsWithSpending } from '$features/reports/card-state';
+	import { chartWaitsForNextMonth } from '$features/reports/card-state';
 	import { categoryTrends } from '$features/reports/trends';
 	import { m } from '$i18n/paraglide/messages';
 
@@ -43,7 +43,7 @@
 			})}"
 			testId="category-trends-card-total"
 		/>
-		{#if monthsWithSpending(trends.totals) > 1}
+		{#if !chartWaitsForNextMonth(trends.totals.map((t) => t !== 0))}
 			<TrendsMini months={trends.months} series={trends.series} totals={trends.totals} />
 			<ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
 				{#each trends.series as s (s.key)}

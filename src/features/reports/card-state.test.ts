@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { monthsWithFlow, monthsWithSpending } from './card-state';
+import { chartWaitsForNextMonth, flowMonths, monthsWithFlow } from './card-state';
 
 describe('card state', () => {
 	it('counts the months with income or spending', () => {
@@ -12,7 +12,19 @@ describe('card state', () => {
 		).toBe(2);
 	});
 
-	it('counts the months with spending', () => {
-		expect(monthsWithSpending([0, 0, 120, 0])).toBe(1);
+	it('marks the months with flow', () => {
+		expect(
+			flowMonths([
+				{ income: 0, spending: 0 },
+				{ income: 1, spending: 0 }
+			])
+		).toEqual([false, true]);
+	});
+
+	it('waits for next month only when the single month with data is the current one', () => {
+		expect(chartWaitsForNextMonth([false, false, true])).toBe(true);
+		expect(chartWaitsForNextMonth([false, true, false])).toBe(false);
+		expect(chartWaitsForNextMonth([true, false, true])).toBe(false);
+		expect(chartWaitsForNextMonth([false, false, false])).toBe(false);
 	});
 });

@@ -10,7 +10,7 @@
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
 	import { numberFormat } from '$domain/intl-cache';
-	import { monthsWithFlow } from '$features/reports/card-state';
+	import { chartWaitsForNextMonth, flowMonths, monthsWithFlow } from '$features/reports/card-state';
 	import { fillMonths, lastMonths, savingsRate } from '$features/reports/cash-flow';
 	import { SPENDING_TABLES } from '$features/reports/spending';
 	import { m } from '$i18n/paraglide/messages';
@@ -61,7 +61,7 @@
 			<h3 class="text-xs text-muted-foreground">
 				{m.reports_income_vs_expenses()} · {m.reports_range_last_6_months()}
 			</h3>
-			{#if withFlow > 1}
+			{#if !chartWaitsForNextMonth(flowMonths(rows))}
 				<CashFlowMini {rows} />
 			{:else}
 				<p class="mt-auto text-sm text-muted-foreground" data-testid="cash-flow-card-note">
