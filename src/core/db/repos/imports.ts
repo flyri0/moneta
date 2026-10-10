@@ -18,18 +18,20 @@ export interface StatementLine {
 
 /**
  * What importing a line would do: `duplicate` when it was imported before (or repeats in the
- * file), `match` when it matches a transaction already entered by hand, else `new`.
+ * file), `match` when it matches a transaction already entered by hand, `possible` when a
+ * transaction entered by hand has its amount but is dated further off (`POSSIBLE_MATCH_DAYS`),
+ * else `new`. A `possible` line imports as new unless it is sent with that transaction's id.
  */
-export type ImportStatus = 'new' | 'match' | 'duplicate';
+export type ImportStatus = 'new' | 'match' | 'possible' | 'duplicate';
 
 export interface ImportPreview {
 	status: ImportStatus;
 	/**
 	 * The id to import the line under: its own, or with its date and amount added when a bank used
-	 * its id before for another line (same id, another amount or a date over `MATCH_DAYS` off).
+	 * its id before for another line (same id, another amount or a date over `POSSIBLE_MATCH_DAYS` off).
 	 */
 	importId: string;
-	/** The transaction a `match` would mark imported and cleared. */
+	/** The transaction a `match` would mark imported and cleared, or the one a `possible` line may be. */
 	match: { id: string; date: string; payeeName: string | null; memo: string } | null;
 	/** The payee a `new` line would get: a rule's, else its description, trimmed. */
 	payeeName: string;
@@ -41,6 +43,9 @@ export interface ImportPreview {
 
 /** How far apart a statement line and a transaction entered by hand may be dated to match. */
 export const MATCH_DAYS = 4;
+
+/** How far apart a line and a transaction entered by hand may be dated to be offered as a match. */
+export const POSSIBLE_MATCH_DAYS = 10;
 
 interface Candidate {
 	id: string;
@@ -84,7 +89,8 @@ function suggestedCategories(db: Db): Map<string, string> {
 /**
  * What importing `lines` into an account would do, line by line (see `ImportStatus`). A line
  * matches the closest-dated transaction with its amount, within `MATCH_DAYS`, that has no import
- * id; each transaction matches one line at most. Writes nothing.
+ * id; failing that, one within `POSSIBLE_MATCH_DAYS` is offered as `possible`. Exact matches are
+ * given first, and each transaction goes to one line at most. Writes nothing.
  */
 export function previewImport(db: Db, accountId: string, lines: StatementLine[]): ImportPreview[] {
 	const { onBudget } = requireOpenAccount(db, accountId);
@@ -105,7 +111,11 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 		 WHERE t.account_id = ? AND t.import_id IS NULL AND t.is_opening = 0
 		   AND t.date BETWEEN ? AND ?
 		 ORDER BY t.date, t.id`,
-		[accountId, addDays(dates[0], -MATCH_DAYS), addDays(dates[dates.length - 1], MATCH_DAYS)]
+		[
+			accountId,
+			addDays(dates[0], -POSSIBLE_MATCH_DAYS),
+			addDays(dates[dates.length - 1], POSSIBLE_MATCH_DAYS)
+		]
 	);
 	// By amount, in the same order, so a line only looks at transactions it could match.
 	const byAmount = new Map<number, Candidate[]>();
@@ -118,50 +128,56 @@ export function previewImport(db: Db, accountId: string, lines: StatementLine[])
 	const categories = onBudget ? suggestedCategories(db) : new Map<string, string>();
 	const rules = listRules(db);
 
-	return lines.map((line) => {
-		const payeeName = line.description.trim();
-		let importId = line.importId;
-		const prior = imported.get(importId);
-		const duplicate = {
-			status: 'duplicate',
-			match: null,
-			payeeName,
-			categoryId: null,
-			ruleId: null
-		} as const;
-		if (prior) {
-			// Some banks reuse an id: only the same amount, dated close by, is the same line.
-			if (prior.amount === line.amount && dayDistance(prior.date, line.date) <= MATCH_DAYS)
-				return { ...duplicate, importId };
-			importId = `${line.importId}:${line.date}:${line.amount}`;
-			if (imported.has(importId)) return { ...duplicate, importId };
-		}
-		imported.set(importId, { date: line.date, amount: line.amount });
+	/** The closest-dated unused transaction with the line's amount, within `days`. */
+	const claim = (line: StatementLine, days: number): Candidate | null => {
 		let best: Candidate | null = null;
 		for (const c of byAmount.get(line.amount) ?? []) {
 			if (used.has(c.id)) continue;
 			const distance = dayDistance(c.date, line.date);
-			if (distance > MATCH_DAYS) continue;
+			if (distance > days) continue;
 			if (!best || distance < dayDistance(best.date, line.date)) best = c;
 		}
-		if (best) {
-			used.add(best.id);
-			const { id, date, payeeName: matchPayee, memo } = best;
-			return {
-				status: 'match',
-				importId,
-				match: { id, date, payeeName: matchPayee, memo },
-				payeeName,
-				categoryId: null,
-				ruleId: null
-			};
+		if (best) used.add(best.id);
+		return best;
+	};
+
+	// Import ids and duplicates first, in file order: a line repeated in the file is a duplicate.
+	const keyed = lines.map((line) => {
+		let importId = line.importId;
+		const prior = imported.get(importId);
+		if (prior) {
+			// Some banks reuse an id: only the same amount, dated close by, is the same line. A line
+			// linked to a possible match keeps that transaction's date, up to POSSIBLE_MATCH_DAYS off.
+			if (prior.amount === line.amount && dayDistance(prior.date, line.date) <= POSSIBLE_MATCH_DAYS)
+				return { importId, duplicate: true };
+			importId = `${line.importId}:${line.date}:${line.amount}`;
+			if (imported.has(importId)) return { importId, duplicate: true };
 		}
+		imported.set(importId, { date: line.date, amount: line.amount });
+		return { importId, duplicate: false };
+	});
+	// Exact matches for every line before any possible one.
+	const exact = lines.map((line, i) => (keyed[i].duplicate ? null : claim(line, MATCH_DAYS)));
+	const possible = lines.map((line, i) =>
+		keyed[i].duplicate || exact[i] ? null : claim(line, POSSIBLE_MATCH_DAYS)
+	);
+
+	return lines.map((line, i): ImportPreview => {
+		const { importId, duplicate } = keyed[i];
+		const payeeName = line.description.trim();
+		const none = { match: null, payeeName, categoryId: null, ruleId: null };
+		if (duplicate) return { status: 'duplicate', importId, ...none };
+		const found = exact[i] ?? possible[i];
+		const match = found
+			? { id: found.id, date: found.date, payeeName: found.payeeName, memo: found.memo }
+			: null;
+		if (exact[i]) return { status: 'match', importId, ...none, match };
 		const rule = matchRule(rules, line.description);
 		const payee = rule?.payeeName ?? payeeName;
 		return {
-			status: 'new',
+			status: possible[i] ? 'possible' : 'new',
 			importId,
-			match: null,
+			match,
 			payeeName: payee,
 			categoryId: onBudget
 				? (rule?.categoryId ?? categories.get(payee.toLocaleLowerCase()) ?? null)

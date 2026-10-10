@@ -149,7 +149,64 @@ describe('previewImport', () => {
 			categoryId: food
 		});
 		run(db, "UPDATE transactions SET import_id = 'csv:old' WHERE id = ?", [imported]);
-		expect(previewImport(db, bank, [line()])[0].status).toBe('new');
+		expect(previewImport(db, bank, [line()])[0]).toMatchObject({
+			status: 'possible',
+			match: { date: '2026-01-15' }
+		});
+	});
+
+	it('offers a same-amount transaction up to ten days off as a possible match', () => {
+		const paycheck = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-16',
+			amount: -4500,
+			payeeName: 'Mercado',
+			categoryId: food
+		});
+		const [p] = previewImport(db, bank, [line()]);
+		expect(p).toEqual({
+			status: 'possible',
+			importId: 'ofx:1',
+			match: { id: paycheck, date: '2026-01-16', payeeName: 'Mercado', memo: '' },
+			payeeName: 'Mercado Bom',
+			categoryId: null,
+			ruleId: null
+		});
+	});
+
+	it('offers no possible match for the other sign, another amount or past ten days', () => {
+		createTransaction(db, { accountId: bank, date: '2026-01-12', amount: 4500, categoryId: fun });
+		createTransaction(db, { accountId: bank, date: '2026-01-12', amount: -4501, categoryId: food });
+		createTransaction(db, { accountId: bank, date: '2026-01-21', amount: -4500, categoryId: food });
+		expect(previewImport(db, bank, [line()])[0]).toMatchObject({ status: 'new', match: null });
+	});
+
+	it('gives exact matches first, so a looser candidate never takes one', () => {
+		const t = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-12',
+			amount: -4500,
+			categoryId: food
+		});
+		const [early, close] = previewImport(db, bank, [
+			line({ date: '2026-01-03' }),
+			line({ date: '2026-01-11', importId: 'ofx:2' })
+		]);
+		expect(close).toMatchObject({ status: 'match', match: { id: t } });
+		expect(early).toMatchObject({ status: 'new', match: null });
+	});
+
+	it('links a possible match on import', () => {
+		const t = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-16',
+			amount: -4500,
+			categoryId: food
+		});
+		const [p] = previewImport(db, bank, [line()]);
+		importTransactions(db, bank, { lines: [toImport(line(), { matchId: p.match!.id })] });
+		expect(getTransaction(db, t)).toMatchObject({ cleared: true });
+		expect(previewImport(db, bank, [line()])[0].status).toBe('duplicate');
 	});
 
 	it('marks lines imported before, or repeated in the file, as duplicates', () => {
