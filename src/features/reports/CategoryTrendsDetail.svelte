@@ -14,7 +14,7 @@
 	import { actionError } from '$client/notify';
 	import { todayIso } from '$domain/month';
 	import { numberFormat } from '$domain/intl-cache';
-	import { formatMonth } from '$i18n/formats';
+	import { capitalizeFirst, formatMonth } from '$i18n/formats';
 	import { axisMonthLabel } from '$features/reports/net-worth';
 	import { type DateRange, reportMonths } from '$features/reports/range';
 	import { segmentClass, SPENDING_TABLES } from '$features/reports/spending';
@@ -161,8 +161,8 @@
 						<th scope="col" class="hidden py-1 text-right font-medium sm:table-cell">
 							{m.reports_average_before()}
 						</th>
-						<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap capitalize">
-							{formatMonth(last, getLocale())}
+						<th scope="col" class="py-1 pl-2 text-right font-medium whitespace-nowrap">
+							{capitalizeFirst(formatMonth(last, getLocale()), getLocale())}
 						</th>
 						<th scope="col" class="py-1 pl-2 text-right font-medium">{m.reports_change()}</th>
 					</tr>

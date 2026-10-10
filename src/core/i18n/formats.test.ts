@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	capitalizeFirst,
 	currencyChoices,
 	formatBytes,
 	formatDate,
@@ -78,5 +79,20 @@ describe('formatBytes', () => {
 		expect(formatBytes(1_234_567, 'en-US')).toBe('1.2 MB');
 		expect(formatBytes(1_500_000, 'pt-BR')).toBe('1,5 MB');
 		expect(formatBytes(5e9, 'pt-BR')).toBe('5 GB');
+	});
+});
+
+describe('capitalizeFirst', () => {
+	it('capitalizes only the first letter', () => {
+		expect(capitalizeFirst('outubro de 2026', 'pt-BR')).toBe('Outubro de 2026');
+		expect(capitalizeFirst('October 2026', 'en-US')).toBe('October 2026');
+		expect(capitalizeFirst('', 'en-US')).toBe('');
+	});
+});
+
+describe('localeChoices', () => {
+	it('starts each language name with a capital', () => {
+		const en = localeChoices('pt-BR').find((c) => c.value === 'en-US');
+		expect(en?.label.startsWith('I')).toBe(true);
 	});
 });

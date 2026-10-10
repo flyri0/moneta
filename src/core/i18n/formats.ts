@@ -68,6 +68,11 @@ const COMMON_LOCALES = [
 	'ja-JP'
 ];
 
+/** `text` with its first letter capitalized and the rest left alone ("Outubro de 2026"). */
+export function capitalizeFirst(text: string, locale: string): string {
+	return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}
+
 /** Number/date formats to offer for a budget, the browser's own locale first. */
 export function localeChoices(uiLocale: string, browserLocale?: string): Choice[] {
 	const names = new Intl.DisplayNames(uiLocale, { type: 'language' });
@@ -80,7 +85,10 @@ export function localeChoices(uiLocale: string, browserLocale?: string): Choice[
 			// ignore an invalid browser locale
 		}
 	}
-	return values.map((value) => ({ value, label: `${names.of(value) ?? value} (${value})` }));
+	return values.map((value) => ({
+		value,
+		label: `${capitalizeFirst(names.of(value) ?? value, uiLocale)} (${value})`
+	}));
 }
 
 function utc(date: string): Date {

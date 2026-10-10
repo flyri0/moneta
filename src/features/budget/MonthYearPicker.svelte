@@ -6,7 +6,7 @@
 	import { Button } from '$ui/button';
 	import * as Select from '$ui/select';
 	import { currentMonth, lastBudgetMonth, type Month } from '$domain/month';
-	import { formatMonthLong, formatMonthName } from '$i18n/formats';
+	import { capitalizeFirst, formatMonthLong, formatMonthName } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import { cn } from '$utils';
@@ -122,7 +122,7 @@
 				size="sm"
 				onclick={() => handleSelect(item.value)}
 				class={cn(
-					'h-9 text-xs capitalize',
+					'h-9 text-xs',
 					item.isSelected && 'font-semibold',
 					!item.isSelected && item.isToday && 'border border-primary font-semibold text-primary',
 					!item.isSelected && !item.isToday && 'text-foreground'
@@ -130,7 +130,7 @@
 				aria-selected={item.isSelected}
 				aria-label={item.ariaLabel}
 			>
-				{item.name}
+				{capitalizeFirst(item.name, locale)}
 			</Button>
 		{/each}
 	</div>
