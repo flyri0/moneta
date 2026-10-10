@@ -52,9 +52,10 @@ acontece.
 
 ### Mover dinheiro entre categorias {#move-money}
 
-Planos mudam. Abra uma categoria e use **Mover dinheiro**: escolha outra categoria e um valor, e
-ele passa de uma para a outra neste mês. A lista mostra quanto cada categoria tem disponível. Se a movimentação deixar a categoria de origem no
-negativo, o Moneta diz quanto antes de você confirmar. Cada movimentação pode ser desfeita logo em seguida (veja [Desfazer](transactions.md#undo)).
+Planos mudam. Abra uma categoria e use **Mover dinheiro**: escolha outra categoria e um valor, e ele
+passa de uma para a outra neste mês. A lista mostra quanto cada categoria tem disponível. Se a
+movimentação deixar a categoria de origem no negativo, o Moneta diz quanto antes de você confirmar.
+Cada movimentação pode ser desfeita logo em seguida (veja [Desfazer](transactions.md#undo)).
 
 ![A tela de uma categoria: o disponível, o atribuído neste mês, e Atribuição rápida, Mover dinheiro, Meta e Levar gasto a mais adiante.](img/category-light.pt-BR.png)
 

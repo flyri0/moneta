@@ -55,9 +55,9 @@ listadas, e você pode dar uma categoria a todas de uma vez.
 
 ## Criar uma regra {#rules}
 
-As descrições dos bancos são bagunçadas: `PAG*MERCADINHO 0423 SAO PAULO`. Numa linha nova que nenhuma regra pega ainda,
-**Criar regra** define o favorecido (e, se quiser, uma categoria) para toda descrição parecida, nesta
-importação e nas próximas. Depois do prefixo de uma maquininha, como `PAG*` ou `SQ *`, a regra
-começa como **Contém** o nome da loja. As linhas pegas por uma regra mostram a marca **Regra** e,
-sem categoria própria, recebem a categoria de costume do favorecido. Veja [Regras de
-importação](payees.md#payee-rules).
+As descrições dos bancos são bagunçadas: `PAG*MERCADINHO 0423 SAO PAULO`. Numa linha nova que
+nenhuma regra pega ainda, **Criar regra** define o favorecido (e, se quiser, uma categoria) para
+toda descrição parecida, nesta importação e nas próximas. Depois do prefixo de uma maquininha, como
+`PAG*` ou `SQ *`, a regra começa como **Contém** o nome da loja. As linhas pegas por uma regra
+mostram a marca **Regra** e, sem categoria própria, recebem a categoria de costume do favorecido.
+Veja [Regras de importação](payees.md#payee-rules).
