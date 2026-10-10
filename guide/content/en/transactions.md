@@ -12,8 +12,9 @@ Use the **Transaction** button (the round **+** on a phone). Fill in:
 - **Payee**: who you paid or who paid you. Type a new name to create one. A payee with a default
   category fills it in; otherwise Moneta suggests the category used last time.
 - **Amount**, with **Outflow** or **Inflow**. Amounts accept simple math, like `10+5`.
-- **Category**: required on budget accounts. Type a name that doesn't exist to create the category
-  (and even its group) as you save.
+- **Category**: required on budget accounts. The list shows how much each category has available
+  in the transaction's month. Type a name that doesn't exist to create the category (and even its
+  group) as you save.
 - **Memo** and **Cleared**, both optional.
 - **Flag**, also optional: a color to [mark it with](#flags).
 

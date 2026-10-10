@@ -13,8 +13,9 @@ Use o botão **Transação** (o **+** redondo no celular). Preencha:
   favorecido com categoria padrão já a preenche; senão o Moneta sugere a categoria usada da última
   vez.
 - **Valor**, com **Saída** ou **Entrada**. Os valores aceitam contas simples, como `10+5`.
-- **Categoria**: obrigatória nas contas do orçamento. Digite um nome que não existe para criar a
-  categoria (e até o grupo dela) ao salvar.
+- **Categoria**: obrigatória nas contas do orçamento. A lista mostra quanto cada categoria tem
+  disponível no mês da transação. Digite um nome que não existe para criar a categoria (e até o
+  grupo dela) ao salvar.
 - **Memorando** e **Compensada**, ambos opcionais.
 - **Flag**, também opcional: uma cor para [marcá-la](#flags).
 

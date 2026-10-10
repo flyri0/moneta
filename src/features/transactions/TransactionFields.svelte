@@ -15,6 +15,7 @@
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
 	import FlagField from '$features/flags/FlagField.svelte';
 	import type { NewCategories } from '$features/categories/new-categories';
+	import type { CategoryAvailable } from '$features/categories/available';
 	import {
 		canSplit,
 		categoryMode,
@@ -38,7 +39,8 @@
 		draft = $bindable(),
 		dateLabel,
 		lockedDate = null,
-		pending
+		pending,
+		available
 	}: {
 		ctx: FormContext;
 		draft: TransactionDraft;
@@ -46,6 +48,8 @@
 		lockedDate?: string | null;
 		/** New categories picked in the form, created when it saves. */
 		pending: NewCategories;
+		/** Each category's Available in the date's month, shown in the category pickers. */
+		available?: ReadonlyMap<string, CategoryAvailable>;
 	} = $props();
 
 	const session = useSession();
@@ -148,6 +152,7 @@
 		tree={ctx.tree}
 		{options}
 		{pending}
+		{available}
 		{value}
 		onSelect={onChange}
 		class={className}

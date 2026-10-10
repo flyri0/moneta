@@ -266,6 +266,38 @@ test.describe('on a phone', () => {
 		await expect(amount).toHaveValue('10');
 	});
 
+	test("shows each category's Available in the Move money picker", async ({ page }) => {
+		await onboard(page);
+		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+		const sheet = page.getByRole('dialog');
+		await sheet.getByLabel('Assigned this month').fill('300');
+		await sheet.getByRole('button', { name: 'Save' }).first().click();
+		await expect(categoryRow(page, 'Groceries').getByTestId('available')).toHaveText('$300.00');
+		await spend(page, 'Cafe', '30', 'Dining Out');
+
+		await categoryRow(page, 'Household').getByRole('button', { name: 'Household' }).click();
+		await sheet.getByRole('button', { name: 'Move money' }).click();
+		await sheet.getByLabel('Other category').click();
+		const picker = page.locator('[data-picker][data-state="open"]');
+		const item = (name: string) =>
+			picker.locator('[data-slot="command-item"]').filter({ hasText: name });
+		await expect(item('Groceries').getByTestId('available')).toHaveText('$300.00');
+		await expect(item('Dining Out').getByTestId('available')).toHaveAttribute(
+			'data-tone',
+			'overspent'
+		);
+		// The pills line up on the right of their rows, whatever the length of the name.
+		const rightGap = async (name: string) => {
+			const row = (await item(name).boundingBox())!;
+			const pill = (await item(name).getByTestId('available').boundingBox())!;
+			return row.x + row.width - (pill.x + pill.width);
+		};
+		const gaps = [await rightGap('Groceries'), await rightGap('Phone & Internet')];
+		expect(gaps[0]).toBeGreaterThanOrEqual(0);
+		expect(gaps[0]).toBeLessThan(40);
+		expect(Math.abs(gaps[0] - gaps[1])).toBeLessThan(1);
+	});
+
 	test('shows how much of a category is spent', async ({ page }) => {
 		await onboard(page);
 		await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
