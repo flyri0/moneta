@@ -35,7 +35,7 @@
 	const session = useSession();
 	const usage = useLive(
 		session.client,
-		['transactions', 'transaction_splits', 'budget_assignments'],
+		['transactions', 'transaction_splits', 'budget_assignments', 'schedules', 'schedule_splits'],
 		() => session.api.categories.usage(category.id)
 	);
 
@@ -99,6 +99,10 @@
 				<dl class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 tabular-nums">
 					<dt>{m.category_delete_transactions()}</dt>
 					<dd class="text-right font-medium">{usage.data.transactions}</dd>
+					{#if usage.data.schedules > 0}
+						<dt>{m.category_delete_schedules()}</dt>
+						<dd class="text-right font-medium">{usage.data.schedules}</dd>
+					{/if}
 					{#if !isIncome}
 						<dt>{m.budget_available()}</dt>
 						<dd class="text-right font-medium">{session.format(category.available)}</dd>

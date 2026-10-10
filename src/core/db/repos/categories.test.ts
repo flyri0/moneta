@@ -191,14 +191,14 @@ describe('categories', () => {
 	it('reports how a category is used', async () => {
 		const db = await createBudgetDb();
 		const fun = categoryId(db, 'Fun');
-		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, used: false });
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, schedules: 0, used: false });
 
 		run(db, 'INSERT INTO budget_assignments (category_id, month, assigned) VALUES (?, ?, ?)', [
 			fun,
 			'2026-01',
 			3000
 		]);
-		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, used: true });
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 0, schedules: 0, used: true });
 
 		run(
 			db,
@@ -213,7 +213,15 @@ describe('categories', () => {
 		// Two splits of one transaction count once.
 		run(db, split, ['s1', 'tx2', fun, -400]);
 		run(db, split, ['s2', 'tx2', fun, -500]);
-		expect(categoryUsage(db, fun)).toEqual({ transactions: 2, used: true });
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 2, schedules: 0, used: true });
+
+		run(
+			db,
+			`INSERT INTO schedules (id, account_id, amount, category_id, start_date, frequency, created_at)
+			 VALUES ('sc1', 'acc1', -500, ?, '2026-02-01', 'monthly', '2026-01-01T00:00:00Z')`,
+			[fun]
+		);
+		expect(categoryUsage(db, fun)).toEqual({ transactions: 2, schedules: 1, used: true });
 	});
 
 	it('deletes an unused category directly', async () => {

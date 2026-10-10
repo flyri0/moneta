@@ -346,6 +346,7 @@
 	"category_delete_in_use": "This category is in use",
 	"category_delete_in_use_body": "Its transactions and all the money assigned to it move to the category you choose.",
 	"category_delete_transactions": "Transactions",
+	"category_delete_schedules": "Schedules",
 	"category_delete_move_to": "Move everything to",
 	"category_delete_choose": "Choose a category",
 	"group_settings": "Group settings",

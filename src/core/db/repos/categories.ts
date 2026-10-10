@@ -287,6 +287,8 @@ export function updateCategory(db: Db, id: string, patch: CategoryPatch): void {
 export interface CategoryUsage {
 	/** Transactions filed under the category, directly or through a split. */
 	transactions: number;
+	/** Schedules that use it, directly or in a split. */
+	schedules: number;
 	/**
 	 * Whether a transaction, a split, an assignment or a schedule uses it: deleting it then needs a
 	 * target.
@@ -304,16 +306,19 @@ export function categoryUsage(db: Db, id: string): CategoryUsage {
 			    OR EXISTS (SELECT 1 FROM transaction_splits s WHERE s.transaction_id = t.id AND s.category_id = ?)`,
 			[id, id]
 		)?.n ?? 0;
+	const schedules =
+		one<{ n: number }>(
+			db,
+			`SELECT COUNT(*) AS n FROM schedules sc
+			 WHERE sc.category_id = ?
+			    OR EXISTS (SELECT 1 FROM schedule_splits s WHERE s.schedule_id = sc.id AND s.category_id = ?)`,
+			[id, id]
+		)?.n ?? 0;
 	const assigned = one(db, 'SELECT 1 AS x FROM budget_assignments WHERE category_id = ?', [id]);
-	const scheduled = one(
-		db,
-		`SELECT 1 AS x FROM schedules WHERE category_id = ?
-		 UNION ALL SELECT 1 FROM schedule_splits WHERE category_id = ? LIMIT 1`,
-		[id, id]
-	);
 	return {
 		transactions,
-		used: transactions > 0 || assigned !== undefined || scheduled !== undefined
+		schedules,
+		used: transactions > 0 || schedules > 0 || assigned !== undefined
 	};
 }
 

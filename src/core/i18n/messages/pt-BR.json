@@ -346,6 +346,7 @@
 	"category_delete_in_use": "Esta categoria está em uso",
 	"category_delete_in_use_body": "As transações e todo o dinheiro atribuído a ela vão para a categoria que você escolher.",
 	"category_delete_transactions": "Transações",
+	"category_delete_schedules": "Agendamentos",
 	"category_delete_move_to": "Mover tudo para",
 	"category_delete_choose": "Escolha uma categoria",
 	"group_settings": "Configurações do grupo",
