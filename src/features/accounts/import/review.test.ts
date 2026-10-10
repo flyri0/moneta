@@ -7,8 +7,10 @@ import {
 	fillCategories,
 	importLines,
 	linkPossible,
+	newCategoryGroupsFor,
 	reviewCounts,
 	reviewRows,
+	type ReviewRow,
 	rowStatus,
 	suggestCategory
 } from './review';
@@ -234,5 +236,36 @@ describe('lines that start unchecked', () => {
 		});
 		expect(r[0].include).toBe(true);
 		expect(beforeOpeningCount(r, null)).toBe(0);
+	});
+});
+
+describe('newCategoryGroupsFor', () => {
+	const groups = [
+		{ id: 'a', name: 'Bills', system: null },
+		{ id: 'i', name: 'Income', system: 'income' as const },
+		{ id: 'h', name: 'Old', system: null, hidden: true }
+	];
+	const newRow = (amount: number, over: Partial<ReviewRow> = {}): ReviewRow => ({
+		...reviewRows([{ ...line(1), amount }], [{ ...preview('new'), importId: 'ofx:1' }])[0],
+		...over
+	});
+
+	it('leaves Income out when every new row is an outflow', () => {
+		const ids = newCategoryGroupsFor(groups, [newRow(-100), newRow(-5)]).map((g) => g.id);
+		expect(ids).toEqual(['a']);
+	});
+
+	it('keeps Income when one of them is an inflow', () => {
+		const ids = newCategoryGroupsFor(groups, [newRow(-100), newRow(500)]).map((g) => g.id);
+		expect(ids).toEqual(['a', 'i']);
+	});
+
+	it('ignores rows that are left out or not new', () => {
+		const rs = [
+			newRow(500, { include: false }),
+			newRow(500, { linked: true, preview: preview('possible', { importId: 'ofx:1' }) }),
+			newRow(-1)
+		];
+		expect(newCategoryGroupsFor(groups, rs).map((g) => g.id)).toEqual(['a']);
 	});
 });

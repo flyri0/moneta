@@ -1,4 +1,5 @@
 import type { ImportLine, ImportPreview, StatementLine } from '$db/repos/imports';
+import type { PickerGroup } from '$features/categories/picker';
 import { isFarFuture } from '$domain/month';
 import { matchRule, type RuleKind } from '$domain/payee-rules';
 
@@ -157,4 +158,13 @@ export function applyRule(
 		else suggestCategory(row, suggestions);
 		row.ruleId = rule.id;
 	}
+}
+
+/**
+ * The groups a category made from the import screen can go in: the visible ones, and Income only
+ * when one of the new rows being imported is money in.
+ */
+export function newCategoryGroupsFor<G extends PickerGroup>(groups: G[], rows: ReviewRow[]): G[] {
+	const inflow = rows.some((r) => r.include && rowStatus(r) === 'new' && r.line.amount > 0);
+	return groups.filter((g) => !g.hidden && (inflow || g.system !== 'income'));
 }

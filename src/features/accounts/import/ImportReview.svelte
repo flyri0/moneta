@@ -29,6 +29,7 @@
 		farFutureCount,
 		fillCategories,
 		importLines,
+		newCategoryGroupsFor,
 		reviewCounts,
 		reviewRows,
 		suggestCategory,
@@ -203,6 +204,7 @@
 			<div class="flex gap-2">
 				<CategoryCombobox
 					tree={tree.data ?? []}
+					newIn={newCategoryGroupsFor(tree.data ?? [], rows ?? [])}
 					{pending}
 					bind:value={bulkCategory}
 					ariaLabel={m.import_category_for_rest()}
