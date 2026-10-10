@@ -21,6 +21,19 @@ async function onScreen(element: Locator): Promise<boolean> {
 	});
 }
 
+/** Assigns to Groceries from its sheet, which leaves a toast (with Undo); returns the toast. */
+async function showAssignedToast(page: Page): Promise<Locator> {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByLabel('Assigned this month').fill('100');
+	await sheet.getByRole('button', { name: 'Save' }).click();
+	await expect(sheet).toBeHidden();
+	const toast = page.locator('[data-sonner-toast]', { hasText: 'Assigned $100.00 to Groceries.' });
+	await expect(toast).toBeVisible();
+	return toast;
+}
+
 async function openAdd(page: Page): Promise<Locator> {
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();
 	const drawer = page.getByRole('dialog', { name: 'New transaction' });
@@ -44,6 +57,29 @@ test.describe('on a phone', () => {
 	});
 
 	test.use({ viewport: { width: 390, height: 844 } });
+
+	test('a toast swipes away to the side', async ({ page }) => {
+		const toast = await showAssignedToast(page);
+		const box = (await toast.boundingBox())!;
+		const y = box.y + box.height / 2;
+		await page.mouse.move(box.x + 40, y);
+		await page.mouse.down();
+		await page.mouse.move(box.x + 240, y, { steps: 20 });
+		await page.mouse.up();
+		// Well before the toast would have timed out.
+		await expect(toast).toBeHidden({ timeout: 2000 });
+	});
+
+	test.describe('by touch', () => {
+		test.use({ hasTouch: true });
+
+		test('a tapped toast still goes away by itself', async ({ page }) => {
+			const toast = await showAssignedToast(page);
+			await toast.locator('[data-title]').tap();
+			// Its time runs on: a tap is not a hover that holds it until the next tap elsewhere.
+			await expect(toast).toBeHidden({ timeout: 10_000 });
+		});
+	});
 
 	test('a dialog is a drawer: dragged down it closes, nudged it springs back', async ({ page }) => {
 		await onboard(page);

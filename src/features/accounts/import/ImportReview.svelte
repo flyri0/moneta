@@ -13,7 +13,7 @@
 	import { NewCategories, withCategoryIds } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { actionError, runAction, type ActionError } from '$client/notify';
+	import { ACTION_TOAST_DURATION, actionError, runAction, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
@@ -140,7 +140,7 @@
 		const accountId = account.id;
 		await goto(resolve('/accounts/[id]', { id: accountId }));
 		offerUndo(session.client, call, m.import_done({ created, matched }), {
-			duration: balance ? 15_000 : undefined,
+			duration: balance ? ACTION_TOAST_DURATION : undefined,
 			action: balance
 				? {
 						label: m.reconcile(),

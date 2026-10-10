@@ -53,6 +53,7 @@
 	position={placement.position}
 	offset={placement.offset}
 	mobileOffset={placement.offset}
+	swipeDirections={placement.swipeDirections}
 />
 {#if standalone}
 	{@render children()}

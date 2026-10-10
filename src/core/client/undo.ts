@@ -4,7 +4,7 @@ import { runActionToast } from './notify';
 import type { RpcClient } from './rpc';
 
 /** How long a toast offers to undo, in ms. */
-const UNDO_DURATION = 10_000;
+const UNDO_DURATION = 6000;
 
 interface ToastButton {
 	label: string;

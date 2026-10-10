@@ -24,6 +24,7 @@
 	import { runWhenIdle } from '$client/idle';
 	import { pendingLoads } from '$client/pending';
 	import { useLive } from '$client/live.svelte';
+	import { ACTION_TOAST_DURATION } from '$client/notify';
 	import { persistQuietly } from '$client/persistence';
 	import {
 		MAX_SHARE,
@@ -258,7 +259,7 @@
 		void persistQuietly(navigator.storage, navigator.userAgent);
 		if (session.isDemo || !backupDue(session.meta)) return;
 		toast(m.backup_reminder(), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: { label: m.backup_now(), onClick: () => void backUpNow(session.api) }
 		});
 	});
@@ -271,7 +272,7 @@
 		if (cloudBackup.warned || cloudBackup.remote.kind === 'current') return;
 		cloudBackup.warned = true;
 		toast.warning(m.cloud_other_version(), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: {
 				label: m.nav_settings(),
 				onClick: () => void goto(resolve('/settings'))
@@ -286,7 +287,7 @@
 		if (cloudWarned || status.kind !== 'failed' || status.retrying || !provider) return;
 		cloudWarned = true;
 		toast.error(m.cloud_stopped({ provider: provider.name, reason: errorMessage(status.error) }), {
-			duration: 15_000,
+			duration: ACTION_TOAST_DURATION,
 			action: {
 				label: m.nav_settings(),
 				onClick: () => void goto(resolve('/settings'))
