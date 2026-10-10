@@ -3,6 +3,7 @@ import {
 	addCategory,
 	clearSelection,
 	groupState,
+	hasCategory,
 	selectedCount,
 	starterSelection,
 	toGroupsInput,
@@ -175,5 +176,13 @@ describe('selectedCount', () => {
 	it('counts across groups', () => {
 		expect(selectedCount(selection())).toBe(3);
 		expect(selectedCount(toggleCategory(selection(), 0, 0))).toBe(2);
+	});
+});
+
+describe('hasCategory', () => {
+	it('finds a name already in the group, ignoring case and spaces', () => {
+		const selection = starterSelection([{ name: 'Everyday', categories: ['Groceries'] }]);
+		expect(hasCategory(selection, 0, '  groceries ')).toBe(true);
+		expect(hasCategory(selection, 0, 'Coffee')).toBe(false);
 	});
 });

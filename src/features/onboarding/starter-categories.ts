@@ -60,6 +60,12 @@ export function toggleGroup(
 	}));
 }
 
+/** Whether the group already has a category by that name (case and spaces aside). */
+export function hasCategory(selection: StarterGroup[], groupIndex: number, name: string): boolean {
+	const wanted = name.trim().toLocaleLowerCase();
+	return selection[groupIndex].categories.some((c) => c.name.toLocaleLowerCase() === wanted);
+}
+
 /** Adds a category the user typed. A blank name does nothing; a name already there is just picked. */
 export function addCategory(
 	selection: StarterGroup[],

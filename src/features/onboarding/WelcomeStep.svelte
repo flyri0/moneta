@@ -1,7 +1,6 @@
 <script lang="ts">
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone';
-	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import CustomizationGroup from '$features/settings/CustomizationGroup.svelte';
 	import { m } from '$i18n/paraglide/messages';
 	import StepLayout from './StepLayout.svelte';
@@ -10,7 +9,6 @@
 
 	const points = [
 		{ icon: MonitorSmartphoneIcon, text: m.onboarding_welcome_point_browser() },
-		{ icon: ShieldCheckIcon, text: m.onboarding_welcome_point_private() },
 		{ icon: HardDriveIcon, text: m.onboarding_welcome_point_device() }
 	];
 </script>

@@ -6,10 +6,12 @@
 	import * as Collapsible from '$ui/collapsible';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
+	import FormMessage from '$components/FormMessage.svelte';
 	import {
 		addCategory,
 		clearSelection,
 		groupState,
+		hasCategory,
 		selectedCount,
 		toggleCategory,
 		toggleGroup,
@@ -35,7 +37,11 @@
 	// One draft per group, so a half-typed category doesn't follow the user to the next group.
 	let drafts = $state(selection.map(() => ''));
 
+	/** The group whose typed name is already there, to say so. */
+	let duplicateIn = $state<number | null>(null);
+
 	function add(groupIndex: number) {
+		duplicateIn = hasCategory(selection, groupIndex, drafts[groupIndex]) ? groupIndex : null;
 		selection = addCategory(selection, groupIndex, drafts[groupIndex]);
 		drafts[groupIndex] = '';
 	}
@@ -98,6 +104,11 @@
 								{category.name}
 							</Label>
 						</div>
+						{#if group.income && !category.selected && category.name === m.default_category_starting_balance()}
+							<p class="-mt-2 pl-7 text-xs text-muted-foreground">
+								{m.onboarding_starting_balance_hint()}
+							</p>
+						{/if}
 					{/each}
 					<div class="mt-auto flex gap-2 pt-1">
 						<Input
@@ -105,6 +116,9 @@
 							placeholder={m.onboarding_categories_add_placeholder()}
 							autocomplete="off"
 							aria-label="{m.onboarding_categories_add()} — {group.name}"
+							oninput={() => {
+								if (duplicateIn === gi) duplicateIn = null;
+							}}
 							onkeydown={(event) => draftKeydown(event, gi)}
 						/>
 						<Button
@@ -118,6 +132,9 @@
 							<span class="sr-only">{m.onboarding_categories_add()}</span>
 						</Button>
 					</div>
+					{#if duplicateIn === gi}
+						<FormMessage error={{ message: m.onboarding_categories_duplicate() }} />
+					{/if}
 				</Collapsible.Content>
 			</Collapsible.Root>
 		{/each}

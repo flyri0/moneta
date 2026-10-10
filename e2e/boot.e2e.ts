@@ -29,6 +29,26 @@ test('onboarding refuses a blank budget name on its step', async ({ page }) => {
 	await expect(page.getByLabel('Budget name')).toBeFocused();
 });
 
+test('onboarding keeps the account typed when going back, and flags a repeated category', async ({
+	page
+}) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Home');
+	await nextStep(page).click();
+	const add = page.getByLabel('Add a category — Everyday');
+	await add.fill('groceries');
+	await add.press('Enter');
+	await expect(page.getByRole('alert')).toHaveText('Already in this group.');
+	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Checking' }).click();
+	await page.getByLabel('Current balance').fill('250');
+	await page.getByRole('button', { name: 'Back' }).click();
+	await expect(page.getByText('Your categories')).toBeVisible();
+	await nextStep(page).click();
+	await expect(page.getByLabel('Current balance')).toHaveValue('250');
+});
+
 test('onboarding seeds only the categories that were picked', async ({ page }) => {
 	await startApp(page);
 	await skipIntro(page);

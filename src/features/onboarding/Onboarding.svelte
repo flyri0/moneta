@@ -73,6 +73,7 @@
 	let onBudget = $state(true);
 	let balance = $state('');
 	let date = $state(todayIso());
+	let accountView = $state<'type' | 'form'>('type');
 
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
@@ -221,6 +222,7 @@
 		bind:onBudget
 		bind:balance
 		bind:date
+		bind:view={accountView}
 		money={{ currency, locale }}
 	/>
 {:else if step === 'done'}
