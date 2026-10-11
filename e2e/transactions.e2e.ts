@@ -305,3 +305,54 @@ test("shows each category's Available for the transaction's month", async ({ pag
 	await expect(item('Groceries')).toBeVisible();
 	await expect(picker.getByTestId('available')).toHaveCount(0);
 });
+
+for (const layout of [
+	{ name: 'desktop', viewport: { width: 1280, height: 900 } },
+	{ name: 'phone', viewport: { width: 390, height: 844 } }
+]) {
+	test.describe(`long categories on ${layout.name}`, () => {
+		test.use({ viewport: layout.viewport });
+
+		for (const form of ['transaction', 'schedule'] as const) {
+			test(`a very long category name stays inside the ${form} dialog`, async ({ page }) => {
+				await onboard(page);
+				const long =
+					'A very long category name that goes on and on to test truncation in every layout';
+				await page.getByRole('button', { name: 'Add group' }).first().click();
+				const dialog = page.getByRole('dialog');
+				await dialog.getByLabel('Group name').fill('Long');
+				await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+				await page.getByRole('main').getByText('Long', { exact: true }).click();
+				await dialog.getByLabel('New category').fill(long);
+				await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+				await expect(categoryRow(page, long)).toBeVisible();
+				await page.keyboard.press('Escape');
+				await expect(dialog).toBeHidden();
+
+				if (form === 'schedule') {
+					await page.getByRole('link', { name: 'Transactions', exact: true }).first().click();
+					await page.getByRole('link', { name: 'Scheduled', exact: true }).click();
+					await page.getByRole('button', { name: 'Add schedule' }).first().click();
+				} else {
+					await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+				}
+				const formDialog = page.getByRole('dialog', { name: `New ${form}`, exact: true });
+				await chooseCombobox(formDialog, 'Category', long, 'very long');
+				await expect(formDialog.getByLabel('Category', { exact: true })).toContainText(long);
+				expect.soft(await formDialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+				await expect(
+					formDialog.getByRole('button', { name: 'Split', exact: true })
+				).toBeInViewport();
+
+				await formDialog.getByRole('button', { name: 'Split', exact: true }).click();
+				await expect(formDialog.getByLabel('Category for line 1', { exact: true })).toContainText(
+					long
+				);
+				expect(await formDialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+				const remove = formDialog.getByRole('button', { name: 'Remove line 1', exact: true });
+				await remove.scrollIntoViewIfNeeded();
+				await expect(remove).toBeInViewport();
+			});
+		}
+	});
+}

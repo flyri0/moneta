@@ -196,7 +196,7 @@
 	}
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
+<form class="grid grid-cols-[minmax(0,1fr)] gap-4" onsubmit={save}>
 	{#if view === 'main'}
 		<TransactionFields
 			{ctx}

@@ -149,7 +149,7 @@
 	}
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
+<form class="grid grid-cols-[minmax(0,1fr)] gap-4" onsubmit={save}>
 	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} {available} />
 
 	{#if installable}

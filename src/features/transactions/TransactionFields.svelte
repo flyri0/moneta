@@ -232,9 +232,9 @@
 </div>
 
 {#if mode !== 'hidden'}
-	<div class="grid gap-2">
+	<div class="grid min-w-0 gap-2">
 		<Label for="txn-category">{m.transaction_category()}</Label>
-		<div class="flex items-center gap-2">
+		<div class="flex min-w-0 items-center gap-2">
 			{@render categorySelect(
 				draft.categoryId,
 				(id) => (draft.categoryId = id),
@@ -257,7 +257,9 @@
 			{m.transaction_split_lines()}
 		</legend>
 		{#each draft.splits as line, i (i)}
-			<div class="grid grid-cols-[1fr_auto] items-center gap-2 md:grid-cols-[1fr_7rem_auto]">
+			<div
+				class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[minmax(0,1fr)_7rem_auto]"
+			>
 				{@render categorySelect(
 					line.categoryId,
 					(id) => (line.categoryId = id),
