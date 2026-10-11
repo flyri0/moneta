@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { signedStartingBalance } from '$features/accounts/account-form';
+	import { parseBillingDays, signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
 	import { runAction, type ActionError } from '$client/notify';
 	import { createBudget, restoreAll, type SessionApi } from '$client/session';
@@ -73,6 +73,13 @@
 	let onBudget = $state(true);
 	let balance = $state('');
 	let date = $state(todayIso());
+	let closingDay = $state('');
+	let dueDay = $state('');
+	let billingInvalid = $state(false);
+	$effect(() => {
+		void [closingDay, dueDay];
+		billingInvalid = false;
+	});
 	let accountView = $state<'type' | 'form'>('type');
 
 	let error = $state<ActionError | null>(null);
@@ -117,6 +124,13 @@
 			error = { message: m.form_error_amount_invalid() };
 			return;
 		}
+		const billing =
+			withAccount && accountType === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
+		billingInvalid = billing === 'invalid';
+		if (billingInvalid) {
+			error = { message: m.form_error_billing_days_invalid() };
+			return;
+		}
 		busy = true;
 		// The tour is for someone's very first budget here, not for one more of them.
 		const first = !onCancel && loadRegistry(localStorage).budgets.length === 0;
@@ -133,7 +147,8 @@
 							type: accountType,
 							onBudget,
 							startingBalance: signedStartingBalance(accountType, typed),
-							startingDate: date
+							startingDate: date,
+								billing: billing === 'invalid' ? null : billing
 						}
 					: undefined
 			});
@@ -227,6 +242,9 @@
 		bind:onBudget
 		bind:balance
 		bind:date
+		bind:closingDay
+		bind:dueDay
+		{billingInvalid}
 		bind:view={accountView}
 		money={{ currency, locale }}
 	/>

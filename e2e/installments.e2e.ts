@@ -1,5 +1,27 @@
 import { expect, test } from '@playwright/test';
-import { chooseCombobox, onboard } from './helpers';
+import { chooseCombobox, nextStep, onboard, skipIntro, startApp } from './helpers';
+
+test('onboarding a credit card takes its billing days', async ({ page }) => {
+	await startApp(page);
+	await skipIntro(page);
+	await page.getByLabel('Budget name').fill('Cards');
+	await nextStep(page).click();
+	await nextStep(page).click();
+	await page.getByRole('button', { name: 'Credit card' }).click();
+	await page.getByLabel('Account name').fill('Visa');
+	await page.getByLabel('Closing day').fill('25');
+	await page.getByRole('button', { name: 'Create budget' }).click();
+	await expect(page.getByTestId('form-message')).toHaveText(
+		'Enter both days, each from 1 to 31, or leave both blank.'
+	);
+	await page.getByLabel('Due day').fill('5');
+	await page.getByRole('button', { name: 'Create budget' }).click();
+	await page.getByRole('button', { name: 'Start budgeting' }).click();
+	await page.getByTestId('tour').getByRole('button', { name: 'Skip' }).click();
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByRole('button', { name: 'Settings for Visa' }).click();
+	await expect(page.getByRole('dialog').getByLabel('Due day')).toHaveValue('5');
+});
 
 test('pays a card purchase in installments: the first now, the rest scheduled', async ({
 	page
