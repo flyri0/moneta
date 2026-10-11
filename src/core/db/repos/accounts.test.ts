@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { categoryId, createBudgetDb } from '../testing';
-import { all, run } from '../connection';
+import { all, ALL_TABLES, run, type Db } from '../connection';
 import {
+	accountDeletionImpact,
 	closeAccount,
+	closeAccountWithTransfer,
 	createAccount,
 	deleteAccount,
+	deleteAccountWithTransactions,
 	getAccount,
 	listAccountOptions,
 	listAccounts,
@@ -16,6 +19,7 @@ import {
 	type CreateAccountInput
 } from './accounts';
 import { createTransaction, getTransaction, listTransactions } from './transactions';
+import { createSchedule, listSchedules } from './schedules';
 import { startingBalanceCategoryId } from './meta';
 import { deleteCategory, listCategoryTree } from './categories';
 
@@ -25,6 +29,10 @@ const acct = (p: Partial<CreateAccountInput> & Pick<CreateAccountInput, 'name' |
 	...base,
 	...p
 });
+
+function snapshot(db: Db) {
+	return ALL_TABLES.map((table) => all(db, `SELECT * FROM ${table} ORDER BY 1, 2`));
+}
 
 describe('createAccount', () => {
 	it('records an on-budget starting balance in the starting balance category, with no payee', async () => {
@@ -435,5 +443,272 @@ describe('balances as of a day', () => {
 		const rows = listTransactions(db, { accountId: bank });
 		expect(rows.find((r) => r.date === '2026-01-01')?.reconciled).toBe(true);
 		expect(rows.find((r) => r.date === '2026-03-01')?.reconciled).toBe(false);
+	});
+});
+
+describe('closeAccountWithTransfer', () => {
+	it('moves the whole balance, future-dated amounts included, and closes', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 50000 })
+		);
+		const savings = createAccount(db, acct({ name: 'Savings', type: 'savings' }));
+		createTransaction(db, {
+			accountId: bank,
+			date: '2099-01-01',
+			amount: -1000,
+			categoryId: categoryId(db, 'Food')
+		});
+		closeAccountWithTransfer(db, bank, { toAccountId: savings, date: '2026-02-01' });
+		expect(getAccount(db, bank)).toMatchObject({ balance: 0, closed: true });
+		expect(getAccount(db, savings).balance).toBe(49000);
+	});
+
+	it('asks for a category when the money leaves the budget, and uses it', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 50000 })
+		);
+		const broker = createAccount(db, acct({ name: 'Broker', type: 'investment', onBudget: false }));
+		expect(() =>
+			closeAccountWithTransfer(db, bank, { toAccountId: broker, date: '2026-02-01' })
+		).toThrow(code('CATEGORY_REQUIRED'));
+		expect(getAccount(db, bank).closed).toBe(false);
+		closeAccountWithTransfer(db, bank, {
+			toAccountId: broker,
+			categoryId: categoryId(db, 'Fun'),
+			date: '2026-02-01'
+		});
+		expect(listTransactions(db, { accountId: bank })[0]).toMatchObject({
+			amount: -50000,
+			categoryId: categoryId(db, 'Fun'),
+			transferAccountId: broker
+		});
+		expect(listTransactions(db, { accountId: broker })[0]).toMatchObject({
+			amount: 50000,
+			categoryId: null,
+			transferAccountId: bank
+		});
+		expect(getAccount(db, bank)).toMatchObject({ balance: 0, closed: true });
+		expect(getAccount(db, broker).balance).toBe(50000);
+	});
+
+	it('categorizes the receiving side when money enters the budget', async () => {
+		const db = await createBudgetDb();
+		const broker = createAccount(
+			db,
+			acct({ name: 'Broker', type: 'investment', onBudget: false, startingBalance: 50000 })
+		);
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		const before = snapshot(db);
+		expect(() =>
+			closeAccountWithTransfer(db, broker, { toAccountId: bank, date: '2026-02-01' })
+		).toThrow(code('CATEGORY_REQUIRED'));
+		expect(snapshot(db)).toEqual(before);
+		closeAccountWithTransfer(db, broker, {
+			toAccountId: bank,
+			categoryId: categoryId(db, 'Salário'),
+			date: '2026-02-01'
+		});
+		expect(listTransactions(db, { accountId: broker })[0]).toMatchObject({
+			amount: -50000,
+			categoryId: null
+		});
+		expect(listTransactions(db, { accountId: bank })[0]).toMatchObject({
+			amount: 50000,
+			categoryId: categoryId(db, 'Salário')
+		});
+		expect(getAccount(db, broker)).toMatchObject({ balance: 0, closed: true });
+	});
+
+	it('moves a negative balance between tracking accounts without a category', async () => {
+		const db = await createBudgetDb();
+		const loan = createAccount(
+			db,
+			acct({ name: 'Loan', type: 'loan', onBudget: false, startingBalance: -50000 })
+		);
+		const other = createAccount(db, acct({ name: 'Other', type: 'other', onBudget: false }));
+		closeAccountWithTransfer(db, loan, { toAccountId: other, date: '2026-02-01' });
+		expect(getAccount(db, loan)).toMatchObject({ balance: 0, closed: true });
+		expect(getAccount(db, other).balance).toBe(-50000);
+	});
+
+	it.each([
+		['self', 'TRANSFER_INVALID'],
+		['missing', 'NOT_FOUND'],
+		['empty', 'TRANSFER_INVALID'],
+		['category', 'CATEGORY_NOT_ALLOWED'],
+		['date', 'INVALID_INPUT'],
+		['closed', 'ACCOUNT_CLOSED']
+	])('rejects an invalid %s transfer without changing rows', async (invalid, error) => {
+		const db = await createBudgetDb();
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 500 }));
+		const savings = createAccount(db, acct({ name: 'Savings', type: 'savings' }));
+		if (invalid === 'closed') run(db, 'UPDATE accounts SET closed = 1 WHERE id = ?', [bank]);
+		const before = snapshot(db);
+		expect(() =>
+			closeAccountWithTransfer(db, bank, {
+				toAccountId:
+					invalid === 'self'
+						? bank
+						: invalid === 'missing'
+							? 'missing'
+							: invalid === 'empty'
+								? ''
+								: savings,
+				categoryId: invalid === 'category' || invalid === 'empty' ? categoryId(db, 'Food') : null,
+				date: invalid === 'date' ? 'tomorrow' : '2026-02-01'
+			})
+		).toThrow(code(error));
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('rolls back both transfer sides when closing fails after the transfer', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 500 }));
+		const savings = createAccount(db, acct({ name: 'Savings', type: 'savings' }));
+		const before = snapshot(db);
+		run(
+			db,
+			"CREATE TEMP TRIGGER block_close BEFORE UPDATE OF closed ON accounts BEGIN SELECT RAISE(ABORT, 'blocked close'); END"
+		);
+		expect(() =>
+			closeAccountWithTransfer(db, bank, { toAccountId: savings, date: '2026-02-01' })
+		).toThrow('blocked close');
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('refuses a closed target and changes nothing', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking', startingBalance: 500 }));
+		const old = createAccount(db, acct({ name: 'Old', type: 'savings' }));
+		closeAccount(db, old);
+		expect(() =>
+			closeAccountWithTransfer(db, bank, { toAccountId: old, date: '2026-02-01' })
+		).toThrow(code('ACCOUNT_CLOSED'));
+		expect(getAccount(db, bank)).toMatchObject({ balance: 500, closed: false });
+	});
+
+	it('just closes an account already at zero', async () => {
+		const db = await createBudgetDb();
+		const bank = createAccount(db, acct({ name: 'Bank', type: 'checking' }));
+		const savings = createAccount(db, acct({ name: 'Savings', type: 'savings' }));
+		closeAccountWithTransfer(db, bank, { toAccountId: savings, date: '2026-02-01' });
+		expect(getAccount(db, bank).closed).toBe(true);
+		expect(listTransactions(db, { accountId: savings })).toEqual([]);
+	});
+});
+
+describe('deleteAccountWithTransactions', () => {
+	async function setup() {
+		const db = await createBudgetDb();
+		const bank = createAccount(
+			db,
+			acct({ name: 'Bank', type: 'checking', startingBalance: 100000 })
+		);
+		const card = createAccount(
+			db,
+			acct({ name: 'Card', type: 'credit_card', startingBalance: -20000 })
+		);
+		const spare = createAccount(db, acct({ name: 'Spare', type: 'cash', startingBalance: 100 }));
+		const paid = createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-10',
+			amount: -5000,
+			transferAccountId: card
+		});
+		createTransaction(db, {
+			accountId: card,
+			date: '2026-01-11',
+			amount: -700,
+			splits: [
+				{ categoryId: categoryId(db, 'Food'), amount: -500 },
+				{ categoryId: categoryId(db, 'Fun'), amount: -200 }
+			]
+		});
+		const base = {
+			startDate: '2026-03-01',
+			frequency: 'monthly' as const,
+			interval: 1,
+			endDate: null,
+			endCount: null,
+			weekend: 'keep' as const,
+			autoEnter: false
+		};
+		createSchedule(db, {
+			...base,
+			accountId: card,
+			amount: -900,
+			splits: [
+				{ categoryId: categoryId(db, 'Food'), amount: -700 },
+				{ categoryId: categoryId(db, 'Fun'), amount: -200 }
+			]
+		});
+		createSchedule(db, { ...base, accountId: bank, amount: -3000, transferAccountId: card });
+		const kept = createSchedule(db, {
+			...base,
+			accountId: spare,
+			amount: -100,
+			categoryId: categoryId(db, 'Food')
+		});
+		return { db, bank, card, paid, spare, kept };
+	}
+
+	it('reports what deleting would take with it', async () => {
+		const { db, bank, card } = await setup();
+		run(
+			db,
+			'UPDATE transactions SET cleared = 1, reconciled = 1 WHERE account_id = ? AND transfer_id IS NOT NULL',
+			[bank]
+		);
+		expect(accountDeletionImpact(db, card)).toEqual({
+			transactions: 3,
+			schedules: 2,
+			transfers: [
+				{ accountId: bank, accountName: 'Bank', count: 1, balanceChange: 5000, reconciled: 1 }
+			]
+		});
+	});
+
+	it('deletes the account, its transactions, both sides of its transfers and its schedules', async () => {
+		const { db, bank, card, paid, spare, kept } = await setup();
+		deleteAccountWithTransactions(db, card);
+		expect(() => getAccount(db, card)).toThrow(code('NOT_FOUND'));
+		expect(listTransactions(db, { accountId: bank }).map((t) => t.id)).not.toContain(paid);
+		expect(getAccount(db, bank).balance).toBe(100000);
+		expect(listSchedules(db, '2026-02-01').map((s) => s.id)).toEqual([kept]);
+		expect(getAccount(db, spare).balance).toBe(100);
+		expect(all(db, 'SELECT * FROM transaction_splits')).toEqual([]);
+		expect(all(db, 'SELECT * FROM schedule_splits')).toEqual([]);
+		expect(all(db, 'PRAGMA foreign_key_check')).toEqual([]);
+	});
+
+	it('works on a closed account, and on transfers to a closed account', async () => {
+		const { db, bank, card } = await setup();
+		run(db, 'UPDATE accounts SET closed = 1 WHERE id IN (?, ?)', [bank, card]);
+		deleteAccountWithTransactions(db, card);
+		expect(() => getAccount(db, card)).toThrow(code('NOT_FOUND'));
+		expect(getAccount(db, bank).balance).toBe(100000);
+	});
+
+	it('rolls back transactions, twins and schedules when deleting the account fails', async () => {
+		const { db, card } = await setup();
+		const before = snapshot(db);
+		run(
+			db,
+			"CREATE TEMP TRIGGER block_delete BEFORE DELETE ON accounts BEGIN SELECT RAISE(ABORT, 'blocked delete'); END"
+		);
+		expect(() => deleteAccountWithTransactions(db, card)).toThrow('blocked delete');
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('refuses missing accounts for impact and deletion without changing rows', async () => {
+		const { db } = await setup();
+		const before = snapshot(db);
+		expect(() => accountDeletionImpact(db, 'missing')).toThrow(code('NOT_FOUND'));
+		expect(() => deleteAccountWithTransactions(db, 'missing')).toThrow(code('NOT_FOUND'));
+		expect(snapshot(db)).toEqual(before);
 	});
 });

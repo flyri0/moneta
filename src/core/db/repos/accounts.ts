@@ -171,6 +171,95 @@ export function closeAccount(db: Db, id: string): void {
 	});
 }
 
+export interface CloseWithTransferInput {
+	toAccountId: string;
+	/** For a transfer that leaves or enters the budget: the category of its on-budget side. */
+	categoryId?: string | null;
+	/** The transfer's date: today, from the client. */
+	date: string;
+}
+
+/**
+ * Moves the whole balance (future-dated amounts included) to another account as a transfer, then
+ * closes the account. With nothing to move, it just closes it.
+ */
+export function closeAccountWithTransfer(db: Db, id: string, input: CloseWithTransferInput): void {
+	tx(db, () => {
+		const { balance } = getAccount(db, id);
+		if (balance !== 0) {
+			if (!input.toAccountId)
+				throw new DomainError('TRANSFER_INVALID', 'A target account is required');
+			createTransaction(db, {
+				accountId: id,
+				date: input.date,
+				amount: -balance,
+				transferAccountId: input.toAccountId,
+				categoryId: input.categoryId ?? null
+			});
+		}
+		closeAccount(db, id);
+	});
+}
+
+export interface AccountDeletionImpact {
+	/** Transactions in the account itself. */
+	transactions: number;
+	/** Schedules on the account, or transferring into it. */
+	schedules: number;
+	/** The other accounts its transfers also leave, with what that does to each. */
+	transfers: {
+		accountId: string;
+		accountName: string;
+		count: number;
+		balanceChange: number;
+		reconciled: number;
+	}[];
+}
+
+/** What `deleteAccountWithTransactions` would take with it, for its confirmation. */
+export function accountDeletionImpact(db: Db, id: string): AccountDeletionImpact {
+	getAccount(db, id);
+	const count = (sql: string) => one<{ n: number }>(db, sql, [id])!.n;
+	return {
+		transactions: count('SELECT COUNT(*) AS n FROM transactions WHERE account_id = ?'),
+		schedules: count(
+			'SELECT COUNT(*) AS n FROM schedules WHERE account_id = ?1 OR transfer_account_id = ?1'
+		),
+		transfers: all<AccountDeletionImpact['transfers'][number]>(
+			db,
+			`SELECT o.account_id AS accountId, a.name AS accountName, COUNT(*) AS count,
+				-SUM(o.amount) AS balanceChange, SUM(o.reconciled) AS reconciled
+			 FROM transactions t
+			 JOIN transactions o ON o.id = t.transfer_id
+			 JOIN accounts a ON a.id = o.account_id
+			 WHERE t.account_id = ? AND o.account_id <> t.account_id
+			 GROUP BY o.account_id, a.name
+			 ORDER BY a.sort_order`,
+			[id]
+		)
+	};
+}
+
+/**
+ * Deletes an account with everything in it: its transactions, the other side of each of its
+ * transfers (as deleting a transfer does), and its schedules, then the account. Works on closed
+ * accounts too: unlike editing, deleting doesn't stop at a closed one.
+ */
+export function deleteAccountWithTransactions(db: Db, id: string): void {
+	tx(db, () => {
+		getAccount(db, id);
+		run(
+			db,
+			`DELETE FROM transactions
+			 WHERE account_id = ?1
+				OR id IN (SELECT transfer_id FROM transactions WHERE account_id = ?1)`,
+			[id]
+		);
+		run(db, 'DELETE FROM schedules WHERE account_id = ?1 OR transfer_account_id = ?1', [id]);
+		run(db, 'DELETE FROM accounts WHERE id = ?', [id]);
+	});
+}
+
 export function reopenAccount(db: Db, id: string): void {
 	tx(db, () => {
 		getAccount(db, id);

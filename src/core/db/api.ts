@@ -65,6 +65,20 @@ export const api = {
 		rename: write(['accounts'], accounts.renameAccount, ['string', 'string']),
 		setIcon: write(['accounts'], accounts.setAccountIcon, ['string', 'string?']),
 		close: write(['accounts'], accounts.closeAccount, ['string']),
+		closeWithTransfer: write(
+			['accounts', 'transactions'],
+			accounts.closeAccountWithTransfer,
+			['string', 'object'],
+			{ undo: true }
+		),
+		deletionImpact: read(accounts.accountDeletionImpact, ['string']),
+		// Both sides of transfers go, including cascaded transaction and schedule splits.
+		deleteWithTransactions: write(
+			['accounts', 'transactions', 'transaction_splits', ...SCHED],
+			accounts.deleteAccountWithTransactions,
+			['string'],
+			{ undo: true }
+		),
 		reopen: write(['accounts'], accounts.reopenAccount, ['string']),
 		setBilling: write(['accounts'], accounts.setBillingDays, ['string', 'object?']),
 		delete: write(['accounts'], accounts.deleteAccount, ['string'], { undo: true }),
