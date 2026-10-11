@@ -8,16 +8,19 @@
 		label,
 		detail,
 		destructive = false,
+		invalid = false,
 		onclick
 	}: {
 		icon: typeof ChevronRightIcon;
 		label: string;
 		detail?: string;
 		destructive?: boolean;
+		invalid?: boolean;
 		onclick: () => void;
 	} = $props();
 </script>
 
+<!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
 <button
 	type="button"
 	class={cn(
@@ -25,9 +28,13 @@
 		destructive && 'text-destructive'
 	)}
 	{onclick}
+	aria-invalid={invalid || undefined}
 >
 	<Icon class="size-4 shrink-0" />
 	<span class="flex-1">{label}</span>
-	{#if detail}<span class="min-w-0 truncate text-muted-foreground">{detail}</span>{/if}
+	{#if detail}<span
+			class={cn('min-w-0 truncate', invalid ? 'text-destructive' : 'text-muted-foreground')}
+			>{detail}</span
+		>{/if}
 	<ChevronRightIcon class="size-4 shrink-0 text-muted-foreground" />
 </button>
