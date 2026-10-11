@@ -6,6 +6,7 @@
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import type { ActionError } from '$client/notify';
+	import { Countdown } from '$client/countdown';
 	import { m } from '$i18n/paraglide/messages';
 	import { cn } from '$utils';
 	import { nameConfirms } from './delete-confirm';
@@ -21,46 +22,37 @@
 		ondelete
 	}: { open: boolean; name: string; ondelete: () => Promise<ActionError | null> } = $props();
 
-	/** Seconds the button stays disabled after the first tap, with the warning shown. */
-	const DELETE_DELAY = 5;
-
 	let typed = $state('');
 	let armed = $state(false);
 	let countdown = $state(0);
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
+	const wait = new Countdown(5, (s) => ([armed, countdown] = [s.armed, s.seconds]));
 
 	const confirmed = $derived(nameConfirms(typed, name));
 
 	$effect(() => {
+		wait.reset();
 		if (!open) return;
 		typed = '';
-		armed = false;
-		countdown = 0;
 		busy = false;
 		error = null;
 	});
 
-	$effect(() => {
-		if (countdown <= 0) return;
-		const timer = setTimeout(() => countdown--, 1000);
-		return () => clearTimeout(timer);
-	});
+	$effect(() => () => wait.reset());
 
 	/** Changing the name starts the confirmation over. */
 	function retype() {
-		armed = false;
-		countdown = 0;
+		wait.reset();
 	}
 
 	async function confirm() {
 		if (!confirmed || busy) return;
-		if (!armed) {
-			armed = true;
-			countdown = DELETE_DELAY;
+		if (!wait.armed) {
+			wait.arm();
 			return;
 		}
-		if (countdown > 0) return;
+		if (!wait.ready) return;
 		busy = true;
 		error = await ondelete();
 		busy = false;

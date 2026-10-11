@@ -14,6 +14,7 @@
 	import { readBackupFile } from '$features/backup/actions';
 	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
+	import { Countdown } from '$client/countdown';
 	import { runAction, type ActionError } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
 	import {
@@ -36,9 +37,6 @@
 	let { open = $bindable(false), file }: { open: boolean; file: File | null } = $props();
 	const app = getApp();
 	const session = useSession();
-	/** Seconds the restore button stays disabled after the first tap, with the warning shown. */
-	const REPLACE_DELAY = 5;
-
 	/** The worker's token for the backup it checked, to restore it by (`restoreInspected`). */
 	let token = $state<string | null>(null);
 	/** The picked file while it waits to be unlocked. */
@@ -50,6 +48,7 @@
 	let countdown = $state(0);
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
+	const wait = new Countdown(5, (s) => ([confirmReplace, countdown] = [s.armed, s.seconds]));
 
 	const chosen = $derived(plan.filter((p) => selected.includes(p.index)));
 	const replacing = $derived(chosen.filter((p) => p.replaces).map((p) => nameOf(p.file)));
@@ -61,6 +60,7 @@
 	}
 
 	$effect(() => {
+		wait.reset();
 		if (!open || !file) return;
 		const picked = file;
 		let current = true;
@@ -68,8 +68,6 @@
 		locked = null;
 		createdAt = null;
 		plan = [];
-		confirmReplace = false;
-		countdown = 0;
 		error = null;
 		busy = true;
 		void runAction(async () => {
@@ -84,6 +82,7 @@
 		});
 		return () => {
 			current = false;
+			wait.reset();
 			// Closed or another file picked: the worker needn't keep the budgets it checked.
 			void session.api.system.discardInspected().catch(() => {});
 		};
@@ -101,26 +100,20 @@
 		selected = plan.map((p) => p.index);
 	}
 
-	$effect(() => {
-		if (countdown <= 0) return;
-		const timer = setTimeout(() => countdown--, 1000);
-		return () => clearTimeout(timer);
-	});
+	$effect(() => () => wait.reset());
 
 	function toggle(index: number, on: boolean) {
 		selected = on ? [...selected, index] : selected.filter((i) => i !== index);
-		confirmReplace = false;
-		countdown = 0;
+		wait.reset();
 	}
 
 	async function restore() {
 		if (!token || chosen.length === 0) return;
-		if (replacing.length > 0 && !confirmReplace) {
-			confirmReplace = true;
-			countdown = REPLACE_DELAY;
+		if (replacing.length > 0 && !wait.armed) {
+			wait.arm();
 			return;
 		}
-		if (countdown > 0) return;
+		if (replacing.length > 0 && !wait.ready) return;
 		const data = token;
 		busy = true;
 		let failure: unknown = null;
