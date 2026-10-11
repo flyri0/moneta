@@ -1,6 +1,63 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { categoryRow, chooseCombobox, onboard } from './helpers';
 
+test('Enter on a new name creates it, even when an existing name holds its letters', async ({
+	page
+}) => {
+	await onboard(page);
+	// Onboarding includes Salary: rename it so this search offers to create a new category.
+	await categoryRow(page, 'Salary').getByRole('button', { name: 'Salary', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByLabel('Name', { exact: true }).fill('Wages');
+	await sheet.getByLabel('Name', { exact: true }).press('Tab');
+	await expect(categoryRow(page, 'Wages')).toHaveCount(1);
+	await page.keyboard.press('Escape');
+
+	// Every letter of "Salary", in order, is scattered through this name.
+	const long = 'A very long category name that goes on and on to test truncation in every layout';
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	await sheet.getByLabel('New category').fill(long);
+	await sheet.getByRole('button', { name: 'Add', exact: true }).click();
+	await page.keyboard.press('Escape');
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Inflow' }).click();
+	await dialog.getByLabel('Amount', { exact: true }).fill('10');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('Salary');
+	await expect(
+		popover.locator('[data-slot="command-item"]').filter({ hasText: 'very long' })
+	).toHaveCount(0);
+	await page.keyboard.press('Enter');
+	await expect(popover.getByText('Add "Salary" to…')).toBeVisible();
+});
+
+test('Enter picks the exact category before a name containing it', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	for (const name of ['Parents', 'Rent']) {
+		await sheet.getByLabel('New category').fill(name);
+		await sheet.getByRole('button', { name: 'Add', exact: true }).click();
+		await expect(page.getByRole('button', { name, exact: true })).toHaveCount(1);
+	}
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('Rent');
+	await expect(
+		popover.locator('[data-slot="command-item"]').filter({ hasText: 'Parents' })
+	).toBeVisible();
+	await page.keyboard.press('Enter');
+	await expect(popover).toBeHidden();
+	await expect(dialog.getByLabel('Category', { exact: true })).toHaveText('Rent');
+});
+
 /** Creates a category from a category combobox, in an existing group or a new one. */
 async function newCategory(
 	container: Page | Locator,

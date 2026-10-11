@@ -136,7 +136,7 @@
 					<Command.Group>
 						<Command.Item
 							value={emptyOption.label}
-							keywords={[emptyOption.value, emptyOption.label]}
+							keywords={[emptyOption.label]}
 							onSelect={() => handleSelect(emptyOption.value)}
 						>
 							<CheckIcon
@@ -152,7 +152,7 @@
 							{#each group.items as item (item.value)}
 								<Command.Item
 									value={item.label}
-									keywords={[item.value, ...(item.keywords ?? [])]}
+									keywords={[item.label, ...(item.keywords ?? [])]}
 									onSelect={() => handleSelect(item.value)}
 								>
 									<CheckIcon
@@ -168,7 +168,7 @@
 						{#each items as item (item.value)}
 							<Command.Item
 								value={item.label}
-								keywords={[item.value, ...(item.keywords ?? [])]}
+								keywords={[item.label, ...(item.keywords ?? [])]}
 								onSelect={() => handleSelect(item.value)}
 							>
 								<CheckIcon
