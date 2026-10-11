@@ -101,7 +101,16 @@ data ou conta muda um saldo que você já conferiu com o banco.
 
 ## Encerrar e excluir {#closing}
 
-- **Encerrar conta** quando você parar de usá-la. É preciso saldo zero: mova o que sobrou ou quite
-  antes. Uma conta encerrada mantém o histórico, aparece em **Encerradas**, e pode ser reaberta. Os
+- **Encerrar conta** quando você parar de usá-la. Se sobrou dinheiro nela, escolha a conta para onde
+  ele vai: o Moneta lança uma transferência do saldo todo, com a data de hoje, e encerra a conta
+  (dinheiro que entra ou sai do orçamento pede uma categoria, como em qualquer transferência
+  assim). Uma conta encerrada mantém o histórico, aparece em **Encerradas** e pode ser reaberta. Os
   agendamentos de uma conta encerrada ficam pausados.
-- **Excluir conta** é só para contas sem transações nem agendamentos, como uma criada por engano.
+- **Excluir conta e suas transações**, no fim dessa tela, remove a conta com tudo o que há nela: as
+  transações, o outro lado de cada transferência (então o saldo das outras contas também muda) e os
+  agendamentos. O Moneta lista o que vai junto antes de você confirmar, espera alguns segundos e
+  deixa desfazer logo em seguida. Uma conta vazia é excluída sem a espera.
+
+A busca dos seletores encontra nomes e partes de palavras, sem diferenciar maiúsculas, minúsculas ou
+acentos. Enter escolhe primeiro o nome exato; as opções de criação continuam disponíveis para nomes
+novos.

@@ -101,8 +101,16 @@ amount, date or account changes a balance you already checked with your bank.
 
 ## Closing and deleting {#closing}
 
-- **Close account** when you stop using one. It needs a zero balance: move what is left or pay it
-  off first. A closed account keeps its history, shows under **Closed**, and can be reopened.
-  Schedules on a closed account pause.
-- **Delete account** is only for accounts without transactions or schedules, for example one added
-  by mistake.
+- **Close account** when you stop using one. If money is left in it, choose the account it goes
+  to: Moneta records a transfer for the whole balance, dated today, then closes the account (moving
+  money into or out of the budget asks for a category, as any such transfer does). A closed account
+  keeps its history, shows under **Closed**, and can be reopened. Schedules on a closed account
+  pause.
+- **Delete account and its transactions**, at the bottom of that screen, removes the account with
+  everything in it: its transactions, the other side of each of its transfers (so the other
+  accounts' balances change too), and its schedules. Moneta lists what goes before you confirm,
+  waits a few seconds, and lets you undo it right after. An account with nothing in it is deleted
+  without the wait.
+
+Picker search matches names and parts of words, ignoring case and accents. Enter picks an exact name
+before a partial match; create actions stay available for new names.
