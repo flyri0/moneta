@@ -28,10 +28,22 @@ describe('collapseOverdue', () => {
 				moreOverdue
 			])
 		).toEqual([
-			['a', 0, 0, 2],
 			['b', 0, 1, 0],
+			['a', 0, 3, 2],
 			['b', 1, 4, 0],
 			['a', 3, 5, 0]
+		]);
+	});
+
+	it('places a collapsed row where its last occurrence is, so its balance counts them all', () => {
+		const list = [
+			occurrence('rent', 0, true),
+			occurrence('rent', 1, true),
+			occurrence('pay', 0, false)
+		];
+		expect(collapseOverdue(list).map((r) => [r.occurrence.scheduleId, r.position])).toEqual([
+			['rent', 1],
+			['pay', 2]
 		]);
 	});
 });
