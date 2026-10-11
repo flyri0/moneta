@@ -13,6 +13,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { AccountType } from '$db/repos/accounts';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -56,7 +57,7 @@
 		step = 2;
 	}
 
-	async function submit(event: SubmitEvent) {
+	async function create(event: SubmitEvent) {
 		event.preventDefault();
 		const typed = balance.trim() === '' ? 0 : session.parse(balance);
 		if (typed === null) {
@@ -85,12 +86,13 @@
 		});
 		if (!error) onCreated(id);
 	}
+	const submit = submitOnce(create);
 </script>
 
 {#if step === 1}
 	<AccountTypePicker selected={type} onSelect={selectType} />
 {:else}
-	<form class="grid gap-4" onsubmit={submit}>
+	<form class="grid gap-4" onsubmit={submit.run}>
 		<AccountFields
 			bind:name
 			bind:type
@@ -130,6 +132,6 @@
 			</div>
 		{/if}
 		<FormMessage {error} />
-		<Button type="submit">{m.accounts_add()}</Button>
+		<Button type="submit" disabled={submit.pending}>{m.accounts_add()}</Button>
 	</form>
 {/if}

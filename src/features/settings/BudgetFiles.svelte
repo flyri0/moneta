@@ -10,6 +10,7 @@
 	import SettingsRow from './SettingsRow.svelte';
 	import { getApp, useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import { loadRegistry } from '$client/registry';
 	import { deleteBudget, switchBudget } from '$client/session';
 	import { currentMonth } from '$domain/month';
@@ -22,13 +23,14 @@
 	let confirmingDelete = $state(false);
 	let error = $state<ActionError | null>(null);
 
-	async function open(file: string) {
+	async function openFile(file: string) {
 		error = await runAction(async () => {
 			const opened = await switchBudget(session.api, localStorage, file);
 			app.show(session.client, opened.file, opened.meta);
 		});
 		if (!error) void goto(resolve('/budget/[month]', { month: currentMonth() }));
 	}
+	const open = submitOnce(openFile);
 
 	function askToDelete(file: string, name: string) {
 		deleting = { file, name };
@@ -59,7 +61,8 @@
 								variant="outline"
 								size="sm"
 								aria-label={m.settings_budget_open_named({ name })}
-								onclick={() => open(budget.file)}
+								disabled={open.pending}
+								onclick={() => open.run(budget.file)}
 							>
 								{m.settings_budget_open()}
 							</Button>

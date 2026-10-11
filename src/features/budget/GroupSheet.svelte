@@ -14,6 +14,7 @@
 	import IconField from '$components/emoji-picker/IconField.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { BudgetGroupView } from '$db/repos/budget';
 	import type { GroupPatch } from '$db/repos/categories';
 	import type { Month } from '$domain/month';
@@ -75,13 +76,14 @@
 		error = null;
 	}
 
-	async function addCategory(event: SubmitEvent) {
+	async function createCategory(event: SubmitEvent) {
 		event.preventDefault();
 		error = await runAction(() =>
 			session.api.categories.create({ groupId: group.id, name: newCategory })
 		);
 		if (!error) newCategory = '';
 	}
+	const addCategory = submitOnce(createCategory);
 
 	async function save(patch: GroupPatch) {
 		error = await runAction(() => session.api.categories.updateGroup(group.id, patch));
@@ -91,23 +93,25 @@
 	}
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
-	function saveName() {
+	function checkName() {
 		if (name.trim() === '' || name.trim() === group.name) {
 			name = group.name;
-			return;
+			return Promise.resolve();
 		}
-		void save({ name });
+		return save({ name });
 	}
+	// A name change while one is saving is ignored.
+	const saveName = submitOnce(checkName).run;
 </script>
 
 <ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
 	{#if view === 'main'}
 		<div class="grid gap-5">
-			<form class="grid gap-2" onsubmit={addCategory}>
+			<form class="grid gap-2" onsubmit={addCategory.run}>
 				<Label for="group-new-category">{m.group_add_category()}</Label>
 				<div class="flex gap-2">
 					<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
-					<Button type="submit" variant="outline">{m.add()}</Button>
+					<Button type="submit" variant="outline" disabled={addCategory.pending}>{m.add()}</Button>
 				</div>
 				<FormMessage {error} />
 			</form>

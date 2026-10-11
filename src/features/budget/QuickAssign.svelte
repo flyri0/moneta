@@ -4,6 +4,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import { offerUndo } from '$client/undo';
 	import type { Month } from '$domain/month';
 	import type { QuickAssignStrategy } from '$domain/quick-assign';
@@ -37,13 +38,15 @@
 		clear: m.quick_assign_clear
 	};
 
-	async function apply(strategy: QuickAssignStrategy) {
+	async function run(strategy: QuickAssignStrategy) {
 		const call = session.api.budget.quickAssign({ month, categoryIds, strategy });
 		error = await runAction(() => call);
 		if (error) return;
 		onDone();
 		offerUndo(session.client, call, m.budget_quick_assigned({ strategy: LABELS[strategy]() }));
 	}
+	// One option at a time: the others wait while it applies.
+	const apply = submitOnce(run);
 </script>
 
 {#if preview.error}
@@ -62,7 +65,8 @@
 					<button
 						type="button"
 						class="flex min-h-11 w-full items-center gap-3 rounded-md px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-						onclick={() => apply(strategy)}
+						disabled={apply.pending}
+						onclick={() => apply.run(strategy)}
 					>
 						<span class="flex-1">{LABELS[strategy]()}</span>
 						<span class="font-medium tabular-nums">{session.format(assigned)}</span>

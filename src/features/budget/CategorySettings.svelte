@@ -9,6 +9,7 @@
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { CategoryPatch } from '$db/repos/categories';
 	import { m } from '$i18n/paraglide/messages';
@@ -66,13 +67,15 @@
 	}
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
-	function saveName() {
+	function checkName() {
 		if (name.trim() === '' || name.trim() === category.name) {
 			name = category.name;
-			return;
+			return Promise.resolve();
 		}
-		void save({ name });
+		return save({ name });
 	}
+	// A name change while one is saving is ignored.
+	const saveName = submitOnce(checkName).run;
 </script>
 
 <div class="grid gap-3">
