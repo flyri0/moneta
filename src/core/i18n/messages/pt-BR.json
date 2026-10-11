@@ -933,6 +933,7 @@
 	"category_group_search": "Busque ou dê nome a um novo grupo...",
 	"category_new_group": "Novo grupo \"{name}\"",
 	"category_new_in_group": "{category} · {group}",
+	"category_reuses_hidden": "Mostra de novo a oculta “{name}”",
 	"error_rule_exists": "Outra regra já pega esse texto do mesmo jeito.",
 	"error_undo_unavailable": "Isso não pode mais ser desfeito.",
 	"error_undo_conflict": "Isso não pode mais ser desfeito: algo que mudou foi alterado de novo depois.",

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -87,6 +88,15 @@
 		offered.some((g) => g.categories.some((c) => foldText(categoryLabel(c)) === foldText(typed)))
 	);
 	const creating = $derived(creatable && typed !== '' && !categoryExists);
+	const reused = $derived.by(() => {
+		const map = new SvelteMap<string, string>();
+		if (naming === null) return map;
+		for (const group of tree)
+			for (const category of group.categories)
+				if (category.hidden && foldText(categoryLabel(category)) === foldText(naming))
+					map.set(group.id, categoryLabel(category));
+		return map;
+	});
 
 	const selectedLabel = $derived.by(() => {
 		for (const g of offered) {
@@ -123,21 +133,23 @@
 </script>
 
 {#snippet createRow()}
-	<Command.Group>
-		<Command.Item
-			value={`create ${typed}`}
-			keywords={[typed]}
-			onSelect={startCreating}
-			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-		>
-			<div
-				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+	<div>
+		<Command.Group>
+			<Command.Item
+				value={`create ${typed}`}
+				keywords={[typed]}
+				onSelect={startCreating}
+				class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
 			>
-				<PlusIcon class="size-3.5 stroke-[2.5]" />
-			</div>
-			<span class="truncate">{m.category_create({ name: typed })}</span>
-		</Command.Item>
-	</Command.Group>
+				<div
+					class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+				>
+					<PlusIcon class="size-3.5 stroke-[2.5]" />
+				</div>
+				<span class="truncate">{m.category_create({ name: typed })}</span>
+			</Command.Item>
+		</Command.Group>
+	</div>
 {/snippet}
 
 <PickerShell
@@ -164,35 +176,39 @@
 						{@render createRow()}
 						<Command.Separator />
 					{/if}
-					{#if allowEmpty}
-						<Command.Group>
-							<Command.Item value={emptyLabel} onSelect={() => choose('')}>
-								<CheckIcon class={cn('mr-2 size-4', value === '' ? 'opacity-100' : 'opacity-0')} />
-								<span class="text-muted-foreground italic">{emptyLabel}</span>
-							</Command.Item>
-						</Command.Group>
-					{/if}
-					{#each offered as group (group.id)}
-						<Command.Group heading={groupLabel(group)}>
-							{#each group.categories as category (category.id)}
-								<Command.Item
-									value={`${categoryLabel(category)} ${category.id}`}
-									keywords={[categoryLabel(category)]}
-									onSelect={() => choose(category.id)}
-								>
+					<div>
+						{#if allowEmpty}
+							<Command.Group>
+								<Command.Item value={emptyLabel} onSelect={() => choose('')}>
 									<CheckIcon
-										class={cn('mr-2 size-4', value === category.id ? 'opacity-100' : 'opacity-0')}
+										class={cn('mr-2 size-4', value === '' ? 'opacity-100' : 'opacity-0')}
 									/>
-									<span class="min-w-0 flex-1 truncate">{categoryLabel(category)}</span>
-									{#if available?.has(category.id)}
-										<span class="shrink-0">
-											<AvailablePill category={available.get(category.id)!} />
-										</span>
-									{/if}
+									<span class="text-muted-foreground italic">{emptyLabel}</span>
 								</Command.Item>
-							{/each}
-						</Command.Group>
-					{/each}
+							</Command.Group>
+						{/if}
+						{#each offered as group (group.id)}
+							<Command.Group heading={groupLabel(group)}>
+								{#each group.categories as category (category.id)}
+									<Command.Item
+										value={`${categoryLabel(category)} ${category.id}`}
+										keywords={[categoryLabel(category)]}
+										onSelect={() => choose(category.id)}
+									>
+										<CheckIcon
+											class={cn('mr-2 size-4', value === category.id ? 'opacity-100' : 'opacity-0')}
+										/>
+										<span class="min-w-0 flex-1 truncate">{categoryLabel(category)}</span>
+										{#if available?.has(category.id)}
+											<span class="shrink-0">
+												<AvailablePill category={available.get(category.id)!} />
+											</span>
+										{/if}
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						{/each}
+					</div>
 					{#if creating && !layout.phone}
 						<Command.Separator />
 						{@render createRow()}
@@ -209,6 +225,7 @@
 					<GroupItems
 						{groups}
 						{typed}
+						{reused}
 						createFirst={layout.phone}
 						heading={m.category_add_to({ name: naming })}
 						onPick={createIn}

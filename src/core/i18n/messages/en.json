@@ -933,6 +933,7 @@
 	"category_group_search": "Search or name a new group...",
 	"category_new_group": "New group \"{name}\"",
 	"category_new_in_group": "{category} · {group}",
+	"category_reuses_hidden": "Shows hidden “{name}” again",
 	"error_rule_exists": "Another rule already catches that text the same way.",
 	"error_undo_unavailable": "This can no longer be undone.",
 	"error_undo_conflict": "This can't be undone anymore: something it changed was changed again since.",

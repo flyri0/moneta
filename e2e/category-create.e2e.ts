@@ -358,4 +358,27 @@ test('focuses the search and lists the matches before creating on desktop', asyn
 	const items = popover.locator('[data-slot="command-item"]');
 	await expect(items.filter({ hasText: 'Groceries' })).toHaveCount(1);
 	await expect(items.last()).toHaveText('Create category "Gro"');
+	await page.keyboard.press('Enter');
+	await expect(popover).toBeHidden();
+	await expect(dialog.getByLabel('Category', { exact: true })).toHaveText('Groceries');
+});
+
+test('naming a hidden category says the group will show it again', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByRole('switch', { name: 'Hidden' }).click();
+	await page.keyboard.press('Escape');
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('groceries');
+	await popover
+		.locator('[data-slot="command-item"]')
+		.filter({ hasText: 'Create category' })
+		.click();
+	await expect(popover.getByText('Shows hidden “Groceries” again')).toBeVisible();
 });

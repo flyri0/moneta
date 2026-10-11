@@ -17,6 +17,7 @@
 		groups,
 		typed,
 		selected,
+		reused,
 		heading,
 		createFirst = false,
 		onPick
@@ -26,6 +27,8 @@
 		typed: string;
 		/** The group to check. */
 		selected?: string;
+		/** Per group id, the hidden category picking that group shows again. */
+		reused?: ReadonlyMap<string, string>;
 		heading?: string;
 		/** Whether the new group row comes before the groups. */
 		createFirst?: boolean;
@@ -37,39 +40,50 @@
 </script>
 
 {#snippet newGroupRow()}
-	<Command.Group>
-		<Command.Item
-			value={`new group ${typed}`}
-			keywords={[typed]}
-			onSelect={() => onPick({ name: typed })}
-			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-		>
-			<div
-				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+	<div>
+		<Command.Group>
+			<Command.Item
+				value={`new group ${typed}`}
+				keywords={[typed]}
+				onSelect={() => onPick({ name: typed })}
+				class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
 			>
-				<PlusIcon class="size-3.5 stroke-[2.5]" />
-			</div>
-			<span class="truncate">{m.category_new_group({ name: typed })}</span>
-		</Command.Item>
-	</Command.Group>
+				<div
+					class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+				>
+					<PlusIcon class="size-3.5 stroke-[2.5]" />
+				</div>
+				<span class="truncate">{m.category_new_group({ name: typed })}</span>
+			</Command.Item>
+		</Command.Group>
+	</div>
 {/snippet}
 
 {#if creating && createFirst}
 	{@render newGroupRow()}
 	<Command.Separator />
 {/if}
-<Command.Group {heading}>
-	{#each groups as group (group.id)}
-		<Command.Item
-			value={`${groupLabel(group)} ${group.id}`}
-			keywords={[groupLabel(group)]}
-			onSelect={() => onPick({ id: group.id })}
-		>
-			<CheckIcon class={cn('mr-2 size-4', selected === group.id ? 'opacity-100' : 'opacity-0')} />
-			<span>{groupLabel(group)}</span>
-		</Command.Item>
-	{/each}
-</Command.Group>
+<div>
+	<Command.Group {heading}>
+		{#each groups as group (group.id)}
+			<Command.Item
+				value={`${groupLabel(group)} ${group.id}`}
+				keywords={[groupLabel(group)]}
+				onSelect={() => onPick({ id: group.id })}
+			>
+				<CheckIcon class={cn('mr-2 size-4', selected === group.id ? 'opacity-100' : 'opacity-0')} />
+				<span class="grid min-w-0">
+					<span>{groupLabel(group)}</span>
+					{#if reused?.has(group.id)}
+						<span class="truncate text-xs text-muted-foreground">
+							{m.category_reuses_hidden({ name: reused.get(group.id)! })}
+						</span>
+					{/if}
+				</span>
+			</Command.Item>
+		{/each}
+	</Command.Group>
+</div>
 {#if creating && !createFirst}
 	<Command.Separator />
 	{@render newGroupRow()}
