@@ -46,6 +46,12 @@
 		drafts[groupIndex] = '';
 	}
 
+	/** Changing the selection makes the duplicate note about something else. */
+	function pick(next: StarterGroup[]) {
+		selection = next;
+		duplicateIn = null;
+	}
+
 	/** Enter in the draft field adds the category instead of submitting the step. */
 	function draftKeydown(event: KeyboardEvent, groupIndex: number) {
 		if (event.key !== 'Enter') return;
@@ -72,8 +78,7 @@
 					<Checkbox
 						id="starter-group-{gi}"
 						bind:checked={
-							() => groupState(group) === 'all',
-							(on) => (selection = toggleGroup(selection, gi, on))
+							() => groupState(group) === 'all', (on) => pick(toggleGroup(selection, gi, on))
 						}
 						bind:indeterminate={() => groupState(group) === 'some', () => {}}
 					/>
@@ -97,7 +102,7 @@
 							<Checkbox
 								id="starter-category-{gi}-{ci}"
 								bind:checked={
-									() => category.selected, () => (selection = toggleCategory(selection, gi, ci))
+									() => category.selected, () => pick(toggleCategory(selection, gi, ci))
 								}
 							/>
 							<Label for="starter-category-{gi}-{ci}" class="font-normal">
@@ -143,12 +148,7 @@
 		<p class="text-sm text-muted-foreground">
 			{m.onboarding_categories_selected({ count: selectedCount(selection) })}
 		</p>
-		<Button
-			type="button"
-			variant="ghost"
-			size="sm"
-			onclick={() => (selection = clearSelection(selection))}
-		>
+		<Button type="button" variant="ghost" size="sm" onclick={() => pick(clearSelection(selection))}>
 			{m.onboarding_categories_clear()}
 		</Button>
 	</div>

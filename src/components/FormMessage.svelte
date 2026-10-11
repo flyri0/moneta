@@ -6,13 +6,37 @@
 
 	/**
 	 * The one way to show an error inline: a form's failed write (just above its buttons) or a
-	 * section that failed to load. Unexpected errors offer to copy their details for a bug report.
+	 * section that failed to load. Inside a form it hides once edited, until the next error. Unexpected
+	 * errors offer to copy their details for a bug report.
 	 */
 	let { error, class: className }: { error: ActionError | null | undefined; class?: string } =
 		$props();
+	let anchor = $state<HTMLElement>();
+	let stale = $state(false);
+
+	$effect(() => {
+		void error;
+		stale = false;
+	});
+
+	$effect(() => {
+		const form = anchor?.closest('form');
+		if (!form) return;
+		const edited = () => (stale = true);
+		const submitted = () => (stale = false);
+		form.addEventListener('input', edited);
+		form.addEventListener('change', edited);
+		form.addEventListener('submit', submitted);
+		return () => {
+			form.removeEventListener('input', edited);
+			form.removeEventListener('change', edited);
+			form.removeEventListener('submit', submitted);
+		};
+	});
 </script>
 
-{#if error}
+<span bind:this={anchor} class="contents" aria-hidden="true"></span>
+{#if error && !stale}
 	<div
 		class={cn('flex items-start gap-2 text-sm text-destructive', className)}
 		role="alert"
