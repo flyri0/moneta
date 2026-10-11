@@ -4,6 +4,7 @@ import {
 	currencyChoices,
 	formatBytes,
 	formatDate,
+	formatDateNumeric,
 	formatDateTime,
 	formatMonth,
 	formatMonthLong,
@@ -11,6 +12,13 @@ import {
 	localeChoices,
 	suggestCurrency
 } from './formats';
+
+describe('formatDateNumeric', () => {
+	it('writes a date with numbers only, in the language’s order', () => {
+		expect(formatDateNumeric('2026-10-09', 'en')).toBe('10/09/2026');
+		expect(formatDateNumeric('2026-10-09', 'pt-BR')).toBe('09/10/2026');
+	});
+});
 
 describe('suggestCurrency', () => {
 	it.each([

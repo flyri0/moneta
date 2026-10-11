@@ -137,6 +137,16 @@ export function formatDate(date: string, locale: string): string {
 	}).format(utc(date));
 }
 
+/** "10/09/2026" / "09/10/2026": a date in numbers only, for narrow fields. */
+export function formatDateNumeric(date: string, locale: string): string {
+	return dateTimeFormat(locale, {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		timeZone: 'UTC'
+	}).format(utc(date));
+}
+
 /** "19 de set. de 2026, 15:04" for an ISO timestamp, in the device's time zone by default. */
 export function formatDateTime(iso: string, locale: string, timeZone?: string): string {
 	return dateTimeFormat(locale, {

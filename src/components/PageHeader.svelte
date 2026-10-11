@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import HideAmountsToggle from './HideAmountsToggle.svelte';
+	import { cn } from '$utils';
 
 	/**
 	 * The top of every app page, placed before the page's column and stuck below the demo banner
@@ -24,8 +25,8 @@
 		subtitle?: Snippet;
 		/** The page one level up, and its name. */
 		back?:
-			| { route: '/accounts' | '/reports' | '/transactions'; label: string }
-			| { route: '/accounts/[id]'; id: string; label: string };
+			| { route: '/accounts' | '/reports' | '/transactions'; label: string; phoneOnly?: boolean }
+			| { route: '/accounts/[id]'; id: string; label: string; phoneOnly?: boolean };
 		actions?: Snippet;
 		toolbar?: Snippet;
 		/** Shows the eye that hides amounts, in the same corner on every page; off on pages without any. */
@@ -52,7 +53,10 @@
 					href={back.route === '/accounts/[id]'
 						? resolve(back.route, { id: back.id })
 						: resolve(back.route)}
-					class="-mb-2 inline-flex items-center gap-1 justify-self-start rounded-md py-0.5 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+					class={cn(
+						'-mb-2 inline-flex items-center gap-1 justify-self-start rounded-md py-0.5 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+						back.phoneOnly && 'md:hidden'
+					)}
 				>
 					<ChevronLeftIcon class="size-4" />
 					<span>{back.label}</span>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import XIcon from '@lucide/svelte/icons/x';
 	import {
@@ -12,7 +13,7 @@
 	import { Calendar } from '$ui/calendar';
 	import * as Popover from '$ui/popover';
 	import * as Select from '$ui/select';
-	import { formatDate } from '$i18n/formats';
+	import { formatDate, formatDateNumeric } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import { cn } from '$utils';
@@ -63,7 +64,10 @@
 	});
 
 	const locale = $derived(getLocale());
-	const displayText = $derived(value ? formatDate(value, locale) : placeholder);
+	const desktop = new MediaQuery('(min-width: 768px)');
+	const displayText = $derived(
+		value ? (desktop.current ? formatDate : formatDateNumeric)(value, locale) : placeholder
+	);
 
 	const months = $derived.by(() => {
 		const formatter = new DateFormatter(locale, { month: 'short' });
