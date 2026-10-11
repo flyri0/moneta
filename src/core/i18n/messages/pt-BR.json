@@ -329,6 +329,7 @@
 	"budget_cover_part_from_rta": "Cobrir {amount} com o Pronto para atribuir",
 	"budget_cover_from_category": "Tirar de outra categoria",
 	"budget_move_money": "Mover dinheiro",
+	"budget_move_money_title": "Mover dinheiro · {name}",
 	"budget_move_to": "Mover para…",
 	"budget_move_from": "Tirar de…",
 	"budget_move_available": "{amount} disponível",

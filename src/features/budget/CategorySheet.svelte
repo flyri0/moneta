@@ -111,7 +111,7 @@
 		{
 			main: category.name,
 			quick: m.quick_assign_title(),
-			move: m.budget_move_money(),
+			move: m.budget_move_money_title({ name: category.name }),
 			goal: m.category_goal(),
 			settings: m.category_settings(),
 			delete: m.category_delete_title({ name: category.name })
@@ -370,6 +370,9 @@
 		<QuickAssign categoryIds={[category.id]} {month} onDone={() => (open = false)} />
 	{:else if view === 'move'}
 		<form class="grid gap-3" onsubmit={move.run}>
+			<p class="text-sm text-muted-foreground" data-testid="move-own-available">
+				{m.budget_move_available({ amount: session.format(category.available) })}
+			</p>
 			<div class="grid grid-cols-2 gap-2">
 				<Button
 					variant={moveDirection === 'to' ? 'secondary' : 'ghost'}

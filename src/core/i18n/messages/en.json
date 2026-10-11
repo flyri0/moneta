@@ -329,6 +329,7 @@
 	"budget_cover_part_from_rta": "Cover {amount} from Ready to Assign",
 	"budget_cover_from_category": "Take from another category",
 	"budget_move_money": "Move money",
+	"budget_move_money_title": "Move money · {name}",
 	"budget_move_to": "Move to…",
 	"budget_move_from": "Take from…",
 	"budget_move_available": "{amount} available",
