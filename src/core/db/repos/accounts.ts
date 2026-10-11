@@ -36,6 +36,8 @@ export interface CreateAccountInput {
 	onBudget: boolean; // ignored for credit cards (always on-budget)
 	startingBalance: number; // minor units; negative for debt
 	startingDate: string; // YYYY-MM-DD
+	/** The app-language name to use if its starting balance category has to be created. */
+	startingBalanceName?: string;
 	/** Where an on-budget starting balance goes; the starting balance category when left out. */
 	startingBalanceCategoryId?: string | null;
 	/** When a credit card's bill closes and is due. Only credit cards have them. */
@@ -120,7 +122,8 @@ export function createAccount(db: Db, input: CreateAccountInput): string {
 				amount: input.startingBalance,
 				payeeName: null,
 				categoryId: onBudget
-					? (input.startingBalanceCategoryId ?? ensureStartingBalanceCategory(db))
+					? (input.startingBalanceCategoryId ??
+						ensureStartingBalanceCategory(db, input.startingBalanceName))
 					: null,
 				cleared: true
 			});

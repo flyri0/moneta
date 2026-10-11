@@ -152,7 +152,8 @@
 							onBudget,
 							startingBalance: signedStartingBalance(accountType, typed),
 							startingDate: date,
-								billing: billing === 'invalid' ? null : billing
+							startingBalanceName: m.default_category_starting_balance(),
+							billing: billing === 'invalid' ? null : billing
 						}
 					: undefined
 			});

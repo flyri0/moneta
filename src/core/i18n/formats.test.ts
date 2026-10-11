@@ -20,6 +20,14 @@ describe('formatDateNumeric', () => {
 	});
 });
 
+describe('formatDate ordinal in pt-BR', () => {
+	it('writes the first day of a month as 1º in Portuguese', () => {
+		expect(formatDate('2026-10-01', 'pt-BR')).toBe('1º de out. de 2026');
+		expect(formatDate('2026-10-02', 'pt-BR')).toBe('2 de out. de 2026');
+		expect(formatDate('2026-10-01', 'en')).toBe('Oct 1, 2026');
+	});
+});
+
 describe('suggestCurrency', () => {
 	it.each([
 		['pt-BR', 'BRL'],
@@ -69,7 +77,7 @@ describe('dates', () => {
 		expect(formatMonthName(9, 'en', 'long')).toBe('September');
 		expect(formatMonthName(9, 'pt-BR', 'long')).toBe('setembro');
 		expect(formatDate('2026-09-05', 'en')).toBe('Sep 5, 2026');
-		expect(formatDate('2026-01-01', 'pt-BR')).toBe('1 de jan. de 2026');
+		expect(formatDate('2026-01-01', 'pt-BR')).toBe('1º de jan. de 2026');
 	});
 });
 

@@ -175,7 +175,7 @@ export function startingBalanceCategoryId(db: Db): string | null {
  * deleted, an income category named like it is adopted, or a new one is created in the budget's
  * language.
  */
-export function ensureStartingBalanceCategory(db: Db): string {
+export function ensureStartingBalanceCategory(db: Db, name?: string): string {
 	return tx(db, () => {
 		const current = startingBalanceCategoryId(db) ?? adoptStartingBalanceCategory(db);
 		if (current) return current;
@@ -188,7 +188,12 @@ export function ensureStartingBalanceCategory(db: Db): string {
 			db,
 			`INSERT INTO categories (id, group_id, name, sort_order)
 			 VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE group_id = ?))`,
-			[id, income, locale?.value.startsWith('pt') ? 'Saldo inicial' : 'Starting Balance', income]
+			[
+				id,
+				income,
+				name?.trim() || (locale?.value.startsWith('pt') ? 'Saldo inicial' : 'Starting Balance'),
+				income
+			]
 		);
 		setKey(db, KEYS.startingBalanceCategory, id);
 		return id;

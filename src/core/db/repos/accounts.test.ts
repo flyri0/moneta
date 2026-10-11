@@ -57,6 +57,23 @@ describe('createAccount', () => {
 		expect(all(db, 'SELECT id FROM payees')).toEqual([]);
 	});
 
+	it('uses the app language for a newly created starting balance category', async () => {
+		const db = await createBudgetDb();
+		deleteCategory(db, startingBalanceCategoryId(db)!);
+		createAccount(
+			db,
+			acct({
+				name: 'Bank',
+				type: 'checking',
+				startingBalance: 100,
+				startingBalanceName: 'Saldo inicial'
+			})
+		);
+		expect(listCategoryTree(db).flatMap((g) => g.categories.map((c) => c.name))).toContain(
+			'Saldo inicial'
+		);
+	});
+
 	it('uses the chosen starting balance category', async () => {
 		const db = await createBudgetDb();
 		const id = createAccount(
