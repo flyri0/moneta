@@ -76,6 +76,7 @@ test('says so when every account is closed', async ({ page }) => {
 	await expect(dialog).toBeHidden();
 	await page.getByRole('main').getByRole('button', { name: 'Settings for Old savings' }).click();
 	await dialog.getByRole('button', { name: 'Close account' }).click();
+	await dialog.getByRole('button', { name: 'Close account' }).click();
 	await expect(dialog).toBeHidden();
 
 	await page.getByRole('button', { name: 'Transaction', exact: true }).click();

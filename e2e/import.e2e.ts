@@ -100,7 +100,7 @@ test('maps a CSV once and remembers the columns', async ({ page }) => {
 		name: 'extrato.csv',
 		mimeType: 'text/csv',
 		buffer: Buffer.from(
-			`Data;Histórico;Valor\n${d}/${m}/${y};Farmácia São João;-1.234,56\n${d}/${m}/${y};Café;-5,00\n`,
+			`Data;Histórico;Valor\n${m}/${d}/${y};Farmácia São João;-1.234,56\n${m}/${d}/${y};Café;-5,00\n`,
 			'latin1'
 		)
 	};
