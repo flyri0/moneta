@@ -6,7 +6,7 @@ lançadas sozinhas, ou com um toque. Elas ficam em **Agendamentos** na barra lat
 ## Criar um agendamento {#creating}
 
 **Novo agendamento** pede os mesmos campos de uma transação (conta, favorecido, valor, categoria,
-memorando e [flag](transactions.md#flags)), e mais:
+observação e [marcador](transactions.md#flags)), e mais:
 
 - **Próxima data**: a primeira ocorrência.
 - **Repetição**: uma vez, diária, semanal, mensal ou anual, e **a cada** quantos dias, semanas,
@@ -29,12 +29,12 @@ na própria transação ([Parcelas](accounts.md#installments)).
 Escolha o cartão num novo agendamento, ou toque em **Já está pagando uma? Adicione como
 agendamento**, abaixo de Parcelas, numa compra no cartão. Depois:
 
-1. Preencha o favorecido, a categoria e o memorando, e em **Valor** quanto custa **cada** parcela.
+1. Preencha o favorecido, a categoria e a observação, e em **Valor** quanto custa **cada** parcela.
 2. Abra **Repetição**, ligue **Parcelas**, e informe a **próxima parcela** e o total, como a fatura mostra: para
    "4/12", 4 de 12.
 
 Por exemplo, uma TV em 12x de R$ 80,00, com três já pagas: o agendamento lança de 4/12 a 12/12,
-nove parcelas, R$ 720,00 no total, com o memorando numerado ("TV 4/12").
+nove parcelas, R$ 720,00 no total, com a observação numerada ("TV 4/12").
 
 Elas seguem as mesmas regras de uma compra parcelada nova:
 
@@ -51,7 +51,7 @@ Para corrigir os números depois, edite o agendamento e mude-os em **Repetição
 
 ## Busca e filtros {#search}
 
-A caixa de busca encontra agendamentos pelo favorecido, conta, categoria, memorando ou valor, sem
+A caixa de busca encontra agendamentos pelo favorecido, conta, categoria, observação ou valor, sem
 diferenciar acentos nem maiúsculas. Todas as palavras precisam bater. **Filtros** restringem a
 lista por próxima data, conta, categoria, favorecido, valor, situação (pendentes, próximos,
 pausados ou encerrados) e tipo: lançados automaticamente, lançados à mão ou parcelados. **Limpar

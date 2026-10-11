@@ -54,13 +54,13 @@ as parcelas.
 
 ### Parcelas {#installments}
 
-Uma compra no cartão de crédito pode ser parcelada: preencha **Parcelas** (de 2 a 99) ao
+Uma compra no cartão de crédito pode ser parcelada: preencha **Parcelas** (até 99) ao
 lançá-la. O Moneta mostra o plano antes de salvar, por exemplo "1ª de R$ 333,34 e 2x de R$ 333,33": a primeira parcela leva os centavos que sobram.
 
 ![Uma compra de R$ 1.000,00 no cartão em 10 parcelas: o plano mostra as 10 parcelas e a data do primeiro vencimento.](img/installments-light.pt-BR.png)
 
 - A primeira parcela é lançada agora; as demais viram um agendamento que lança cada uma sozinho, um
-  mês depois da outra, com o memorando numerado ("TV 2/12").
+  mês depois da outra, com a observação numerada ("TV 2/12").
 - Num cartão com fechamento e vencimento, cada parcela, inclusive a primeira, vai para a data de
   vencimento da sua fatura. Uma compra no dia do fechamento vai para a fatura seguinte.
 - Cada parcela é cobrada da categoria no mês em que é lançada, então o orçamento acompanha o que

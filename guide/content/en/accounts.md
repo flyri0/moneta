@@ -54,7 +54,7 @@ short month falls on its last day. Moneta uses them to date installments.
 
 ### Installments {#installments}
 
-A purchase on a credit card can be paid in installments: fill in **Installments** (2 to 99) when
+A purchase on a credit card can be paid in installments: fill in **Installments** (up to 99) when
 you enter it. Moneta shows the plan before you save, for example "First $333.34, then 2 of
 $333.33": the first installment takes the cents left over.
 

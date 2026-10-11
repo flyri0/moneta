@@ -16,8 +16,8 @@ Use o botão **Transação** (**+ Transação**, flutuando acima da barra de bai
 - **Categoria**: obrigatória nas contas do orçamento. A lista mostra quanto cada categoria tem
   disponível no mês da transação. Digite um nome que não existe para criar a categoria (e até o
   grupo dela) ao salvar.
-- **Memorando** e **Compensada**, ambos opcionais.
-- **Flag**, também opcional: uma cor para [marcá-la](#flags).
+- **Observação** e **Compensada**, ambos opcionais.
+- **Marcador**, também opcional: uma cor para [marcá-la](#flags).
 
 A renda vai numa categoria de receita, como Salário: é isso que a soma ao Pronto para atribuir.
 
@@ -27,7 +27,7 @@ antes de salvar.
 ### Editar ou excluir uma {#editing}
 
 Toque numa transação para ver tudo dela: valor, data, conta, favorecido, categoria (ou cada linha
-de uma divisão), memorando e se já foi compensada. Dali:
+de uma divisão), observação e se já foi compensada. Dali:
 
 - **Editar transação** abre o formulário: mude o que precisar e salve, ou cancele para voltar.
 - **Abrir ‹conta›** vai para a conta dela. Já estando nessa conta, uma transferência abre a outra
@@ -37,7 +37,7 @@ de uma divisão), memorando e se já foi compensada. Dali:
 ## Dividir {#splits}
 
 Um recibo, várias categorias: escolha **Dividir** e adicione uma linha por categoria, cada uma com
-valor e memorando. As linhas precisam somar o valor da transação; o Moneta mostra quanto falta
+valor e observação. As linhas precisam somar o valor da transação; o Moneta mostra quanto falta
 distribuir.
 
 ![Uma compra de R$ 80,00 dividida entre Mercado e Casa, sem nada faltando distribuir.](img/split-light.pt-BR.png)
@@ -53,37 +53,37 @@ Para mover dinheiro entre suas contas, escolha a outra conta como favorecido (em
   empréstimo), o dinheiro sai do orçamento, então a transferência precisa de uma categoria, como um
   gasto.
 
-## Flags {#flags}
+## Marcadores {#flags}
 
-Uma flag é uma cor com que você marca uma transação para achá-la de novo: um jantar que a empresa
+Um marcador é uma cor com que você marca uma transação para achá-la de novo: um jantar que a empresa
 vai reembolsar, os gastos de uma viagem, uma conta para guardar para o imposto de renda. São seis:
-vermelha, laranja, amarela, verde, azul e roxa. Uma transação tem uma flag ou nenhuma; isso não
+vermelha, laranja, amarela, verde, azul e roxa. Uma transação tem um marcador ou nenhum; isso não
 muda nada no orçamento.
 
-- Escolha uma no campo **Flag** do formulário, ou, numa transação que você abre, na linha
-  **Flag**, que já muda na hora.
-- Dê um nome a uma cor: em qualquer seletor de flag, **Editar nomes das flags**. A vermelha pode
-  virar "Reembolsável" e a azul "Viagem". O nome aparece onde a flag aparece, só neste orçamento;
+- Escolha uma no campo **Marcador** do formulário, ou, numa transação que você abre, na linha
+  **Marcador**, que já muda na hora.
+- Dê um nome a uma cor: em qualquer seletor de marcador, **Editar nomes dos marcadores**. A vermelha pode
+  virar "Reembolsável" e a azul "Viagem". O nome aparece onde o marcador aparece, só neste orçamento;
   deixe vazio para voltar ao nome da cor.
-- Uma transferência tem uma flag em cada lado, separadas: marcar um lado deixa o outro como está.
-- Uma [transação agendada](schedules.md#creating) também pode ter flag, e cada transação que ela
+- Uma transferência tem um marcador em cada lado, separados: marcar um lado deixa o outro como está.
+- Uma [transação agendada](schedules.md#creating) também pode ter marcador, e cada transação que ela
   lança vem com ela.
 
-A flag aparece antes do favorecido nas listas. Para trabalhar com as transações marcadas,
-**Filtros** mantém só algumas flags (ou as sem flag), **Selecionar** marca várias de uma vez, e os
-[relatórios](reports.md#flags) podem contar só as flags escolhidas.
+O marcador aparece antes do favorecido nas listas. Para trabalhar com as transações marcadas,
+**Filtros** mantém só alguns marcadores (ou as sem marcador), **Selecionar** marca várias de uma vez, e os
+[relatórios](reports.md#flags) podem contar só os marcadores escolhidos.
 
 ## Busca e filtros {#search}
 
-A busca encontra nomes, categorias, memorandos e valores. **Filtros** restringem a lista por
-período, categoria, favorecido, faixa de valor, situação de compensação e [flag](#flags).
+A busca encontra nomes, categorias, observações e valores. **Filtros** restringem a lista por
+período, categoria, favorecido, faixa de valor, situação de compensação e [marcador](#flags).
 
 ## Várias de uma vez {#bulk}
 
 **Selecionar** (ou um toque longo no celular) deixa você marcar várias transações, e então:
 
 - **Definir categoria** ou **Definir data** para todas;
-- marcar uma **Flag**, ou tirá-la;
+- marcar um **Marcador**, ou tirá-lo;
 - **Compensar** ou **Descompensar**;
 - excluí-las.
 
