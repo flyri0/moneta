@@ -225,7 +225,7 @@
 			autocomplete="off"
 			aria-label={m.transaction_amount()}
 			placeholder="0"
-			required
+			aria-required="true"
 		/>
 	</div>
 	<AmountPreview text={draft.amount} class="text-right" />

@@ -127,7 +127,7 @@
 		}
 		busy = false;
 		if (result.kind === 'invalid') {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 		} else if (result.kind === 'match') {
 			void reconcile({ date, balance: result.balance });
 		} else {
@@ -193,7 +193,7 @@
 						inputmode="decimal"
 						autocomplete="off"
 						placeholder="0"
-						required
+						aria-required="true"
 					/>
 					<AmountPreview text={typed} />
 				</div>

@@ -92,6 +92,10 @@
 
 	function rename(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		if (conflict) return;
 		void act(() => session.api.payees.rename(payee.id, name));
 	}
@@ -201,7 +205,7 @@
 			<form class="grid gap-2" onsubmit={rename}>
 				<Label for="payee-rename">{m.payee_name()}</Label>
 				<div class="flex gap-2">
-					<Input id="payee-rename" bind:value={name} required autocomplete="off" />
+					<Input id="payee-rename" bind:value={name} aria-required="true" autocomplete="off" />
 					<Button type="submit" variant="outline" disabled={conflict !== null}>{m.save()}</Button>
 				</div>
 			</form>

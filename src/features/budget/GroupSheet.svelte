@@ -78,6 +78,10 @@
 
 	async function createCategory(event: SubmitEvent) {
 		event.preventDefault();
+		if (!newCategory.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		error = await runAction(() =>
 			session.api.categories.create({ groupId: group.id, name: newCategory })
 		);
@@ -94,7 +98,12 @@
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
 	function checkName() {
-		if (name.trim() === '' || name.trim() === group.name) {
+		if (name.trim() === '') {
+			name = group.name;
+			error = { message: m.form_error_name_required() };
+			return Promise.resolve();
+		}
+		if (name.trim() === group.name) {
 			name = group.name;
 			return Promise.resolve();
 		}
@@ -110,7 +119,12 @@
 			<form class="grid gap-2" onsubmit={addCategory.run}>
 				<Label for="group-new-category">{m.group_add_category()}</Label>
 				<div class="flex gap-2">
-					<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
+					<Input
+						id="group-new-category"
+						bind:value={newCategory}
+						aria-required="true"
+						autocomplete="off"
+					/>
 					<Button type="submit" variant="outline" disabled={addCategory.pending}>{m.add()}</Button>
 				</div>
 				<FormMessage {error} />
@@ -156,7 +170,7 @@
 							id="group-name"
 							bind:value={name}
 							onchange={saveName}
-							required
+							aria-required="true"
 							autocomplete="off"
 						/>
 					</form>

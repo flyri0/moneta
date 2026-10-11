@@ -56,7 +56,7 @@
 				<Input
 					id="details-name"
 					bind:value={name}
-					required
+					aria-required="true"
 					autocomplete="off"
 					aria-invalid={error !== null}
 				/>

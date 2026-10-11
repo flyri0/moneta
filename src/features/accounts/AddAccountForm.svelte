@@ -59,9 +59,13 @@
 
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		const typed = balance.trim() === '' ? 0 : session.parse(balance);
 		if (typed === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		const billing = type === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
@@ -80,6 +84,7 @@
 				onBudget,
 				startingBalance: signedStartingBalance(type, typed),
 				startingDate: date,
+				startingBalanceName: m.default_category_starting_balance(),
 				startingBalanceCategoryId: (ids.get(categoryId) ?? categoryId) || undefined,
 				billing
 			});
@@ -120,7 +125,7 @@
 					{pending}
 					value={categoryId || (startingCategory.data ?? '')}
 					onSelect={(id) => (categoryId = id)}
-					emptyLabel={m.register_starting_balance()}
+					emptyLabel={m.default_category_starting_balance()}
 					allowEmpty={false}
 					emptyText={!!tree.data && tree.data.every((g) => g.categories.length === 0)
 						? m.account_starting_category_created()

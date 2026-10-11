@@ -44,6 +44,10 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		if (conflict) return;
 		busy = true;
 		let id = '';
@@ -65,7 +69,7 @@
 	<form class="grid gap-4" onsubmit={submit}>
 		<div class="grid gap-2">
 			<Label for="new-payee-name">{m.payee_name()}</Label>
-			<Input id="new-payee-name" bind:value={name} required autocomplete="off" />
+			<Input id="new-payee-name" bind:value={name} aria-required="true" autocomplete="off" />
 			{#if conflict}
 				<p class="text-xs text-destructive">{m.error_payee_exists()}</p>
 			{/if}

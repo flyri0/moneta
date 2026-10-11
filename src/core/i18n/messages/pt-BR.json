@@ -159,6 +159,7 @@
 	"form_error_account_required": "Escolha uma conta.",
 	"form_error_date_invalid": "Informe uma data válida.",
 	"form_error_amount_invalid": "Informe um valor válido, como 12,50 ou 10+5.",
+	"form_error_name_required": "Informe um nome.",
 	"form_error_split_line_invalid": "Cada linha da divisão precisa de uma categoria e um valor.",
 	"form_error_installments_invalid": "As parcelas devem ser um número inteiro de 1 a 99, e nenhuma pode ficar zerada.",
 	"form_error_billing_days_invalid": "Informe os dois dias, de 1 a 31, ou deixe os dois em branco.",

@@ -159,6 +159,7 @@
 	"form_error_account_required": "Choose an account.",
 	"form_error_date_invalid": "Enter a valid date.",
 	"form_error_amount_invalid": "Enter a valid amount, like 12.50 or 10+5.",
+	"form_error_name_required": "Enter a name.",
 	"form_error_split_line_invalid": "Every split line needs a category and an amount.",
 	"form_error_installments_invalid": "Installments must be a whole number from 1 to 99, and none can come to zero.",
 	"form_error_billing_days_invalid": "Enter both days, each from 1 to 31, or leave both blank.",

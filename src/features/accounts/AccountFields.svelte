@@ -99,7 +99,7 @@
 
 <div class="grid gap-2">
 	<Label for="{idPrefix}-name">{m.account_name()}</Label>
-	<Input id="{idPrefix}-name" bind:value={name} required autocomplete="off" />
+	<Input id="{idPrefix}-name" bind:value={name} aria-required="true" autocomplete="off" />
 </div>
 {#if !onBudgetLocked(type)}
 	<div class="flex items-center justify-between gap-4">

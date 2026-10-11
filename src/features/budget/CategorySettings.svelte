@@ -68,7 +68,12 @@
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
 	function checkName() {
-		if (name.trim() === '' || name.trim() === category.name) {
+		if (name.trim() === '') {
+			name = category.name;
+			error = { message: m.form_error_name_required() };
+			return Promise.resolve();
+		}
+		if (name.trim() === category.name) {
 			name = category.name;
 			return Promise.resolve();
 		}
@@ -83,7 +88,13 @@
 		<!-- Enter fires `change` itself; the form only makes the phone keyboard offer to submit. -->
 		<form class="grid gap-2 p-3" onsubmit={(e) => e.preventDefault()}>
 			<Label for="category-name">{m.category_name()}</Label>
-			<Input id="category-name" bind:value={name} onchange={saveName} required autocomplete="off" />
+			<Input
+				id="category-name"
+				bind:value={name}
+				onchange={saveName}
+				aria-required="true"
+				autocomplete="off"
+			/>
 		</form>
 		<div class="grid gap-2 p-3">
 			<Label for="category-icon">{m.icon_label()}</Label>

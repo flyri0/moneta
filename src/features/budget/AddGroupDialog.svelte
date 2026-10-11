@@ -23,6 +23,10 @@
 
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		error = await runAction(() => session.api.categories.createGroup({ name }));
 		if (!error) open = false;
 	}
@@ -33,7 +37,7 @@
 	<form class="grid gap-3" onsubmit={submit.run}>
 		<div class="grid gap-2">
 			<Label for="new-group-name">{m.group_name()}</Label>
-			<Input id="new-group-name" bind:value={name} required autocomplete="off" />
+			<Input id="new-group-name" bind:value={name} aria-required="true" autocomplete="off" />
 		</div>
 		<FormMessage {error} />
 		<Button type="submit" disabled={submit.pending}>{m.add()}</Button>

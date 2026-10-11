@@ -107,6 +107,10 @@
 
 	/** Creates the budget, with the account from the account step unless `withAccount` is false. */
 	async function create(withAccount = true) {
+		if (withAccount && !accountName.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		const typed =
 			!withAccount || balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
 		if (typed === null) {

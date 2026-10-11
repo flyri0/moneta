@@ -61,6 +61,10 @@
 	/** Saves the name, the icon and, on a card, its billing days (both left blank clears them). */
 	function save(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		const isCard = account.type === 'credit_card';
 		const days = isCard ? parseBillingDays(closingDay, dueDay) : null;
 		billingInvalid = days === 'invalid';
@@ -99,7 +103,7 @@
 			<form class="grid gap-4" onsubmit={save}>
 				<div class="grid gap-2">
 					<Label for="account-rename">{m.account_name()}</Label>
-					<Input id="account-rename" bind:value={name} required autocomplete="off" />
+					<Input id="account-rename" bind:value={name} aria-required="true" autocomplete="off" />
 				</div>
 				<div class="grid gap-2">
 					<Label for="account-icon">{m.icon_label()}</Label>
