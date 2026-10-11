@@ -1,21 +1,21 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import { Separator } from '$ui/separator';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import ConfirmPanel from '$components/ConfirmPanel.svelte';
-	import SheetLink from '$components/SheetLink.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import IconField from '$components/emoji-picker/IconField.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
-	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import { m } from '$i18n/paraglide/messages';
 	import { parseBillingDays } from '$features/accounts/account-form';
 	import BillingDaysFields from './BillingDaysFields.svelte';
+	import CloseAccountPanel from './CloseAccountPanel.svelte';
+	import DeleteAccountPanel from './DeleteAccountPanel.svelte';
 
 	let { open = $bindable(false), account }: { open: boolean; account: Account } = $props();
 	const session = useSession();
@@ -23,7 +23,7 @@
 	let icon = $state<string | null>(null);
 	let closingDay = $state('');
 	let dueDay = $state('');
-	let confirming = $state(false);
+	let screen = $state<'settings' | 'close' | 'delete'>('settings');
 	let busy = $state(false);
 	let error = $state<ActionError | null>(null);
 	let billingInvalid = $state(false);
@@ -34,7 +34,7 @@
 		icon = account.icon;
 		closingDay = account.closingDay?.toString() ?? '';
 		dueDay = account.dueDay?.toString() ?? '';
-		confirming = false;
+		screen = 'settings';
 		error = null;
 		billingInvalid = false;
 	});
@@ -52,16 +52,10 @@
 		if (!error) open = false;
 	}
 
-	async function remove() {
-		const call = session.api.accounts.delete(account.id);
-		await act(() => call);
-		if (!error) offerUndo(session.client, call, m.account_deleted());
-	}
-
-	/** Moves to the delete confirmation, or back to the settings. */
-	function confirm(next: boolean) {
-		confirming = next;
-		error = null;
+	/** A deleted account's register would point to an account that no longer exists. */
+	function deleted() {
+		open = false;
+		void goto(resolve('/accounts'));
 	}
 
 	/** Saves the name, the icon and, on a card, its billing days (both left blank clears them). */
@@ -84,18 +78,22 @@
 
 <ResponsiveDialog
 	bind:open
-	title={confirming ? m.account_delete_title() : account.name}
-	onBack={confirming ? () => confirm(false) : undefined}
+	title={screen === 'close'
+		? m.account_close_title({ name: account.name })
+		: screen === 'delete'
+			? m.account_delete_all_title({ name: account.name })
+			: account.name}
+	onBack={screen === 'settings' ? undefined : () => (screen = 'settings')}
 >
-	{#if confirming}
-		<ConfirmPanel
-			body={m.confirm_can_undo()}
-			confirmLabel={m.delete()}
-			{error}
-			{busy}
-			onCancel={() => confirm(false)}
-			onConfirm={remove}
+	{#if screen === 'close'}
+		<CloseAccountPanel
+			{account}
+			onCancel={() => (screen = 'settings')}
+			onClosed={() => (open = false)}
+			onDelete={() => (screen = 'delete')}
 		/>
+	{:else if screen === 'delete'}
+		<DeleteAccountPanel {account} onCancel={() => (screen = 'settings')} onDeleted={deleted} />
 	{:else}
 		<div class="grid gap-4">
 			<form class="grid gap-4" onsubmit={save}>
@@ -132,29 +130,22 @@
 				>
 					{m.account_reopen()}
 				</Button>
+				<button
+					type="button"
+					class="justify-self-center text-xs text-muted-foreground underline-offset-2 hover:text-destructive hover:underline"
+					disabled={busy}
+					onclick={() => (screen = 'delete')}
+				>
+					{m.account_delete_all()}
+				</button>
 			{:else}
 				<div class="grid gap-1">
-					<Button
-						variant="outline"
-						disabled={busy}
-						onclick={() => act(() => session.api.accounts.close(account.id))}
-					>
+					<Button variant="outline" disabled={busy} onclick={() => (screen = 'close')}>
 						{m.account_close()}
 					</Button>
 					<p class="text-xs text-muted-foreground">{m.account_close_hint()}</p>
 				</div>
 			{/if}
-			<div class="grid gap-1">
-				<div class="-mx-2 grid">
-					<SheetLink
-						icon={Trash2Icon}
-						label={m.account_delete()}
-						destructive
-						onclick={() => confirm(true)}
-					/>
-				</div>
-				<p class="text-xs text-muted-foreground">{m.account_delete_hint()}</p>
-			</div>
 		</div>
 	{/if}
 </ResponsiveDialog>
