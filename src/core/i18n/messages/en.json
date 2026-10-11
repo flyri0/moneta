@@ -803,6 +803,8 @@
 	"upcoming_more_overdue": "+{count} overdue",
 	"upcoming_enter": "Enter",
 	"upcoming_skip": "Skip",
+	"upcoming_enter_next": "Enter next",
+	"upcoming_skip_next": "Skip next",
 	"upcoming_projected": "Projected balance",
 	"register_projected_balance": "Projected in 30 days",
 	"register_including_upcoming": "Including upcoming",

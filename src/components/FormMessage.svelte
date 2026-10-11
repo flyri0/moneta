@@ -9,14 +9,27 @@
 	 * section that failed to load. Inside a form it hides once edited, until the next error. Unexpected
 	 * errors offer to copy their details for a bug report.
 	 */
-	let { error, class: className }: { error: ActionError | null | undefined; class?: string } =
-		$props();
+	let {
+		error,
+		values,
+		class: className
+	}: {
+		error: ActionError | null | undefined;
+		/** The editable values, including custom pickers and fields outside a form. */
+		values?: readonly unknown[];
+		class?: string;
+	} = $props();
 	let anchor = $state<HTMLElement>();
 	let stale = $state(false);
 
+	let previousError: ActionError | null | undefined;
+	let previousValues: string | undefined;
 	$effect(() => {
-		void error;
-		stale = false;
+		const next = error ? JSON.stringify(values) : undefined;
+		if (error !== previousError) stale = false;
+		else if (next !== previousValues) stale = true;
+		previousError = error;
+		previousValues = next;
 	});
 
 	$effect(() => {

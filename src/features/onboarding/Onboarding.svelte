@@ -114,6 +114,7 @@
 
 	/** Creates the budget, with the account from the account step unless `withAccount` is false. */
 	async function create(withAccount = true) {
+		if (busy) return;
 		if (withAccount && !accountName.trim()) {
 			error = { message: m.form_error_name_required() };
 			return;
@@ -170,6 +171,7 @@
 	let source: File | null = null;
 
 	async function restore(file: File) {
+		if (busy) return;
 		source = file;
 		busy = true;
 		error = null;
@@ -187,6 +189,7 @@
 	}
 
 	async function restoreBytes(bytes: Uint8Array) {
+		if (busy) return;
 		busy = true;
 		error = null;
 		error = await runAction(async () => {

@@ -86,6 +86,10 @@ Cada conta lista as ocorrências dos próximos 30 dias e o saldo **previsto**, p
 dinheiro vai estar lá. A tela de agendamentos os separa em **Pendentes**, **Próximos** e **Pausados
 ou encerrados**. Um agendamento fica pausado quando a conta dele é encerrada.
 
+As ocorrências vencidas do mesmo agendamento ficam numa só linha. O valor é o total delas, e o
+saldo previsto inclui esse total e todas as linhas acima. **Lançar próxima** e **Pular próxima**
+cuidam apenas da próxima ocorrência desse agendamento.
+
 Tocar num agendamento abre o resumo dele: valor, conta, categoria, como ele se repete (ou qual
 parcela vem e quantas faltam) e as próximas datas. Dali, **Lançar próxima** ou **Pular próxima**
 cuida da próxima ocorrência, e **Editar agendamento** ou **Excluir agendamento** fica a um toque. Numa

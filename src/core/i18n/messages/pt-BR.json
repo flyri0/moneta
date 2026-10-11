@@ -803,6 +803,8 @@
 	"upcoming_more_overdue": "+{count} em atraso",
 	"upcoming_enter": "Lançar",
 	"upcoming_skip": "Pular",
+	"upcoming_enter_next": "Lançar próxima",
+	"upcoming_skip_next": "Pular próxima",
 	"upcoming_projected": "Saldo previsto",
 	"register_projected_balance": "Previsto em 30 dias",
 	"register_including_upcoming": "Com as futuras",

@@ -127,7 +127,7 @@
 					/>
 					<Button type="submit" variant="outline" disabled={addCategory.pending}>{m.add()}</Button>
 				</div>
-				<FormMessage {error} />
+				<FormMessage {error} values={[name, newCategory, hidden]} />
 			</form>
 
 			<!-- A system group takes new categories and an icon, but can't be renamed, hidden or deleted. -->
@@ -190,7 +190,7 @@
 					</div>
 				{/if}
 			</div>
-			<FormMessage {error} />
+			<FormMessage {error} values={[name, newCategory, hidden]} />
 		</div>
 	{:else}
 		<GroupDelete

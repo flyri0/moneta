@@ -44,6 +44,7 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		if (busy) return;
 		if (!name.trim()) {
 			error = { message: m.form_error_name_required() };
 			return;

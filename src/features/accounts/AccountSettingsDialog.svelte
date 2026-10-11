@@ -46,6 +46,7 @@
 	});
 
 	async function act(fn: () => Promise<unknown>) {
+		if (busy) return;
 		busy = true;
 		error = await runAction(fn);
 		busy = false;
@@ -117,7 +118,7 @@
 						invalid={billingInvalid}
 					/>
 				{/if}
-				<FormMessage {error} />
+				<FormMessage {error} values={[name, icon, closingDay, dueDay]} />
 				<div class="grid grid-cols-2 gap-2">
 					<Button variant="outline" disabled={busy} onclick={() => (open = false)}>
 						{m.cancel()}

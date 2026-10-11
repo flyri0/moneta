@@ -331,7 +331,7 @@
 						<Button type="submit" disabled={saveAssigned.pending}>{m.save()}</Button>
 					</div>
 					<AmountPreview text={assignedText} />
-					<FormMessage {error} />
+					<FormMessage {error} values={[assignedText, moveAmount, moveDirection, otherId]} />
 				</form>
 			{/if}
 
@@ -422,7 +422,7 @@
 					{m.budget_move_short({ name: shortfall.name, amount: session.format(shortfall.amount) })}
 				</p>
 			{/if}
-			<FormMessage {error} />
+			<FormMessage {error} values={[assignedText, moveAmount, moveDirection, otherId]} />
 			<Button type="submit" disabled={move.pending}>{m.budget_move()}</Button>
 		</form>
 	{:else if view === 'goal'}

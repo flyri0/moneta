@@ -2,48 +2,56 @@ import { describe, it, expect } from 'vitest';
 import type { UpcomingOccurrence } from '$db/repos/schedules';
 import { collapseOverdue } from './upcoming';
 
-const occurrence = (scheduleId: string, index: number, due: boolean): UpcomingOccurrence =>
+const occurrence = (
+	scheduleId: string,
+	index: number,
+	due: boolean,
+	amount: number
+): UpcomingOccurrence =>
 	({
 		scheduleId,
 		index,
 		due,
+		amount,
 		date: `2026-01-${String(index + 1).padStart(2, '0')}`
 	}) as UpcomingOccurrence;
 
 describe('collapseOverdue', () => {
-	it("keeps each schedule's first overdue occurrence and counts the rest", () => {
+	it('counts all collapsed amounts before projecting the next displayed row', () => {
 		const list = [
-			occurrence('a', 0, true),
-			occurrence('b', 0, true),
-			occurrence('a', 1, true),
-			occurrence('a', 2, true),
-			occurrence('b', 1, false),
-			occurrence('a', 3, false)
+			occurrence('a', 0, true, -100),
+			occurrence('b', 0, true, -200),
+			occurrence('a', 1, true, -150),
+			occurrence('a', 2, false, -100)
 		];
 		expect(
-			collapseOverdue(list).map(({ occurrence: o, position, moreOverdue }) => [
-				o.scheduleId,
-				o.index,
-				position,
-				moreOverdue
+			collapseOverdue(list, 1000).map((r) => [
+				r.occurrence.scheduleId,
+				r.occurrence.index,
+				r.moreOverdue,
+				r.amount,
+				r.balance
 			])
 		).toEqual([
-			['b', 0, 1, 0],
-			['a', 0, 3, 2],
-			['b', 1, 4, 0],
-			['a', 3, 5, 0]
+			['a', 0, 1, -250, 750],
+			['b', 0, 0, -200, 550],
+			['a', 2, 0, -100, 450]
 		]);
+		expect(list.map((o) => o.amount)).toEqual([-100, -200, -150, -100]);
 	});
 
-	it('places a collapsed row where its last occurrence is, so its balance counts them all', () => {
+	it('keeps inflows and uncollapsed occurrences in the displayed projection', () => {
 		const list = [
-			occurrence('rent', 0, true),
-			occurrence('rent', 1, true),
-			occurrence('pay', 0, false)
+			occurrence('pay', 0, true, 300),
+			occurrence('rent', 0, true, -200),
+			occurrence('pay', 1, true, 400),
+			occurrence('rent', 1, false, -200)
 		];
-		expect(collapseOverdue(list).map((r) => [r.occurrence.scheduleId, r.position])).toEqual([
-			['rent', 1],
-			['pay', 2]
+		expect(collapseOverdue(list, -100).map((r) => [r.amount, r.balance])).toEqual([
+			[700, 600],
+			[-200, 400],
+			[-200, 200]
 		]);
+		expect(collapseOverdue([], 1000)).toEqual([]);
 	});
 });

@@ -136,7 +136,10 @@
 				{/if}
 			</div>
 		{/if}
-		<FormMessage {error} />
+		<FormMessage
+			{error}
+			values={[name, type, onBudget, balance, date, categoryId, closingDay, dueDay]}
+		/>
 		<Button type="submit" disabled={submit.pending}>{m.accounts_add()}</Button>
 	</form>
 {/if}

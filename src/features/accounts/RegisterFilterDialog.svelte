@@ -182,7 +182,10 @@
 				ariaLabel={m.register_filter_flags()}
 			/>
 		</div>
-		<FormMessage {error} />
+		<FormMessage
+			{error}
+			values={[period, categoryId, payeeId, amountMin, amountMax, status, flags]}
+		/>
 		<Button type="button" variant="ghost" class="justify-self-start" onclick={reset}>
 			{m.register_clear_filters()}
 		</Button>

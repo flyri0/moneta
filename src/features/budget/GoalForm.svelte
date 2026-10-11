@@ -114,7 +114,7 @@
 		</div>
 	{/if}
 
-	<FormMessage {error} />
+	<FormMessage {error} values={[type, amountText, dated, byMonth]} />
 	<div class="grid gap-2">
 		<Button type="submit" disabled={save.pending}>{m.save()}</Button>
 		{#if category.goal}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseSelect, onboard, openSettings } from './helpers';
+import { chooseSelect, chooseCombobox, categoryRow, onboard, openSettings } from './helpers';
 
 test('an empty account name is reported in the form, not by the browser', async ({ page }) => {
 	await onboard(page);
@@ -39,4 +39,27 @@ test('a form error goes away once the field is edited, and comes back on the nex
 	await amount.fill('abc');
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	await expect(dialog.getByTestId('form-message')).toBeVisible();
+});
+
+test('selecting a category clears the validation error', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Amount', { exact: true }).fill('10');
+	await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(dialog.getByTestId('form-message')).toContainText('Choose a category');
+	await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+	await expect(dialog.getByTestId('form-message')).toBeHidden();
+});
+
+test('typing clears category settings errors outside the name form', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Category settings' }).click();
+	await dialog.getByLabel('Name', { exact: true }).fill('');
+	await dialog.getByLabel('Name', { exact: true }).press('Tab');
+	await expect(dialog.getByTestId('form-message')).toContainText('Enter a name');
+	await dialog.getByLabel('Name', { exact: true }).fill('Fresh groceries');
+	await expect(dialog.getByTestId('form-message')).toBeHidden();
 });

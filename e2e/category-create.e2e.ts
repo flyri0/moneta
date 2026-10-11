@@ -382,3 +382,46 @@ test('naming a hidden category says the group will show it again', async ({ page
 		.click();
 	await expect(popover.getByText('Shows hidden “Groceries” again')).toBeVisible();
 });
+
+test('an accent difference does not promise to reuse a hidden category', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByLabel('Name', { exact: true }).fill('Café');
+	await sheet.getByLabel('Name', { exact: true }).press('Tab');
+	await expect(categoryRow(page, 'Café')).toBeVisible();
+	await sheet.getByRole('switch', { name: 'Hidden' }).click();
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	await page.getByRole('dialog').getByLabel('Category', { exact: true }).click();
+	const picker = page.locator('[data-picker][data-state="open"]');
+	await picker.locator('[data-slot="command-input"]').fill('Cafe');
+	await picker.locator('[data-slot="command-item"]').filter({ hasText: 'Create category' }).click();
+	await expect(picker.getByText('Shows hidden “Café” again')).toHaveCount(0);
+});
+
+test('correcting an adjustment category clears a worker error and a retry shows it again', async ({
+	page
+}) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'No', exact: true }).click();
+	await dialog.getByLabel('Balance at the bank').fill('990');
+	await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+	await newCategory(dialog, 'Category for the adjustment', 'Bank fees', { new: 'Receitas' });
+	await dialog.getByRole('button', { name: 'Add adjustment and reconcile' }).click();
+	await expect(dialog.getByTestId('form-message')).toContainText(
+		'A group with this name already exists'
+	);
+	await chooseCombobox(dialog, 'Category for the adjustment', 'Groceries', 'Groceries');
+	await expect(dialog.getByTestId('form-message')).toBeHidden();
+	await newCategory(dialog, 'Category for the adjustment', 'Bank fees', { new: 'Receitas' });
+	await dialog.getByRole('button', { name: 'Add adjustment and reconcile' }).click();
+	await expect(dialog.getByTestId('form-message')).toContainText(
+		'A group with this name already exists'
+	);
+});

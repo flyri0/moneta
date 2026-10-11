@@ -269,6 +269,14 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	const overdue = page.getByTestId('upcoming-row').filter({ hasText: 'Due' });
 	await expect(overdue).toHaveCount(1);
 	await expect(overdue.getByTestId('upcoming-more-overdue')).toHaveText(/^\+\d\d overdue$/);
+	const more = Number(
+		(await overdue.getByTestId('upcoming-more-overdue').innerText()).match(/\d+/)![0]
+	);
+	const total = (more + 1) * 10;
+	await expect(overdue.getByTestId('upcoming-amount')).toContainText(`$${total.toFixed(2)}`);
+	await expect(overdue.getByTestId('upcoming-balance')).toHaveText(`$${(1000 - total).toFixed(2)}`);
+	await expect(overdue.getByRole('button', { name: 'Enter next', exact: true })).toBeVisible();
+	await expect(overdue.getByRole('button', { name: 'Skip next', exact: true })).toBeVisible();
 });
 
 test('asks before an automatic schedule enters even one past date', async ({ page }) => {

@@ -1,6 +1,6 @@
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { DomainError } from '$domain/errors';
-import { ALL_TABLES, tx, type Db, type Table } from './connection';
+import { ALL_TABLES, all, tx, type Db, type Table } from './connection';
 import { findHandler, type SystemApi } from './api';
 import { checkArgs, type ArgSpec } from './args';
 import type { CallRequest, CallResponse, RpcErrorPayload } from './protocol';
@@ -21,6 +21,20 @@ interface UndoEntry {
 	db: Db;
 	inverse: Uint8Array;
 	tables: readonly Table[];
+}
+
+/** Nonzero closed balances can be left by force deletion, but Undo must not change them. */
+function closedBalances(db: Db): Map<string, number> {
+	return new Map(
+		all<{ id: string; balance: number }>(
+			db,
+			`
+		SELECT a.id, TOTAL(t.amount) AS balance FROM accounts a
+		LEFT JOIN transactions t ON t.account_id = a.id
+		WHERE a.closed = 1 GROUP BY a.id HAVING TOTAL(t.amount) <> 0
+	`
+		).map(({ id, balance }) => [id, balance])
+	);
 }
 
 function toPayload(err: unknown): RpcErrorPayload {
@@ -94,6 +108,7 @@ export function createDispatcher(deps: DispatcherDeps) {
 				if (!entry || !sqlite3 || entry.token !== req.args[0] || entry.db !== deps.getDb())
 					throw new DomainError('UNDO_UNAVAILABLE');
 				const { db, inverse } = entry;
+				const beforeClosed = closedBalances(db);
 				tx(db, () => {
 					// A foreign key action (a payee rule deleted with its payee) would reach rows
 					// written since, outside the changeset: those must not go silently.
@@ -101,14 +116,9 @@ export function createDispatcher(deps: DispatcherDeps) {
 					if (changesetSize(sqlite3, applied.inverse) > changesetSize(sqlite3, inverse))
 						throw new DomainError('UNDO_CONFLICT');
 					if (writesAmounts(entry.tables)) checkAmountRange(db);
-					// An account only closes at a zero balance: taking back a write must not undo that.
-					if (
-						db.selectValue(
-							`SELECT 1 FROM accounts a WHERE a.closed = 1
-								AND (SELECT TOTAL(t.amount) FROM transactions t WHERE t.account_id = a.id) <> 0`
-						)
-					)
-						throw new DomainError('UNDO_CONFLICT');
+					// A pre-existing nonzero closed balance does not block unrelated Undo.
+					for (const [id, balance] of closedBalances(db))
+						if (beforeClosed.get(id) !== balance) throw new DomainError('UNDO_CONFLICT');
 				});
 				lastUndo = null;
 				return { id: req.id, ok: true, data: null, changed: [...entry.tables] };

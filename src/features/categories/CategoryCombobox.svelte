@@ -93,7 +93,10 @@
 		if (naming === null) return map;
 		for (const group of tree)
 			for (const category of group.categories)
-				if (category.hidden && foldText(categoryLabel(category)) === foldText(naming))
+				if (
+					category.hidden &&
+					category.name.trim().toLocaleLowerCase() === naming.trim().toLocaleLowerCase()
+				)
 					map.set(group.id, categoryLabel(category));
 		return map;
 	});

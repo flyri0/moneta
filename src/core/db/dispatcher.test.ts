@@ -4,7 +4,7 @@ import { createDispatcher } from './dispatcher';
 import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { run } from './connection';
 import { api, type SystemApi } from './api';
-import { createAccount } from './repos/accounts';
+import { createAccount, closeAccount, getAccount } from './repos/accounts';
 import { getMeta } from './repos/meta';
 import { createTransaction } from './repos/transactions';
 
@@ -329,6 +329,56 @@ describe('undo', () => {
 		expect(
 			db.selectValue('SELECT COUNT(*) FROM transactions WHERE account_id = ?', [account])
 		).toBe(0);
+	});
+
+	it('allows unrelated Undo after force deletion changes a closed account balance', async () => {
+		const { db, dispatch } = await setUp();
+		const account = (name: string, startingBalance = 0) =>
+			createAccount(db, {
+				name,
+				type: 'checking',
+				onBudget: true,
+				startingBalance,
+				startingDate: '2026-01-01'
+			});
+		const source = account('Source', 100);
+		const target = account('Target');
+		const other = account('Other');
+		createTransaction(db, {
+			accountId: source,
+			date: '2026-01-02',
+			amount: -100,
+			transferAccountId: target
+		});
+		closeAccount(db, source);
+		const deleted = await dispatch({
+			id: 1,
+			method: 'accounts.deleteWithTransactions',
+			args: [target]
+		});
+		expect(deleted.ok).toBe(true);
+		expect(getAccount(db, source)).toMatchObject({ closed: true, balance: 100 });
+		if (!deleted.ok) throw new Error('delete failed');
+		expect(await dispatch({ id: 2, method: 'undo.apply', args: [deleted.undo] })).toMatchObject({
+			ok: true
+		});
+		expect(getAccount(db, source).balance).toBe(0);
+		expect(
+			await dispatch({ id: 3, method: 'accounts.deleteWithTransactions', args: [target] })
+		).toMatchObject({ ok: true });
+		const spent = createTransaction(db, {
+			accountId: other,
+			date: '2026-01-03',
+			amount: -50,
+			categoryId: categoryId(db, 'Food')
+		});
+		const removed = await dispatch({ id: 4, method: 'transactions.delete', args: [spent] });
+		if (!removed.ok) throw new Error('delete failed');
+		expect(await dispatch({ id: 5, method: 'undo.apply', args: [removed.undo] })).toMatchObject({
+			ok: true
+		});
+		expect(getAccount(db, other).balance).toBe(-50);
+		expect(getAccount(db, source)).toMatchObject({ closed: true, balance: 100 });
 	});
 
 	it('refuses to take back what a later write depends on through a cascade', async () => {

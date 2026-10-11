@@ -14,6 +14,7 @@
 	import HelpLink from '$components/HelpLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import { enterAndReport } from '$client/schedules';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import { FREQUENCIES, WEEKEND_RULES, type Frequency, type WeekendRule } from '$domain/schedule';
@@ -153,7 +154,7 @@
 
 	function save(event: SubmitEvent) {
 		event.preventDefault();
-		void submit(false);
+		void write.run(false);
 	}
 
 	async function submit(confirmed: boolean) {
@@ -196,6 +197,8 @@
 		busy = false;
 		if (!error) onDone();
 	}
+
+	const write = submitOnce(submit);
 
 	function go(next: ScheduleView) {
 		view = next;
@@ -253,7 +256,7 @@
 			</Alert.Root>
 		{/if}
 
-		<FormMessage {error} />
+		<FormMessage {error} values={[draft]} />
 
 		<div class="grid grid-cols-2 gap-2">
 			<Button variant="outline" onclick={onCancel ?? onDone}>{m.cancel()}</Button>
@@ -412,7 +415,7 @@
 			</div>
 		{/if}
 
-		<FormMessage {error} />
+		<FormMessage {error} values={[draft]} />
 	{:else if view === 'enter-many'}
 		<ConfirmPanel
 			body={dueList.length === 1
@@ -425,7 +428,7 @@
 			{error}
 			{busy}
 			onCancel={() => go('main')}
-			onConfirm={() => void submit(true)}
+			onConfirm={() => void write.run(true)}
 		/>
 	{/if}
 </form>

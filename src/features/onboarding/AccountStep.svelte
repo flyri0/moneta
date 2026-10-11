@@ -64,6 +64,7 @@
 </script>
 
 <StepLayout
+	values={[name, type, onBudget, balance, date, closingDay, dueDay]}
 	title={m.onboarding_account_section()}
 	description={m.onboarding_account_intro()}
 	{current}

@@ -13,6 +13,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { notifyError, runActionToast } from '$client/notify';
 	import { offerUndo } from '$client/undo';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { ScheduleRow, UpcomingOccurrence } from '$db/repos/schedules';
 	import { todayIso } from '$domain/month';
 	import { formatDate } from '$i18n/formats';
@@ -29,7 +30,9 @@
 
 	const session = useSession();
 	const flags = useFlags();
-	const rows = $derived(collapseOverdue(occurrences));
+	const rows = $derived(
+		collapseOverdue(occurrences, occurrences.length ? balances[0] - occurrences[0].amount : 0)
+	);
 	let entering = $state<OccurrenceToEnter | null>(null);
 	let enterOpen = $state(false);
 	let viewing = $state<ScheduleRow | null>(null);
@@ -62,13 +65,14 @@
 		return o.categoryName ? `${date} · ${storedCategoryLabel(o.categoryName)}` : date;
 	}
 
-	function skip(o: UpcomingOccurrence) {
+	async function skip(o: UpcomingOccurrence) {
 		const call = session.api.schedules.skip(o.scheduleId, o.index);
-		void runActionToast(async () => {
+		await runActionToast(async () => {
 			await call;
 			offerUndo(session.client, call, m.schedule_skipped());
 		});
 	}
+	const skipping = submitOnce(skip);
 </script>
 
 <section class="grid gap-2" aria-label={m.schedules_upcoming()}>
@@ -76,7 +80,7 @@
 		{m.schedules_upcoming()}
 	</h2>
 	<ul class="divide-y overflow-hidden rounded-xl border border-dashed bg-card text-card-foreground">
-		{#each rows as { occurrence: o, position: i, moreOverdue } (`${o.scheduleId}:${o.index}`)}
+		{#each rows as { occurrence: o, amount, balance, moreOverdue } (`${o.scheduleId}:${o.index}`)}
 			<li
 				class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3"
 				data-testid="upcoming-row"
@@ -94,7 +98,7 @@
 					{/if}
 				</span>
 				<Amount
-					amount={o.amount}
+					{amount}
 					flow
 					class="text-right text-sm font-semibold"
 					data-testid="upcoming-amount"
@@ -104,14 +108,20 @@
 				</span>
 				<span class="text-right text-xs text-muted-foreground tabular-nums">
 					<span class="sr-only">{m.upcoming_projected()}:</span>
-					<span data-testid="upcoming-balance">{session.format(balances[i])}</span>
+					<span data-testid="upcoming-balance">{session.format(balance)}</span>
 				</span>
 				{#if o.isNext}
 					<div class="col-span-2 flex flex-wrap gap-2">
 						<Button size="sm" variant="outline" onclick={() => enter(o)}>
-							{m.upcoming_enter()}
+							{moreOverdue > 0 ? m.upcoming_enter_next() : m.upcoming_enter()}
 						</Button>
-						<Button size="sm" variant="ghost" onclick={() => skip(o)}>{m.upcoming_skip()}</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							disabled={skipping.pending}
+							onclick={() => skipping.run(o)}
+							>{moreOverdue > 0 ? m.upcoming_skip_next() : m.upcoming_skip()}</Button
+						>
 						<Button size="sm" variant="ghost" onclick={() => view(o)}>
 							{m.schedule_view()}
 						</Button>

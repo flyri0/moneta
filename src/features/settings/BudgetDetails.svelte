@@ -26,6 +26,7 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
+		if (busy) return;
 		const trimmed = budgetName(name);
 		if (trimmed === null) {
 			error = { message: m.budget_name_required() };
@@ -86,7 +87,7 @@
 		</SettingsRow>
 
 		<div class="grid gap-2 px-4 py-3">
-			<FormMessage {error} />
+			<FormMessage {error} values={[name, locale, currency]} />
 			<Button type="submit" class="justify-self-start" disabled={busy}>{m.save()}</Button>
 		</div>
 	</SettingsGroup>

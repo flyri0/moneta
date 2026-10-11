@@ -1,32 +1,32 @@
 import type { UpcomingOccurrence } from '$db/repos/schedules';
 
-/** An upcoming occurrence as the list shows it. */
+/** A displayed occurrence, including the total of the overdue ones it represents. */
 export interface UpcomingRow {
 	occurrence: UpcomingOccurrence;
-	/** Where the last occurrence it stands for is in the full list, for the balance after it. */
-	position: number;
-	/** How many more overdue occurrences of its schedule the list leaves out. */
 	moreOverdue: number;
+	amount: number;
+	balance: number;
 }
 
-/**
- * The occurrences to list: each schedule's first overdue one stands for the others, which are
- * counted instead of listed. A start date typed years back would otherwise list them all.
- */
-export function collapseOverdue(occurrences: UpcomingOccurrence[]): UpcomingRow[] {
+/** Groups overdue occurrences by schedule and projects balances in displayed order. */
+export function collapseOverdue(
+	occurrences: UpcomingOccurrence[],
+	openingBalance: number
+): UpcomingRow[] {
 	const rows: UpcomingRow[] = [];
 	const firstOverdue = new Map<string, UpcomingRow>();
-	occurrences.forEach((occurrence, position) => {
+	for (const occurrence of occurrences) {
 		const first = occurrence.due ? firstOverdue.get(occurrence.scheduleId) : undefined;
 		if (first) {
 			first.moreOverdue++;
-			first.position = position;
-			return;
+			first.amount += occurrence.amount;
+			continue;
 		}
-		const row = { occurrence, position, moreOverdue: 0 };
+		const row = { occurrence, moreOverdue: 0, amount: occurrence.amount, balance: 0 };
 		if (occurrence.due) firstOverdue.set(occurrence.scheduleId, row);
 		rows.push(row);
-	});
-	// A collapsed row stands at its last occurrence: each balance then counts the rows above it.
-	return rows.sort((a, b) => a.position - b.position);
+	}
+	let balance = openingBalance;
+	for (const row of rows) row.balance = balance += row.amount;
+	return rows;
 }

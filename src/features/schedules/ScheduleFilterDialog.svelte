@@ -241,7 +241,10 @@
 				</Select.Root>
 			</div>
 		</div>
-		<FormMessage {error} />
+		<FormMessage
+			{error}
+			values={[period, accountId, categoryId, payeeId, amountMin, amountMax, status, kind]}
+		/>
 		<Button type="button" variant="ghost" class="justify-self-start" onclick={reset}>
 			{m.register_clear_filters()}
 		</Button>

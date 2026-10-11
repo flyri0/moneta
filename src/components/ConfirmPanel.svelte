@@ -13,6 +13,7 @@
 		body,
 		confirmLabel,
 		error = null,
+		values,
 		busy = false,
 		disabled = false,
 		destructive = true,
@@ -23,6 +24,7 @@
 		body?: string;
 		confirmLabel: string;
 		error?: ActionError | null;
+		values?: readonly unknown[];
 		busy?: boolean;
 		disabled?: boolean;
 		destructive?: boolean;
@@ -35,7 +37,7 @@
 <div class="grid gap-4">
 	{#if body}<p class="text-sm text-muted-foreground">{body}</p>{/if}
 	{@render children?.()}
-	<FormMessage {error} />
+	<FormMessage {error} {values} />
 	<!-- Long confirm labels ("Lançar ajuste e conciliar") wrap rather than spill out of their half. -->
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" disabled={busy} onclick={onCancel}>{m.cancel()}</Button>

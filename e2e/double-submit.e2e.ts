@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { onboard } from './helpers';
+import { onboard, chooseCombobox } from './helpers';
 
 test('a double click on Add account creates one account', async ({ page }) => {
 	await onboard(page);
@@ -23,3 +23,26 @@ test('a double click on Add group creates one group', async ({ page }) => {
 	await expect(dialog).toBeHidden();
 	await expect(page.getByRole('main').getByText('Pets', { exact: true })).toHaveCount(1);
 });
+
+for (const form of ['transaction', 'schedule'] as const) {
+	test(`overlapping submits create only one ${form}`, async ({ page }) => {
+		await onboard(page);
+		if (form === 'schedule') {
+			await page.goto('/transactions/scheduled');
+			await page.getByRole('button', { name: 'Add schedule' }).first().click();
+		} else await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByLabel('Amount', { exact: true }).fill('10');
+		await chooseCombobox(dialog, 'Category', 'Groceries', 'Groceries');
+		await dialog.locator('form').evaluate((form) => {
+			form.requestSubmit();
+			form.requestSubmit();
+		});
+		await expect(dialog).toBeHidden();
+		if (form === 'schedule') await expect(page.getByTestId('schedule-row')).toHaveCount(1);
+		else {
+			await page.goto('/transactions');
+			await expect(page.getByTestId('register-row')).toHaveCount(2);
+		}
+	});
+}

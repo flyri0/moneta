@@ -122,5 +122,5 @@
 			/>
 		</div>
 	</div>
-	<FormMessage {error} />
+	<FormMessage {error} values={[name, groupId, hidden]} />
 </div>

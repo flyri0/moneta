@@ -58,6 +58,7 @@
 	let busy = $state(false);
 
 	async function skip(schedule: ScheduleRow) {
+		if (busy) return;
 		busy = true;
 		const call = session.api.schedules.skip(schedule.id, schedule.nextIndex);
 		await runActionToast(async () => {

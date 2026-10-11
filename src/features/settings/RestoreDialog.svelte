@@ -108,6 +108,7 @@
 	}
 
 	async function restore() {
+		if (busy) return;
 		if (!token || chosen.length === 0) return;
 		if (replacing.length > 0 && !wait.armed) {
 			wait.arm();

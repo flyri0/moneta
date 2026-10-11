@@ -33,6 +33,7 @@ test('closing an account with money transfers it first and Undo restores both ba
 	await dialog.getByRole('button', { name: 'Transfer and close' }).click();
 	await expect(dialog).toContainText('Choose an account');
 	await chooseCombobox(dialog, 'Transfer the balance to', 'Checking', 'Checking');
+	await expect(dialog.getByTestId('form-message')).toBeHidden();
 	await expect(dialog.getByLabel('Category', { exact: true })).toHaveCount(0);
 	await dialog.getByRole('button', { name: 'Transfer and close' }).click();
 	await expect(dialog).toBeHidden();

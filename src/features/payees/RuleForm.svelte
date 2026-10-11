@@ -56,6 +56,7 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
+		if (busy) return;
 		if (!draft.text.trim()) {
 			error = { message: m.form_error_name_required() };
 			return;
@@ -140,7 +141,7 @@
 		/>
 	</div>
 
-	<FormMessage {error} />
+	<FormMessage {error} values={[draft]} />
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" disabled={busy} onclick={onCancel}>{m.cancel()}</Button>
 		<Button type="submit" disabled={busy || !draft.text.trim() || !draft.payeeName.trim()}>

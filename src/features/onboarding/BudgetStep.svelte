@@ -38,6 +38,7 @@
 </script>
 
 <StepLayout
+	values={[name, currency, locale]}
 	{title}
 	{current}
 	{total}

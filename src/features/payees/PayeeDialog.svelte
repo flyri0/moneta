@@ -78,6 +78,7 @@
 
 	/** Runs a write and shows its error inline; `close` shuts the dialog once it succeeds. */
 	async function act(fn: () => Promise<unknown>, close = true) {
+		if (busy) return;
 		busy = true;
 		error = await runAction(fn);
 		busy = false;
@@ -315,7 +316,7 @@
 			{:else}
 				<p class="text-xs text-muted-foreground">{m.payee_in_use_hint()}</p>
 			{/if}
-			<FormMessage {error} />
+			<FormMessage {error} values={[name, mergeTo]} />
 		</div>
 	{/if}
 </ResponsiveDialog>

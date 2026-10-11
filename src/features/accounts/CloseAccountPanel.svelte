@@ -130,7 +130,8 @@
 	{:else}
 		<p class="text-sm text-muted-foreground">{m.account_close_zero_body()}</p>
 	{/if}
-	<FormMessage error={error ?? (loadError ? actionError(loadError) : null)} />
+	<FormMessage {error} values={[toAccountId, categoryId]} />
+	<FormMessage error={!error && loadError ? actionError(loadError) : null} />
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" disabled={close.pending} onclick={onCancel}>{m.cancel()}</Button>
 		<Button disabled={close.pending} onclick={close.run}>

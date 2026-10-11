@@ -18,6 +18,7 @@
 		onNext,
 		busy = false,
 		error = null,
+		values,
 		cardClass = 'max-w-lg',
 		children
 	}: {
@@ -31,6 +32,7 @@
 		onNext: () => void;
 		busy?: boolean;
 		error?: ActionError | null;
+		values?: readonly unknown[];
 		cardClass?: string;
 		children?: Snippet;
 	} = $props();
@@ -62,7 +64,7 @@
 				{#if children}
 					{@render children()}
 				{/if}
-				<FormMessage {error} />
+				<FormMessage {error} {values} />
 				<div class="flex flex-col gap-2 sm:flex-row-reverse">
 					<Button type="submit" disabled={busy}>{nextLabel}</Button>
 					{#if backLabel && onBack}
