@@ -23,7 +23,8 @@ again. The overview's cards always count everything.
   Tap a row to see its transactions.
 - **Spending by payee**: the same, by who you paid. Here too, tap a row for its transactions. A
   refund lowers a payee's spending only when it is entered under that payee; under another one, it
-  still lowers its category, so this total can differ from spending by category.
+  still lowers its category, so this total can differ from spending by category. So does a transfer
+  to a tracking account: spending by category counts it, and it has no payee.
 - **Net worth**: everything you own minus everything you owe, at the end of each month, across all
   your accounts, tracking ones included. Each account counts as an asset or a debt by the sign of
   its balance.

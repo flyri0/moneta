@@ -4,7 +4,13 @@ import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { ALL_TABLES, all, run, tx, type Db } from './connection';
 import { applyInverse, record } from './undo';
 import { api } from './api';
-import { createAccount, deleteAccount } from './repos/accounts';
+import {
+	closeAccountWithTransfer,
+	createAccount,
+	deleteAccount,
+	deleteAccountWithTransactions,
+	getAccount
+} from './repos/accounts';
 import { moveMoney, setAssigned } from './repos/budget';
 import { createGroup, deleteCategory, deleteGroup, getCategory } from './repos/categories';
 import { importTransactions } from './repos/imports';
@@ -55,6 +61,65 @@ function undo(inverse: Uint8Array): void {
 }
 
 describe('record and applyInverse', () => {
+	it('takes back closing an account with its whole balance transfer', () => {
+		createTransaction(db, { accountId: bank, date: '2099-01-05', amount: 2500, categoryId: food });
+		const before = snapshot(db);
+		const { inverse } = recorded(() =>
+			closeAccountWithTransfer(db, bank, {
+				toAccountId: savings,
+				date: '2026-02-01'
+			})
+		);
+		expect(getAccount(db, bank)).toMatchObject({ balance: 0, closed: true });
+		expect(all(db, 'SELECT id FROM transactions WHERE transfer_id IS NOT NULL')).toHaveLength(2);
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
+
+	it('takes back deleting an account with transactions, both transfer sides and real schedules with splits', () => {
+		createTransaction(db, {
+			accountId: bank,
+			date: '2026-01-05',
+			amount: -2500,
+			transferAccountId: savings
+		});
+		createTransaction(db, {
+			accountId: savings,
+			date: '2026-01-06',
+			amount: -300,
+			splits: [
+				{ categoryId: food, amount: -100 },
+				{ categoryId: fun, amount: -200 }
+			]
+		});
+		const rule = {
+			startDate: '2026-03-01',
+			frequency: 'monthly' as const,
+			interval: 1,
+			endDate: null,
+			endCount: null,
+			weekend: 'keep' as const,
+			autoEnter: false
+		};
+		createSchedule(db, {
+			...rule,
+			accountId: savings,
+			amount: -300,
+			splits: [
+				{ categoryId: food, amount: -100 },
+				{ categoryId: fun, amount: -200 }
+			]
+		});
+		createSchedule(db, { ...rule, accountId: bank, amount: -500, transferAccountId: savings });
+		const before = snapshot(db);
+		const { inverse } = recorded(() => deleteAccountWithTransactions(db, savings));
+		for (const table of ['transactions', 'transaction_splits', 'schedules', 'schedule_splits']) {
+			expect(all(db, `SELECT * FROM ${table}`)).toEqual([]);
+		}
+		expect(() => getAccount(db, savings)).toThrow(code('NOT_FOUND'));
+		undo(inverse);
+		expect(snapshot(db)).toEqual(before);
+	});
 	it('brings back a deleted split transaction and a deleted transfer pair', () => {
 		const split = createTransaction(db, {
 			accountId: bank,
@@ -336,7 +401,9 @@ describe('undoable writes', () => {
 			api.payees.merge,
 			api.payees.deleteUnused,
 			api.payeeRules.delete,
-			api.accounts.delete
+			api.accounts.delete,
+			api.accounts.closeWithTransfer,
+			api.accounts.deleteWithTransactions
 		];
 		expect(handlers.filter((h) => !h.undoable)).toEqual([]);
 	});

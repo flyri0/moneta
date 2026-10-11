@@ -1,6 +1,63 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { categoryRow, chooseCombobox, onboard } from './helpers';
 
+test('Enter on a new name creates it, even when an existing name holds its letters', async ({
+	page
+}) => {
+	await onboard(page);
+	// Onboarding includes Salary: rename it so this search offers to create a new category.
+	await categoryRow(page, 'Salary').getByRole('button', { name: 'Salary', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByLabel('Name', { exact: true }).fill('Wages');
+	await sheet.getByLabel('Name', { exact: true }).press('Tab');
+	await expect(categoryRow(page, 'Wages')).toHaveCount(1);
+	await page.keyboard.press('Escape');
+
+	// Every letter of "Salary", in order, is scattered through this name.
+	const long = 'A very long category name that goes on and on to test truncation in every layout';
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	await sheet.getByLabel('New category').fill(long);
+	await sheet.getByRole('button', { name: 'Add', exact: true }).click();
+	await page.keyboard.press('Escape');
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Inflow' }).click();
+	await dialog.getByLabel('Amount', { exact: true }).fill('10');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('Salary');
+	await expect(
+		popover.locator('[data-slot="command-item"]').filter({ hasText: 'very long' })
+	).toHaveCount(0);
+	await page.keyboard.press('Enter');
+	await expect(popover.getByText('Add "Salary" to…')).toBeVisible();
+});
+
+test('Enter picks the exact category before a name containing it', async ({ page }) => {
+	await onboard(page);
+	await page.getByRole('button', { name: 'Everyday', exact: true }).click();
+	const sheet = page.getByRole('dialog');
+	for (const name of ['Parents', 'Rent']) {
+		await sheet.getByLabel('New category').fill(name);
+		await sheet.getByRole('button', { name: 'Add', exact: true }).click();
+		await expect(page.getByRole('button', { name, exact: true })).toHaveCount(1);
+	}
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('Rent');
+	await expect(
+		popover.locator('[data-slot="command-item"]').filter({ hasText: 'Parents' })
+	).toBeVisible();
+	await page.keyboard.press('Enter');
+	await expect(popover).toBeHidden();
+	await expect(dialog.getByLabel('Category', { exact: true })).toHaveText('Rent');
+});
+
 /** Creates a category from a category combobox, in an existing group or a new one. */
 async function newCategory(
 	container: Page | Locator,
@@ -301,4 +358,70 @@ test('focuses the search and lists the matches before creating on desktop', asyn
 	const items = popover.locator('[data-slot="command-item"]');
 	await expect(items.filter({ hasText: 'Groceries' })).toHaveCount(1);
 	await expect(items.last()).toHaveText('Create category "Gro"');
+	await page.keyboard.press('Enter');
+	await expect(popover).toBeHidden();
+	await expect(dialog.getByLabel('Category', { exact: true })).toHaveText('Groceries');
+});
+
+test('naming a hidden category says the group will show it again', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByRole('switch', { name: 'Hidden' }).click();
+	await page.keyboard.press('Escape');
+
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByLabel('Category', { exact: true }).click();
+	const popover = page.locator('[data-picker][data-state="open"]');
+	await popover.locator('[data-slot="command-input"]').fill('groceries');
+	await popover
+		.locator('[data-slot="command-item"]')
+		.filter({ hasText: 'Create category' })
+		.click();
+	await expect(popover.getByText('Shows hidden “Groceries” again')).toBeVisible();
+});
+
+test('an accent difference does not promise to reuse a hidden category', async ({ page }) => {
+	await onboard(page);
+	await categoryRow(page, 'Groceries').getByRole('button', { name: 'Groceries' }).click();
+	const sheet = page.getByRole('dialog');
+	await sheet.getByRole('button', { name: 'Category settings' }).click();
+	await sheet.getByLabel('Name', { exact: true }).fill('Café');
+	await sheet.getByLabel('Name', { exact: true }).press('Tab');
+	await expect(categoryRow(page, 'Café')).toBeVisible();
+	await sheet.getByRole('switch', { name: 'Hidden' }).click();
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Transaction', exact: true }).first().click();
+	await page.getByRole('dialog').getByLabel('Category', { exact: true }).click();
+	const picker = page.locator('[data-picker][data-state="open"]');
+	await picker.locator('[data-slot="command-input"]').fill('Cafe');
+	await picker.locator('[data-slot="command-item"]').filter({ hasText: 'Create category' }).click();
+	await expect(picker.getByText('Shows hidden “Café” again')).toHaveCount(0);
+});
+
+test('correcting an adjustment category clears a worker error and a retry shows it again', async ({
+	page
+}) => {
+	await onboard(page);
+	await page.getByRole('link', { name: 'Accounts' }).first().click();
+	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+	await page.getByRole('button', { name: 'Reconcile' }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'No', exact: true }).click();
+	await dialog.getByLabel('Balance at the bank').fill('990');
+	await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+	await newCategory(dialog, 'Category for the adjustment', 'Bank fees', { new: 'Receitas' });
+	await dialog.getByRole('button', { name: 'Add adjustment and reconcile' }).click();
+	await expect(dialog.getByTestId('form-message')).toContainText(
+		'A group with this name already exists'
+	);
+	await chooseCombobox(dialog, 'Category for the adjustment', 'Groceries', 'Groceries');
+	await expect(dialog.getByTestId('form-message')).toBeHidden();
+	await newCategory(dialog, 'Category for the adjustment', 'Bank fees', { new: 'Receitas' });
+	await dialog.getByRole('button', { name: 'Add adjustment and reconcile' }).click();
+	await expect(dialog.getByTestId('form-message')).toContainText(
+		'A group with this name already exists'
+	);
 });

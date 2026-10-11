@@ -28,6 +28,7 @@
 	});
 
 	async function confirm() {
+		if (busy) return;
 		busy = true;
 		error = await runAction(onConfirm);
 		busy = false;

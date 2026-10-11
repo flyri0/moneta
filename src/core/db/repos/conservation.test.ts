@@ -3,7 +3,13 @@ import { createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
 import { DomainError } from '$domain/errors';
 import { addMonths } from '$domain/month';
-import { closeAccount, createAccount, listAccounts } from './accounts';
+import {
+	closeAccount,
+	closeAccountWithTransfer,
+	createAccount,
+	deleteAccountWithTransactions,
+	listAccounts
+} from './accounts';
 import { applyQuickAssign, getBudgetMonth, moveMoney, setAssigned } from './budget';
 import { deleteCategory, updateCategory } from './categories';
 import { createTransaction, deleteTransaction, updateTransaction } from './transactions';
@@ -123,8 +129,16 @@ async function randomHistory(rnd: () => number): Promise<Db> {
 					categoryIds: regular().slice(0, 2),
 					strategy: pick(STRATEGIES)
 				});
-			} else {
+			} else if (r < 0.98) {
 				closeAccount(db, pick(accounts));
+			} else if (r < 0.99) {
+				closeAccountWithTransfer(db, pick(accounts), {
+					toAccountId: pick(accounts),
+					categoryId: rnd() < 0.5 ? pick(categories) : null,
+					date
+				});
+			} else {
+				deleteAccountWithTransactions(db, pick(accounts));
 			}
 		} catch (e) {
 			// Rejected operations are part of the history; anything but a DomainError is a bug.

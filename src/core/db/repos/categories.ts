@@ -133,7 +133,7 @@ function requireFreeGroupName(db: Db, name: string, exceptId?: string): string {
 		INCOME_GROUP_NAMES.some((n) => sameName(n, trimmed)) ||
 		groups.some((g) => g.id !== exceptId && sameName(g.name, trimmed))
 	)
-		throw new DomainError('NAME_EXISTS');
+		throw new DomainError('GROUP_NAME_EXISTS');
 	return trimmed;
 }
 

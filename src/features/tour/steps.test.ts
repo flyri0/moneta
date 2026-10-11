@@ -33,6 +33,23 @@ describe('resolveStep', () => {
 	const all = (target: string) => `#${target}`;
 	const plain = { wide: false, cloud: false };
 
+	it('points the Schedules stop at the sidebar link, or at the tab on phones', () => {
+		const scheduleStep = step('schedules');
+		const sidebar = resolveStep(
+			scheduleStep,
+			(target) => (target === 'schedules' ? 'link' : target === 'scheduled-tab' ? 'tab' : null),
+			plain
+		);
+		expect(sidebar.element).toBe('link');
+		const phone = resolveStep(
+			scheduleStep,
+			(target) => (target === 'scheduled-tab' ? 'tab' : null),
+			plain
+		);
+		expect(phone.element).toBe('tab');
+		expect(phone.copy).toBe('schedules');
+	});
+
 	it('points at Schedules, or at Transactions where Schedules is a tab inside it', () => {
 		expect(resolveStep(step('schedules-way'), all, plain)).toEqual({
 			element: '#schedules',

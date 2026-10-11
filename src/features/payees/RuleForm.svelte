@@ -56,6 +56,11 @@
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
+		if (busy) return;
+		if (!draft.text.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		busy = true;
 		let saved: SavedRule | null = null;
 		error = await runAction(async () => {
@@ -94,7 +99,12 @@
 					{/each}
 				</Select.Content>
 			</Select.Root>
-			<Input bind:value={draft.text} aria-label={m.payee_rule_text()} required autocomplete="off" />
+			<Input
+				bind:value={draft.text}
+				aria-label={m.payee_rule_text()}
+				aria-required="true"
+				autocomplete="off"
+			/>
 		</div>
 		{#if catches !== null && sample}
 			<p class="text-xs text-muted-foreground" data-testid="rule-sample">
@@ -131,7 +141,7 @@
 		/>
 	</div>
 
-	<FormMessage {error} />
+	<FormMessage {error} values={[draft]} />
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" disabled={busy} onclick={onCancel}>{m.cancel()}</Button>
 		<Button type="submit" disabled={busy || !draft.text.trim() || !draft.payeeName.trim()}>

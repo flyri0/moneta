@@ -14,6 +14,7 @@
 	import IconField from '$components/emoji-picker/IconField.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { BudgetGroupView } from '$db/repos/budget';
 	import type { GroupPatch } from '$db/repos/categories';
 	import type { Month } from '$domain/month';
@@ -75,13 +76,18 @@
 		error = null;
 	}
 
-	async function addCategory(event: SubmitEvent) {
+	async function createCategory(event: SubmitEvent) {
 		event.preventDefault();
+		if (!newCategory.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		error = await runAction(() =>
 			session.api.categories.create({ groupId: group.id, name: newCategory })
 		);
 		if (!error) newCategory = '';
 	}
+	const addCategory = submitOnce(createCategory);
 
 	async function save(patch: GroupPatch) {
 		error = await runAction(() => session.api.categories.updateGroup(group.id, patch));
@@ -91,25 +97,37 @@
 	}
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
-	function saveName() {
-		if (name.trim() === '' || name.trim() === group.name) {
+	function checkName() {
+		if (name.trim() === '') {
 			name = group.name;
-			return;
+			error = { message: m.form_error_name_required() };
+			return Promise.resolve();
 		}
-		void save({ name });
+		if (name.trim() === group.name) {
+			name = group.name;
+			return Promise.resolve();
+		}
+		return save({ name });
 	}
+	// A name change while one is saving is ignored.
+	const saveName = submitOnce(checkName).run;
 </script>
 
 <ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
 	{#if view === 'main'}
 		<div class="grid gap-5">
-			<form class="grid gap-2" onsubmit={addCategory}>
+			<form class="grid gap-2" onsubmit={addCategory.run}>
 				<Label for="group-new-category">{m.group_add_category()}</Label>
 				<div class="flex gap-2">
-					<Input id="group-new-category" bind:value={newCategory} required autocomplete="off" />
-					<Button type="submit" variant="outline">{m.add()}</Button>
+					<Input
+						id="group-new-category"
+						bind:value={newCategory}
+						aria-required="true"
+						autocomplete="off"
+					/>
+					<Button type="submit" variant="outline" disabled={addCategory.pending}>{m.add()}</Button>
 				</div>
-				<FormMessage {error} />
+				<FormMessage {error} values={[name, newCategory, hidden]} />
 			</form>
 
 			<!-- A system group takes new categories and an icon, but can't be renamed, hidden or deleted. -->
@@ -152,7 +170,7 @@
 							id="group-name"
 							bind:value={name}
 							onchange={saveName}
-							required
+							aria-required="true"
 							autocomplete="off"
 						/>
 					</form>
@@ -172,7 +190,7 @@
 					</div>
 				{/if}
 			</div>
-			<FormMessage {error} />
+			<FormMessage {error} values={[name, newCategory, hidden]} />
 		</div>
 	{:else}
 		<GroupDelete

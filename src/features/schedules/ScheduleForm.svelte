@@ -14,6 +14,7 @@
 	import HelpLink from '$components/HelpLink.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import { enterAndReport } from '$client/schedules';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import { FREQUENCIES, WEEKEND_RULES, type Frequency, type WeekendRule } from '$domain/schedule';
@@ -75,6 +76,7 @@
 
 	const ERRORS: Record<ScheduleFormError, () => string> = {
 		...FORM_ERRORS,
+		AMOUNT_INVALID: () => session.amountInvalid(),
 		INTERVAL_INVALID: m.form_error_interval_invalid,
 		END_DATE_INVALID: m.form_error_end_date_invalid,
 		END_COUNT_INVALID: m.form_error_end_count_invalid,
@@ -82,6 +84,14 @@
 		INSTALLMENT_TOTAL_INVALID: m.form_error_installment_total_invalid,
 		INSTALLMENT_DATE_PAST: m.form_error_installment_date_past
 	};
+	const REPEAT_ERRORS: ScheduleFormError[] = [
+		'INTERVAL_INVALID',
+		'END_DATE_INVALID',
+		'END_COUNT_INVALID',
+		'INSTALLMENT_NUMBER_INVALID',
+		'INSTALLMENT_TOTAL_INVALID'
+	];
+	let repeatInvalid = $state(false);
 	const UNIT_LABELS: Record<Frequency, () => string> = {
 		once: () => '',
 		daily: m.schedule_unit_days,
@@ -144,21 +154,19 @@
 
 	function save(event: SubmitEvent) {
 		event.preventDefault();
-		void submit(false);
+		void write.run(false);
 	}
 
 	async function submit(confirmed: boolean) {
 		const result = buildScheduleInput(draft, ctx);
 		if (!result.ok) {
-			// The installment numbers are on their own screen: show the error there.
-			if (
-				result.error === 'INSTALLMENT_NUMBER_INVALID' ||
-				result.error === 'INSTALLMENT_TOTAL_INVALID'
-			)
-				view = 'repeat';
+			// Repeat fields are on their own screen: show the error there and mark its row.
+			repeatInvalid = REPEAT_ERRORS.includes(result.error);
+			if (repeatInvalid) view = 'repeat';
 			error = { message: ERRORS[result.error]() };
 			return;
 		}
+		repeatInvalid = false;
 		const input = result.input;
 		// The date the form shows is the one saved, even when it was locked to a due date.
 		if (lockedDate) draft.txn.date = lockedDate;
@@ -190,13 +198,21 @@
 		if (!error) onDone();
 	}
 
+	const write = submitOnce(submit);
+
 	function go(next: ScheduleView) {
 		view = next;
 		error = null;
 	}
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
+<form
+	class="grid grid-cols-[minmax(0,1fr)] gap-4"
+	onsubmit={save}
+	oninput={() => {
+		if (view === 'repeat') repeatInvalid = false;
+	}}
+>
 	{#if view === 'main'}
 		<TransactionFields
 			{ctx}
@@ -227,6 +243,7 @@
 				icon={installing ? CreditCardIcon : RepeatIcon}
 				label={m.schedule_frequency()}
 				detail={installing ? installmentsDetail : draftRuleSummary(draft.rule)}
+				invalid={repeatInvalid}
 				onclick={() => go('repeat')}
 			/>
 		</nav>
@@ -239,7 +256,7 @@
 			</Alert.Root>
 		{/if}
 
-		<FormMessage {error} />
+		<FormMessage {error} values={[draft]} />
 
 		<div class="grid grid-cols-2 gap-2">
 			<Button variant="outline" onclick={onCancel ?? onDone}>{m.cancel()}</Button>
@@ -398,18 +415,20 @@
 			</div>
 		{/if}
 
-		<FormMessage {error} />
+		<FormMessage {error} values={[draft]} />
 	{:else if view === 'enter-many'}
 		<ConfirmPanel
 			body={dueList.length === 1
 				? m.schedule_enter_one_body({ dates: dueText })
 				: m.schedule_enter_many_body({ count: dueList.length, dates: dueText })}
-			confirmLabel={m.schedule_enter_many_confirm({ count: dueList.length })}
+			confirmLabel={dueList.length === 1
+				? m.schedule_enter_one_confirm()
+				: m.schedule_enter_many_confirm({ count: dueList.length })}
 			destructive={false}
 			{error}
 			{busy}
 			onCancel={() => go('main')}
-			onConfirm={() => void submit(true)}
+			onConfirm={() => void write.run(true)}
 		/>
 	{/if}
 </form>

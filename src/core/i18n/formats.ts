@@ -129,9 +129,24 @@ export function formatMonthName(
 
 /** "Sep 5, 2026" / "5 de set. de 2026". */
 export function formatDate(date: string, locale: string): string {
-	return dateTimeFormat(locale, {
+	const format = dateTimeFormat(locale, {
 		day: 'numeric',
 		month: 'short',
+		year: 'numeric',
+		timeZone: 'UTC'
+	});
+	if (!locale.startsWith('pt') || !date.endsWith('-01')) return format.format(utc(date));
+	return format
+		.formatToParts(utc(date))
+		.map((part) => (part.type === 'day' ? `${part.value}º` : part.value))
+		.join('');
+}
+
+/** "10/09/2026" / "09/10/2026": a date in numbers only, for narrow fields. */
+export function formatDateNumeric(date: string, locale: string): string {
+	return dateTimeFormat(locale, {
+		day: '2-digit',
+		month: '2-digit',
 		year: 'numeric',
 		timeZone: 'UTC'
 	}).format(utc(date));

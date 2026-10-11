@@ -3,6 +3,7 @@
 	import AccountFields from '$features/accounts/AccountFields.svelte';
 	import AccountTypePicker from '$features/accounts/AccountTypePicker.svelte';
 	import { defaultOnBudget } from '$features/accounts/account-form';
+	import BillingDaysFields from '$features/accounts/BillingDaysFields.svelte';
 	import type { ActionError } from '$client/notify';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { MoneyFormat } from '$domain/money';
@@ -22,6 +23,9 @@
 		onBudget = $bindable(),
 		balance = $bindable(),
 		date = $bindable(),
+		closingDay = $bindable(''),
+		dueDay = $bindable(''),
+		billingInvalid = false,
 		view = $bindable('type'),
 		money
 	}: {
@@ -38,6 +42,9 @@
 		onBudget: boolean;
 		balance: string;
 		date: string;
+		closingDay?: string;
+		dueDay?: string;
+		billingInvalid?: boolean;
 		/** Whether the type picker or the account's fields show; kept by the parent across Back. */
 		view?: 'type' | 'form';
 		/** The new budget's currency, for the balance's preview. */
@@ -57,6 +64,7 @@
 </script>
 
 <StepLayout
+	values={[name, type, onBudget, balance, date, closingDay, dueDay]}
 	title={m.onboarding_account_section()}
 	description={m.onboarding_account_intro()}
 	{current}
@@ -82,6 +90,14 @@
 				{money}
 				onChangeType={() => (view = 'type')}
 			/>
+			{#if type === 'credit_card'}
+				<BillingDaysFields
+					bind:closing={closingDay}
+					bind:due={dueDay}
+					idPrefix="onboarding-account"
+					invalid={billingInvalid}
+				/>
+			{/if}
 		{/if}
 	</div>
 	<div class="flex justify-end">

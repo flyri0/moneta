@@ -98,7 +98,7 @@ test('walks through the basics once, on the first budget', async ({ page }) => {
 	await expect(page).toHaveURL(/\/transactions\/scheduled$/);
 	await expect(card(page).getByRole('heading')).toHaveText('Schedules');
 	await expect(card(page)).toContainText("even ones you're already paying");
-	await expectLit(page, page.getByRole('link', { name: 'Scheduled', exact: true }));
+	await expectLit(page, page.locator('#sidebar [data-tour="schedules"]'));
 
 	// Back across screens returns to the budget, and Next opens Schedules again.
 	await card(page).getByRole('button', { name: 'Back' }).click();

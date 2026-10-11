@@ -69,7 +69,7 @@
 <PageHeader
 	title={m.nav_payees()}
 	hideAmounts={false}
-	back={{ route: '/transactions', label: m.nav_transactions() }}
+	back={{ route: '/transactions', label: m.nav_transactions(), phoneOnly: true }}
 >
 	{#snippet actions()}
 		<Button size="sm" onclick={() => (adding = true)}>

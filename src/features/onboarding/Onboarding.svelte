@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { signedStartingBalance } from '$features/accounts/account-form';
+	import { parseBillingDays, signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
 	import { runAction, type ActionError } from '$client/notify';
 	import { createBudget, restoreAll, type SessionApi } from '$client/session';
@@ -7,7 +7,7 @@
 	import { planTour } from '$client/tour';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
-	import { parseAmount } from '$domain/money';
+	import { formatAmountInput, parseAmount } from '$domain/money';
 	import { todayIso } from '$domain/month';
 	import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
 	import { suggestCurrency, localeChoices } from '$i18n/formats';
@@ -73,6 +73,13 @@
 	let onBudget = $state(true);
 	let balance = $state('');
 	let date = $state(todayIso());
+	let closingDay = $state('');
+	let dueDay = $state('');
+	let billingInvalid = $state(false);
+	$effect(() => {
+		void [closingDay, dueDay];
+		billingInvalid = false;
+	});
 	let accountView = $state<'type' | 'form'>('type');
 
 	let error = $state<ActionError | null>(null);
@@ -107,10 +114,26 @@
 
 	/** Creates the budget, with the account from the account step unless `withAccount` is false. */
 	async function create(withAccount = true) {
+		if (busy) return;
+		if (withAccount && !accountName.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		const typed =
 			!withAccount || balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
 		if (typed === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = {
+				message: m.form_error_amount_invalid({
+					example: formatAmountInput(1250, { currency, locale })
+				})
+			};
+			return;
+		}
+		const billing =
+			withAccount && accountType === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
+		billingInvalid = billing === 'invalid';
+		if (billingInvalid) {
+			error = { message: m.form_error_billing_days_invalid() };
 			return;
 		}
 		busy = true;
@@ -129,7 +152,9 @@
 							type: accountType,
 							onBudget,
 							startingBalance: signedStartingBalance(accountType, typed),
-							startingDate: date
+							startingDate: date,
+							startingBalanceName: m.default_category_starting_balance(),
+							billing: billing === 'invalid' ? null : billing
 						}
 					: undefined
 			});
@@ -146,6 +171,7 @@
 	let source: File | null = null;
 
 	async function restore(file: File) {
+		if (busy) return;
 		source = file;
 		busy = true;
 		error = null;
@@ -163,6 +189,7 @@
 	}
 
 	async function restoreBytes(bytes: Uint8Array) {
+		if (busy) return;
 		busy = true;
 		error = null;
 		error = await runAction(async () => {
@@ -223,6 +250,9 @@
 		bind:onBudget
 		bind:balance
 		bind:date
+		bind:closingDay
+		bind:dueDay
+		{billingInvalid}
 		bind:view={accountView}
 		money={{ currency, locale }}
 	/>

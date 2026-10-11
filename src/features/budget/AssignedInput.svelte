@@ -5,7 +5,6 @@
 	import { runActionToast } from '$client/notify';
 	import { formatAmountInput } from '$domain/money';
 	import type { Month } from '$domain/month';
-	import { m } from '$i18n/paraglide/messages';
 	import { neighbor } from './assigned-nav';
 
 	/**
@@ -43,7 +42,7 @@
 		const value = typed();
 		if (value === null) {
 			// Leaving gives up the unreadable text; the keyboard already warned if it was marked.
-			if (!invalid) toast.error(m.form_error_amount_invalid());
+			if (!invalid) toast.error(session.amountInvalid());
 			invalid = false;
 			return;
 		}
@@ -65,7 +64,7 @@
 		event.preventDefault();
 		if (typed() === null) {
 			invalid = true;
-			toast.error(m.form_error_amount_invalid());
+			toast.error(session.amountInvalid());
 			return;
 		}
 		invalid = false;

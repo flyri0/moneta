@@ -82,7 +82,11 @@
 		aria-label={m.import_details({ number })}
 		onclick={onToggle}
 	>
-		<span class="truncate text-sm font-medium" data-testid="import-payee">{title}</span>
+		<span
+			class="truncate text-sm font-medium"
+			class:text-muted-foreground={!title.trim()}
+			data-testid="import-payee">{title.trim() || m.import_no_description()}</span
+		>
 		{#if showDescription}
 			<span class="truncate text-xs text-muted-foreground" data-testid="import-description">
 				{row.line.description}

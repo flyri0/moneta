@@ -225,16 +225,16 @@
 			autocomplete="off"
 			aria-label={m.transaction_amount()}
 			placeholder="0"
-			required
+			aria-required="true"
 		/>
 	</div>
 	<AmountPreview text={draft.amount} class="text-right" />
 </div>
 
 {#if mode !== 'hidden'}
-	<div class="grid gap-2">
+	<div class="grid min-w-0 gap-2">
 		<Label for="txn-category">{m.transaction_category()}</Label>
-		<div class="flex items-center gap-2">
+		<div class="flex min-w-0 items-center gap-2">
 			{@render categorySelect(
 				draft.categoryId,
 				(id) => (draft.categoryId = id),
@@ -257,7 +257,9 @@
 			{m.transaction_split_lines()}
 		</legend>
 		{#each draft.splits as line, i (i)}
-			<div class="grid grid-cols-[1fr_auto] items-center gap-2 md:grid-cols-[1fr_7rem_auto]">
+			<div
+				class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[minmax(0,1fr)_7rem_auto]"
+			>
 				{@render categorySelect(
 					line.categoryId,
 					(id) => (line.categoryId = id),
@@ -301,7 +303,7 @@
 				data-testid="split-remaining"
 			>
 				{#if remaining === null}
-					{m.form_error_amount_invalid()}
+					{session.amountInvalid()}
 				{:else}
 					{@const split = splitBalance(remaining, draft.direction)}
 					{split.over

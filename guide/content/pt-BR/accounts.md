@@ -54,13 +54,13 @@ as parcelas.
 
 ### Parcelas {#installments}
 
-Uma compra no cartão de crédito pode ser parcelada: preencha **Parcelas** (de 2 a 99) ao
+Uma compra no cartão de crédito pode ser parcelada: preencha **Parcelas** (até 99) ao
 lançá-la. O Moneta mostra o plano antes de salvar, por exemplo "1ª de R$ 333,34 e 2x de R$ 333,33": a primeira parcela leva os centavos que sobram.
 
 ![Uma compra de R$ 1.000,00 no cartão em 10 parcelas: o plano mostra as 10 parcelas e a data do primeiro vencimento.](img/installments-light.pt-BR.png)
 
 - A primeira parcela é lançada agora; as demais viram um agendamento que lança cada uma sozinho, um
-  mês depois da outra, com o memorando numerado ("TV 2/12").
+  mês depois da outra, com a observação numerada ("TV 2/12").
 - Num cartão com fechamento e vencimento, cada parcela, inclusive a primeira, vai para a data de
   vencimento da sua fatura. Uma compra no dia do fechamento vai para a fatura seguinte.
 - Cada parcela é cobrada da categoria no mês em que é lançada, então o orçamento acompanha o que
@@ -101,7 +101,16 @@ data ou conta muda um saldo que você já conferiu com o banco.
 
 ## Encerrar e excluir {#closing}
 
-- **Encerrar conta** quando você parar de usá-la. É preciso saldo zero: mova o que sobrou ou quite
-  antes. Uma conta encerrada mantém o histórico, aparece em **Encerradas**, e pode ser reaberta. Os
+- **Encerrar conta** quando você parar de usá-la. Se sobrou dinheiro nela, escolha a conta para onde
+  ele vai: o Moneta lança uma transferência do saldo todo, com a data de hoje, e encerra a conta
+  (dinheiro que entra ou sai do orçamento pede uma categoria, como em qualquer transferência
+  assim). Uma conta encerrada mantém o histórico, aparece em **Encerradas** e pode ser reaberta. Os
   agendamentos de uma conta encerrada ficam pausados.
-- **Excluir conta** é só para contas sem transações nem agendamentos, como uma criada por engano.
+- **Excluir conta e suas transações**, no fim dessa tela, remove a conta com tudo o que há nela: as
+  transações, o outro lado de cada transferência (então o saldo das outras contas também muda) e os
+  agendamentos. O Moneta lista o que vai junto antes de você confirmar, espera alguns segundos e
+  deixa desfazer logo em seguida. Uma conta vazia é excluída sem a espera.
+
+A busca dos seletores encontra nomes e partes de palavras, sem diferenciar maiúsculas, minúsculas ou
+acentos. Enter escolhe primeiro o nome exato; as opções de criação continuam disponíveis para nomes
+novos.

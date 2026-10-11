@@ -55,14 +55,15 @@ test('adds, closes and protects accounts', async ({ page }) => {
 	const main = page.getByRole('main');
 	await main.getByRole('button', { name: 'Settings for Old savings' }).click();
 	await dialog.getByRole('button', { name: 'Close account' }).click();
+	await dialog.getByRole('button', { name: 'Close account' }).click();
 	await expect(dialog).toBeHidden();
 	await expect(main.getByRole('region', { name: 'Closed' })).toContainText('Old savings');
 
 	await main.getByRole('button', { name: 'Settings for Checking' }).click();
 	await dialog.getByRole('button', { name: 'Close account' }).click();
-	await expect(dialog.getByRole('alert')).toHaveText(
-		'Only accounts with a zero balance, upcoming transactions included, can be closed.'
-	);
+	await expect(dialog.getByLabel('Transfer the balance to')).toBeVisible();
+	await dialog.getByRole('button', { name: 'Transfer and close', exact: true }).click();
+	await expect(dialog.getByRole('alert')).toHaveText('Choose an account.');
 });
 
 test('puts the add-transaction button in the sidebar on desktop', async ({ page }) => {

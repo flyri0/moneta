@@ -13,6 +13,7 @@
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { AccountType } from '$db/repos/accounts';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
@@ -56,11 +57,15 @@
 		step = 2;
 	}
 
-	async function submit(event: SubmitEvent) {
+	async function create(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		const typed = balance.trim() === '' ? 0 : session.parse(balance);
 		if (typed === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		const billing = type === 'credit_card' ? parseBillingDays(closingDay, dueDay) : null;
@@ -79,18 +84,20 @@
 				onBudget,
 				startingBalance: signedStartingBalance(type, typed),
 				startingDate: date,
+				startingBalanceName: m.default_category_starting_balance(),
 				startingBalanceCategoryId: (ids.get(categoryId) ?? categoryId) || undefined,
 				billing
 			});
 		});
 		if (!error) onCreated(id);
 	}
+	const submit = submitOnce(create);
 </script>
 
 {#if step === 1}
 	<AccountTypePicker selected={type} onSelect={selectType} />
 {:else}
-	<form class="grid gap-4" onsubmit={submit}>
+	<form class="grid gap-4" onsubmit={submit.run}>
 		<AccountFields
 			bind:name
 			bind:type
@@ -118,7 +125,7 @@
 					{pending}
 					value={categoryId || (startingCategory.data ?? '')}
 					onSelect={(id) => (categoryId = id)}
-					emptyLabel={m.register_starting_balance()}
+					emptyLabel={m.default_category_starting_balance()}
 					allowEmpty={false}
 					emptyText={!!tree.data && tree.data.every((g) => g.categories.length === 0)
 						? m.account_starting_category_created()
@@ -129,7 +136,10 @@
 				{/if}
 			</div>
 		{/if}
-		<FormMessage {error} />
-		<Button type="submit">{m.accounts_add()}</Button>
+		<FormMessage
+			{error}
+			values={[name, type, onBudget, balance, date, categoryId, closingDay, dueDay]}
+		/>
+		<Button type="submit" disabled={submit.pending}>{m.accounts_add()}</Button>
 	</form>
 {/if}

@@ -768,6 +768,10 @@ test('warns when moving money leaves the category it comes from overspent', asyn
 		.click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'Move money' }).click();
+	await expect(
+		dialog.getByRole('heading', { name: 'Move money · Rent or Mortgage' })
+	).toBeVisible();
+	await expect(dialog.getByTestId('move-own-available')).toHaveText('$0.00 available');
 	await chooseCombobox(dialog, 'Other category', 'Groceries', 'Groceries');
 	await expect(dialog.getByTestId('move-other-available')).toHaveText('$0.00 available');
 	await dialog.getByLabel('Amount to move').fill('50');

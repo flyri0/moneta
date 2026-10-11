@@ -78,6 +78,7 @@
 
 	/** Runs a write and shows its error inline; `close` shuts the dialog once it succeeds. */
 	async function act(fn: () => Promise<unknown>, close = true) {
+		if (busy) return;
 		busy = true;
 		error = await runAction(fn);
 		busy = false;
@@ -92,6 +93,10 @@
 
 	function rename(event: SubmitEvent) {
 		event.preventDefault();
+		if (!name.trim()) {
+			error = { message: m.form_error_name_required() };
+			return;
+		}
 		if (conflict) return;
 		void act(() => session.api.payees.rename(payee.id, name));
 	}
@@ -201,7 +206,7 @@
 			<form class="grid gap-2" onsubmit={rename}>
 				<Label for="payee-rename">{m.payee_name()}</Label>
 				<div class="flex gap-2">
-					<Input id="payee-rename" bind:value={name} required autocomplete="off" />
+					<Input id="payee-rename" bind:value={name} aria-required="true" autocomplete="off" />
 					<Button type="submit" variant="outline" disabled={conflict !== null}>{m.save()}</Button>
 				</div>
 			</form>
@@ -311,7 +316,7 @@
 			{:else}
 				<p class="text-xs text-muted-foreground">{m.payee_in_use_hint()}</p>
 			{/if}
-			<FormMessage {error} />
+			<FormMessage {error} values={[name, mergeTo]} />
 		</div>
 	{/if}
 </ResponsiveDialog>

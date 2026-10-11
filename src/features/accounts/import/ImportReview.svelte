@@ -135,6 +135,7 @@
 	const beforeOpening = $derived(rows ? beforeOpeningCount(rows, openingDate) : 0);
 
 	async function commit() {
+		if (busy) return;
 		if (!rows) return;
 		busy = true;
 		const lines = importLines(rows, account.onBudget);
@@ -241,7 +242,7 @@
 	</section>
 
 	<div class="grid gap-3">
-		<FormMessage {error} />
+		<FormMessage {error} values={[rows]} />
 		<div class="grid grid-cols-2 gap-2">
 			<Button
 				variant="outline"

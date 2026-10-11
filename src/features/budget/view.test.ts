@@ -239,14 +239,10 @@ describe('moveShortfall', () => {
 	});
 });
 
-describe('rtaHint for the months ahead and an empty budget', () => {
-	it('warns that assigning more leaves a later month short', () => {
-		expect(
-			rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: '2026-11' })
-		).toBe('futureShort');
-		expect(rtaHint({ readyToAssign: 100, availableFunds: 100, futureNegativeMonth: null })).toBe(
-			'unassigned'
-		);
+describe('rtaHint for an empty budget', () => {
+	it('keeps its usual hint when a later month is short: the alert below names the month', () => {
+		const view = { readyToAssign: 100, availableFunds: 100, futureNegativeMonth: '2026-11' };
+		expect(rtaHint(view)).toBe('unassigned');
 	});
 
 	it('asks for an account when there is none', () => {

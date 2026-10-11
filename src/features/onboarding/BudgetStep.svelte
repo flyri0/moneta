@@ -38,6 +38,7 @@
 </script>
 
 <StepLayout
+	values={[name, currency, locale]}
 	{title}
 	{current}
 	{total}
@@ -53,7 +54,7 @@
 			<Input
 				id="budget-name"
 				bind:value={name}
-				required
+				aria-required="true"
 				autocomplete="off"
 				aria-invalid={error !== null}
 			/>

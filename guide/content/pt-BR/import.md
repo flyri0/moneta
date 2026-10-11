@@ -16,7 +16,7 @@ conta de onde ele veio.
 Para um arquivo CSV, diga ao Moneta:
 
 - se **a primeira linha tem os nomes das colunas**;
-- qual coluna é a **data**, a **descrição** e, se houver, o **memorando**;
+- qual coluna é a **data**, a **descrição** e, se houver, a **observação**;
 - se os **valores** estão numa coluna só (negativos para saídas) ou em colunas separadas de
   **entrada** e **saída**;
 - o **formato da data** e o **formato dos números** que o banco usa;

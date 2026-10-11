@@ -90,23 +90,25 @@
 </script>
 
 {#snippet createRow()}
-	<Command.Group>
-		<Command.Item
-			value={trimmedSearch}
-			keywords={[trimmedSearch]}
-			onSelect={() => handleSelect(trimmedSearch)}
-			class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
-		>
-			<div
-				class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+	<div>
+		<Command.Group>
+			<Command.Item
+				value={trimmedSearch}
+				keywords={[trimmedSearch]}
+				onSelect={() => handleSelect(trimmedSearch)}
+				class="bg-primary/5 font-medium text-primary hover:bg-primary/10 data-selected:bg-primary/15 data-selected:text-primary"
 			>
-				<PlusIcon class="size-3.5 stroke-[2.5]" />
-			</div>
-			<span class="truncate">
-				{createLabel ? createLabel(trimmedSearch) : m.combobox_create({ name: trimmedSearch })}
-			</span>
-		</Command.Item>
-	</Command.Group>
+				<div
+					class="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/20 text-primary"
+				>
+					<PlusIcon class="size-3.5 stroke-[2.5]" />
+				</div>
+				<span class="truncate">
+					{createLabel ? createLabel(trimmedSearch) : m.combobox_create({ name: trimmedSearch })}
+				</span>
+			</Command.Item>
+		</Command.Group>
+	</div>
 {/snippet}
 
 {#if name}
@@ -132,27 +134,47 @@
 					{@render createRow()}
 					<Command.Separator />
 				{/if}
-				{#if emptyOption}
-					<Command.Group>
-						<Command.Item
-							value={emptyOption.label}
-							keywords={[emptyOption.value, emptyOption.label]}
-							onSelect={() => handleSelect(emptyOption.value)}
-						>
-							<CheckIcon
-								class={cn('mr-2 size-4', value === emptyOption.value ? 'opacity-100' : 'opacity-0')}
-							/>
-							<span class="text-muted-foreground italic">{emptyOption.label}</span>
-						</Command.Item>
-					</Command.Group>
-				{/if}
-				{#if groups.length > 0}
-					{#each groups as group (group.heading)}
-						<Command.Group heading={group.heading}>
-							{#each group.items as item (item.value)}
+				<div>
+					{#if emptyOption}
+						<Command.Group>
+							<Command.Item
+								value={emptyOption.label}
+								keywords={[emptyOption.label]}
+								onSelect={() => handleSelect(emptyOption.value)}
+							>
+								<CheckIcon
+									class={cn(
+										'mr-2 size-4',
+										value === emptyOption.value ? 'opacity-100' : 'opacity-0'
+									)}
+								/>
+								<span class="text-muted-foreground italic">{emptyOption.label}</span>
+							</Command.Item>
+						</Command.Group>
+					{/if}
+					{#if groups.length > 0}
+						{#each groups as group (group.heading)}
+							<Command.Group heading={group.heading}>
+								{#each group.items as item (item.value)}
+									<Command.Item
+										value={item.label}
+										keywords={[item.label, ...(item.keywords ?? [])]}
+										onSelect={() => handleSelect(item.value)}
+									>
+										<CheckIcon
+											class={cn('mr-2 size-4', value === item.value ? 'opacity-100' : 'opacity-0')}
+										/>
+										<span>{item.label}</span>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						{/each}
+					{:else}
+						<Command.Group>
+							{#each items as item (item.value)}
 								<Command.Item
 									value={item.label}
-									keywords={[item.value, ...(item.keywords ?? [])]}
+									keywords={[item.label, ...(item.keywords ?? [])]}
 									onSelect={() => handleSelect(item.value)}
 								>
 									<CheckIcon
@@ -162,23 +184,8 @@
 								</Command.Item>
 							{/each}
 						</Command.Group>
-					{/each}
-				{:else}
-					<Command.Group>
-						{#each items as item (item.value)}
-							<Command.Item
-								value={item.label}
-								keywords={[item.value, ...(item.keywords ?? [])]}
-								onSelect={() => handleSelect(item.value)}
-							>
-								<CheckIcon
-									class={cn('mr-2 size-4', value === item.value ? 'opacity-100' : 'opacity-0')}
-								/>
-								<span>{item.label}</span>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				{/if}
+					{/if}
+				</div>
 				{#if showCreateOption && !layout.phone}
 					<Command.Separator />
 					{@render createRow()}

@@ -221,7 +221,7 @@
 					onselect={setFlag}
 					onEditNames={() => (renaming = true)}
 				/>
-				<FormMessage {error} />
+				<FormMessage {error} values={[categoryId, date]} />
 				<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
 			</div>
 		{/if}
@@ -244,7 +244,7 @@
 					<DatePicker id="bulk-date" bind:value={date} />
 				</div>
 			{/if}
-			<FormMessage {error} />
+			<FormMessage {error} values={[categoryId, date]} />
 			<div class="grid grid-cols-2 gap-2">
 				<Button variant="outline" onclick={() => (dialogOpen = false)}>{m.cancel()}</Button>
 				<Button type="submit" disabled={busy}>{m.bulk_apply()}</Button>

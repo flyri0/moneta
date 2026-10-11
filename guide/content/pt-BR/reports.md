@@ -11,10 +11,10 @@ Gastos, fluxo de caixa e tendências leem as contas do orçamento; transferênci
 próprias contas não são gasto nem renda. O patrimônio líquido e o relatório por conta também
 incluem as contas de acompanhamento.
 
-## Flags {#flags}
+## Marcadores {#flags}
 
 Gastos por categoria, gastos por favorecido, fluxo de caixa e tendências de gastos têm um botão
-**Flags** ao lado do período. Escolha uma ou mais [flags](transactions.md#flags), ou **Sem flag**, e
+**Marcadores** ao lado do período. Escolha um ou mais [marcadores](transactions.md#flags), ou **Sem marcador**, e
 esses relatórios contam só as transações marcadas assim: quanto custou a viagem, quanto você tem a
 receber de volta. A escolha continua ao passar de um relatório a outro, como o período; **Limpar
 filtros** volta a contar tudo. Os cartões da visão geral sempre contam tudo.
@@ -26,7 +26,8 @@ filtros** volta a contar tudo. Os cartões da visão geral sempre contam tudo.
 - **Gastos por favorecido**: o mesmo, por quem você pagou. Aqui também, toque numa linha para ver
   as transações dela. Um reembolso só desconta do favorecido quando é lançado nele; lançado em
   outro, ainda desconta da categoria, então este total pode ser diferente do de gastos por
-  categoria.
+  categoria. Uma transferência para uma conta de acompanhamento também entra nos gastos por
+  categoria, mas não tem favorecido.
 - **Patrimônio líquido**: tudo o que você tem menos tudo o que deve, no fim de cada mês, somando
   todas as contas, inclusive as de acompanhamento. Cada conta conta como bem ou dívida pelo sinal
   do saldo.

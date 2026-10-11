@@ -20,6 +20,7 @@
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import { offerUndo } from '$client/undo';
 	import { categoryProgress, showsSpending } from '$features/budget/progress';
 	import {
@@ -110,7 +111,7 @@
 		{
 			main: category.name,
 			quick: m.quick_assign_title(),
-			move: m.budget_move_money(),
+			move: m.budget_move_money_title({ name: category.name }),
 			goal: m.category_goal(),
 			settings: m.category_settings(),
 			delete: m.category_delete_title({ name: category.name })
@@ -160,7 +161,7 @@
 	 * Assigns what Ready to Assign can spare. Covering it all closes the sheet; covering part leaves
 	 * it open on the rest, which then has to come from another category.
 	 */
-	async function coverFromReady() {
+	async function cover() {
 		const assigned = category.assigned + fromReady;
 		const all = readyCoversAll;
 		let call = null as ReturnType<typeof session.api.budget.setAssigned> | null;
@@ -172,11 +173,12 @@
 		offerUndo(
 			session.client,
 			call,
-			m.budget_assigned_set({ amount: session.format(assigned), name: category.name })
+			m.budget_covered({ amount: session.format(fromReady), name: category.name })
 		);
 		if (all) open = false;
 		else assignedText = formatAmountInput(assigned, session.money);
 	}
+	const coverFromReady = submitOnce(cover);
 
 	/** Selects a prefilled amount when the field gets focus, so typing replaces it. */
 	function selectAll(event: FocusEvent) {
@@ -191,11 +193,11 @@
 		moveAmount = formatAmountInput(-category.available, session.money);
 	}
 
-	async function saveAssigned(event: SubmitEvent) {
+	async function saveAmount(event: SubmitEvent) {
 		event.preventDefault();
 		const value = assignedText.trim() === '' ? 0 : session.parse(assignedText);
 		if (value === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		if (value === category.assigned) {
@@ -215,12 +217,13 @@
 			m.budget_assigned_set({ amount: session.format(value), name: category.name })
 		);
 	}
+	const saveAssigned = submitOnce(saveAmount);
 
-	async function move(event: SubmitEvent) {
+	async function moveAmountOut(event: SubmitEvent) {
 		event.preventDefault();
 		const amount = session.parse(moveAmount);
 		if (amount === null || amount <= 0) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		if (!otherId) {
@@ -243,6 +246,7 @@
 		open = false;
 		offerUndo(session.client, call, m.budget_moved({ amount: session.format(amount), from, to }));
 	}
+	const move = submitOnce(moveAmountOut);
 </script>
 
 <ResponsiveDialog bind:open {title} onBack={view === 'main' ? undefined : () => go('main')}>
@@ -287,7 +291,9 @@
 						</p>
 						<div class="grid gap-2 sm:grid-cols-2">
 							{#if readyCoversAll}
-								<Button size="sm" onclick={coverFromReady}>{m.budget_cover_from_rta()}</Button>
+								<Button size="sm" disabled={coverFromReady.pending} onclick={coverFromReady.run}
+									>{m.budget_cover_from_rta()}</Button
+								>
 								<Button size="sm" variant="outline" onclick={coverFromCategory}>
 									{m.budget_cover_from_category()}
 								</Button>
@@ -300,7 +306,8 @@
 										size="sm"
 										variant="outline"
 										class="h-auto min-h-8 py-1.5 whitespace-normal sm:col-span-full"
-										onclick={coverFromReady}
+										disabled={coverFromReady.pending}
+										onclick={coverFromReady.run}
 									>
 										{m.budget_cover_part_from_rta({ amount: session.format(fromReady) })}
 									</Button>
@@ -311,7 +318,7 @@
 					</section>
 				{/if}
 
-				<form class="grid gap-2" onsubmit={saveAssigned}>
+				<form class="grid gap-2" onsubmit={saveAssigned.run}>
 					<Label for="sheet-assigned">{m.budget_assigned_this_month()}</Label>
 					<div class="flex gap-2">
 						<Input
@@ -321,10 +328,10 @@
 							autocomplete="off"
 							onfocus={selectAll}
 						/>
-						<Button type="submit">{m.save()}</Button>
+						<Button type="submit" disabled={saveAssigned.pending}>{m.save()}</Button>
 					</div>
 					<AmountPreview text={assignedText} />
-					<FormMessage {error} />
+					<FormMessage {error} values={[assignedText, moveAmount, moveDirection, otherId]} />
 				</form>
 			{/if}
 
@@ -362,7 +369,10 @@
 	{:else if view === 'quick'}
 		<QuickAssign categoryIds={[category.id]} {month} onDone={() => (open = false)} />
 	{:else if view === 'move'}
-		<form class="grid gap-3" onsubmit={move}>
+		<form class="grid gap-3" onsubmit={move.run}>
+			<p class="text-sm text-muted-foreground" data-testid="move-own-available">
+				{m.budget_move_available({ amount: session.format(category.available) })}
+			</p>
 			<div class="grid grid-cols-2 gap-2">
 				<Button
 					variant={moveDirection === 'to' ? 'secondary' : 'ghost'}
@@ -412,8 +422,8 @@
 					{m.budget_move_short({ name: shortfall.name, amount: session.format(shortfall.amount) })}
 				</p>
 			{/if}
-			<FormMessage {error} />
-			<Button type="submit">{m.budget_move()}</Button>
+			<FormMessage {error} values={[assignedText, moveAmount, moveDirection, otherId]} />
+			<Button type="submit" disabled={move.pending}>{m.budget_move()}</Button>
 		</form>
 	{:else if view === 'goal'}
 		<GoalForm {category} {month} onDone={() => go('main')} />

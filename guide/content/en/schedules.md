@@ -84,6 +84,10 @@ Each account lists the occurrences of the next 30 days and its **projected** bal
 see whether the money will be there. The schedules screen groups them as **Due**, **Upcoming**, and
 **Paused or ended**. A schedule pauses when its account is closed.
 
+Overdue occurrences of the same schedule share a row. Its amount is their combined total, and
+its projected balance includes that total and every row above it. **Enter next** and **Skip next**
+handle only the next occurrence of that schedule.
+
 Tapping a schedule opens its overview: the amount, account, category, how it repeats (or which
 installment is next and how many are left) and its next dates. From there, **Enter next** or
 **Skip next** handles its next occurrence, and **Edit schedule** or **Delete schedule** is one tap

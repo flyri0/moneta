@@ -6,12 +6,14 @@ import {
 	formatMoneyCompact,
 	formatMoneySigned,
 	parseAmount,
+	formatAmountInput,
 	type MoneyFormat
 } from '$domain/money';
 import { isDemoFile } from './demo';
 import { MASK } from './hide-amounts';
 import { amounts } from './hide-amounts.svelte';
 import type { RpcClient } from './rpc';
+import { m } from '$i18n/paraglide/messages';
 import type { OpenResult, StartupErrorCode, UnreadableBudget } from './session';
 
 export type BootState =
@@ -60,6 +62,10 @@ export class BudgetSession {
 		amounts.hidden ? MASK : formatMoneyCompact(minor, this.money);
 
 	parse = (text: string): number | null => parseAmount(text, this.money);
+
+	/** The invalid-amount message, with an example in this budget's number format. */
+	amountInvalid = (): string =>
+		m.form_error_amount_invalid({ example: formatAmountInput(1250, this.money) });
 
 	/**
 	 * Re-reads meta whenever a write changes it. Returns the unsubscribe function. A read that

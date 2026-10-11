@@ -79,7 +79,11 @@
 		const min = bound(amountMin);
 		const max = bound(amountMax);
 		if (min === undefined || max === undefined) {
-			error = { message: m.register_filter_invalid_amount() };
+			error = {
+				message: m.register_filter_invalid_amount({
+					example: formatAmountInput(1250, session.money)
+				})
+			};
 			return;
 		}
 		if (min !== null && max !== null && min > max) {
@@ -178,7 +182,10 @@
 				ariaLabel={m.register_filter_flags()}
 			/>
 		</div>
-		<FormMessage {error} />
+		<FormMessage
+			{error}
+			values={[period, categoryId, payeeId, amountMin, amountMax, status, flags]}
+		/>
 		<Button type="button" variant="ghost" class="justify-self-start" onclick={reset}>
 			{m.register_clear_filters()}
 		</Button>

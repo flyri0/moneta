@@ -9,6 +9,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { BudgetCategoryView } from '$db/repos/budget';
 	import type { GoalType } from '$domain/goal';
 	import { formatAmountInput } from '$domain/money';
@@ -47,17 +48,18 @@
 		});
 	});
 
-	async function save(event: SubmitEvent) {
+	async function saveGoal(event: SubmitEvent) {
 		event.preventDefault();
 		const amount = session.parse(amountText);
 		if (amount === null || amount <= 0) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		const goal = { type, amount, month: type === 'target' && dated ? byMonth : null };
 		error = await runAction(() => session.api.categories.update(category.id, { goal }));
 		if (!error) onDone();
 	}
+	const save = submitOnce(saveGoal);
 
 	async function remove() {
 		error = await runAction(() => session.api.categories.update(category.id, { goal: null }));
@@ -65,7 +67,7 @@
 	}
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
+<form class="grid gap-4" onsubmit={save.run}>
 	<div class="grid gap-2">
 		<div class="grid grid-cols-2 gap-2">
 			<Button
@@ -112,9 +114,9 @@
 		</div>
 	{/if}
 
-	<FormMessage {error} />
+	<FormMessage {error} values={[type, amountText, dated, byMonth]} />
 	<div class="grid gap-2">
-		<Button type="submit">{m.save()}</Button>
+		<Button type="submit" disabled={save.pending}>{m.save()}</Button>
 		{#if category.goal}
 			<Button variant="ghost" class="text-destructive" onclick={remove}>
 				{m.category_goal_remove()}

@@ -100,6 +100,7 @@
 
 	/** "Yes": the bank agrees with what was cleared through the balance date. */
 	async function confirm() {
+		if (busy) return;
 		error = null;
 		busy = true;
 		let cleared;
@@ -115,6 +116,7 @@
 
 	async function check(event: SubmitEvent) {
 		event.preventDefault();
+		if (busy) return;
 		error = null;
 		busy = true;
 		let result;
@@ -127,7 +129,7 @@
 		}
 		busy = false;
 		if (result.kind === 'invalid') {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 		} else if (result.kind === 'match') {
 			void reconcile({ date, balance: result.balance });
 		} else {
@@ -138,6 +140,7 @@
 	}
 
 	function adjust() {
+		if (busy) return;
 		void reconcile({
 			date,
 			balance,
@@ -170,7 +173,7 @@
 					{session.format(clearedThrough)}
 				</p>
 			</div>
-			<FormMessage {error} />
+			<FormMessage {error} values={[typed, date, categoryId]} />
 			<div class="grid grid-cols-2 gap-2">
 				<Button variant="outline" disabled={busy} onclick={() => (step = 'enter')}>
 					{m.reconcile_no()}
@@ -193,7 +196,7 @@
 						inputmode="decimal"
 						autocomplete="off"
 						placeholder="0"
-						required
+						aria-required="true"
 					/>
 					<AmountPreview text={typed} />
 				</div>
@@ -205,11 +208,12 @@
 			<p class="text-xs text-muted-foreground">
 				{m.reconcile_cleared_now({ amount: session.format(clearedThrough) })}
 			</p>
-			<FormMessage {error} />
+			<FormMessage {error} values={[typed, date, categoryId]} />
 			<Button type="submit" disabled={busy}>{m.reconcile_continue()}</Button>
 		</form>
 	{:else}
 		<ConfirmPanel
+			values={[categoryId]}
 			body={m.reconcile_difference_body()}
 			confirmLabel={m.reconcile_adjust()}
 			destructive={false}

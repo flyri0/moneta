@@ -505,11 +505,11 @@ describe('names', () => {
 
 	it('refuses a group named like another, or like the Income group in any language', async () => {
 		const db = await createBudgetDb();
-		expect(() => createGroup(db, { name: ' bills ' })).toThrow(code('NAME_EXISTS'));
-		expect(() => createGroup(db, { name: 'income' })).toThrow(code('NAME_EXISTS'));
-		expect(() => createGroup(db, { name: 'Receitas' })).toThrow(code('NAME_EXISTS'));
+		expect(() => createGroup(db, { name: ' bills ' })).toThrow(code('GROUP_NAME_EXISTS'));
+		expect(() => createGroup(db, { name: 'income' })).toThrow(code('GROUP_NAME_EXISTS'));
+		expect(() => createGroup(db, { name: 'Receitas' })).toThrow(code('GROUP_NAME_EXISTS'));
 		const id = createGroup(db, { name: 'Savings' });
-		expect(() => updateGroup(db, id, { name: 'Everyday' })).toThrow(code('NAME_EXISTS'));
+		expect(() => updateGroup(db, id, { name: 'Everyday' })).toThrow(code('GROUP_NAME_EXISTS'));
 		updateGroup(db, id, { name: 'SAVINGS' });
 		expect(listCategoryTree(db).find((g) => g.id === id)?.name).toBe('SAVINGS');
 	});

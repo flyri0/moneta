@@ -1,6 +1,27 @@
 import { expect, test } from '@playwright/test';
 import { chooseCombobox, chooseSelect, onboard, pickDate } from './helpers';
 
+test('an invalid repeat interval opens Repeats and marks its row', async ({ page }) => {
+	await onboard(page);
+	await page.goto('/transactions/scheduled');
+	await page.getByRole('button', { name: 'Add schedule' }).first().click();
+	const dialog = page.getByRole('dialog');
+	await chooseCombobox(dialog, 'Payee', 'Landlord', 'Landlord');
+	await dialog.getByLabel('Amount', { exact: true }).fill('100');
+	await chooseCombobox(dialog, 'Category', 'Rent or Mortgage', 'Rent');
+	await dialog.getByRole('button', { name: /Repeats/ }).click();
+	await dialog.getByLabel('Every').fill('0');
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	await dialog.getByRole('button', { name: 'Save' }).click();
+	await expect(dialog.getByLabel('Every')).toBeVisible();
+	await expect(dialog.getByTestId('form-message')).toHaveText('Enter a whole number, 1 or more.');
+	await dialog.getByRole('button', { name: 'Back' }).click();
+	await expect(dialog.getByRole('button', { name: /Repeats/ })).toHaveAttribute(
+		'aria-invalid',
+		'true'
+	);
+});
+
 /** A local date `days` from today, as YYYY-MM-DD. */
 function daysFromToday(days: number): string {
 	const d = new Date();
@@ -177,7 +198,7 @@ async function addAutomaticPaycheck(page: import('@playwright/test').Page, date:
 	await dialog.getByRole('button', { name: 'Save' }).click();
 	// A date already past asks before entering it.
 	if (date < daysFromToday(0))
-		await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
+		await dialog.getByRole('button', { name: /Save and enter (it|\d+)/ }).click();
 	await expect(dialog).toBeHidden();
 }
 
@@ -248,6 +269,14 @@ test('asks before an automatic schedule enters years of transactions, and folds 
 	const overdue = page.getByTestId('upcoming-row').filter({ hasText: 'Due' });
 	await expect(overdue).toHaveCount(1);
 	await expect(overdue.getByTestId('upcoming-more-overdue')).toHaveText(/^\+\d\d overdue$/);
+	const more = Number(
+		(await overdue.getByTestId('upcoming-more-overdue').innerText()).match(/\d+/)![0]
+	);
+	const total = (more + 1) * 10;
+	await expect(overdue.getByTestId('upcoming-amount')).toContainText(`$${total.toFixed(2)}`);
+	await expect(overdue.getByTestId('upcoming-balance')).toHaveText(`$${(1000 - total).toFixed(2)}`);
+	await expect(overdue.getByRole('button', { name: 'Enter next', exact: true })).toBeVisible();
+	await expect(overdue.getByRole('button', { name: 'Skip next', exact: true })).toBeVisible();
 });
 
 test('asks before an automatic schedule enters even one past date', async ({ page }) => {
@@ -265,7 +294,7 @@ test('asks before an automatic schedule enters even one past date', async ({ pag
 	await expect(dialog.getByRole('heading', { name: 'Enter now?' })).toBeVisible();
 	await expect(dialog.getByText('enters a transaction now, dated')).toBeVisible();
 	await expect(dialog.getByText('1 transactions')).toHaveCount(0);
-	await dialog.getByRole('button', { name: 'Save and enter 1' }).click();
+	await dialog.getByRole('button', { name: /Save and enter (it|\d+)/ }).click();
 	await expect(dialog).toBeHidden();
 });
 

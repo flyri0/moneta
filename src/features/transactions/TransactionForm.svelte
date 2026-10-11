@@ -9,6 +9,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { TransactionInput } from '$db/repos/transactions';
 	import { isFarFuture, todayIso } from '$domain/month';
 	import { formatDate } from '$i18n/formats';
@@ -21,7 +22,7 @@
 		type FormContext,
 		type TransactionDraft
 	} from '$features/transactions/form';
-	import { FORM_ERRORS } from '$features/transactions/form-errors';
+	import { formErrorMessage, FORM_ERRORS } from '$features/transactions/form-errors';
 	import {
 		canInstall,
 		installmentCount,
@@ -117,7 +118,7 @@
 		event.preventDefault();
 		const result = buildTransactionInput(draft, ctx);
 		if (!result.ok) {
-			error = { message: FORM_ERRORS[result.error]() };
+			error = { message: formErrorMessage(result.error, ctx.money) };
 			return;
 		}
 		const input = result.input;
@@ -147,9 +148,10 @@
 		busy = false;
 		if (!error) onDone(input.accountId);
 	}
+	const submit = submitOnce(save);
 </script>
 
-<form class="grid gap-4" onsubmit={save}>
+<form class="grid grid-cols-[minmax(0,1fr)] gap-4" onsubmit={submit.run}>
 	<TransactionFields {ctx} bind:draft dateLabel={m.transaction_date()} {pending} {available} />
 
 	{#if installable}
@@ -199,7 +201,7 @@
 		</Alert.Root>
 	{/if}
 
-	<FormMessage {error} />
+	<FormMessage {error} values={[draft, installments]} />
 
 	<div class="grid grid-cols-2 gap-2">
 		<Button variant="outline" onclick={onCancel ?? (() => onDone(null))}>{m.cancel()}</Button>

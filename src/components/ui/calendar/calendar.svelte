@@ -5,6 +5,7 @@
 	import * as Calendar from './index.js';
 	import type { ButtonVariant } from '../button/button.svelte';
 	import type { Snippet } from 'svelte';
+	import { m } from '$i18n/paraglide/messages';
 
 	let {
 		ref = $bindable(null),
@@ -54,6 +55,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 		className
 	)}
 	{locale}
+	calendarLabel={m.date_picker_label()}
 	{monthFormat}
 	{yearFormat}
 	{...restProps}

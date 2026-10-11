@@ -89,7 +89,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
 	{
 		id: 'schedules',
 		route: 'scheduled',
-		target: 'scheduled-tab',
+		// The sidebar link on wide screens; phones have only the tab.
+		target: 'schedules',
+		fallback: { target: 'scheduled-tab', copy: 'schedules', topic: 'installmentsUnderWay' },
 		topic: 'installmentsUnderWay'
 	},
 	{ id: 'reports-way', route: 'scheduled', target: 'reports', leadsTo: 'reports' },

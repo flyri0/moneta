@@ -9,6 +9,7 @@
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import type { BudgetCategoryView, BudgetGroupView } from '$db/repos/budget';
 	import type { CategoryPatch } from '$db/repos/categories';
 	import { m } from '$i18n/paraglide/messages';
@@ -66,13 +67,20 @@
 	}
 
 	/** Saves a changed name (Enter or leaving the field); an emptied one goes back to the saved name. */
-	function saveName() {
-		if (name.trim() === '' || name.trim() === category.name) {
+	function checkName() {
+		if (name.trim() === '') {
 			name = category.name;
-			return;
+			error = { message: m.form_error_name_required() };
+			return Promise.resolve();
 		}
-		void save({ name });
+		if (name.trim() === category.name) {
+			name = category.name;
+			return Promise.resolve();
+		}
+		return save({ name });
 	}
+	// A name change while one is saving is ignored.
+	const saveName = submitOnce(checkName).run;
 </script>
 
 <div class="grid gap-3">
@@ -80,7 +88,13 @@
 		<!-- Enter fires `change` itself; the form only makes the phone keyboard offer to submit. -->
 		<form class="grid gap-2 p-3" onsubmit={(e) => e.preventDefault()}>
 			<Label for="category-name">{m.category_name()}</Label>
-			<Input id="category-name" bind:value={name} onchange={saveName} required autocomplete="off" />
+			<Input
+				id="category-name"
+				bind:value={name}
+				onchange={saveName}
+				aria-required="true"
+				autocomplete="off"
+			/>
 		</form>
 		<div class="grid gap-2 p-3">
 			<Label for="category-icon">{m.icon_label()}</Label>
@@ -108,5 +122,5 @@
 			/>
 		</div>
 	</div>
-	<FormMessage {error} />
+	<FormMessage {error} values={[name, groupId, hidden]} />
 </div>

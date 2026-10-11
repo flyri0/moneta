@@ -9,6 +9,7 @@
 	import FormMessage from '$components/FormMessage.svelte';
 	import { useSession } from '$client/app-state.svelte';
 	import { runAction, type ActionError } from '$client/notify';
+	import { submitOnce } from '$client/submit.svelte';
 	import {
 		dropCategory,
 		dropGroup,
@@ -96,10 +97,11 @@
 		}
 	}
 
-	async function save() {
+	async function write() {
 		error = await runAction(() => session.api.categories.saveOrder(toPayload(layout)));
 		if (!error) onDone();
 	}
+	const save = submitOnce(write);
 </script>
 
 {#snippet grip(item: DragItem)}
@@ -189,10 +191,10 @@
 <EditBar label={m.budget_edit_order()} testId="order-bar" passThrough={!!drag.active}>
 	<div class="grid gap-2 p-2">
 		<p class="px-1 text-sm text-muted-foreground">{m.order_hint()}</p>
-		<FormMessage {error} />
+		<FormMessage {error} values={[layout]} />
 		<div class="grid grid-cols-2 gap-2">
 			<Button variant="outline" onclick={onDone}>{m.cancel()}</Button>
-			<Button onclick={save}>{m.save()}</Button>
+			<Button disabled={save.pending} onclick={save.run}>{m.save()}</Button>
 		</div>
 	</div>
 </EditBar>
