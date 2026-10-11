@@ -4,8 +4,6 @@
 	import { useSession } from '$client/app-state.svelte';
 	import type { BudgetMonthView } from '$db/repos/budget';
 	import { rtaHint, rtaTone, type RtaHint } from '$features/budget/view';
-	import { formatMonthLong } from '$i18n/formats';
-	import { getLocale } from '$i18n/paraglide/runtime';
 	import { m } from '$i18n/paraglide/messages';
 	import { RTA_CARD, RTA_ICON, RTA_TEXT } from './tones';
 
@@ -23,21 +21,14 @@
 	const session = useSession();
 	let expanded = $state(false);
 
-	const HINTS: Record<Exclude<RtaHint, 'futureShort'>, () => string> = {
+	const HINTS: Record<RtaHint, () => string> = {
 		assigned: m.budget_rta_assigned_hint,
 		unassigned: m.budget_rta_unassigned_hint,
 		overassigned: m.budget_rta_overassigned_hint,
 		negativeFunds: m.budget_rta_negative_funds_hint,
 		noAccounts: m.budget_rta_no_accounts_hint
 	};
-	const hint = $derived.by(() => {
-		const kind = rtaHint(view, hasAccounts);
-		return kind === 'futureShort'
-			? m.budget_rta_future_short_hint({
-					month: formatMonthLong(view.futureNegativeMonth!, getLocale())
-				})
-			: HINTS[kind]();
-	});
+	const hint = $derived(HINTS[rtaHint(view, hasAccounts)]());
 
 	// Zero is the goal: it shows as done, and anything else asks to be dealt with.
 	const tone = $derived(rtaTone(view.readyToAssign));

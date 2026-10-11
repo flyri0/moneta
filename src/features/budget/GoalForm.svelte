@@ -52,7 +52,7 @@
 		event.preventDefault();
 		const amount = session.parse(amountText);
 		if (amount === null || amount <= 0) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		const goal = { type, amount, month: type === 'target' && dated ? byMonth : null };

@@ -7,7 +7,7 @@
 	import { planTour } from '$client/tour';
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
-	import { parseAmount } from '$domain/money';
+	import { formatAmountInput, parseAmount } from '$domain/money';
 	import { todayIso } from '$domain/month';
 	import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
 	import { suggestCurrency, localeChoices } from '$i18n/formats';
@@ -121,7 +121,11 @@
 		const typed =
 			!withAccount || balance.trim() === '' ? 0 : parseAmount(balance, { currency, locale });
 		if (typed === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = {
+				message: m.form_error_amount_invalid({
+					example: formatAmountInput(1250, { currency, locale })
+				})
+			};
 			return;
 		}
 		const billing =

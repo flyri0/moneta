@@ -21,7 +21,7 @@
 		type FormContext,
 		type TransactionDraft
 	} from '$features/transactions/form';
-	import { FORM_ERRORS } from '$features/transactions/form-errors';
+	import { formErrorMessage, FORM_ERRORS } from '$features/transactions/form-errors';
 	import {
 		canInstall,
 		installmentCount,
@@ -117,7 +117,7 @@
 		event.preventDefault();
 		const result = buildTransactionInput(draft, ctx);
 		if (!result.ok) {
-			error = { message: FORM_ERRORS[result.error]() };
+			error = { message: formErrorMessage(result.error, ctx.money) };
 			return;
 		}
 		const input = result.input;

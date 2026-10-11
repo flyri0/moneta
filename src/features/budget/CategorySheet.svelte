@@ -173,7 +173,7 @@
 		offerUndo(
 			session.client,
 			call,
-			m.budget_assigned_set({ amount: session.format(assigned), name: category.name })
+			m.budget_covered({ amount: session.format(fromReady), name: category.name })
 		);
 		if (all) open = false;
 		else assignedText = formatAmountInput(assigned, session.money);
@@ -197,7 +197,7 @@
 		event.preventDefault();
 		const value = assignedText.trim() === '' ? 0 : session.parse(assignedText);
 		if (value === null) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		if (value === category.assigned) {
@@ -223,7 +223,7 @@
 		event.preventDefault();
 		const amount = session.parse(moveAmount);
 		if (amount === null || amount <= 0) {
-			error = { message: m.form_error_amount_invalid() };
+			error = { message: session.amountInvalid() };
 			return;
 		}
 		if (!otherId) {

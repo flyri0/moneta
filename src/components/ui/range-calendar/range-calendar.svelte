@@ -4,6 +4,7 @@
 	import { RangeCalendar as RangeCalendarPrimitive } from 'bits-ui';
 	import { buttonVariants } from '$ui/button/index.js';
 	import { cn, type WithoutChildrenOrChild } from '$utils';
+	import { m } from '$i18n/paraglide/messages';
 
 	/**
 	 * A calendar that selects a range of days. The month and year are chosen outside (see
@@ -44,6 +45,7 @@
 	bind:placeholder
 	{weekdayFormat}
 	{locale}
+	calendarLabel={m.date_picker_label()}
 	class={cn(
 		'group/calendar bg-background p-3 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(8)] in-data-[slot=popover-content]:bg-transparent',
 		className

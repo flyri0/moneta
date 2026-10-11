@@ -303,7 +303,7 @@
 				data-testid="split-remaining"
 			>
 				{#if remaining === null}
-					{m.form_error_amount_invalid()}
+					{session.amountInvalid()}
 				{:else}
 					{@const split = splitBalance(remaining, draft.direction)}
 					{split.over
