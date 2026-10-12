@@ -1,21 +1,29 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+
+	import { useSession } from '$client/app-state.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, runAction } from '$client/notify';
+
+	import IconField from '$components/emoji-picker/IconField.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
+	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+
+	import type { Account } from '$db/repos/accounts';
+	import { parseBillingDays } from '$features/accounts/account-form';
+
+	import { m } from '$i18n/paraglide/messages';
+
 	import { Button } from '$ui/button';
 	import { Input } from '$ui/input';
 	import { Label } from '$ui/label';
 	import { Separator } from '$ui/separator';
-	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import FormMessage from '$components/FormMessage.svelte';
-	import IconField from '$components/emoji-picker/IconField.svelte';
-	import { useSession } from '$client/app-state.svelte';
-	import { runAction, type ActionError } from '$client/notify';
-	import type { Account } from '$db/repos/accounts';
-	import { m } from '$i18n/paraglide/messages';
-	import { parseBillingDays } from '$features/accounts/account-form';
+
 	import BillingDaysFields from './BillingDaysFields.svelte';
 	import CloseAccountPanel from './CloseAccountPanel.svelte';
 	import DeleteAccountPanel from './DeleteAccountPanel.svelte';
+
+	const goto = layerNavigation();
 
 	let { open = $bindable(false), account }: { open: boolean; account: Account } = $props();
 	const session = useSession();

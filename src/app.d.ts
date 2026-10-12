@@ -11,7 +11,10 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			/** Disposable protection for open mobile layers; never restores UI. */
+			mobileLayer?: string;
+		}
 		// interface Platform {}
 	}
 }

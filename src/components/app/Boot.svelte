@@ -5,12 +5,14 @@
 <script lang="ts">
 	import { onDestroy, onMount, type Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+
 	import { resolve } from '$app/paths';
+
 	import { AppState, setApp } from '$client/app-state.svelte';
-	import { startDbWorker, type DbWorker } from '$client/db';
-	import { openLastBudget, startupError, type OpenResult } from '$client/session';
+	import { type DbWorker, startDbWorker } from '$client/db';
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { watchUncaught } from '$client/notify';
+	import { openLastBudget, type OpenResult, startupError } from '$client/session';
 	import {
 		applyServiceWorkerUpdate,
 		onNeedReload,
@@ -20,11 +22,17 @@
 	import { createTabLock, type TabLock } from '$client/tab-lock';
 	import { settleWithin } from '$client/timeout';
 	import { appUpdate } from '$client/update.svelte';
+
 	import type { BudgetMeta } from '$db/repos/meta';
-	import { currentMonth } from '$domain/month';
+
 	import { m } from '$i18n/paraglide/messages';
+
+	import { currentMonth } from '$domain/month';
+
 	import AppShell from './AppShell.svelte';
 	import StartupScreen from './StartupScreen.svelte';
+
+	const goto = layerNavigation();
 
 	let { children }: { children: Snippet } = $props();
 

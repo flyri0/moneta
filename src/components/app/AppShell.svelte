@@ -1,9 +1,4 @@
 <script lang="ts">
-	import { onMount, type Snippet } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import { afterNavigate, goto, preloadCode } from '$app/navigation';
-	import { navigating, page } from '$app/state';
-	import { resolve } from '$app/paths';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
@@ -14,44 +9,60 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
-	import { Button } from '$ui/button';
-	import * as Tooltip from '$ui/tooltip';
+	import { onMount, type Snippet } from 'svelte';
+	import { toast } from 'svelte-sonner';
+
+	import { afterNavigate, preloadCode } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { navigating, page } from '$app/state';
+
+	import { useSession } from '$client/app-state.svelte';
+	import { runWhenIdle } from '$client/idle';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { ACTION_TOAST_DURATION } from '$client/notify';
+	import { actionError } from '$client/notify';
+	import { pendingLoads } from '$client/pending';
+	import { persistQuietly } from '$client/persistence';
+	import { enterAndReport, scheduleRunner } from '$client/schedules';
+	import {
+		clampWidth,
+		dragTo,
+		MAX_SHARE,
+		maxWidth,
+		MIN_WIDTH,
+		RAIL_WIDTH,
+		readSidebar,
+		type SidebarState,
+		stepBy,
+		writeSidebar
+	} from '$client/sidebar';
+	import { today, watchToday } from '$client/today.svelte';
+	import { noteBudgetOpened } from '$client/tour';
+
+	import FormMessage from '$components/FormMessage.svelte';
+
 	import AccountList from '$features/accounts/AccountList.svelte';
 	import { backUpNow } from '$features/backup/back-up-now';
 	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
 	import { backupDue } from '$features/backup/reminder';
-	import { useSession } from '$client/app-state.svelte';
-	import { runWhenIdle } from '$client/idle';
-	import { pendingLoads } from '$client/pending';
-	import { useLive } from '$client/live.svelte';
-	import { ACTION_TOAST_DURATION } from '$client/notify';
-	import { persistQuietly } from '$client/persistence';
-	import {
-		MAX_SHARE,
-		MIN_WIDTH,
-		RAIL_WIDTH,
-		clampWidth,
-		dragTo,
-		maxWidth,
-		readSidebar,
-		stepBy,
-		writeSidebar,
-		type SidebarState
-	} from '$client/sidebar';
-	import { enterAndReport, scheduleRunner } from '$client/schedules';
-	import { today, watchToday } from '$client/today.svelte';
-	import { currentMonth } from '$domain/month';
-	import { errorMessage } from '$i18n/errors';
-	import { m } from '$i18n/paraglide/messages';
-	import FormMessage from '$components/FormMessage.svelte';
-	import { actionError } from '$client/notify';
-	import CrashScreen from './CrashScreen.svelte';
-	import DemoBanner from './DemoBanner.svelte';
-	import NavProgress from './NavProgress.svelte';
-	import { fab } from './fab.svelte';
 	import Tour from '$features/tour/Tour.svelte';
 	import { tour } from '$features/tour/tour.svelte';
-	import { noteBudgetOpened } from '$client/tour';
+
+	import { errorMessage } from '$i18n/errors';
+	import { m } from '$i18n/paraglide/messages';
+
+	import { Button } from '$ui/button';
+	import * as Tooltip from '$ui/tooltip';
+
+	import { currentMonth } from '$domain/month';
+
+	import CrashScreen from './CrashScreen.svelte';
+	import DemoBanner from './DemoBanner.svelte';
+	import { fab } from './fab.svelte';
+	import NavProgress from './NavProgress.svelte';
+
+	const goto = layerNavigation();
 
 	let { children }: { children: Snippet } = $props();
 

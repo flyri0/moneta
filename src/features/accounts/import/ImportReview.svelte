@@ -1,26 +1,34 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { SvelteSet } from 'svelte/reactivity';
-	import * as Alert from '$ui/alert';
-	import { Button } from '$ui/button';
-	import FormMessage from '$components/FormMessage.svelte';
-	import LoadingRows from '$components/LoadingRows.svelte';
-	import Delayed from '$components/Delayed.svelte';
-	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
-	import RuleDialog from '$features/payees/RuleDialog.svelte';
-	import { ruleDraft, type RuleDraft, type SavedRule } from '$features/payees/rules';
-	import { NewCategories, withCategoryIds } from '$features/categories/new-categories';
+
+	import { resolve } from '$app/paths';
+
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
-	import { ACTION_TOAST_DURATION, actionError, runAction, type ActionError } from '$client/notify';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { ACTION_TOAST_DURATION, type ActionError, actionError, runAction } from '$client/notify';
 	import { offerUndo } from '$client/undo';
+
+	import Delayed from '$components/Delayed.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
+	import LoadingRows from '$components/LoadingRows.svelte';
+
 	import type { Account } from '$db/repos/accounts';
 	import type { StatementLine } from '$db/repos/imports';
-	import { todayIso } from '$domain/month';
+	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { NewCategories, withCategoryIds } from '$features/categories/new-categories';
+	import RuleDialog from '$features/payees/RuleDialog.svelte';
+	import { type RuleDraft, ruleDraft, type SavedRule } from '$features/payees/rules';
+
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import * as Alert from '$ui/alert';
+	import { Button } from '$ui/button';
+
+	import { todayIso } from '$domain/month';
+
 	import ImportRow from './ImportRow.svelte';
 	import { importHandoff } from './pending.svelte';
 	import {
@@ -31,12 +39,14 @@
 		importLines,
 		newCategoryGroupsFor,
 		reviewCounts,
+		type ReviewRow,
 		reviewRows,
 		suggestCategory,
-		type Suggestions,
-		type ReviewRow
+		type Suggestions
 	} from './review';
 	import type { Statement } from './statement';
+
+	const goto = layerNavigation();
 
 	/**
 	 * Reviews statement lines before importing them into `account`: which to import, their payees

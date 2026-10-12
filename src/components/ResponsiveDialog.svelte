@@ -20,6 +20,7 @@
 		title,
 		description,
 		onBack,
+		onMobileBack,
 		focusFirst = true,
 		children
 	}: {
@@ -27,11 +28,14 @@
 		title: string;
 		description?: string;
 		onBack?: () => void;
+		/** A phone-only internal return, leaving the desktop flow unchanged. */
+		onMobileBack?: () => void;
 		focusFirst?: boolean;
 		children: Snippet;
 	} = $props();
 
 	const desktop = new MediaQuery('min-width: 768px');
+	const backAction = $derived(desktop.current ? onBack : (onMobileBack ?? onBack));
 	let content = $state<HTMLElement | null>(null);
 
 	/** What counts as a field to focus first: a text box, a select or a picker. */
@@ -68,8 +72,8 @@
 </script>
 
 {#snippet back()}
-	{#if onBack}
-		<Button variant="ghost" size="icon-sm" class="-my-1 -ml-1.5" onclick={onBack}>
+	{#if backAction}
+		<Button variant="ghost" size="icon-sm" class="-my-1 -ml-1.5" onclick={backAction}>
 			<ArrowLeftIcon />
 			<span class="sr-only">{m.back()}</span>
 		</Button>
@@ -95,7 +99,7 @@
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
-	<BottomDrawer bind:open bind:ref={content}>
+	<BottomDrawer bind:open bind:ref={content} onBack={backAction}>
 		{#snippet header()}
 			<Sheet.Header class="pt-3">
 				<div class="flex min-w-0 items-center gap-1">

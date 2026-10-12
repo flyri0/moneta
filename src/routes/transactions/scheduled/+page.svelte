@@ -1,29 +1,38 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { Button } from '$ui/button';
+	import { untrack } from 'svelte';
+
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { actionError } from '$client/notify';
+
 	import EmptyState from '$components/EmptyState.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
-	import TransactionsTabs from '$features/transactions/TransactionsTabs.svelte';
+
+	import type { ScheduleRow } from '$db/repos/schedules';
+	import { filterSchedules } from '$features/schedules/filters';
+	import { ScheduleFilters } from '$features/schedules/filters.svelte';
 	import ScheduleDialog from '$features/schedules/ScheduleDialog.svelte';
 	import ScheduleList from '$features/schedules/ScheduleList.svelte';
 	import ScheduleToolbar from '$features/schedules/ScheduleToolbar.svelte';
-	import { filterSchedules } from '$features/schedules/filters';
-	import { ScheduleFilters } from '$features/schedules/filters.svelte';
-	import { useSession } from '$client/app-state.svelte';
-	import { useLive } from '$client/live.svelte';
-	import { actionError } from '$client/notify';
-	import type { ScheduleRow } from '$db/repos/schedules';
-	import { todayIso } from '$domain/month';
+	import TransactionsTabs from '$features/transactions/TransactionsTabs.svelte';
+
 	import { m } from '$i18n/paraglide/messages';
+
+	import { Button } from '$ui/button';
+
+	import { todayIso } from '$domain/month';
+
+	const goto = layerNavigation();
 
 	const session = useSession();
 	const schedules = useLive(

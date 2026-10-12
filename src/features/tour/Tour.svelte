@@ -1,33 +1,43 @@
 <script lang="ts">
 	import { onDestroy, tick, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { goto } from '$app/navigation';
+
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { Button } from '$ui/button';
-	import HelpLink from '$components/HelpLink.svelte';
-	import { scrollLimits } from '$features/budget/sortable.svelte';
-	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
+
 	import { useSession } from '$client/app-state.svelte';
-	import { useLive } from '$client/live.svelte';
 	import { guidePath } from '$client/guide';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { settleTour, tourPendingFor } from '$client/tour';
 	import { VisibleArea } from '$client/visible-area.svelte';
-	import { currentMonth } from '$domain/month';
+
+	import HelpLink from '$components/HelpLink.svelte';
+
+	import { cloudProviders } from '$features/backup/cloud/cloud.svelte';
+	import { scrollLimits } from '$features/budget/sortable.svelte';
+
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { Button } from '$ui/button';
+
+	import { currentMonth } from '$domain/month';
+
 	import {
+		type Box,
 		placeCard,
+		type ResolvedStep,
 		resolveStep,
 		TOUR_ROUTE_IDS,
 		TOUR_STEPS,
-		type Box,
-		type ResolvedStep,
 		type TourCopy,
 		type TourLayout,
 		type TourTarget
 	} from './steps';
 	import { tour } from './tour.svelte';
+
+	const goto = layerNavigation();
 
 	/**
 	 * The first-budget tour: a dimmed page with one element lit, and a card explaining it. It

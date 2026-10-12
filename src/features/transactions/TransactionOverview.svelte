@@ -1,25 +1,34 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import { Badge } from '$ui/badge';
-	import FormMessage from '$components/FormMessage.svelte';
-	import SheetLink from '$components/SheetLink.svelte';
-	import { payeeDisplay, payeeText } from '$features/accounts/register';
-	import Amount from '$components/Amount.svelte';
+
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { actionError, runActionToast } from '$client/notify';
+
+	import Amount from '$components/Amount.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
+	import SheetLink from '$components/SheetLink.svelte';
+
 	import type { TransactionRow } from '$db/repos/transactions';
+	import { payeeDisplay, payeeText } from '$features/accounts/register';
+	import FlagField from '$features/flags/FlagField.svelte';
+
 	import { formatDate } from '$i18n/formats';
 	import { storedCategoryLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
-	import FlagField from '$features/flags/FlagField.svelte';
+
+	import { Badge } from '$ui/badge';
+
 	import SplitLines from './SplitLines.svelte';
+
+	const goto = layerNavigation();
 
 	/**
 	 * Everything about a transaction, kept live, with editing, an account and deleting one tap away.

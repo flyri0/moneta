@@ -1,33 +1,42 @@
 <script lang="ts">
-	import { MediaQuery } from 'svelte/reactivity';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import Loader2Icon from '@lucide/svelte/icons/loader-circle';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
+
+	import { resolve } from '$app/paths';
+
+	import { getApp, useSession } from '$client/app-state.svelte';
+	import { Countdown } from '$client/countdown';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, runAction } from '$client/notify';
+	import { loadRegistry } from '$client/registry';
+	import {
+		partlyRestored,
+		type PlannedRestore,
+		planRestore,
+		reopenedByPartialRestore,
+		restoreBackup
+	} from '$client/session';
+
+	import FormMessage from '$components/FormMessage.svelte';
+	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+
+	import { readBackupFile } from '$features/backup/actions';
+	import BackupUnlockForm from '$features/backup/BackupUnlockForm.svelte';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
+
+	import { formatDateTime } from '$i18n/formats';
+	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
+
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
 	import { Checkbox } from '$ui/checkbox';
 	import { Label } from '$ui/label';
-	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
-	import FormMessage from '$components/FormMessage.svelte';
-	import BackupUnlockForm from '$features/backup/BackupUnlockForm.svelte';
-	import { readBackupFile } from '$features/backup/actions';
-	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
-	import { getApp, useSession } from '$client/app-state.svelte';
-	import { Countdown } from '$client/countdown';
-	import { runAction, type ActionError } from '$client/notify';
-	import { loadRegistry } from '$client/registry';
-	import {
-		partlyRestored,
-		planRestore,
-		reopenedByPartialRestore,
-		restoreBackup,
-		type PlannedRestore
-	} from '$client/session';
+
 	import { currentMonth } from '$domain/month';
-	import { formatDateTime } from '$i18n/formats';
-	import { m } from '$i18n/paraglide/messages';
-	import { getLocale } from '$i18n/paraglide/runtime';
+
+	const goto = layerNavigation();
 
 	/**
 	 * Restores a backup: lists its budgets to pick from, after asking for its password or recovery

@@ -49,6 +49,7 @@
 	/** An existing transaction opens on its overview; editing and deleting are screens of it. */
 	let view = $state<'overview' | 'form' | 'delete'>('form');
 	let addingAccount = $state(false);
+	let accountBack = $state<(() => void) | undefined>();
 	let error = $state<ActionError | null>(null);
 	let busy = $state(false);
 
@@ -167,6 +168,7 @@
 <ResponsiveDialog
 	bind:open
 	{title}
+	onMobileBack={addingAccount ? (accountBack ?? (() => (addingAccount = false))) : undefined}
 	onBack={addingAccount
 		? () => (addingAccount = false)
 		: viewing && view !== 'overview'
@@ -192,7 +194,10 @@
 			onConfirm={remove}
 		/>
 	{:else if addingAccount}
-		<AddAccountForm onCreated={(id) => void load(transaction, id, occurrence)} />
+		<AddAccountForm
+			bind:back={accountBack}
+			onCreated={(id) => void load(transaction, id, occurrence)}
+		/>
 	{:else if !ctx.accounts.some((a) => !a.closed)}
 		<NoOpenAccounts hasClosed={ctx.accounts.length > 0} onAdd={() => (addingAccount = true)} />
 	{:else if initial}

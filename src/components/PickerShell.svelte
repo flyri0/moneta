@@ -11,16 +11,21 @@
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-	import { MediaQuery } from 'svelte/reactivity';
-	import { Dialog, Popover } from 'bits-ui';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
-	import { Button } from '$ui/button';
-	import * as PopoverUi from '$ui/popover';
+	import { Dialog, Popover } from 'bits-ui';
+	import type { Snippet } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
 	import { trackOverlay } from '$client/overlays.svelte';
 	import { VisibleArea } from '$client/visible-area.svelte';
+
 	import { m } from '$i18n/paraglide/messages';
+
+	import { Button } from '$ui/button';
+	import * as PopoverUi from '$ui/popover';
+
 	import { cn } from '$utils';
 
 	/**
@@ -61,6 +66,10 @@
 	} = $props();
 
 	const desktop = new MediaQuery('min-width: 768px');
+	mobileBackLayer(() => open && !desktop.current, {
+		close: () => (open = false),
+		back: () => onBack
+	});
 	const area = new VisibleArea();
 	let screen = $state<HTMLElement | null>(null);
 

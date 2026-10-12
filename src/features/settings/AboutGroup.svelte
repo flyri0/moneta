@@ -1,15 +1,23 @@
 <script lang="ts">
-	import SettingsGroup from './SettingsGroup.svelte';
-	import SettingsRow from './SettingsRow.svelte';
+	import { resolve } from '$app/paths';
+
 	import { guidePath } from '$client/guide';
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { appUpdate } from '$client/update.svelte';
+
+	import { tour } from '$features/tour/tour.svelte';
+
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
 	import { Button } from '$ui/button';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
+
 	import { currentMonth } from '$domain/month';
-	import { tour } from '$features/tour/tour.svelte';
+
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
+
+	const goto = layerNavigation();
 
 	const REPOSITORY_URL = 'https://github.com/flyri0/moneta';
 
