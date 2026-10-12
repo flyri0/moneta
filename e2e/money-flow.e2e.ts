@@ -135,6 +135,7 @@ test.describe('on a phone', () => {
 		const picker = page.locator('[data-picker][data-state="open"]');
 		await picker.locator('[data-slot="command-input"]').fill('transfer: savings');
 		const items = picker.locator('[data-slot="command-item"]');
-		await expect(items).toHaveText(['Transfer: Savings']);
+		await expect(items).toHaveCount(1);
+		await expect(items.getByText('Transfer: Savings', { exact: true })).toBeVisible();
 	});
 });
