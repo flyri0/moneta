@@ -36,7 +36,7 @@ export interface TransactionDraft {
 
 /** What the form needs of an account. A card's billing days date its installments. */
 export type FormAccount = Pick<Account, 'id' | 'name' | 'type' | 'onBudget' | 'closed'> &
-	Partial<Pick<Account, 'closingDay' | 'dueDay'>>;
+	Partial<Pick<Account, 'closingDay' | 'dueDay' | 'icon' | 'balance'>>;
 
 /** What the form needs of a payee: its name and the categories it suggests. */
 export type FormPayee = Pick<Payee, 'id' | 'name' | 'defaultCategoryId' | 'lastCategoryId'>;
@@ -79,6 +79,19 @@ export function transferTargets(draft: TransactionDraft, ctx: FormContext): Form
 export function transferTarget(draft: TransactionDraft, ctx: FormContext): FormAccount | null {
 	if (!draft.transferAccountId) return null;
 	return transferTargets(draft, ctx).find((a) => a.id === draft.transferAccountId) ?? null;
+}
+
+/** The budget effect follows the money, which an inflow moves from the other account. */
+export function transferBudgetEffect(
+	draft: TransactionDraft,
+	ctx: FormContext
+): 'internal' | 'outside' | 'entering' | 'leaving' | null {
+	const own = findAccount(ctx, draft.accountId);
+	const other = transferTarget(draft, ctx);
+	if (!own || !other) return null;
+	if (own.onBudget === other.onBudget) return own.onBudget ? 'internal' : 'outside';
+	const leaves = draft.direction === 'outflow' ? own.onBudget : other.onBudget;
+	return leaves ? 'leaving' : 'entering';
 }
 
 /**

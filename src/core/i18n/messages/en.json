@@ -1096,5 +1096,13 @@
 	"reports_filter_flags_body": "Only transactions with the flags you pick count in the reports. Nothing picked counts them all.",
 	"demo_flag_reimbursable": "Reimbursable",
 	"demo_flag_trip": "Trip",
-	"demo_flag_deductible": "Tax deductible"
+	"demo_flag_deductible": "Tax deductible",
+	"account_picker_current_balance": "Current balance",
+	"account_close_transfer_from": "Transfer the balance from",
+	"account_close_transfer_debt_hint": "{amount} comes from the account you pick to clear this debt, dated today. The account then closes and keeps its history.",
+	"account_close_includes_future": "The amount to move includes future-dated transactions. The account list shows current balances.",
+	"transfer_budget_internal": "This transfer moves money between budget accounts without changing the budget. No category is needed.",
+	"transfer_budget_outside": "Both accounts are tracking accounts, so this transfer does not affect the budget. No category is needed.",
+	"transfer_budget_entering": "Money enters the budget. Choose a category to record it on the budget account.",
+	"transfer_budget_leaving": "Money leaves the budget. Choose a category to record it on the budget account."
 }

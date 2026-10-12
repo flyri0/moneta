@@ -125,7 +125,9 @@ aumenta valores, e deixa como estão as categorias sem meta.
   **Configurações da categoria** (ou **Configurações do grupo**) e desligue **Oculta** (ou
   **Oculto**). Ocultar um grupo oculta todas as categorias dele.
 - **Excluir** uma categoria que já foi usada pergunta para onde vão as transações e o dinheiro
-  atribuído. Excluir um grupo move as categorias dele para o grupo que você escolher.
+  atribuído. Para categorias de despesa, as opções de destino mostram o disponível no mês
+  que você está visualizando. Esses valores ajudam na escolha; a exclusão transfere o histórico e
+  o dinheiro atribuído de todos os meses. Excluir um grupo move as categorias dele para o grupo que você escolher.
 - **Nomes** não se repetem: dois grupos não podem ter o mesmo (nem o do grupo Receitas), e duas
   categorias do mesmo grupo também não.
 

@@ -8,8 +8,14 @@
 	import { Combobox, type ComboboxGroup } from '$ui/combobox';
 	import { DatePicker } from '$ui/date-picker';
 	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import { actionError } from '$client/notify';
+	import { today } from '$client/today.svelte';
+	import FormMessage from '$components/FormMessage.svelte';
+	import AccountOptionRow from '$features/accounts/AccountOptionRow.svelte';
+	import TransferBudgetHint from './TransferBudgetHint.svelte';
 	import { formatDate } from '$i18n/formats';
-	import { accountOptionLabel } from '$i18n/labels';
+	import { accountOptionLabel, accountTypeLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
@@ -55,12 +61,22 @@
 	} = $props();
 
 	const session = useSession();
+	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
+		session.api.accounts.list(today())
+	);
+	const currentCtx = $derived({ ...ctx, accounts: accounts.data ?? ctx.accounts });
 	// The form re-creates these fields (with {#key}) for every draft it opens.
 	let payeeValue = $state(draft.transferAccountId ?? draft.payee);
 
-	const openAccounts = $derived(ctx.accounts.filter((a) => !a.closed || a.id === draft.accountId));
+	const openAccounts = $derived(
+		currentCtx.accounts.filter((a) => !a.closed || a.id === draft.accountId)
+	);
 	const accountItems = $derived(
-		openAccounts.map((a) => ({ value: a.id, label: accountOptionLabel(a, openAccounts) }))
+		openAccounts.map((a) => ({
+			value: a.id,
+			label: accountOptionLabel(a, openAccounts),
+			keywords: [a.name, accountTypeLabel(a.type)]
+		}))
 	);
 
 	const transferLabelFn = $derived(
@@ -69,13 +85,13 @@
 
 	const payeeGroups = $derived.by(() => {
 		const groups: ComboboxGroup[] = [];
-		const targets = transferTargets(draft, ctx);
+		const targets = transferTargets(draft, currentCtx);
 		if (targets.length > 0) {
 			groups.push({
 				heading: m.transaction_transfers_group(),
 				items: targets.map((a) => {
-					const label = transferLabelFn(accountOptionLabel(a, ctx.accounts));
-					return { value: a.id, label, keywords: [a.name, label] };
+					const label = transferLabelFn(accountOptionLabel(a, currentCtx.accounts));
+					return { value: a.id, label, keywords: [a.name, label, accountTypeLabel(a.type)] };
 				})
 			});
 		}
@@ -96,15 +112,15 @@
 		}
 		return groups;
 	});
-	const mode = $derived(categoryMode(draft, ctx));
-	const options = $derived(categoryOptions(draft, ctx));
-	const newIn = $derived(newCategoryGroups(draft, ctx));
-	const splittable = $derived(canSplit(draft, ctx));
+	const mode = $derived(categoryMode(draft, currentCtx));
+	const options = $derived(categoryOptions(draft, currentCtx));
+	const newIn = $derived(newCategoryGroups(draft, currentCtx));
+	const splittable = $derived(canSplit(draft, currentCtx));
 	const remaining = $derived(draft.splits ? splitRemaining(draft, ctx.money) : 0);
-	const isTransfer = $derived(transferTarget(draft, ctx) !== null);
+	const isTransfer = $derived(transferTarget(draft, currentCtx) !== null);
 
 	function onPayeeSelect(val: string) {
-		const target = ctx.accounts.find((a) => a.id === val);
+		const target = currentCtx.accounts.find((a) => a.id === val);
 		if (target) {
 			draft.transferAccountId = target.id;
 			draft.payee = '';
@@ -124,7 +140,7 @@
 
 	function payeeChanged() {
 		if (mode === 'hidden' || draft.categoryId) return;
-		draft.categoryId = suggestCategory(draft, ctx) ?? '';
+		draft.categoryId = suggestCategory(draft, currentCtx) ?? '';
 	}
 
 	function startSplit() {
@@ -163,7 +179,12 @@
 	/>
 {/snippet}
 
-<div class="grid grid-cols-2 gap-3">
+<FormMessage error={accounts.error ? actionError(accounts.error) : null} />
+
+<div
+	class="grid grid-cols-2 gap-3 transition-opacity aria-busy:opacity-60 aria-busy:delay-150"
+	aria-busy={accounts.stale}
+>
 	<div class="grid gap-2">
 		<Label for="txn-account">{m.transaction_account()}</Label>
 		<Combobox
@@ -173,7 +194,13 @@
 			bind:value={draft.accountId}
 			onSelect={accountChanged}
 			placeholder={m.transaction_account()}
-		/>
+			contentClass="min-w-[min(24rem,calc(100vw-2rem))]"
+		>
+			{#snippet itemContent(item)}
+				{@const account = currentCtx.accounts.find((a) => a.id === item.value)}
+				{#if account}<AccountOptionRow {account} label={item.label} />{/if}
+			{/snippet}
+		</Combobox>
 	</div>
 	<div class="grid gap-2">
 		<Label for="txn-date">{dateLabel}</Label>
@@ -196,8 +223,20 @@
 		onSelect={onPayeeSelect}
 		placeholder={m.transaction_payee()}
 		emptyOption={{ value: '', label: m.transaction_no_payee() }}
-	/>
+		contentClass="min-w-[min(24rem,calc(100vw-2rem))]"
+	>
+		{#snippet itemContent(item)}
+			{@const account = currentCtx.accounts.find((a) => a.id === item.value)}
+			{#if account}
+				<AccountOptionRow {account} label={item.label} />
+			{:else}
+				<span>{item.label}</span>
+			{/if}
+		{/snippet}
+	</Combobox>
 </div>
+
+<TransferBudgetHint {draft} ctx={currentCtx} />
 
 <div class="grid gap-2">
 	<span class="text-sm font-medium">{m.transaction_amount()}</span>

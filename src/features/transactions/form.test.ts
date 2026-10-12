@@ -13,6 +13,7 @@ import {
 	splitRemaining,
 	suggestCategory,
 	transferTarget,
+	transferBudgetEffect,
 	type FormAccount,
 	type FormContext,
 	type TransactionDraft
@@ -478,5 +479,30 @@ describe('splitBalance', () => {
 		expect(splitBalance(2000, 'inflow')).toEqual({ over: false, amount: 2000 });
 		expect(splitBalance(-3000, 'inflow')).toEqual({ over: true, amount: 3000 });
 		expect(splitBalance(0, 'outflow')).toEqual({ over: false, amount: 0 });
+	});
+});
+
+describe('transferBudgetEffect', () => {
+	it.each([
+		['checking', 'savings', 'outflow', 'internal'],
+		['checking', 'savings', 'inflow', 'internal'],
+		['broker', 'tracking', 'outflow', 'outside'],
+		['checking', 'broker', 'outflow', 'leaving'],
+		['checking', 'broker', 'inflow', 'entering'],
+		['broker', 'checking', 'outflow', 'entering'],
+		['broker', 'checking', 'inflow', 'leaving']
+	] as const)('%s to %s with %s is %s', (accountId, transferAccountId, direction, effect) => {
+		const context = { ...ctx, accounts: [...ctx.accounts, acct('tracking', 'other', false)] };
+		expect(transferBudgetEffect(draft({ accountId, transferAccountId, direction }), context)).toBe(
+			effect
+		);
+	});
+
+	it('has no explanation for a payee, an unavailable target or a missing source', () => {
+		expect(transferBudgetEffect(draft({}), ctx)).toBeNull();
+		expect(transferBudgetEffect(draft({ transferAccountId: 'closedbank' }), ctx)).toBeNull();
+		expect(
+			transferBudgetEffect(draft({ accountId: 'missing', transferAccountId: 'savings' }), ctx)
+		).toBeNull();
 	});
 });
