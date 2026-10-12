@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$ui/command';
@@ -33,7 +34,9 @@
 		ariaLabel,
 		onSelect,
 		allowCustom = false,
-		createLabel
+		createLabel,
+		itemContent,
+		contentClass
 	}: {
 		value?: string;
 		items?: ComboboxItem[];
@@ -50,6 +53,9 @@
 		onSelect?: (val: string) => void;
 		allowCustom?: boolean;
 		createLabel?: (query: string) => string;
+		/** Draws an option's content; the checkmark and selection stay with the combobox. */
+		itemContent?: Snippet<[ComboboxItem]>;
+		contentClass?: string;
 	} = $props();
 
 	let open = $state(false);
@@ -124,6 +130,7 @@
 	muted={!value}
 	title={ariaLabel ?? placeholder}
 	class={className}
+	{contentClass}
 >
 	{#snippet children(layout)}
 		<Command.Root class={layout.root}>
@@ -157,14 +164,18 @@
 							<Command.Group heading={group.heading}>
 								{#each group.items as item (item.value)}
 									<Command.Item
-										value={item.label}
+										value={`${item.label} ${item.value}`}
 										keywords={[item.label, ...(item.keywords ?? [])]}
 										onSelect={() => handleSelect(item.value)}
 									>
 										<CheckIcon
 											class={cn('mr-2 size-4', value === item.value ? 'opacity-100' : 'opacity-0')}
 										/>
-										<span>{item.label}</span>
+										{#if itemContent}
+											{@render itemContent(item)}
+										{:else}
+											<span>{item.label}</span>
+										{/if}
 									</Command.Item>
 								{/each}
 							</Command.Group>
@@ -173,14 +184,18 @@
 						<Command.Group>
 							{#each items as item (item.value)}
 								<Command.Item
-									value={item.label}
+									value={`${item.label} ${item.value}`}
 									keywords={[item.label, ...(item.keywords ?? [])]}
 									onSelect={() => handleSelect(item.value)}
 								>
 									<CheckIcon
 										class={cn('mr-2 size-4', value === item.value ? 'opacity-100' : 'opacity-0')}
 									/>
-									<span>{item.label}</span>
+									{#if itemContent}
+										{@render itemContent(item)}
+									{:else}
+										<span>{item.label}</span>
+									{/if}
 								</Command.Item>
 							{/each}
 						</Command.Group>

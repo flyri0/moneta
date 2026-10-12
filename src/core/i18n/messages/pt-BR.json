@@ -1096,5 +1096,13 @@
 	"reports_filter_flags_body": "Só as transações com os marcadores escolhidos contam nos relatórios. Sem nenhum escolhido, todas contam.",
 	"demo_flag_reimbursable": "Reembolsável",
 	"demo_flag_trip": "Viagem",
-	"demo_flag_deductible": "Dedutível"
+	"demo_flag_deductible": "Dedutível",
+	"account_picker_current_balance": "Saldo atual",
+	"account_close_transfer_from": "Transferir o saldo de",
+	"account_close_transfer_debt_hint": "{amount} vem da conta escolhida para quitar esta dívida, com a data de hoje. A conta então é encerrada e mantém o histórico.",
+	"account_close_includes_future": "O valor a movimentar inclui transações com data futura. A lista de contas mostra os saldos atuais.",
+	"transfer_budget_internal": "Esta transferência move dinheiro entre contas do orçamento sem alterar o orçamento. Não precisa de categoria.",
+	"transfer_budget_outside": "As duas contas são de acompanhamento, então esta transferência não afeta o orçamento. Não precisa de categoria.",
+	"transfer_budget_entering": "O dinheiro entra no orçamento. Escolha uma categoria para registrá-lo na conta do orçamento.",
+	"transfer_budget_leaving": "O dinheiro sai do orçamento. Escolha uma categoria para registrá-lo na conta do orçamento."
 }

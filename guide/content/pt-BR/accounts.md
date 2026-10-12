@@ -3,6 +3,11 @@
 As contas guardam suas transações: uma conta corrente, a carteira, um cartão de crédito, um
 empréstimo. **Contas** lista todas com os saldos, e tocar numa abre o extrato dela.
 
+Ao escolher uma conta numa transação, transferência, agendamento ou encerramento, cada opção
+mostra o ícone, o tipo, se está no orçamento ou é de acompanhamento e o **Saldo atual**. Esse saldo
+considera as transações até hoje, inclusive as ainda não compensadas. Não inclui transações com
+data futura e não é uma previsão para a data que você escolher.
+
 ## Contas do orçamento e de acompanhamento {#account-kinds}
 
 Ao adicionar uma conta, você primeiro escolhe o tipo. Os tipos se dividem em dois grupos:
@@ -104,7 +109,9 @@ data ou conta muda um saldo que você já conferiu com o banco.
 - **Encerrar conta** quando você parar de usá-la. Se sobrou dinheiro nela, escolha a conta para onde
   ele vai: o Moneta lança uma transferência do saldo todo, com a data de hoje, e encerra a conta
   (dinheiro que entra ou sai do orçamento pede uma categoria, como em qualquer transferência
-  assim). Uma conta encerrada mantém o histórico, aparece em **Encerradas** e pode ser reaberta. Os
+  assim). O valor movimentado inclui as transações com data futura, mesmo que as opções de conta
+  mostrem os saldos atuais. Se o saldo for negativo, escolha a conta de onde vem o dinheiro para
+  quitar a dívida. Uma conta encerrada mantém o histórico, aparece em **Encerradas** e pode ser reaberta. Os
   agendamentos de uma conta encerrada ficam pausados.
 - **Excluir conta e suas transações**, no fim dessa tela, remove a conta com tudo o que há nela: as
   transações, o outro lado de cada transferência (então o saldo das outras contas também muda) e os

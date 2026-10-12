@@ -17,6 +17,9 @@ memo and [flag](transactions.md#flags)), plus:
 - **Installments**, for a card purchase, at the top of **Repeats**: a purchase you're already
   paying, numbered as it goes (see [below](#installments-under-way)).
 
+The account choices show current balances, not a forecast for the next occurrence. For a
+transfer, the form also explains its effect on the budget and whether a category is needed.
+
 A monthly schedule on the 31st falls on the last day of shorter months, and goes back to the 31st
 when the month has one.
 

@@ -5,6 +5,7 @@
 	import ConfirmPanel from '$components/ConfirmPanel.svelte';
 	import FormMessage from '$components/FormMessage.svelte';
 	import CategoryCombobox from '$features/categories/CategoryCombobox.svelte';
+	import { availableByCategory } from '$features/categories/available';
 	import { NewCategories } from '$features/categories/new-categories';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
@@ -49,6 +50,7 @@
 	/** The groups a category created to take this one's place can go in. */
 	const userGroups = $derived(groups.filter((g) => !g.system && !g.hidden));
 	const pending = new NewCategories();
+	const available = $derived(availableByCategory(groups));
 
 	let reassignTo = $state('');
 	let busy = $state(false);
@@ -120,6 +122,7 @@
 				options={targets}
 				newIn={userGroups}
 				{pending}
+				{available}
 				bind:value={reassignTo}
 				emptyLabel={m.category_delete_choose()}
 				allowEmpty={false}

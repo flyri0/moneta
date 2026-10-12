@@ -1,12 +1,13 @@
 import type { ClientApi } from '$db/api';
 import type { MoneyFormat } from '$domain/money';
+import { todayIso } from '$domain/month';
 import { m } from '$i18n/paraglide/messages';
 import type { FormContext } from './form';
 
 /** Loads what the transaction and schedule forms offer: accounts, payees and categories. */
 export async function loadFormContext(api: ClientApi, money: MoneyFormat): Promise<FormContext> {
 	const [accounts, payees, tree] = await Promise.all([
-		api.accounts.options(),
+		api.accounts.list(todayIso()),
 		api.payees.options(),
 		api.categories.tree()
 	]);

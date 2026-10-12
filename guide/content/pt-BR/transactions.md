@@ -7,7 +7,8 @@ contas. **Transações** lista todas, de todas as contas; o extrato de cada cont
 
 Use o botão **Transação** (**+ Transação**, flutuando acima da barra de baixo no celular). Preencha:
 
-- **Conta**: onde o dinheiro se moveu.
+- **Conta**: onde o dinheiro se moveu. As opções mostram o tipo, a participação no orçamento e o
+  saldo atual para ajudar na escolha, mesmo ao lançar em outra data.
 - **Data**.
 - **Favorecido**: a quem você pagou ou quem pagou você. Digite um nome novo para criar um. Um
   favorecido com categoria padrão já a preenche; senão o Moneta sugere a categoria usada da última
@@ -45,13 +46,19 @@ distribuir.
 ## Transferências {#transfers}
 
 Para mover dinheiro entre suas contas, escolha a outra conta como favorecido (em
-**Transferências**). O Moneta registra os dois lados de uma vez.
+**Transferências**). O Moneta registra os dois lados de uma vez. Depois de escolher a outra conta,
+o formulário explica se o dinheiro entra ou sai do orçamento, ou se a movimentação não o afeta. **Saída** move
+dinheiro da conta selecionada para a outra; **Entrada** faz o caminho inverso.
 
 - Entre duas contas do orçamento (da corrente para a poupança, ou pagando um cartão), a
   transferência não tem categoria e não muda o orçamento.
 - De uma conta do orçamento para uma de acompanhamento (para um investimento, ou a parcela de um
   empréstimo), o dinheiro sai do orçamento, então a transferência precisa de uma categoria, como um
   gasto.
+- De uma conta de acompanhamento para uma do orçamento, escolha uma categoria na conta do
+  orçamento para registrar a entrada. Uma categoria de receita soma ao Pronto para atribuir;
+  uma de despesa devolve o dinheiro àquela categoria.
+- Entre duas contas de acompanhamento, não precisa de categoria e o orçamento continua igual.
 
 ## Marcadores {#flags}
 

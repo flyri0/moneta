@@ -9,12 +9,16 @@
 	import { categoryOptions, newCategoryGroups, newDraft } from '$features/transactions/form';
 	import { useSession } from '$client/app-state.svelte';
 	import { useLive } from '$client/live.svelte';
+	import { today } from '$client/today.svelte';
 	import { actionError, runAction, type ActionError } from '$client/notify';
 	import { submitOnce } from '$client/submit.svelte';
 	import { offerUndo } from '$client/undo';
 	import type { Account } from '$db/repos/accounts';
 	import { todayIso } from '$domain/month';
 	import { m } from '$i18n/paraglide/messages';
+	import { accountOptionLabel, accountTypeLabel } from '$i18n/labels';
+	import AccountOptionRow from './AccountOptionRow.svelte';
+	import TransferBudgetHint from '$features/transactions/TransferBudgetHint.svelte';
 
 	/** Transfers any remaining balance before closing, with a quiet path to deletion. */
 	let {
@@ -26,7 +30,7 @@
 		$props();
 	const session = useSession();
 	const accounts = useLive(session.client, ['accounts', 'transactions'], () =>
-		session.api.accounts.list()
+		session.api.accounts.list(today())
 	);
 	const tree = useLive(session.client, ['category_groups', 'categories'], () =>
 		session.api.categories.tree()
@@ -37,11 +41,13 @@
 	let error = $state<ActionError | null>(null);
 
 	// The settings account is dated today; closing moves future transactions' money too.
-	const balance = $derived(
-		accounts.data?.find((a) => a.id === account.id)?.balance ?? account.balance + account.upcoming
-	);
+	const source = $derived(accounts.data?.find((a) => a.id === account.id) ?? account);
+	const balance = $derived(source.balance + source.upcoming);
 	const moving = $derived(balance !== 0);
 	const targets = $derived((accounts.data ?? []).filter((a) => !a.closed && a.id !== account.id));
+	const transferLabel = $derived(
+		balance < 0 ? m.account_close_transfer_from() : m.account_close_transfer_to()
+	);
 	const target = $derived(targets.find((a) => a.id === toAccountId) ?? null);
 	const needsCategory = $derived(target !== null && target.onBudget !== account.onBudget);
 	const ctx = $derived({
@@ -91,22 +97,36 @@
 >
 	{#if moving}
 		<p class="text-sm text-muted-foreground">
-			{m.account_close_transfer_hint({ amount: session.format(Math.abs(balance)) })}
+			{balance < 0
+				? m.account_close_transfer_debt_hint({ amount: session.format(Math.abs(balance)) })
+				: m.account_close_transfer_hint({ amount: session.format(balance) })}
 		</p>
+		<p class="text-xs text-muted-foreground">{m.account_close_includes_future()}</p>
 		{#if accounts.data === undefined && !accounts.error}
 			<LoadingRows rows={1} />
 		{:else}
 			<div class="grid gap-2">
-				<Label for="close-to">{m.account_close_transfer_to()}</Label>
+				<Label for="close-to">{transferLabel}</Label>
 				<Combobox
 					id="close-to"
-					ariaLabel={m.account_close_transfer_to()}
+					ariaLabel={transferLabel}
 					bind:value={toAccountId}
-					items={targets.map((a) => ({ value: a.id, label: a.name }))}
-					placeholder={m.account_close_transfer_to()}
-				/>
+					items={targets.map((a) => ({
+						value: a.id,
+						label: accountOptionLabel(a, targets),
+						keywords: [a.name, accountTypeLabel(a.type)]
+					}))}
+					placeholder={transferLabel}
+					contentClass="min-w-[min(24rem,calc(100vw-2rem))]"
+				>
+					{#snippet itemContent(item)}
+						{@const account = targets.find((a) => a.id === item.value)}
+						{#if account}<AccountOptionRow {account} label={item.label} />{/if}
+					{/snippet}
+				</Combobox>
 			</div>
 		{/if}
+		<TransferBudgetHint {draft} {ctx} />
 		{#if needsCategory}
 			{#if tree.data === undefined && !tree.error}
 				<LoadingRows rows={1} />

@@ -7,7 +7,8 @@ Every movement of money is a transaction: a purchase, a paycheck, a transfer bet
 
 Use the **Transaction** button (**+ Transaction**, floating above the bottom bar on a phone). Fill in:
 
-- **Account**: where the money moved.
+- **Account**: where the money moved. The options show the type, budget status and current balance
+  to help you choose, even when entering a transaction for another date.
 - **Date**.
 - **Payee**: who you paid or who paid you. Type a new name to create one. A payee with a default
   category fills it in; otherwise Moneta suggests the category used last time.
@@ -43,12 +44,18 @@ place.
 ## Transfers {#transfers}
 
 To move money between your accounts, pick the other account as the payee (under **Transfers**).
-Moneta records both sides at once.
+Moneta records both sides at once. After you choose the other account, the form explains whether
+the money enters or leaves the budget, or stays between accounts without affecting it. **Outflow**
+moves money from the selected account to the other one; **Inflow** moves it the other way.
 
 - Between two on-budget accounts (checking to savings, or paying a credit card), a transfer has no
   category and doesn't change the budget.
 - From an on-budget account to a tracking one (into an investment, or a loan payment), the money
   leaves the budget, so the transfer needs a category, like spending.
+- From a tracking account into an on-budget one, choose a category on the budget account to record
+  the money coming in. An income category adds it to Ready to Assign; a spending category returns
+  it to that category.
+- Between two tracking accounts, no category is needed and the budget stays the same.
 
 ## Flags {#flags}
 

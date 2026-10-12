@@ -120,7 +120,9 @@ amount, and leaves categories without a goal as they are.
   Both wait at the bottom, under **Hidden**: to bring one back, tap it, open **Category settings**
   (or **Group settings**) and turn off **Hidden**. Hiding a group hides all its categories.
 - **Deleting** a category that was used asks where its transactions and assigned money should go.
-  Deleting a group moves its categories to the group you choose.
+  For spending categories, the destination options show their available amounts in the month
+  you are viewing. These amounts help you choose; deletion reassigns the category's history and
+  assigned money across all months. Deleting a group moves its categories to the group you choose.
 - **Names** are unique: two groups can't share one (nor take the Income group's), and neither can
   two categories in the same group.
 

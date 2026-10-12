@@ -203,7 +203,9 @@ test('a negative balance closes with an inflow and permits creating an income ca
 	await addAccount(page, 'Investments', '0', 'Investment');
 	await addAccount(page, 'Savings', '-200');
 	const dialog = await closeScreen(page);
-	await chooseCombobox(dialog, 'Transfer the balance to', 'Investments', 'Investments');
+	await expect(dialog).toContainText('$200.00 comes from the account you pick');
+	await chooseCombobox(dialog, 'Transfer the balance from', 'Investments', 'Investments');
+	await expect(dialog.getByTestId('transfer-budget-hint')).toContainText('enters the budget');
 	await dialog.getByLabel('Category', { exact: true }).click();
 	const picker = page.locator('[data-picker][data-state="open"]');
 	const items = picker.locator('[data-slot="command-item"]');

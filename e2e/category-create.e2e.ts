@@ -406,7 +406,12 @@ test('correcting an adjustment category clears a worker error and a retry shows 
 }) => {
 	await onboard(page);
 	await page.getByRole('link', { name: 'Accounts' }).first().click();
-	await page.getByTestId('account-row').filter({ hasText: 'Checking' }).getByRole('link').click();
+	await page
+		.getByRole('main')
+		.getByTestId('account-row')
+		.filter({ hasText: 'Checking' })
+		.getByRole('link')
+		.click();
 	await page.getByRole('button', { name: 'Reconcile' }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByRole('button', { name: 'No', exact: true }).click();

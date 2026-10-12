@@ -3,6 +3,11 @@
 Accounts hold your transactions: a checking account, a wallet, a credit card, a loan. **Accounts**
 lists them with their balances, and tapping one opens its register.
 
+When choosing an account in a transaction, transfer, schedule or account closure, each option
+shows its icon, type, whether it is on budget or tracking, and **Current balance**. This balance
+counts transactions through today, including those not yet cleared. It excludes future-dated
+transactions and is not a prediction for the date you choose.
+
 ## Budget and tracking accounts {#account-kinds}
 
 When you add an account, you first pick its type. Types come in two kinds:
@@ -103,7 +108,9 @@ amount, date or account changes a balance you already checked with your bank.
 
 - **Close account** when you stop using one. If money is left in it, choose the account it goes
   to: Moneta records a transfer for the whole balance, dated today, then closes the account (moving
-  money into or out of the budget asks for a category, as any such transfer does). A closed account
+  money into or out of the budget asks for a category, as any such transfer does). The amount
+  moved includes future-dated transactions, even though the account choices show current balances.
+  For a negative balance, choose the account the money comes from to clear the debt. A closed account
   keeps its history, shows under **Closed**, and can be reopened. Schedules on a closed account
   pause.
 - **Delete account and its transactions**, at the bottom of that screen, removes the account with

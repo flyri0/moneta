@@ -17,6 +17,9 @@ observação e [marcador](transactions.md#flags)), e mais:
 - **Parcelas**, numa compra no cartão, no alto de **Repetição**: uma compra que você já está
   pagando, numerada a cada parcela (veja [abaixo](#installments-under-way)).
 
+As opções de conta mostram o saldo atual, não uma previsão para a próxima ocorrência. Numa
+transferência, o formulário também explica o efeito no orçamento e se precisa de categoria.
+
 Um agendamento mensal no dia 31 cai no último dia dos meses mais curtos, e volta ao dia 31 quando o
 mês tem um.
 
