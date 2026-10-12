@@ -1,36 +1,45 @@
 <script lang="ts">
-	import { parseBillingDays, signedStartingBalance } from '$features/accounts/account-form';
 	import { toast } from 'svelte-sonner';
-	import { runAction, type ActionError } from '$client/notify';
-	import { createBudget, restoreAll, type SessionApi } from '$client/session';
+
+	import { setMobileBack } from '$client/mobile-back.svelte';
+	import { type ActionError, runAction } from '$client/notify';
 	import { loadRegistry } from '$client/registry';
+	import { createBudget, restoreAll, type SessionApi } from '$client/session';
 	import { planTour } from '$client/tour';
+
 	import type { AccountType } from '$db/repos/accounts';
 	import type { BudgetMeta } from '$db/repos/meta';
-	import { formatAmountInput, parseAmount } from '$domain/money';
-	import { todayIso } from '$domain/month';
-	import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
-	import { suggestCurrency, localeChoices } from '$i18n/formats';
-	import {
-		onboardingSteps,
-		stepAfter,
-		stepBefore,
-		stepNumber,
-		type OnboardingStep
-	} from '$features/onboarding/steps';
+	import { parseBillingDays, signedStartingBalance } from '$features/accounts/account-form';
+	import { readBackupFile } from '$features/backup/actions';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
+	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
 	import {
 		starterSelection,
 		toGroupsInput,
 		toIncomeInput
 	} from '$features/onboarding/starter-categories';
+	import {
+		type OnboardingStep,
+		onboardingSteps,
+		stepAfter,
+		stepBefore,
+		stepNumber
+	} from '$features/onboarding/steps';
+	import { budgetName } from '$features/settings/budget-name';
+
+	// Onboarding keeps its own step navigation.
+	setMobileBack(null);
+
+	import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';
+	import { localeChoices, suggestCurrency } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { formatAmountInput, parseAmount } from '$domain/money';
+	import { todayIso } from '$domain/month';
+
 	import AccountStep from './AccountStep.svelte';
 	import BackupsStep from './BackupsStep.svelte';
-	import UnlockBackupDialog from '$features/backup/UnlockBackupDialog.svelte';
-	import { readBackupFile } from '$features/backup/actions';
-	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
-	import { budgetName } from '$features/settings/budget-name';
 	import BudgetStep from './BudgetStep.svelte';
 	import CategoriesStep from './CategoriesStep.svelte';
 	import DoneStep from './DoneStep.svelte';

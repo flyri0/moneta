@@ -1,42 +1,51 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import * as Alert from '$ui/alert';
-	import { Button } from '$ui/button';
-	import { Checkbox } from '$ui/checkbox';
-	import { Input } from '$ui/input';
-	import { Label } from '$ui/label';
-	import FormMessage from '$components/FormMessage.svelte';
+
 	import { useSession } from '$client/app-state.svelte';
-	import { runAction, type ActionError } from '$client/notify';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, runAction } from '$client/notify';
 	import { submitOnce } from '$client/submit.svelte';
+
+	import FormMessage from '$components/FormMessage.svelte';
+
 	import type { TransactionInput } from '$db/repos/transactions';
-	import { isFarFuture, todayIso } from '$domain/month';
-	import { formatDate } from '$i18n/formats';
-	import { m } from '$i18n/paraglide/messages';
-	import { getLocale } from '$i18n/paraglide/runtime';
+	import { BUDGET_TABLES } from '$features/budget/view';
+	import { availableByCategory, budgetMonthFor } from '$features/categories/available';
+	import {
+		categoryValues,
+		NewCategories,
+		withCategoryIds
+	} from '$features/categories/new-categories';
 	import {
 		buildTransactionInput,
 		canSplit,
-		splitRemaining,
 		type FormContext,
+		splitRemaining,
 		type TransactionDraft
 	} from '$features/transactions/form';
-	import { formErrorMessage, FORM_ERRORS } from '$features/transactions/form-errors';
+	import { FORM_ERRORS, formErrorMessage } from '$features/transactions/form-errors';
 	import {
 		canInstall,
 		installmentCount,
 		installmentPlan
 	} from '$features/transactions/installments';
+
+	import { formatDate } from '$i18n/formats';
+	import { m } from '$i18n/paraglide/messages';
+	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import * as Alert from '$ui/alert';
+	import { Button } from '$ui/button';
+	import { Checkbox } from '$ui/checkbox';
+	import { Input } from '$ui/input';
+	import { Label } from '$ui/label';
+
+	import { isFarFuture, todayIso } from '$domain/month';
+
 	import TransactionFields from './TransactionFields.svelte';
-	import { useLive } from '$client/live.svelte';
-	import { BUDGET_TABLES } from '$features/budget/view';
-	import { availableByCategory, budgetMonthFor } from '$features/categories/available';
-	import {
-		NewCategories,
-		categoryValues,
-		withCategoryIds
-	} from '$features/categories/new-categories';
+
+	const goto = layerNavigation();
 
 	/** `onSave`, when given, replaces the create/update write (entering a scheduled occurrence). */
 	let {
@@ -105,7 +114,6 @@
 		const query = new URLSearchParams({ add: 'installments', account: draft.accountId });
 		onDone(null);
 		// The path is resolve()d; only the query is added to it.
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		void goto(`${resolve('/transactions/scheduled')}?${query}`);
 	}
 

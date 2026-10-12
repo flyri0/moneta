@@ -1,20 +1,29 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+
+	import { resolve } from '$app/paths';
+
+	import { getApp, useSession } from '$client/app-state.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, runAction } from '$client/notify';
+	import { loadRegistry } from '$client/registry';
+	import { deleteBudget, switchBudget } from '$client/session';
+	import { submitOnce } from '$client/submit.svelte';
+
+	import FormMessage from '$components/FormMessage.svelte';
+
+	import { m } from '$i18n/paraglide/messages';
+
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
-	import FormMessage from '$components/FormMessage.svelte';
+
+	import { currentMonth } from '$domain/month';
+
 	import DeleteBudgetDialog from './DeleteBudgetDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
-	import { getApp, useSession } from '$client/app-state.svelte';
-	import { runAction, type ActionError } from '$client/notify';
-	import { submitOnce } from '$client/submit.svelte';
-	import { loadRegistry } from '$client/registry';
-	import { deleteBudget, switchBudget } from '$client/session';
-	import { currentMonth } from '$domain/month';
-	import { m } from '$i18n/paraglide/messages';
+
+	const goto = layerNavigation();
 
 	const app = getApp();
 	const session = useSession();

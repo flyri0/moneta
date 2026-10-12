@@ -1,10 +1,30 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
+
+	import { resolve } from '$app/paths';
+
+	import { getApp, useSession } from '$client/app-state.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, actionError, runActionToast } from '$client/notify';
+	import { restoreAll } from '$client/session';
+
 	import FormMessage from '$components/FormMessage.svelte';
 	import ResponsiveDialog from '$components/ResponsiveDialog.svelte';
+
+	import type { BudgetCopy } from '$db/api';
+	import { exportBudgetJson, exportTransactionsCsv } from '$features/backup/actions';
+	import { backUpNow } from '$features/backup/back-up-now';
+	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
+	import CopyList from '$features/backup/CopyList.svelte';
+	import { BACKUP_ACCEPT } from '$features/backup/target';
+
+	import { formatDateTime } from '$i18n/formats';
+	import { m } from '$i18n/paraglide/messages';
+
 	import * as Alert from '$ui/alert';
+
+	import { currentMonth } from '$domain/month';
+
 	import BackupEncryptionSetup from './BackupEncryptionSetup.svelte';
 	import CheckPasswordDialog from './CheckPasswordDialog.svelte';
 	import CloudBackupRow from './CloudBackupRow.svelte';
@@ -12,18 +32,8 @@
 	import RestoreDialog from './RestoreDialog.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	import SettingsRow from './SettingsRow.svelte';
-	import CopyList from '$features/backup/CopyList.svelte';
-	import { exportBudgetJson, exportTransactionsCsv } from '$features/backup/actions';
-	import { backUpNow } from '$features/backup/back-up-now';
-	import { cloudBackup } from '$features/backup/cloud/cloud.svelte';
-	import { BACKUP_ACCEPT } from '$features/backup/target';
-	import { getApp, useSession } from '$client/app-state.svelte';
-	import { actionError, runActionToast, type ActionError } from '$client/notify';
-	import { restoreAll } from '$client/session';
-	import type { BudgetCopy } from '$db/api';
-	import { currentMonth } from '$domain/month';
-	import { formatDateTime } from '$i18n/formats';
-	import { m } from '$i18n/paraglide/messages';
+
+	const goto = layerNavigation();
 
 	/**
 	 * The backup card of Settings: when the last backup was, back up or restore now, and a row for

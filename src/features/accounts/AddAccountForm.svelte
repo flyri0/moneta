@@ -22,7 +22,14 @@
 	import AccountTypePicker from './AccountTypePicker.svelte';
 
 	/** Picks an account type, then its fields, and creates it. Starts blank each time it mounts. */
-	let { onCreated }: { onCreated: (id: string) => void } = $props();
+	let {
+		onCreated,
+		back = $bindable(undefined)
+	}: {
+		onCreated: (id: string) => void;
+		/** The current internal return action, forwarded to the containing dialog. */
+		back?: () => void;
+	} = $props();
 	const session = useSession();
 	const tree = useLive(session.client, ['category_groups', 'categories'], () =>
 		session.api.categories.tree()
@@ -92,6 +99,15 @@
 		if (!error) onCreated(id);
 	}
 	const submit = submitOnce(create);
+	$effect(() => {
+		back =
+			step === 2
+				? () => {
+						if (!submit.pending) step = 1;
+					}
+				: undefined;
+		return () => (back = undefined);
+	});
 </script>
 
 {#if step === 1}
@@ -105,7 +121,7 @@
 			bind:balance
 			bind:date
 			idPrefix="new-account"
-			onChangeType={() => (step = 1)}
+			onChangeType={back}
 		/>
 		{#if type === 'credit_card'}
 			<BillingDaysFields

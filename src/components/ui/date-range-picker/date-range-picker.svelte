@@ -1,20 +1,26 @@
 <script lang="ts">
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import XIcon from '@lucide/svelte/icons/x';
 	import {
 		CalendarDate,
 		DateFormatter,
+		type DateValue,
 		getLocalTimeZone,
 		parseDate,
-		today,
-		type DateValue
+		today
 	} from '@internationalized/date';
-	import * as Popover from '$ui/popover';
-	import { RangeCalendar } from '$ui/range-calendar';
-	import * as Select from '$ui/select';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import XIcon from '@lucide/svelte/icons/x';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
+
 	import { formatDate } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import * as Popover from '$ui/popover';
+	import { RangeCalendar } from '$ui/range-calendar';
+	import * as Select from '$ui/select';
+
 	import { cn } from '$utils';
 
 	/** The two ends of a range, as `'YYYY-MM-DD'`; `''` leaves an end open. */
@@ -43,6 +49,7 @@
 	} = $props();
 
 	let open = $state(false);
+	const desktop = new MediaQuery('min-width: 768px');
 
 	function parse(text: string): DateValue | undefined {
 		if (!text) return undefined;
@@ -95,6 +102,7 @@
 		event.stopPropagation();
 		value = { from: '', to: '' };
 	}
+	mobileBackLayer(() => open && !desktop.current, { close: () => (open = false) });
 </script>
 
 <Popover.Root bind:open>

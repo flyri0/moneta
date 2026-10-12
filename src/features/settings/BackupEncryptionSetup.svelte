@@ -125,6 +125,11 @@
 
 <ResponsiveDialog
 	bind:open
+	onMobileBack={step === 'recovery'
+		? () => {
+				if (!busy) step = 'password';
+			}
+		: undefined}
 	title={step === 'recovery'
 		? m.backup_recovery_title()
 		: changing

@@ -1,27 +1,35 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import CheckCircleIcon from '@lucide/svelte/icons/circle-check-big';
 	import CloudOffIcon from '@lucide/svelte/icons/cloud-off';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import ScaleIcon from '@lucide/svelte/icons/scale';
 	import WifiOffIcon from '@lucide/svelte/icons/wifi-off';
-	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+
 	import { asset, resolve } from '$app/paths';
+
 	import { requestDemo } from '$client/demo';
+	import { guidePath } from '$client/guide';
 	import { installHow } from '$client/install';
 	import { install } from '$client/install.svelte';
-	import { guidePath } from '$client/guide';
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { ensureServiceWorker } from '$client/sw';
 	import { dismissWelcome } from '$client/welcome';
+
+	import { m } from '$i18n/paraglide/messages';
+	import { getLocale, type Locale, locales, setLocale } from '$i18n/paraglide/runtime';
+
 	import { Button } from '$ui/button';
 	import * as Select from '$ui/select';
+
 	import { currentMonth } from '$domain/month';
-	import { m } from '$i18n/paraglide/messages';
-	import { getLocale, locales, setLocale, type Locale } from '$i18n/paraglide/runtime';
+
 	import BrowserWarningDialog from './BrowserWarningDialog.svelte';
 	import InstallHelpDialog from './InstallHelpDialog.svelte';
 	import WelcomePreview from './WelcomePreview.svelte';
+
+	const goto = layerNavigation();
 
 	const REPO = 'https://github.com/flyri0/moneta';
 	const LANGUAGE_NAMES: Record<Locale, string> = { en: 'English', 'pt-BR': 'Português (Brasil)' };

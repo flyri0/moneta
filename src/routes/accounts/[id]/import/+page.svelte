@@ -1,31 +1,39 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import HelpLink from '$components/HelpLink.svelte';
-	import { goto } from '$app/navigation';
+
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { type ActionError, actionError } from '$client/notify';
+	import { today } from '$client/today.svelte';
+
 	import FormMessage from '$components/FormMessage.svelte';
+	import HelpLink from '$components/HelpLink.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
-	import CsvColumns from '$features/accounts/import/CsvColumns.svelte';
-	import ImportReview from '$features/accounts/import/ImportReview.svelte';
+
+	import type { StatementLine } from '$db/repos/imports';
 	import {
 		applyFormat,
-		widest,
+		type CsvFormat,
 		guessFormat,
 		localeDateOrder,
 		storedFormat,
-		type CsvFormat
+		widest
 	} from '$features/accounts/import/csv';
+	import CsvColumns from '$features/accounts/import/CsvColumns.svelte';
+	import ImportReview from '$features/accounts/import/ImportReview.svelte';
 	import { importHandoff } from '$features/accounts/import/pending.svelte';
 	import type { Statement } from '$features/accounts/import/statement';
-	import { useSession } from '$client/app-state.svelte';
-	import { today } from '$client/today.svelte';
-	import { useLive } from '$client/live.svelte';
-	import { actionError, type ActionError } from '$client/notify';
-	import type { StatementLine } from '$db/repos/imports';
-	import { currencyDigits, decimalSeparator } from '$domain/money';
+
 	import { m } from '$i18n/paraglide/messages';
+
+	import { currencyDigits, decimalSeparator } from '$domain/money';
+
+	const goto = layerNavigation();
 
 	const session = useSession();
 	const accountId = page.params.id ?? '';

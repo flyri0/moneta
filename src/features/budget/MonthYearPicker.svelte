@@ -1,15 +1,22 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import { Button } from '$ui/button';
-	import * as Select from '$ui/select';
-	import { currentMonth, lastBudgetMonth, type Month } from '$domain/month';
+
+	import { resolve } from '$app/paths';
+
+	import { layerNavigation } from '$client/mobile-back.svelte';
+
 	import { capitalizeFirst, formatMonthLong, formatMonthName } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { Button } from '$ui/button';
+	import * as Select from '$ui/select';
+
+	import { currentMonth, lastBudgetMonth, type Month } from '$domain/month';
 	import { cn } from '$utils';
+
+	const goto = layerNavigation();
 
 	let {
 		month,

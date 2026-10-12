@@ -1,14 +1,22 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import { Button } from '$ui/button';
-	import * as Popover from '$ui/popover';
-	import { addMonths, type Month } from '$domain/month';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	import { resolve } from '$app/paths';
+
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
+
 	import { capitalizeFirst, formatMonthLong } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { Button } from '$ui/button';
+	import * as Popover from '$ui/popover';
+
+	import { addMonths, type Month } from '$domain/month';
+
 	import MonthYearPicker from './MonthYearPicker.svelte';
 
 	/** Previous and next month around the month's name, which opens a month and year picker. */
@@ -21,6 +29,8 @@
 		heading?: 'h1' | 'h2';
 	} = $props();
 	let open = $state(false);
+	const desktop = new MediaQuery('min-width: 768px');
+	mobileBackLayer(() => open && !desktop.current, { close: () => (open = false) });
 </script>
 
 <div class="flex min-w-0 items-center gap-1" data-tour="month">

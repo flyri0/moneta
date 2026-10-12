@@ -1,21 +1,26 @@
 <script lang="ts">
-	import { MediaQuery } from 'svelte/reactivity';
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import XIcon from '@lucide/svelte/icons/x';
 	import {
 		CalendarDate,
 		DateFormatter,
+		type DateValue,
 		getLocalTimeZone,
 		parseDate,
-		today,
-		type DateValue
+		today
 	} from '@internationalized/date';
-	import { Calendar } from '$ui/calendar';
-	import * as Popover from '$ui/popover';
-	import * as Select from '$ui/select';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import XIcon from '@lucide/svelte/icons/x';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
+
 	import { formatDate, formatDateNumeric } from '$i18n/formats';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { Calendar } from '$ui/calendar';
+	import * as Popover from '$ui/popover';
+	import * as Select from '$ui/select';
+
 	import { cn } from '$utils';
 
 	let {
@@ -112,6 +117,7 @@
 		event.stopPropagation();
 		value = '';
 	}
+	mobileBackLayer(() => open && !desktop.current, { close: () => (open = false) });
 </script>
 
 {#if name}

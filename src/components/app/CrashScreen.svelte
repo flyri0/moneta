@@ -1,11 +1,17 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { Button } from '$ui/button';
-	import FormMessage from '$components/FormMessage.svelte';
+	import { page } from '$app/state';
+
+	import { layerNavigation } from '$client/mobile-back.svelte';
 	import { actionError } from '$client/notify';
+
+	import FormMessage from '$components/FormMessage.svelte';
+
 	import { m } from '$i18n/paraglide/messages';
+
+	import { Button } from '$ui/button';
+
+	const goto = layerNavigation();
 
 	/**
 	 * What a screen shows instead of itself when it throws while rendering (a `<svelte:boundary>`'s

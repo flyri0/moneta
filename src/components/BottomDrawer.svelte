@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { keepOpenForToasts } from '$client/notify';
 	import type { Snippet } from 'svelte';
+
+	import { drawerRelease } from '$client/drawer';
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
+	import { keepOpenForToasts } from '$client/notify';
+	import { trackOverlay } from '$client/overlays.svelte';
+
+	import { m } from '$i18n/paraglide/messages';
+
 	import { Button } from '$ui/button';
 	import * as Sheet from '$ui/sheet';
-	import { drawerRelease } from '$client/drawer';
-	import { trackOverlay } from '$client/overlays.svelte';
-	import { m } from '$i18n/paraglide/messages';
 
 	/**
 	 * A sheet that rises from the bottom of a phone's screen. Its top (the grab bar and `header`)
@@ -17,14 +21,18 @@
 		open = $bindable(false),
 		ref = $bindable(null),
 		header,
+		onBack,
 		children
 	}: {
 		open: boolean;
 		/** The drawer itself. */
 		ref?: HTMLElement | null;
 		header: Snippet;
+		onBack?: () => void;
 		children: Snippet;
 	} = $props();
+
+	mobileBackLayer(() => open, { close: () => (open = false), back: () => onBack });
 
 	const SETTLE_MS = 200;
 

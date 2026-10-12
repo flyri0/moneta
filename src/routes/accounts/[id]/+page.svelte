@@ -1,39 +1,48 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import UploadIcon from '@lucide/svelte/icons/upload';
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
-	import { Button } from '$ui/button';
+	import UploadIcon from '@lucide/svelte/icons/upload';
+	import { untrack } from 'svelte';
+
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+
+	import { useSession } from '$client/app-state.svelte';
+	import { useLive } from '$client/live.svelte';
+	import { layerNavigation } from '$client/mobile-back.svelte';
+	import { actionError, notifyError } from '$client/notify';
+	import { today } from '$client/today.svelte';
+
 	import FormMessage from '$components/FormMessage.svelte';
 	import LoadingRows from '$components/LoadingRows.svelte';
 	import PageHeader from '$components/PageHeader.svelte';
+
+	import AccountIcon from '$features/accounts/AccountIcon.svelte';
 	import AccountSettingsDialog from '$features/accounts/AccountSettingsDialog.svelte';
-	import ReconcileDialog from '$features/accounts/ReconcileDialog.svelte';
 	import { importHandoff } from '$features/accounts/import/pending.svelte';
 	import { readStatement } from '$features/accounts/import/read';
-	import AccountIcon from '$features/accounts/AccountIcon.svelte';
-	import Register from '$features/accounts/Register.svelte';
-	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
-	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
-	import { RegisterSelection } from '$features/accounts/selection.svelte';
-	import SelectButton from '$features/accounts/SelectButton.svelte';
-	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
-	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
+	import ReconcileDialog from '$features/accounts/ReconcileDialog.svelte';
 	import { FORECAST_DAYS, projectBalances, registerBalances } from '$features/accounts/register';
-	import { today } from '$client/today.svelte';
-	import { addDays } from '$domain/month';
-	import { useSession } from '$client/app-state.svelte';
-	import { useLive } from '$client/live.svelte';
-	import { actionError, notifyError } from '$client/notify';
-	import { currencyDigits } from '$domain/money';
+	import Register from '$features/accounts/Register.svelte';
+	import { RegisterFilters } from '$features/accounts/register-filters.svelte';
+	import RegisterToolbar from '$features/accounts/RegisterToolbar.svelte';
+	import SelectButton from '$features/accounts/SelectButton.svelte';
+	import { RegisterSelection } from '$features/accounts/selection.svelte';
+	import UpcomingSection from '$features/accounts/UpcomingSection.svelte';
+	import TransactionDialog from '$features/transactions/TransactionDialog.svelte';
+
 	import { formatDate } from '$i18n/formats';
 	import { accountTypeLabel } from '$i18n/labels';
 	import { m } from '$i18n/paraglide/messages';
 	import { getLocale } from '$i18n/paraglide/runtime';
+
+	import { Button } from '$ui/button';
+
+	import { currencyDigits } from '$domain/money';
+	import { addDays } from '$domain/month';
+
+	const goto = layerNavigation();
 
 	const accountId = $derived(page.params.id ?? '');
 	const session = useSession();
