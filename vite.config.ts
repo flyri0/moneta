@@ -4,12 +4,14 @@ import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { guideDevServer } from './guide/dev.ts';
+import mkcert from 'vite-plugin-mkcert';
 
 export default defineConfig({
 	optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
 	worker: { format: 'es' },
 	plugins: [
 		// `pnpm build` writes the guide after Vite; in dev it is served from its sources.
+		mkcert(),
 		guideDevServer(),
 		tailwindcss(),
 		sveltekit(),
