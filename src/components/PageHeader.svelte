@@ -17,6 +17,7 @@
 		subtitle,
 		back,
 		actions,
+		inlineActions = false,
 		toolbar,
 		hideAmounts = true,
 		class: width = 'max-w-2xl lg:max-w-5xl'
@@ -28,6 +29,8 @@
 			| { route: '/accounts' | '/reports' | '/transactions'; label: string; phoneOnly?: boolean }
 			| { route: '/accounts/[id]'; id: string; label: string; phoneOnly?: boolean };
 		actions?: Snippet;
+		/** Keeps the title and actions on one row, letting the title truncate if needed. */
+		inlineActions?: boolean;
 		toolbar?: Snippet;
 		/** Shows the eye that hides amounts, in the same corner on every page; off on pages without any. */
 		hideAmounts?: boolean;
@@ -63,8 +66,14 @@
 				</a>
 			{/if}
 			<!-- The actions drop to their own line rather than squeeze a long title (e.g. the month). -->
-			<div class="flex min-h-9 flex-wrap items-center justify-between gap-2">
-				<div class="grid min-w-0 flex-[1_1_auto] gap-0.5">
+			<div
+				class="flex min-h-9 items-center justify-between gap-2 {inlineActions
+					? 'flex-nowrap'
+					: 'flex-wrap'}"
+			>
+				<div
+					class="grid min-w-0 {inlineActions ? 'flex-[1_1_0%]' : 'flex-[1_1_auto]'} gap-0.5"
+				>
 					{#if typeof title === 'string'}
 						<h1 class="truncate text-xl font-semibold tracking-tight">{title}</h1>
 					{:else}

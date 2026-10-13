@@ -120,7 +120,7 @@
 </script>
 
 {#if account.data}
-	<PageHeader back={{ route: '/accounts', label: m.nav_accounts() }}>
+	<PageHeader back={{ route: '/accounts', label: m.nav_accounts() }} inlineActions>
 		{#snippet title()}
 			<div class="flex min-w-0 items-center gap-3">
 				<div

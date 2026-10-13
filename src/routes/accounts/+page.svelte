@@ -33,9 +33,9 @@
 
 <PageHeader title={m.nav_accounts()}>
 	{#snippet actions()}
-		<Button size="sm" onclick={() => (adding = true)}>
+		<Button size="sm" aria-label={m.accounts_add()} onclick={() => (adding = true)}>
 			<PlusIcon />
-			{m.accounts_add()}
+			<span class="hidden md:inline">{m.accounts_add()}</span>
 		</Button>
 	{/snippet}
 </PageHeader>
