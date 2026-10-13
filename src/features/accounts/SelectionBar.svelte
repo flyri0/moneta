@@ -23,6 +23,7 @@
 	import { useLive } from '$client/live.svelte';
 	import { runAction, runActionToast, type ActionError } from '$client/notify';
 	import { offerUndo } from '$client/undo';
+	import { mobileBackLayer } from '$client/mobile-back.svelte';
 	import type { FlagColor } from '$domain/flag';
 	import type { BulkChange, BulkResult, TransactionRow } from '$db/repos/transactions';
 	import { todayIso } from '$domain/month';
@@ -34,6 +35,8 @@
 	 * from its toast.
 	 */
 	let { selection, rows }: { selection: RegisterSelection; rows: TransactionRow[] } = $props();
+
+	mobileBackLayer(() => selection.active, { close: () => selection.stop() });
 
 	const session = useSession();
 	const tree = useLive(session.client, ['categories', 'category_groups'], () =>

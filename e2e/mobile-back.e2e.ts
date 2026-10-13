@@ -97,6 +97,60 @@ test.describe('mobile Back', () => {
 		await expect(form.getByLabel('Amount', { exact: true })).toHaveValue('17');
 	});
 
+	test('Back closes a bulk dialog before ending selection', async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts', exact: true }).first().click();
+		await page
+			.getByRole('main')
+			.getByTestId('account-row')
+			.filter({ hasText: 'Checking' })
+			.getByRole('link')
+			.click();
+		await expect(page.getByTestId('register-title')).toHaveText('Checking');
+		const url = page.url();
+		await page.getByRole('button', { name: 'Select', exact: true }).click();
+		const bar = page.getByTestId('selection-bar');
+		await bar.getByRole('button', { name: 'Select all' }).click();
+		await bar.getByRole('button', { name: 'Category' }).click();
+		const dialog = page.getByRole('dialog');
+		await expect(dialog).toBeVisible();
+
+		await page.goBack();
+		await expect(dialog).toBeHidden();
+		await expect(bar).toBeVisible();
+		await expect(page).toHaveURL(url);
+
+		await page.goBack();
+		await expect(bar).toBeHidden();
+		await expect(page).toHaveURL(url);
+	});
+
+	test('manually closing a bulk dialog leaves one Back step for selection', async ({ page }) => {
+		await onboard(page);
+		await page.getByRole('link', { name: 'Accounts', exact: true }).first().click();
+		await page
+			.getByRole('main')
+			.getByTestId('account-row')
+			.filter({ hasText: 'Checking' })
+			.getByRole('link')
+			.click();
+		await expect(page.getByTestId('register-title')).toHaveText('Checking');
+		const url = page.url();
+		await page.getByRole('button', { name: 'Select', exact: true }).click();
+		const bar = page.getByTestId('selection-bar');
+		await bar.getByRole('button', { name: 'Select all' }).click();
+		await bar.getByRole('button', { name: 'Category' }).click();
+		const dialog = page.getByRole('dialog');
+		await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await expect(dialog).toBeHidden();
+
+		await page.goBack();
+		await expect(bar).toBeHidden();
+		await expect(page).toHaveURL(url);
+		await page.goBack();
+		await expect(page).toHaveURL(/\/accounts$/);
+	});
+
 	test('manual Cancel and Escape leave normal page history', async ({ page }) => {
 		await onboard(page);
 		const budget = page.url();
@@ -145,6 +199,7 @@ test.describe('mobile Back', () => {
 	test('Back returns to the account types before closing the account drawer', async ({ page }) => {
 		await onboard(page);
 		await page.getByRole('link', { name: 'Accounts', exact: true }).first().click();
+		await expect(page).toHaveURL(/\/accounts$/);
 		const url = page.url();
 		await page.getByRole('button', { name: 'Add account' }).click();
 		const dialog = page.getByRole('dialog', { name: 'Add account' });
