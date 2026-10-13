@@ -71,9 +71,7 @@
 					? 'flex-nowrap'
 					: 'flex-wrap'}"
 			>
-				<div
-					class="grid min-w-0 {inlineActions ? 'flex-[1_1_0%]' : 'flex-[1_1_auto]'} gap-0.5"
-				>
+				<div class="grid min-w-0 {inlineActions ? 'flex-[1_1_0%]' : 'flex-[1_1_auto]'} gap-0.5">
 					{#if typeof title === 'string'}
 						<h1 class="truncate text-xl font-semibold tracking-tight">{title}</h1>
 					{:else}
