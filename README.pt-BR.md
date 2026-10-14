@@ -15,16 +15,16 @@
 	<a href="https://app.netlify.com/projects/usemoneta/deploys"><img src="https://api.netlify.com/api/v1/badges/058ac25a-38ff-40b3-a04e-d586850df680/deploy-status" alt="Status do Netlify" /></a>
 </p>
 
-<picture>
-	<source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/budget-dark.pt-BR.png" />
-	<img src=".github/screenshots/budget-light.pt-BR.png" alt="A tela do orçamento: Pronto para atribuir no topo e, abaixo, os grupos de categorias com o que foi atribuído, gasto e ainda está disponível em cada envelope." />
-</picture>
-
 > [!WARNING]
 > **O Moneta é um projeto pessoal experimental.** Ele foi escrito 100% por LLMs, como uma
 > forma de eu aprender. Ele é utilizável, mas vem sem garantia nenhuma: não me responsabilizo
 > por perda ou roubo de dados. Use por sua conta e risco e mantenha backups em um lugar que
 > você controle.
+
+<picture>
+	<source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/budget-dark.pt-BR.png" />
+	<img src=".github/screenshots/budget-light.pt-BR.png" alt="A tela do orçamento: Pronto para atribuir no topo e, abaixo, os grupos de categorias com o que foi atribuído, gasto e ainda está disponível em cada envelope." />
+</picture>
 
 ## O que é
 

@@ -15,15 +15,15 @@
 	<a href="https://app.netlify.com/projects/usemoneta/deploys"><img src="https://api.netlify.com/api/v1/badges/058ac25a-38ff-40b3-a04e-d586850df680/deploy-status" alt="Netlify Status" /></a>
 </p>
 
-<picture>
-	<source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/budget-dark.png" />
-	<img src=".github/screenshots/budget-light.png" alt="The budget screen: Ready to Assign at the top, then category groups with what was assigned, spent and is still available in each envelope." />
-</picture>
-
 > [!WARNING]
 > **Moneta is an experimental personal project.** It was written 100% by LLMs, as a way for
 > me to learn. It is usable, but it comes with no guarantees: I take no responsibility for
 > lost or stolen data. Use it at your own risk and keep backups somewhere you control.
+
+<picture>
+	<source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/budget-dark.png" />
+	<img src=".github/screenshots/budget-light.png" alt="The budget screen: Ready to Assign at the top, then category groups with what was assigned, spent and is still available in each envelope." />
+</picture>
 
 ## What it is
 
