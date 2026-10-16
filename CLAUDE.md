@@ -91,3 +91,17 @@ Before every commit, `pnpm lint`, `pnpm check` and `pnpm test` must pass.
 - Match the surrounding code: short doc comments on exports, and comments only where the code isn't self-evident.
 - Conventional commit prefixes (`feat:`, `fix:`, `test:`, `docs:`, `chore:`), enforced by a commitlint `commit-msg` hook (husky, `commitlint.config.js`).
 - Commit or push only when asked.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage uses the default five labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain docs use the single-context layout. See `docs/agents/domain.md`.
