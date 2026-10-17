@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
 import { demoBudget } from '$features/demo/content';
 import { DEMO_FILE, endDemo, isDemoOpen, openDemo, requestDemo, sweepDemo } from './demo';
 import { loadRegistry } from './registry';

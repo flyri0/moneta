@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { ageOfMoneyPayments, ageOfMoneySeries, type CashFlowEntry } from './age-of-money';
 
 let seq = 0;

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { run, tx } from './connection';
 import { dataVersion, memo } from './memo';
 import { createTestDb } from './testing';

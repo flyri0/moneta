@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { readStatement } from './read';
 
 const bytes = (text: string) => new TextEncoder().encode(text);

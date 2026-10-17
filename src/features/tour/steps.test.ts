@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { placeCard, resolveStep, TOUR_STEPS, type Box } from './steps';
 
 const step = (id: string) => {

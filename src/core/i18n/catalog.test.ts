@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import en from './messages/en.json';
 import pt from './messages/pt-BR.json';
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { loadCollapsed, saveCollapsed } from '$features/budget/collapse';
 import { endDemo, isDemoOpen, requestDemo } from './demo';
 import { loadRegistry, saveRegistry } from './registry';

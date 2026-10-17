@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { createTestDb } from '$db/testing';
 import { DomainError } from '$domain/errors';
 import { DEMO_FILE, isDemoOpen, openDemo, requestDemo } from './demo';

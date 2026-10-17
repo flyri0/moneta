@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { categoryId, createBudgetDb } from '../testing';
 import { all, ALL_TABLES, run, type Db } from '../connection';
 import {

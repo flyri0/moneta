@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { newDraft, type FormContext, type TransactionDraft } from './form';
 import { canInstall, installmentCount, installmentPlan } from './installments';
 

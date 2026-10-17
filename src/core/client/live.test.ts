@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { get } from 'svelte/store';
 import { liveQuery, type LiveState } from './live';
 import type { ChangeListener } from './rpc';

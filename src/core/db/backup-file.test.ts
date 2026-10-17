@@ -1,4 +1,4 @@
-import { beforeAll, describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vite-plus/test';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { DomainError } from '$domain/errors';
 import { newRecoveryKey } from '$domain/recovery-key';

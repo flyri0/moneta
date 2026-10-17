@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vite-plus/test';
 import type { BudgetMeta } from '$db/repos/meta';
 import { BudgetSession } from './app-state.svelte';
 import { MASK } from './hide-amounts';

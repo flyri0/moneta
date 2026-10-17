@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { backupDue } from './reminder';
 
 const now = new Date('2026-09-19T12:00:00Z');

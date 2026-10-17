@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { checkBackup } from './backup';
 import { createDispatcher } from './dispatcher';
 import { toImage } from './image';

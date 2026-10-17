@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createAccount } from './repos/accounts';
 import { createTransaction, listTransactions } from './repos/transactions';
 import { categoryId, createBudgetDb } from './testing';

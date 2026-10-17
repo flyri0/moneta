@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { runWhenIdle } from './idle';
 
 /** A scheduler the test drives: `tick()` runs the one waiting callback. */

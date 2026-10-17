@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { dismissWelcome, shouldShowWelcome, WELCOME_KEY } from './welcome';
 import { memoryStore } from './testing';
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { createRpcClient, RpcError, type Endpoint } from './rpc';
 import { createDispatcher } from '$db/dispatcher';
 import { categoryId, createBudgetDb, loadSqlite } from '$db/testing';

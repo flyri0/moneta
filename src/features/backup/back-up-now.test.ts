@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 
 const { errorMock, warningMock, infoMock } = vi.hoisted(() => ({
 	errorMock: vi.fn(),

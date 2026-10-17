@@ -6,7 +6,8 @@ import type { Statement } from './statement';
 
 /** A statement file as read: OFX lines, or a CSV table still to be mapped. */
 export type ReadStatement =
-	{ kind: 'ofx'; statement: Statement } | { kind: 'csv'; table: string[][] };
+	| { kind: 'ofx'; statement: Statement }
+	| { kind: 'csv'; table: string[][] };
 
 /**
  * Reads a statement file's bytes, in `digits` decimal places. STATEMENT_EMPTY when it has no

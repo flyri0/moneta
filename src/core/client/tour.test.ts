@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { noteBudgetOpened, planTour, settleTour, TOUR_KEY, tourPendingFor } from './tour';
 import { brokenStore, memoryStore } from './testing';
 

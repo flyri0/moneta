@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { memoryStore, brokenStore } from '$client/testing';
 import {
 	CLOUD_KEY,

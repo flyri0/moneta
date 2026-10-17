@@ -3,7 +3,13 @@ import { goalNeed, type CategoryGoal } from './goal';
 import { addMonths, type Month } from './month';
 
 export type QuickAssignStrategy =
-	'goals' | 'last-month' | 'avg-3' | 'avg-6' | 'avg-12' | 'cover-overspending' | 'clear';
+	| 'goals'
+	| 'last-month'
+	| 'avg-3'
+	| 'avg-6'
+	| 'avg-12'
+	| 'cover-overspending'
+	| 'clear';
 
 export const QUICK_ASSIGN_STRATEGIES: readonly QuickAssignStrategy[] = [
 	'goals',

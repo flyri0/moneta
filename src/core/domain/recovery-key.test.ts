@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { formatRecoveryKey, newRecoveryKey, parseRecoveryKey } from './recovery-key';
 
 const BYTES = Uint8Array.from({ length: 20 }, (_, i) => i * 13);

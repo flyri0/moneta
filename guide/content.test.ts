@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { GUIDE_LOCALES, GUIDE_PAGES, GUIDE_TOPICS } from '../src/core/client/guide';
 import { loadGuide } from './build';
 

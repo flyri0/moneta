@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { matchRule, ruleText, type RuleKind } from './payee-rules';
 
 const rule = (id: string, kind: RuleKind, text: string) => ({ id, kind, text });

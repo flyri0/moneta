@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { expiredBackups, KEEP_PREVIOUS } from './retention';
 import type { RemoteBackup } from './provider';
 

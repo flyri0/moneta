@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { holdPoolLock, type PoolLocks } from './pool-lock';
 
 /** An in-memory stand-in for `navigator.locks`: one exclusive holder per name, a queue behind it. */

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { RpcError } from '$client/rpc';
 import { DomainError, ERROR_CODES } from '$domain/errors';
 import { m } from '$i18n/paraglide/messages';

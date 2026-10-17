@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import type { SAHPoolUtil } from '@sqlite.org/sqlite-wasm';
 import { opfsStore } from './opfs-store';
 

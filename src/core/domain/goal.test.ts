@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { goalNeed, type CategoryGoal } from './goal';
 
 const monthly: CategoryGoal = { type: 'monthly', amount: 40000, month: null };

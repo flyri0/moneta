@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { googleDrive, DRIVE_SCOPE } from './google-drive';
 import { answeringPopup, fakeDrive } from './testing';
 import { memoryAuthStore } from './tokens';

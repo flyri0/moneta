@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { isOfx, parseOfx } from './ofx';
 
 /** An OFX 1.02 statement the way Brazilian banks export it: SGML, unclosed values, commas. */

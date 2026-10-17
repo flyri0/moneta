@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createTabLock, type ChannelLike, type LockManagerLike } from './tab-lock';
 
 /** An in-memory Web Locks manager: one holder per name, FIFO waiters, `signal` and `steal`. */

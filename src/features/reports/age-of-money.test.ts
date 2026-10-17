@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { m } from '$i18n/paraglide/messages';
 import { ageOfMoneyChange, ageOfMoneyInRange, daysLabel } from './age-of-money';
 import { presetRange } from './range';

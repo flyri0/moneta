@@ -2,7 +2,14 @@ import { applyTone, type SkinTone } from './skin-tone';
 
 /** The picker's groups, in the order of its tabs. */
 export type EmojiGroupId =
-	'smileys' | 'animals' | 'food' | 'activities' | 'travel' | 'objects' | 'symbols' | 'flags';
+	| 'smileys'
+	| 'animals'
+	| 'food'
+	| 'activities'
+	| 'travel'
+	| 'objects'
+	| 'symbols'
+	| 'flags';
 
 /** An emoji in the generated data: the sequence, its Emoji version, and 1 when it takes a skin tone. */
 export type EmojiEntry = readonly [emoji: string, version: number, skin?: 1];

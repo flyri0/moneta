@@ -8,7 +8,13 @@ import { ensureStartingBalanceCategory } from './meta';
 import { createStartingBalance, createTransaction } from './transactions';
 
 export type AccountType =
-	'checking' | 'savings' | 'cash' | 'credit_card' | 'investment' | 'loan' | 'other';
+	| 'checking'
+	| 'savings'
+	| 'cash'
+	| 'credit_card'
+	| 'investment'
+	| 'loan'
+	| 'other';
 
 export interface Account {
 	id: string;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { HIDE_AMOUNTS_KEY, readHideAmounts, writeHideAmounts } from './hide-amounts';
 import { memoryStore } from './testing';
 

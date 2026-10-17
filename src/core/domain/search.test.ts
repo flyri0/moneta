@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { foldText, searchTerms } from './search';
 
 const BRL = { currency: 'BRL', locale: 'pt-BR' };

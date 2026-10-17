@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { SCHEMA_VERSION } from '../migrate';
 import { createBudgetDb } from '../testing';
 import { createAccount } from './accounts';

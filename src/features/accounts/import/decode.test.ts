@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { decodeStatement } from './decode';
 
 const latin1 = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0));

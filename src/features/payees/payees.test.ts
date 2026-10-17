@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import type { Payee } from '$db/repos/payees';
 import { filterPayees, mergeTargets, nameConflict, unusedCount } from './payees';
 

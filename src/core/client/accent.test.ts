@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { ACCENTS, ACCENT_SWATCH, DEFAULT_ACCENT, isAccent, readAccent } from './accent';
 
 describe('the accent list', () => {

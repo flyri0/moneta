@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { demoBudget } from '$features/demo/content';
 import { api } from './api';
 import { all, ALL_TABLES, tx, type Db, type Table } from './connection';

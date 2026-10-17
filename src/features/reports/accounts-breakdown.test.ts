@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import type { Account } from '$db/repos/accounts';
 import { accountBreakdown, debtProgress } from './accounts-breakdown';
 

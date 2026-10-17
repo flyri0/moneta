@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { createBudget, type NewBudget } from '$client/session';
 import { createTestClient, memoryStore } from '$client/testing';
 import { newRecoveryKey } from '$domain/recovery-key';

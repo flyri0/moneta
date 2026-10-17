@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { fileTarget } from './file-target';
 
 const unhandled: unknown[] = [];

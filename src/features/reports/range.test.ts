@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { isDate, MAX_DATE, MIN_DATE } from '$domain/month';
 import { monthsCovered, presetRange, RANGE_PRESETS, reportMonths } from './range';
 

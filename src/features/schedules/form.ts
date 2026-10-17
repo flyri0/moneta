@@ -76,7 +76,8 @@ export type ScheduleFormError =
 	| 'INSTALLMENT_DATE_PAST';
 
 export type ScheduleBuildResult =
-	{ ok: true; input: ScheduleInput } | { ok: false; error: ScheduleFormError };
+	| { ok: true; input: ScheduleInput }
+	| { ok: false; error: ScheduleFormError };
 
 /**
  * A new schedule's draft. With `installments`, it starts as a purchase in installments already

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { buildDemo, type DemoCategoryNames } from '$features/demo/dataset';
 import { currentMonth, todayIso } from '$domain/month';
 import { defaultCategoryGroups, defaultIncomeCategories } from '$i18n/defaults';

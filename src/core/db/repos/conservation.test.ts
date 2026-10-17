@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createBudgetDb } from '../testing';
 import { all, type Db } from '../connection';
 import { DomainError } from '$domain/errors';

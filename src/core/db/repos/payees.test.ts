@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { categoryId, createBudgetDb } from '../testing';
 import { run, tx, type Db } from '../connection';
 import { createAccount } from './accounts';

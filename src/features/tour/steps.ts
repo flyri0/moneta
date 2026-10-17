@@ -45,7 +45,12 @@ type StepId =
 
 /** Which text a step shows: its own, or one that fits the layout or the fallback it fell to. */
 export type TourCopy =
-	StepId | 'accounts-none' | 'category-wide' | 'add-group' | 'schedules-way-phone' | 'backup-cloud';
+	| StepId
+	| 'accounts-none'
+	| 'category-wide'
+	| 'add-group'
+	| 'schedules-way-phone'
+	| 'backup-cloud';
 
 export interface TourStep {
 	id: StepId;

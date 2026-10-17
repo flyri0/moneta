@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { DomainError } from '$domain/errors';
 import { createDispatcher } from './dispatcher';
 import { categoryId, createBudgetDb, loadSqlite } from './testing';

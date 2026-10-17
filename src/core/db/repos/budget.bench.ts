@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test } from 'vite-plus/test';
 import { computeBudget } from '$domain/budget-engine';
 import { addMonths, monthRange } from '$domain/month';
 import { categoryId, createBudgetDb } from '../testing';

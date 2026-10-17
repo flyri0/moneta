@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { computeBudget, type EngineInput } from '$domain/budget-engine';
 import { addMonths, isDate, monthOf, type Month } from '$domain/month';
 import { buildDemo, type DemoInput } from './dataset';

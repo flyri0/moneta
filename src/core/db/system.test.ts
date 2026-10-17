@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { MIGRATIONS, SCHEMA_VERSION, schemaVersion } from './migrate';
 import { newRecoveryKey } from '$domain/recovery-key';
 import { readBackup, writeBackup } from './backup-file';

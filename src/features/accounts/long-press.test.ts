@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { LONG_PRESS_MS, LONG_PRESS_SLOP, LongPress } from './long-press';
 
 describe('LongPress', () => {

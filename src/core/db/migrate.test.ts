@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { createTestDb, loadSqlite } from './testing';
 import { MIGRATIONS, migrate, schemaVersion, SCHEMA_VERSION } from './migrate';
 import { all, configure, run } from './connection';

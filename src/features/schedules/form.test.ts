@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import type { GroupNode } from '$db/repos/categories';
 import type { ScheduleRow } from '$db/repos/schedules';
 import type { FormContext } from '$features/transactions/form';

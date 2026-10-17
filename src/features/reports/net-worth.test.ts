@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import type { NetWorthPoint } from '$domain/net-worth';
 import { presetRange } from './range';
 import {

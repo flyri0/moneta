@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { DomainError } from '$domain/errors';
 import { accessTokens, memoryAuthStore, type StoredAuth } from './tokens';
 import type { TokenGrant, TokenRequest } from './oauth';

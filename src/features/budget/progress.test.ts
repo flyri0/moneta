@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { captionKind, categoryProgress, showsSpending } from './progress';
 
 /** A category view is summarised by the two numbers the row already shows. */

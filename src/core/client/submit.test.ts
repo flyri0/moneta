@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { oneAtATime } from './submit';
 
 function deferred() {
@@ -25,7 +25,7 @@ describe('oneAtATime', () => {
 
 	it('prevents the default of an ignored submit, so the page never reloads', async () => {
 		const gate = deferred();
-		const handler = vi.fn((event: Event) => (void event, gate.promise));
+		const handler = vi.fn((_event: Event) => gate.promise);
 		const run = oneAtATime(handler, () => {});
 		void run(new Event('submit', { cancelable: true }));
 		const second = new Event('submit', { cancelable: true });

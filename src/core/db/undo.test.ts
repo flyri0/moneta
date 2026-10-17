@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vite-plus/test';
 import type { Sqlite3Static } from '@sqlite.org/sqlite-wasm';
 import { categoryId, createBudgetDb, loadSqlite } from './testing';
 import { ALL_TABLES, all, run, tx, type Db } from './connection';

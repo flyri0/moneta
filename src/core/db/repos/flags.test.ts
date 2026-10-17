@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { run } from '../connection';
 import { createBudgetDb } from '../testing';
 import { listFlags, renameFlag, renameFlags } from './flags';

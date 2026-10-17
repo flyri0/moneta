@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { DomainError, type ErrorCode } from '$domain/errors';
 import { newRecoveryKey } from '$domain/recovery-key';
 import { createKeys, decrypt, encrypt, newIv, openKey } from './backup-crypto';

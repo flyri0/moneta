@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { collapsedKey } from '$client/registry';
 import { memoryStore } from '$client/testing';
 import { allCollapsed, loadCollapsed, saveCollapsed, toggleAll, toggleCollapsed } from './collapse';

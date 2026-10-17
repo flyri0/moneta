@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { EMOJI_GROUPS, TONE_EXCEPTIONS } from './emoji-data';
 import { isEmojiIcon } from '$domain/icon';
 import { buildCatalog } from './emoji';
